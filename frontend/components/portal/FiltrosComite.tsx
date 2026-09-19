@@ -7,7 +7,8 @@ import { useI18n } from "@/lib/i18n";
 import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
 
 /**
- * Filtros del Coordinador de Comité: delegación y disciplina.
+ * Filtros del Coordinador de Comité: delegación, disciplina y —donde aplica—
+ * el hotel al que van los traslados.
  *
  * Él ve el evento entero, que son dieciséis regiones por diecisiete deportes.
  * Sin una forma de acotar, cada módulo es una lista interminable. Lo que elige
@@ -234,6 +235,9 @@ export default function FiltrosComite({
   disciplinaId,
   onDelegacion,
   onDisciplina,
+  hoteles,
+  hotelId = "",
+  onHotel,
   resumen,
 }: {
   delegaciones: Delegacion[];
@@ -243,11 +247,19 @@ export default function FiltrosComite({
   disciplinaId: string;
   onDelegacion: (id: string) => void;
   onDisciplina: (id: string) => void;
+  /**
+   * Hoteles a los que se dirigen los traslados. Va sólo donde el filtro
+   * significa algo —la lista de traslados—, así que si no se pasan, el botón
+   * no aparece y la barra queda con los dos de siempre.
+   */
+  hoteles?: { id: string; name?: string | null }[];
+  hotelId?: string;
+  onHotel?: (id: string) => void;
   /** Línea corta bajo los filtros: qué se está viendo ahora mismo. */
   resumen?: string;
 }) {
   const { t } = useI18n();
-  const [hoja, setHoja] = useState<null | "region" | "deporte">(null);
+  const [hoja, setHoja] = useState<null | "region" | "deporte" | "hotel">(null);
 
   const regiones = useMemo<Opcion[]>(
     () =>
@@ -271,9 +283,19 @@ export default function FiltrosComite({
     [disciplinas, etiquetas],
   );
 
-  const hayFiltro = Boolean(delegacionId || disciplinaId);
+  const hotelesOpciones = useMemo<Opcion[]>(
+    () =>
+      [...(hoteles ?? [])]
+        .map((h) => ({ value: h.id, label: h.name ?? h.id }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    [hoteles],
+  );
+  const conHotel = hotelesOpciones.length > 0 && Boolean(onHotel);
+
+  const hayFiltro = Boolean(delegacionId || disciplinaId || (conHotel && hotelId));
   const nombreRegion = regiones.find((o) => o.value === delegacionId)?.label ?? t("Todas");
   const nombreDeporte = deportes.find((o) => o.value === disciplinaId)?.label ?? t("Todos");
+  const nombreHotel = hotelesOpciones.find((o) => o.value === hotelId)?.label ?? t("Todos");
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -294,7 +316,7 @@ export default function FiltrosComite({
           <button
             type="button"
             aria-label={t("Ver todo")}
-            onClick={() => { onDelegacion(""); onDisciplina(""); }}
+            onClick={() => { onDelegacion(""); onDisciplina(""); onHotel?.(""); }}
             style={{
               flexShrink: 0,
               width: 38,
@@ -311,6 +333,20 @@ export default function FiltrosComite({
           </button>
         )}
       </div>
+
+      {/* El hotel va en su propia fila: apretado como tercer botón, un nombre
+          como "Hotel Bordemar Sur" se cortaba a la segunda palabra y el filtro
+          dejaba de decir qué estaba aplicado. */}
+      {conHotel && (
+        <div style={{ display: "flex" }}>
+          <BotonFiltro
+            rotulo={t("Hotel de destino")}
+            valor={nombreHotel}
+            activo={Boolean(hotelId)}
+            onClick={() => setHoja("hotel")}
+          />
+        </div>
+      )}
 
       {resumen && <p style={{ margin: 0, fontSize: 11.5, color: SURFACE.textFaint }}>{resumen}</p>}
 
@@ -331,6 +367,16 @@ export default function FiltrosComite({
           etiquetaTodos={t("Todos los deportes")}
           valor={disciplinaId}
           onElegir={onDisciplina}
+          onCerrar={() => setHoja(null)}
+        />
+      )}
+      {hoja === "hotel" && (
+        <HojaOpciones
+          titulo={t("Hotel de destino")}
+          opciones={hotelesOpciones}
+          etiquetaTodos={t("Todos los hoteles")}
+          valor={hotelId}
+          onElegir={(v) => onHotel?.(v)}
           onCerrar={() => setHoja(null)}
         />
       )}

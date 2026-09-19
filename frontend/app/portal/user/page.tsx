@@ -68,6 +68,7 @@ import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import SofiaWidget from "@/components/SofiaWidget";
 import GeneralCoordinatorCard from "@/components/portal/GeneralCoordinatorCard";
+import BannerCoordinador from "@/components/portal/BannerCoordinador";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionTrips from "@/components/portal/MissionTrips";
 import MissionLiveTrips from "@/components/portal/MissionLiveTrips";
@@ -428,6 +429,9 @@ export default function UserPortalPage() {
   const [delegacionesEvento, setDelegacionesEvento] = useState<{ id: string; eventId?: string | null; countryCode?: string | null; name?: string | null }[]>([]);
   const [comiteDelegacion, setComiteDelegacion] = useState("");
   const [comiteDisciplina, setComiteDisciplina] = useState("");
+  // Hotel de destino: hacia dónde van los conductores. Sólo acota la lista de
+  // traslados, que es la única pestaña donde la pregunta tiene sentido.
+  const [comiteHotel, setComiteHotel] = useState("");
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
   const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
   // El home del portal es siempre Itinerario; sólo un refresh (F5) restaura
@@ -619,6 +623,23 @@ export default function UserPortalPage() {
     () => mapaDeLugares(venues, nombresHoteles.length ? nombresHoteles : allAccommodations),
     [venues, nombresHoteles, allAccommodations],
   );
+  /**
+   * Hoteles que son destino real de algún traslado, para el filtro del
+   * Coordinador de Comité. Se arma desde los viajes y no desde el catálogo
+   * completo: ofrecer los hoteles a los que no va nadie llenaría la hoja de
+   * opciones que nunca devuelven resultados. Sin nombre resoluble se omite,
+   * porque un filtro que no dice a dónde apunta no sirve.
+   */
+  const hotelesDestino = useMemo(() => {
+    const vistos = new Map<string, string>();
+    for (const tr of delegationTrips) {
+      const id = tr.destinationHotelId;
+      if (!id || vistos.has(id)) continue;
+      const nombre = nombreRecinto.get(id);
+      if (nombre) vistos.set(id, nombre);
+    }
+    return [...vistos.entries()].map(([id, name]) => ({ id, name }));
+  }, [delegationTrips, nombreRecinto]);
   const puntoViaje = (
     t: { originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; origin?: string | null; destination?: string | null },
     extremo: "origin" | "destination",
@@ -636,7 +657,8 @@ export default function UserPortalPage() {
    * Coordinador de Comité: mira el evento completo, no una región. Sus cuatro
    * módulos son actividades, calendario, sedes y hoteles, y en todos filtra
    * por delegación y disciplina, que es como trabaja: "muéstrame lo de Ñuble
-   * en vóleibol".
+   * en vóleibol". En actividades tiene además el hotel de destino, para leer
+   * la otra pregunta que se hace: hacia qué hotel van los conductores.
    */
   const isComite = normalizeClientType(athlete?.userType) === "COORDINADOR_COMITE";
 
@@ -2012,52 +2034,17 @@ export default function UserPortalPage() {
         {/* ─── Actividades tab (chief only) ─── */}
         {activeTab === "actividades" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-            {/* ═══ Contacto con el coordinador general (Jefe de Delegación) ═══
+            {/* ═══ Contacto con el Coordinador General (Jefe de Delegación) ═══
                 Ocupa el lugar del banner de "bus en ruta": el estado de los
                 buses ya lo cuenta "Ahora mismo" aquí abajo, con su propio
-                mapa, así que arriba va lo que de verdad necesita a mano —una
-                vía inmediata con quien resuelve—. Abre la sala de asistencia
-                directamente en la categoría correcta, sin pasar por el menú. */}
+                mapa, así que arriba va lo que de verdad necesita a mano. El
+                contacto es por WhatsApp, igual que en Sedes. */}
             {isChief && (
-              <button
-                type="button"
-                onClick={() => { setAssistCategoria("COORDINATOR_CONTACT"); setAssistOpen(true); }}
-                style={{ position:"relative",overflow:"hidden",width:"100%",textAlign:"left",cursor:"pointer",
-                  display:"flex",flexDirection:"column",gap:12,
-                  borderRadius:16,padding:"15px 16px",
-                  background:`linear-gradient(135deg,${BRAND.tealInk} 0%,${BRAND.tealDark} 52%,${BRAND.tealInk} 100%)`,
-                  border:"1px solid rgba(52,243,198,0.45)",
-                  boxShadow:"0 6px 24px rgba(10,122,107,0.35)" }}>
-                {/* Resplandor de esquina */}
-                <span style={{ position:"absolute",top:0,right:0,width:180,height:180,borderRadius:"50%",background:"radial-gradient(ellipse,rgba(52,243,198,0.22) 0%,transparent 65%)",transform:"translate(55px,-70px)",pointerEvents:"none" }} />
-                {/* Hairline inferior con barrido, como el resto de banners */}
-                <span style={{ position:"absolute",bottom:0,left:0,right:0,height:2,pointerEvents:"none",
-                  background:`linear-gradient(90deg,transparent,${BRAND.tealLight} 40%,${SURFACE.card} 50%,${BRAND.tealLight} 60%,transparent)`,
-                  backgroundSize:"200% 100%",animation:"shimmerLine 3.5s linear infinite" }} />
-                <span style={{ display:"flex",alignItems:"center",gap:13,position:"relative" }}>
-                  <span style={{ position:"relative",flexShrink:0,width:44,height:44,borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",
-                    background:"rgba(255,255,255,0.16)",border:"1px solid rgba(255,255,255,0.25)" }}>
-                    <HeadphonesIcon size={21} color={SURFACE.card} strokeWidth={1.9} />
-                    <span style={{ position:"absolute",top:4,right:4,width:8,height:8,borderRadius:"50%",background:BRAND.tealLight,boxShadow:`0 0 8px ${BRAND.tealLight}`,animation:"pulseDot 1.8s ease-in-out infinite" }} />
-                  </span>
-                  <span style={{ flex:1,minWidth:0 }}>
-                    <span style={{ display:"block",fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:"rgba(255,255,255,0.85)" }}>
-                      Soporte directo
-                    </span>
-                    <span style={{ display:"block",fontSize:15,fontWeight:800,color:SURFACE.card,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                      Coordinador general
-                    </span>
-                    <span style={{ display:"block",fontSize:11.5,color:"rgba(255,255,255,0.78)",margin:"3px 0 0" }}>
-                      Cualquier tema de tu delegación, directo a quien resuelve
-                    </span>
-                  </span>
-                </span>
-                <span style={{ position:"relative",display:"block",textAlign:"center",padding:"11px 16px",borderRadius:11,
-                  fontSize:12.5,fontWeight:800,letterSpacing:"0.02em",background:SURFACE.card,color:BRAND.tealInk,
-                  boxShadow:"0 3px 12px rgba(0,0,0,0.18)" }}>
-                  Generar contacto
-                </span>
-              </button>
+              <BannerCoordinador
+                delegacion={delegationName}
+                nombreJefe={athlete.fullName}
+                onSinWhatsapp={() => { setAssistCategoria("COORDINATOR_CONTACT"); setAssistOpen(true); }}
+              />
             )}
             {/* Coordinador de Comité: los filtros mandan sobre el módulo. */}
             {isComite && (
@@ -2068,6 +2055,9 @@ export default function UserPortalPage() {
                 disciplinaId={comiteDisciplina}
                 onDelegacion={setComiteDelegacion}
                 onDisciplina={setComiteDisciplina}
+                hoteles={hotelesDestino}
+                hotelId={comiteHotel}
+                onHotel={setComiteHotel}
               />
             )}
             {isComite && (
@@ -2076,6 +2066,7 @@ export default function UserPortalPage() {
                 titulo="Traslados del evento"
                 delegacionFiltro={comiteDelegacion}
                 disciplinaExterna={comiteDisciplina}
+                hotelFiltro={comiteHotel}
                 nombreDelegacion={(id) => {
                   const d = delegacionesEvento.find((x) => x.id === id);
                   return d ? nombreRegionCorto(d) : null;

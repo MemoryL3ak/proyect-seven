@@ -80,6 +80,7 @@ export default function MissionTrips({
   todas = false,
   delegacionFiltro = "",
   disciplinaExterna = "",
+  hotelFiltro = "",
   titulo,
   nombreDelegacion,
 }: {
@@ -101,6 +102,11 @@ export default function MissionTrips({
   todas?: boolean;
   delegacionFiltro?: string;
   disciplinaExterna?: string;
+  /**
+   * Hotel de destino: deja sólo los traslados que van hacia ese hotel, que es
+   * la pregunta del coordinador —hacia dónde se dirigen los conductores—.
+   */
+  hotelFiltro?: string;
   titulo?: string;
   /** Nombre de una región para mostrarlo en cada tarjeta cuando se ven todas. */
   nombreDelegacion?: (delegationId?: string | null) => string | null;
@@ -142,8 +148,12 @@ export default function MissionTrips({
             (tr.requesterAthleteId && miembros.has(tr.requesterAthleteId)) ||
             (tr.athleteIds ?? []).some((id) => miembros.has(id)),
         );
-    return delegacionFiltro ? base.filter((tr) => tr.delegationId === delegacionFiltro) : base;
-  }, [trips, delegationId, miembros, todas, delegacionFiltro]);
+    const porRegion = delegacionFiltro ? base.filter((tr) => tr.delegationId === delegacionFiltro) : base;
+    // El hotel acota antes que nada, igual que la región: así los chips de
+    // disciplina de abajo cuentan sólo lo que va a ese hotel y no ofrecen
+    // deportes que quedaron fuera del filtro.
+    return hotelFiltro ? porRegion.filter((tr) => tr.destinationHotelId === hotelFiltro) : porRegion;
+  }, [trips, delegationId, miembros, todas, delegacionFiltro, hotelFiltro]);
 
   const hayEnCurso = useMemo(
     () => propios.some((tr) => EN_CURSO.has(norm(tr.status))),
