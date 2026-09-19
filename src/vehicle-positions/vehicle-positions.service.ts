@@ -48,6 +48,26 @@ const POSITION_SELECT = `
 
 @Injectable()
 export class VehiclePositionsService {
+  /**
+   * Reglas de ingesta. El shell envía una posición por segundo, incluso
+   * detenido, y si el mismo chofer quedó abierto en dos teléfonos llegan fixes
+   * alternados a decenas de kilómetros: el recorrido guardado salía como una
+   * línea recta cruzando la ciudad.
+   */
+  /** Velocidad por sobre la cual el fix no puede ser real (km/h). */
+  private static readonly MAX_SPEED_KMH = 200;
+  /** Ventana en la que la velocidad implícita tiene sentido (s). */
+  private static readonly SPEED_WINDOW_S = 120;
+  /** Intervalo mínimo entre fijos guardados de un mismo chofer en marcha (s). */
+  private static readonly MIN_INTERVAL_S = 8;
+  /** Desplazamiento mínimo para considerar que se movió (m). */
+  private static readonly MIN_MOVE_M = 15;
+  /** Detenido: se guarda un fijo cada tanto para no parecer desconectado (s). */
+  private static readonly IDLE_KEEPALIVE_S = 60;
+
+  /** Último fijo aceptado por chofer (en memoria; se reconstruye solo). */
+  private readonly lastFix = new Map<string, { lat: number; lng: number; at: number }>();
+
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
     @InjectRepository(VehiclePosition)
@@ -139,8 +159,61 @@ export class VehiclePositionsService {
     }
   }
 
+  /** Distancia en metros entre dos coordenadas (fórmula del haversine). */
+  private static metersBetween(aLat: number, aLng: number, bLat: number, bLng: number): number {
+    const R = 6371000;
+    const rad = (deg: number) => (deg * Math.PI) / 180;
+    const dLat = rad(bLat - aLat);
+    const dLng = rad(bLng - aLng);
+    const h =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng / 2) ** 2;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+  }
+
+  /**
+   * ¿Se guarda este fijo? Devuelve el motivo del descarte o null si es válido.
+   * Lo que se descarta no es un error del cliente: el shell sigue enviando.
+   */
+  private rejectReason(driverId: string, lat: number, lng: number, at: number): string | null {
+    const prev = this.lastFix.get(driverId);
+    if (!prev) return null;
+    const seconds = (at - prev.at) / 1000;
+    if (seconds < 0) return null; // fijo antiguo que llega tarde: se guarda igual
+    const meters = VehiclePositionsService.metersBetween(prev.lat, prev.lng, lat, lng);
+
+    if (
+      seconds > 0 &&
+      seconds <= VehiclePositionsService.SPEED_WINDOW_S &&
+      (meters / seconds) * 3.6 > VehiclePositionsService.MAX_SPEED_KMH
+    ) {
+      return `salto imposible: ${Math.round(meters)} m en ${seconds.toFixed(1)} s`;
+    }
+    if (meters < VehiclePositionsService.MIN_MOVE_M) {
+      return seconds < VehiclePositionsService.IDLE_KEEPALIVE_S ? 'detenido' : null;
+    }
+    if (seconds < VehiclePositionsService.MIN_INTERVAL_S) return 'demasiado seguido';
+    return null;
+  }
+
   async create(createVehiclePositionDto: CreateVehiclePositionDto) {
     const row = this.toRow(createVehiclePositionDto);
+
+    // Recorridos reales: se descarta lo que no puede haber ocurrido.
+    const driverId = createVehiclePositionDto.driverId;
+    const lat = this.coordFromDto(createVehiclePositionDto, 1);
+    const lng = this.coordFromDto(createVehiclePositionDto, 0);
+    const at =
+      typeof row.timestamp === 'string'
+        ? new Date(row.timestamp).getTime()
+        : Date.now();
+    if (driverId && lat !== null && lng !== null && Number.isFinite(at)) {
+      const reason = this.rejectReason(driverId, lat, lng, at);
+      if (reason) {
+        return { skipped: true as const, reason };
+      }
+      this.lastFix.set(driverId, { lat, lng, at });
+    }
     // Tag the fix with the driver's active trip unless the caller already did.
     // Done here (server-side) so the mobile app doesn't need to track trips.
     if (row.trip_id === undefined && createVehiclePositionDto.driverId) {
