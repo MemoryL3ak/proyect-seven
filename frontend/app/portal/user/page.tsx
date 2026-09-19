@@ -136,7 +136,7 @@ type HotelAssignment = {
 type HotelRoom = { id: string; roomNumber: string; roomType: string };
 type HotelBed = { id: string; bedType: string };
 type Vehicle = { id: string; plate: string; type: string };
-type Trip = { id: string; driverId: string; delegationId?: string | null; disciplineId?: string | null; originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null };
+type Trip = { id: string; driverId: string; delegationId?: string | null; disciplineId?: string | null; originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null; vehiclePlate?: string | null };
 type Driver = { id: string; fullName: string; userId?: string | null };
 type Event = { id: string; name: string };
 // name: las delegaciones de los Juegos Escolares son regiones con nombre visible.
@@ -242,6 +242,22 @@ function couponDiscountDisplay(c: Coupon) {
       return c.discountValue?.toString() || "Beneficio";
   }
 }
+
+/**
+ * Hora y fecha del traslado, en el mismo formato que la lista de viajes de la
+ * delegación. La tarjeta mostraba "18-09-2026, 11:00 p.m." mientras la lista
+ * de abajo, para el mismo viaje, decía "23:00 · 18-SEPT": dos maneras de
+ * escribir la misma hora en una sola pantalla.
+ */
+const horaViaje = (iso?: string | null) =>
+  iso && !Number.isNaN(new Date(iso).getTime())
+    ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false })
+    : "--:--";
+
+const fechaViaje = (iso?: string | null) =>
+  iso && !Number.isNaN(new Date(iso).getTime())
+    ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }).replace(".", "")
+    : "—";
 
 const fmtCouponDate = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "-";
@@ -1925,40 +1941,64 @@ export default function UserPortalPage() {
             )}
             {(actSubTab === "curso" || isTA) && (
               trip && ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") ? (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"14px",cursor:"pointer" }} onClick={() => setShowTripModal(true)}>
-                  <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:10 }}>
-                    {trip.status && <span style={{ padding:"3px 10px",borderRadius:20,fontSize:11,fontWeight:700,
-                      background:tripStatusMeta(trip.status).bg,
-                      color:tripStatusMeta(trip.status).color }}>
-                      {tripStatusMeta(trip.status).label}
-                    </span>}
+                /* Este traslado es el del propio usuario. Para un Jefe de
+                   Misión aparece además en la lista de su delegación, justo
+                   debajo: con dos diseños distintos parecían dos cosas
+                   distintas. Ahora usa el mismo lenguaje que esa lista (hora
+                   grande a la izquierda, estado en chip, chofer con patente) y
+                   lleva un encabezado que dice de quién es el traslado. */
+                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden",cursor:"pointer" }} onClick={() => setShowTripModal(true)}>
+                  <div style={{ padding:"10px 14px",borderBottom:`1px solid ${SURFACE.borderMuted}`,display:"flex",alignItems:"center",gap:8 }}>
+                    <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:BRAND.tealDark }}>{t("Tu traslado")}</span>
+                    <span style={{ marginLeft:"auto",display:"flex",color:SURFACE.textFaint }}><ChevronRightIcon size={15} strokeWidth={2.2} /></span>
                   </div>
-                  {/* Origen/destino en filas compactas con recorte: las
-                      direcciones largas ya no llenan la tarjeta de texto. */}
-                  <div style={{ display:"flex",flexDirection:"column",gap:3,margin:"0 0 6px" }}>
-                    {(["origin","destination"] as const).map((extremo) => {
-                      const punto = puntoViaje(trip, extremo);
-                      return (
-                        <div key={extremo} style={{ display:"flex",alignItems:"baseline",gap:6,minWidth:0 }}>
-                          <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint,flexShrink:0,minWidth:48 }}>{extremo === "origin" ? t("ORIGEN") : t("DESTINO")}</span>
-                          <span style={{ minWidth:0 }}>
-                            <span style={{ display:"block",fontSize:13,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                              {punto.nombre || punto.direccion || "–"}
-                            </span>
-                            {punto.nombre && punto.direccion && (
-                              <span style={{ display:"block",fontSize:11,color:SURFACE.textMuted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                                {punto.direccion}
+                  <div style={{ padding:"12px 14px",display:"flex",gap:12 }}>
+                    {/* La hora es lo primero que se busca; estaba en un
+                        renglón gris al final de la tarjeta. */}
+                    <div style={{ width:52,flexShrink:0,textAlign:"center" }}>
+                      <p style={{ fontSize:15,fontWeight:800,color:SURFACE.text,margin:0,fontVariantNumeric:"tabular-nums",lineHeight:1.1 }}>{horaViaje(trip.scheduledAt)}</p>
+                      <p style={{ fontSize:10.5,color:SURFACE.textFaint,margin:"2px 0 0",textTransform:"uppercase" }}>{fechaViaje(trip.scheduledAt)}</p>
+                    </div>
+                    <div style={{ flex:1,minWidth:0 }}>
+                      {trip.status && (
+                        <span style={{ display:"inline-block",padding:"2px 8px",borderRadius:20,fontSize:10.5,fontWeight:700,marginBottom:6,
+                          background:tripStatusMeta(trip.status).bg,
+                          color:tripStatusMeta(trip.status).color }}>
+                          {t(tripStatusMeta(trip.status).label)}
+                        </span>
+                      )}
+                      {/* Origen y destino con su dirección, recortados: las
+                          direcciones largas ya no llenan la tarjeta. */}
+                      <div style={{ display:"flex",flexDirection:"column",gap:4 }}>
+                        {(["origin","destination"] as const).map((extremo) => {
+                          const punto = puntoViaje(trip, extremo);
+                          return (
+                            <div key={extremo} style={{ minWidth:0 }}>
+                              <span style={{ display:"block",fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:SURFACE.textFaint }}>
+                                {extremo === "origin" ? t("ORIGEN") : t("DESTINO")}
                               </span>
-                            )}
-                          </span>
-                        </div>
-                      );
-                    })}
+                              <span style={{ display:"block",fontSize:13,fontWeight:700,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                {punto.nombre || punto.direccion || "–"}
+                              </span>
+                              {punto.nombre && punto.direccion && (
+                                <span style={{ display:"block",fontSize:11,color:SURFACE.textMuted,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                  {punto.direccion}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {(driver?.fullName || trip.vehiclePlate || vehicle?.plate) && (
+                        <span style={{ display:"inline-flex",alignItems:"center",gap:4,fontSize:11,color:SURFACE.textMuted,marginTop:6 }}>
+                          <CarIcon size={11} /> {driver?.fullName ?? t("Sin chofer")}{trip.vehiclePlate ?? vehicle?.plate ? ` · ${trip.vehiclePlate ?? vehicle?.plate}` : ""}
+                        </span>
+                      )}
+                      {driverEta && trip.status === "EN_ROUTE" && (
+                        <p style={{ fontSize:12,fontWeight:700,color:"#0ea5c8",margin:"6px 0 0" }}>~{driverEta.duration} · {driverEta.distance}</p>
+                      )}
+                    </div>
                   </div>
-                  {trip.scheduledAt && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"0 0 6px" }}>Programado: {fmt(trip.scheduledAt)}</p>}
-                  {driver?.fullName && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>Conductor: {driver.fullName}</p>}
-                  {driverEta && trip.status === "EN_ROUTE" && <p style={{ fontSize:12,fontWeight:700,color:"#0ea5c8",margin:"4px 0 0" }}>~{driverEta.duration} · {driverEta.distance}</p>}
-                  <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"6px 0 0" }}>Toca para ver el detalle completo</p>
                 </div>
               ) : <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>Sin viajes activos</p>
             )}

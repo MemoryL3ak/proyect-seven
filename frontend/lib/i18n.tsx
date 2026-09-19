@@ -38,6 +38,8 @@ const translations: Record<Locale, Record<string, string>> = {
     "Tu presentación": "Your call time",
     // Selector de idioma en Cuenta.
     "IDIOMA": "LANGUAGE",
+    // Tarjeta del traslado propio en Actividades.
+    "Tu traslado": "Your transfer",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Viajes de mi delegación": "My delegation's trips",
     "traslado": "transfer",
@@ -2625,6 +2627,8 @@ const translations: Record<Locale, Record<string, string>> = {
     // Viajes de la delegación (portal del Jefe de Misión).
     // Selector de idioma en Cuenta.
     "IDIOMA": "IDIOMA",
+    // Tarjeta del traslado propio en Actividades.
+    "Tu traslado": "Sua viagem",
     "Viajes de mi delegación": "Viagens da minha delegação",
     "traslado": "traslado",
     "traslados": "traslados",
