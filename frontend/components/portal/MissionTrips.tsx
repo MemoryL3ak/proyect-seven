@@ -77,6 +77,11 @@ export default function MissionTrips({
   accommodations,
   estado,
   onEstado,
+  todas = false,
+  delegacionFiltro = "",
+  disciplinaExterna = "",
+  titulo,
+  nombreDelegacion,
 }: {
   trips: MissionTrip[];
   delegationId?: string | null;
@@ -89,6 +94,16 @@ export default function MissionTrips({
   /** Filtro de estado mandado desde fuera (el banner "En curso ahora"). */
   estado?: string;
   onEstado?: (valor: string) => void;
+  /**
+   * Coordinador de Comité: la lista deja de acotarse a una delegación y pasa
+   * a ser la del evento entero, filtrable desde fuera por región y deporte.
+   */
+  todas?: boolean;
+  delegacionFiltro?: string;
+  disciplinaExterna?: string;
+  titulo?: string;
+  /** Nombre de una región para mostrarlo en cada tarjeta cuando se ven todas. */
+  nombreDelegacion?: (delegationId?: string | null) => string | null;
 }) {
   const { t } = useI18n();
   const [disciplinaFiltro, setDisciplinaFiltro] = useState("");
@@ -116,16 +131,19 @@ export default function MissionTrips({
     (tr.disciplineId ? labels.get(tr.disciplineId) : null) ?? tr.discipline ?? null;
 
   const miembros = useMemo(() => new Set(memberIds), [memberIds]);
-  const propios = useMemo(
-    () =>
-      trips.filter(
-        (tr) =>
-          (tr.delegationId && tr.delegationId === delegationId) ||
-          (tr.requesterAthleteId && miembros.has(tr.requesterAthleteId)) ||
-          (tr.athleteIds ?? []).some((id) => miembros.has(id)),
-      ),
-    [trips, delegationId, miembros],
-  );
+  const propios = useMemo(() => {
+    // Con `todas` la lista es la del evento; el recorte lo ponen los filtros
+    // de región y deporte que llegan de fuera.
+    const base = todas
+      ? trips
+      : trips.filter(
+          (tr) =>
+            (tr.delegationId && tr.delegationId === delegationId) ||
+            (tr.requesterAthleteId && miembros.has(tr.requesterAthleteId)) ||
+            (tr.athleteIds ?? []).some((id) => miembros.has(id)),
+        );
+    return delegacionFiltro ? base.filter((tr) => tr.delegationId === delegacionFiltro) : base;
+  }, [trips, delegationId, miembros, todas, delegacionFiltro]);
 
   const hayEnCurso = useMemo(
     () => propios.some((tr) => EN_CURSO.has(norm(tr.status))),
@@ -147,6 +165,7 @@ export default function MissionTrips({
 
   const visibles = useMemo(() => {
     const list = propios.filter((tr) => {
+      if (disciplinaExterna && tr.disciplineId !== disciplinaExterna) return false;
       if (disciplinaFiltro) {
         const clave = tr.disciplineId ?? disciplinaDe(tr) ?? "";
         if (clave !== disciplinaFiltro) return false;
@@ -164,7 +183,7 @@ export default function MissionTrips({
       const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Infinity;
       return ta - tb;
     });
-  }, [propios, disciplinaFiltro, estadoFiltro, labels]);
+  }, [propios, disciplinaFiltro, disciplinaExterna, estadoFiltro, labels]);
 
   // Los conductores se piden una sola vez, y sólo si hay viajes con chofer.
   useEffect(() => {
@@ -182,7 +201,7 @@ export default function MissionTrips({
     <div style={{ background: SURFACE.card, borderRadius: 14, border: `1px solid ${SURFACE.border}`, overflow: "hidden" }}>
       <div style={{ padding: "12px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
         <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", color: BRAND.teal, margin: 0 }}>
-          {t("Viajes de mi delegación")}
+          {titulo ?? t("Viajes de mi delegación")}
         </p>
         <p style={{ fontSize: 11.5, color: SURFACE.textFaint, margin: "3px 0 0" }}>
           {delegationName ? `${delegationName} · ` : ""}
@@ -203,8 +222,10 @@ export default function MissionTrips({
             { value: "TODOS", label: t("Todos") },
           ]}
         />
-        {/* Disciplina: fichas desplazables. */}
-        {opcionesDisciplina.length > 0 && (
+        {/* Disciplina: fichas desplazables. Con `todas` manda el panel de
+            filtros del Coordinador de Comité, y dos controles para lo mismo
+            sólo confunden. */}
+        {opcionesDisciplina.length > 0 && !todas && (
           <ChipFilter
             style={{ marginTop: 8 }}
             value={disciplinaFiltro}
@@ -218,7 +239,11 @@ export default function MissionTrips({
       <div style={{ padding: "12px 14px", display: "flex", flexDirection: "column", gap: 8 }}>
         {visibles.length === 0 && (
           <p style={{ fontSize: 13, color: SURFACE.textFaint, margin: 0, textAlign: "center", padding: 10 }}>
-            {propios.length === 0
+            {todas
+              ? trips.length === 0
+                ? t("El evento aún no tiene traslados cargados.")
+                : t("Ningún traslado coincide con el filtro.")
+              : propios.length === 0
               ? t("Tu delegación aún no tiene traslados asignados.")
               : t("Ningún traslado coincide con el filtro.")}
           </p>
@@ -267,6 +292,13 @@ export default function MissionTrips({
                 <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: 0, ...(abiertaEsta ? {} : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }) }}>
                   {puntoOrigen(tr)} → {puntoDestino(tr)}
                 </p>
+                {/* Viendo el evento entero, sin la región no se sabe de quién
+                    es cada traslado. */}
+                {todas && nombreDelegacion?.(tr.delegationId) && (
+                  <p style={{ fontSize: 11, fontWeight: 700, color: BRAND.tealInk, margin: "2px 0 0" }}>
+                    {nombreDelegacion(tr.delegationId)}
+                  </p>
+                )}
 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
                   {(nombreChofer || tr.vehiclePlate) && (

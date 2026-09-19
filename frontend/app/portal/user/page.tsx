@@ -73,6 +73,8 @@ import MissionIncidents from "@/components/portal/MissionIncidents";
 import MissionTrips from "@/components/portal/MissionTrips";
 import MissionLiveTrips from "@/components/portal/MissionLiveTrips";
 import MissionLiveMap from "@/components/portal/MissionLiveMap";
+import FiltrosComite, { nombreRegionCorto } from "@/components/portal/FiltrosComite";
+import HotelesComite from "@/components/portal/HotelesComite";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
@@ -184,7 +186,7 @@ type Premiacion = {
   awarders?: PremAwarder[] | null;
 };
 // flota / incidencias: sólo para el Jefe de Misión (participante encargado de su delegación).
-type PortalTab = "itinerario" | "flota" | "incidencias" | "actividades" | "calendario" | "premiaciones" | "sedes" | "alimentacion" | "delegacion" | "cupones" | "documentos" | "cuenta";
+type PortalTab = "itinerario" | "flota" | "incidencias" | "actividades" | "calendario" | "premiaciones" | "sedes" | "hoteles" | "alimentacion" | "delegacion" | "cupones" | "documentos" | "cuenta";
 
 type Coupon = {
   id: string;
@@ -422,6 +424,11 @@ export default function UserPortalPage() {
   // a los de la delegación, así que el hotel al que va un bus de otra región
   // aparecía como una dirección suelta.
   const [nombresHoteles, setNombresHoteles] = useState<{ id: string; name?: string | null }[]>([]);
+  // Coordinador de Comité: la lista de regiones y los dos filtros que manda
+  // sobre todos sus módulos.
+  const [delegacionesEvento, setDelegacionesEvento] = useState<{ id: string; eventId?: string | null; countryCode?: string | null; name?: string | null }[]>([]);
+  const [comiteDelegacion, setComiteDelegacion] = useState("");
+  const [comiteDisciplina, setComiteDisciplina] = useState("");
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
   const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
   // El home del portal es siempre Itinerario; sólo un refresh (F5) restaura
@@ -429,7 +436,7 @@ export default function UserPortalPage() {
   const [activeTab, setActiveTab] = useState<PortalTab>(() =>
     restoreOnReload<PortalTab>(
       "portal_user_tab",
-      ["itinerario", "flota", "incidencias", "actividades", "calendario", "premiaciones", "sedes", "alimentacion", "delegacion", "cupones", "documentos", "cuenta"],
+      ["itinerario", "flota", "incidencias", "actividades", "calendario", "premiaciones", "sedes", "hoteles", "alimentacion", "delegacion", "cupones", "documentos", "cuenta"],
       "itinerario",
     ),
   );
@@ -622,6 +629,20 @@ export default function UserPortalPage() {
   const isChief =
     athlete?.isDelegationLead === true ||
     normalizeClientType(athlete?.userType) === "JEFE_MISION";
+  /**
+   * Coordinador de Comité: mira el evento completo, no una región. Sus cuatro
+   * módulos son actividades, calendario, sedes y hoteles, y en todos filtra
+   * por delegación y disciplina, que es como trabaja: "muéstrame lo de Ñuble
+   * en vóleibol".
+   */
+  const isComite = normalizeClientType(athlete?.userType) === "COORDINADOR_COMITE";
+
+  // El deporte que el Coordinador de Comité elige arriba manda también en el
+  // calendario, que tiene su propio filtro de disciplina.
+  useEffect(() => {
+    if (!isComite) return;
+    setCalDiscFilter(comiteDisciplina);
+  }, [isComite, comiteDisciplina]);
 
   /** Buses de la delegación que van en ruta ahora, del que sale antes al último. */
   const viajesEnRuta = useMemo(
@@ -646,12 +667,17 @@ export default function UserPortalPage() {
       { key:"calendario", label:"Calendario", icon:<CalendarIcon size={16} strokeWidth={1.8} /> },
       { key:"premiaciones", label:"Premiaciones", icon:<TrophyIcon size={16} strokeWidth={1.8} /> },
       { key:"sedes", label:"Sedes", icon:<PinIcon size={16} strokeWidth={1.8} /> },
+      { key:"hoteles", label:"Hoteles", icon:<BedIcon size={16} strokeWidth={1.8} /> },
       { key:"alimentacion", label:"Alimentación", icon:<CoffeeIcon size={16} strokeWidth={1.8} /> },
       { key:"delegacion", label:"Delegación", icon:<UsersIcon size={16} strokeWidth={1.8} /> },
       { key:"cupones", label:"Beneficios", icon:<TicketIcon size={16} strokeWidth={1.8} /> },
       { key:"documentos", label:"Documentos", icon:<FileTextIcon size={16} strokeWidth={1.8} /> },
       { key:"cuenta", label:"Cuenta", icon:<UserIcon size={16} strokeWidth={1.8} /> },
     ];
+    if (isComite) {
+      const ORDEN_COMITE: PortalTab[] = ["actividades", "calendario", "sedes", "hoteles", "cuenta"];
+      return ORDEN_COMITE.map(key => all.find(t => t.key === key)).filter((t): t is typeof all[number] => Boolean(t));
+    }
     if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
     if (!isChief) return all.filter(t => ["actividades","calendario","premiaciones","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
     // Jefe de Misión: sólo su trabajo, y en el orden en que lo usa —
@@ -660,13 +686,15 @@ export default function UserPortalPage() {
     // cargo. Sin itinerario personal, premiaciones ni beneficios.
     const ORDEN_JEFE: PortalTab[] = ["actividades","flota","incidencias","calendario","sedes","alimentacion","documentos","cuenta"];
     return ORDEN_JEFE.map(key => all.find(t => t.key === key)).filter((t): t is typeof all[number] => Boolean(t));
-  }, [isChief, isTA]);
+  }, [isChief, isTA, isComite]);
 
   // La barra inferior muestra hasta 4 pestañas fijas + "Más"; el resto se agrupa
   // en una hoja inferior. Orden de prioridad para elegir cuáles quedan fijas.
   const { primaryTabs, overflowTabs } = useMemo(() => {
     const MAX_PRIMARY = 4;
-    const PRIORITY = isChief
+    const PRIORITY = isComite
+      ? ["actividades", "calendario", "sedes", "hoteles", "cuenta"]
+      : isChief
       ? ["actividades", "flota", "incidencias", "calendario", "sedes", "alimentacion", "documentos", "cuenta"]
       : ["itinerario", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "documentos", "premiaciones", "cupones"];
     if (portalTabs.length <= MAX_PRIMARY + 1) {
@@ -678,7 +706,7 @@ export default function UserPortalPage() {
       primaryTabs: portalTabs.filter((t) => primaryKeys.has(t.key)),
       overflowTabs: portalTabs.filter((t) => !primaryKeys.has(t.key)),
     };
-  }, [portalTabs, isChief]);
+  }, [portalTabs, isChief, isComite]);
 
   /**
    * Un solo arranque. Habia dos efectos que cargaban al participante por su
@@ -958,6 +986,16 @@ export default function UserPortalPage() {
       // si el usuario cambió de delegación desde la última vez, se descarta.
       const sirveLoPedido = !!tanda && tanda.delegacionPedida === (data.delegationId ?? null);
 
+      // El Coordinador de Comité necesita la lista de regiones para filtrar.
+      const esComiteAhora = normalizeClientType(data.userType) === "COORDINADOR_COMITE";
+      if (esComiteAhora) {
+        void catalogoConCache<{ id: string; eventId?: string | null; countryCode?: string | null; name?: string | null }[]>(
+          "delegations",
+          () => apiFetch<{ id: string; eventId?: string | null; countryCode?: string | null; name?: string | null }[]>("/delegations"),
+          (lista) => setDelegacionesEvento((lista || []).filter((d) => !data.eventId || d.eventId === data.eventId)),
+        );
+      }
+
       // Lo que sí es propio del usuario se espera: es lo que se ve primero.
       const [prems, miembros, viajesDelegacion] = await Promise.all([
         // Premiaciones: el Jefe de Misión no tiene esa pestaña.
@@ -968,8 +1006,11 @@ export default function UserPortalPage() {
               ? tanda.miembros
               : apiFetch<Athlete[]>(`/athletes?delegationId=${encodeURIComponent(data.delegationId)}`).catch(() => [] as Athlete[]))
           : Promise.resolve([] as Athlete[]),
-        // Viajes: el backend ya los acota a su delegación.
-        esJefe && data.delegationId
+        // Viajes: el backend los acota a la delegación del jefe, y al
+        // Coordinador de Comité le entrega los del evento entero.
+        esComiteAhora
+          ? apiFetch<Trip[]>("/trips").catch(() => [] as Trip[])
+          : esJefe && data.delegationId
           ? (sirveLoPedido && tanda ? tanda.viajesDelegacion : apiFetch<Trip[]>("/trips").catch(() => [] as Trip[]))
           : Promise.resolve([] as Trip[]),
       ]);
@@ -2003,6 +2044,36 @@ export default function UserPortalPage() {
         {/* ─── Actividades tab (chief only) ─── */}
         {activeTab === "actividades" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            {/* Coordinador de Comité: los filtros mandan sobre el módulo. */}
+            {isComite && (
+              <FiltrosComite
+                delegaciones={delegacionesEvento}
+                disciplinas={disciplineParents}
+                delegacionId={comiteDelegacion}
+                disciplinaId={comiteDisciplina}
+                onDelegacion={setComiteDelegacion}
+                onDisciplina={setComiteDisciplina}
+              />
+            )}
+            {isComite && (
+              <MissionTrips
+                todas
+                titulo="Traslados del evento"
+                delegacionFiltro={comiteDelegacion}
+                disciplinaExterna={comiteDisciplina}
+                nombreDelegacion={(id) => {
+                  const d = delegacionesEvento.find((x) => x.id === id);
+                  return d ? nombreRegionCorto(d) : null;
+                }}
+                trips={delegationTrips}
+                delegationId={null}
+                delegationName=""
+                memberIds={[]}
+                disciplines={disciplineParents}
+                venues={venues}
+                accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+              />
+            )}
             {/* El jefe de misión ve arriba lo que está andando en su
                 delegación; el conmutador y la tarjeta de abajo son para quien
                 viaja en un traslado propio. */}
@@ -2026,7 +2097,7 @@ export default function UserPortalPage() {
               />
             )}
             {/* TA: sólo viajes programados/en curso, sin historial */}
-            {!isTA && !isChief && (
+            {!isTA && !isChief && !isComite && (
               <div style={{ display:"flex",gap:6 }}>
                 {(["curso","historial"] as const).map(sub => (
                   <button key={sub} type="button" onClick={() => setActSubTab(sub)}
@@ -2039,7 +2110,7 @@ export default function UserPortalPage() {
                 ))}
               </div>
             )}
-            {!isChief && (actSubTab === "curso" || isTA) && (
+            {!isChief && !isComite && (actSubTab === "curso" || isTA) && (
               trip && ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") ? (
                 /* Este traslado es el del propio usuario. Para un Jefe de
                    Misión aparece además en la lista de su delegación, justo
@@ -2102,7 +2173,7 @@ export default function UserPortalPage() {
                 </div>
               ) : <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>Sin viajes activos</p>
             )}
-            {!isTA && !isChief && actSubTab === "historial" && (() => {
+            {!isTA && !isChief && !isComite && actSubTab === "historial" && (() => {
               const completed = trip && ["COMPLETED","DROPPED_OFF"].includes(trip.status ?? "") ? [trip] : [];
               return completed.length > 0 ? (
                 <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
@@ -2161,6 +2232,19 @@ export default function UserPortalPage() {
             filas se generan desde las pruebas: external_id "prueba:<id>"), y
             perdió las cinco vistas. El propio calendario ya acota al jefe a
             las disciplinas en las que compite su delegación. */}
+        {activeTab === "calendario" && isComite && (
+          <div style={{ marginBottom: 10 }}>
+            <FiltrosComite
+              delegaciones={delegacionesEvento}
+              disciplinas={disciplineParents}
+              delegacionId={comiteDelegacion}
+              disciplinaId={comiteDisciplina}
+              onDelegacion={setComiteDelegacion}
+              onDisciplina={setComiteDisciplina}
+              resumen="El deporte elegido acota el calendario."
+            />
+          </div>
+        )}
         {activeTab === "calendario" && (() => {
           const y = calMonthCursor.getFullYear(), m = calMonthCursor.getMonth();
           const cells = getMonthGrid(calMonthCursor);
@@ -3138,6 +3222,19 @@ export default function UserPortalPage() {
         })()}
 
         {/* ─── Sedes tab ─── */}
+        {activeTab === "sedes" && isComite && (
+          <div style={{ marginBottom: 10 }}>
+            <FiltrosComite
+              delegaciones={delegacionesEvento}
+              disciplinas={disciplineParents}
+              delegacionId={comiteDelegacion}
+              disciplinaId={comiteDisciplina}
+              onDelegacion={setComiteDelegacion}
+              onDisciplina={setComiteDisciplina}
+              resumen="Las sedes y comedores del evento son los mismos para todas las regiones."
+            />
+          </div>
+        )}
         {activeTab === "sedes" && (
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
             {isChief && <GeneralCoordinatorCard />}
@@ -3253,6 +3350,31 @@ export default function UserPortalPage() {
         )}
 
         {/* ─── Alimentación tab ─── */}
+        {/* ─── Hoteles (Coordinador de Comité) ───
+            No es un listado de hoteles: es quién duerme en cada uno, según la
+            distribución por región y deporte. */}
+        {activeTab === "hoteles" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <FiltrosComite
+              delegaciones={delegacionesEvento}
+              disciplinas={disciplineParents}
+              delegacionId={comiteDelegacion}
+              disciplinaId={comiteDisciplina}
+              onDelegacion={setComiteDelegacion}
+              onDisciplina={setComiteDisciplina}
+              resumen="Con un filtro puesto se muestran sólo los hoteles que alojan esa selección."
+            />
+            <HotelesComite
+              eventId={athlete.eventId}
+              hoteles={allAccommodations}
+              delegaciones={delegacionesEvento}
+              disciplinas={disciplineParents}
+              delegacionFiltro={comiteDelegacion}
+              disciplinaFiltro={comiteDisciplina}
+            />
+          </div>
+        )}
+
         {activeTab === "alimentacion" && (
           <div style={{ display:"flex",flexDirection:"column",gap:14 }}>
             {isChief && (

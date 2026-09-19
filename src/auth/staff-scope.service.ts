@@ -10,12 +10,21 @@ import { ApiRequest } from './api-auth.guard';
  *                  encargado de su delegación; entra por el portal con su
  *                  código y ve sólo su región (flota, incidencias,
  *                  alimentación, calendario).
+ *  - committee:    Coordinador de Comité = participante que coordina el
+ *                  evento entero. Ve todas las delegaciones y disciplinas,
+ *                  sólo de consulta; filtra en pantalla lo que necesita.
  *  - participant:  cualquier otro participante del portal (sin alcance
  *                  operativo: no ve flota ni incidencias).
  *  - driver / provider_staff: sesiones de portal de conductor y de staff de
  *                  proveedor (control de acceso).
  */
-export type ScopeKind = 'staff' | 'mission_head' | 'participant' | 'driver' | 'provider_staff';
+export type ScopeKind =
+  | 'staff'
+  | 'mission_head'
+  | 'committee'
+  | 'participant'
+  | 'driver'
+  | 'provider_staff';
 
 export type StaffScope = {
   kind: ScopeKind;
@@ -35,6 +44,10 @@ export type SofiaCallerScope = { delegationId: string; delegationName: string | 
 
 /** Tipo de cliente que identifica al Jefe de Misión de una delegación. */
 export const MISSION_HEAD_CLIENT_TYPE = 'JEFE_MISION';
+
+/** Coordinador de Comité: mira el evento completo, sin acotarse a una región. */
+export const COMMITTEE_CLIENT_TYPE = 'COORDINADOR_COMITE';
+export const COMMITTEE_ROLE = 'Coordinador de Comité';
 
 const CACHE_TTL_MS = 60_000;
 
@@ -137,15 +150,18 @@ export class StaffScopeService {
       if (!row) return null;
       // Sin delegación no hay alcance posible: se trata como participante
       // común (si no, vería la operación completa).
+      const tipo = String(row.user_type ?? '').trim().toUpperCase();
       const isHead =
-        (row.is_delegation_lead === true ||
-          String(row.user_type ?? '').trim().toUpperCase() === MISSION_HEAD_CLIENT_TYPE) &&
+        (row.is_delegation_lead === true || tipo === MISSION_HEAD_CLIENT_TYPE) &&
         Boolean(row.delegation_id);
+      // El Coordinador de Comité no se acota a una región: coordina el evento
+      // entero y filtra en pantalla. Por eso no lleva delegación.
+      const isCommittee = !isHead && tipo === COMMITTEE_CLIENT_TYPE;
       const scope: StaffScope = {
-        kind: isHead ? 'mission_head' : 'participant',
+        kind: isHead ? 'mission_head' : isCommittee ? 'committee' : 'participant',
         userId: row.id,
         name: asString(row.full_name),
-        role: isHead ? MISSION_HEAD_ROLE : 'Participante',
+        role: isHead ? MISSION_HEAD_ROLE : isCommittee ? COMMITTEE_ROLE : 'Participante',
         delegationId: isHead ? row.delegation_id : null,
         delegationName: isHead ? await this.delegationNameOf(row.delegation_id) : null,
       };

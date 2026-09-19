@@ -40,10 +40,15 @@ export class TripsController {
     @Req() req: ApiRequest,
     @Query('requesterAthleteId') requesterAthleteId?: string,
   ) {
-    // Jefe de Misión: sólo los viajes de su delegación.
     const scope = await this.scope.forRequest(req);
+    // Jefe de Misión: sólo los viajes de su delegación.
     const delegationId = scope?.kind === 'mission_head' ? scope.delegationId : null;
-    return this.tripsService.findAll(requesterAthleteId, delegationId);
+    // Un participante corriente ve los suyos y nada más. Sin esto, pedir
+    // /trips a secas devolvía la operación completa del evento a cualquiera
+    // con sesión de portal. El Coordinador de Comité sí ve todo: ése es su
+    // trabajo, y por eso es un tipo de cliente aparte.
+    const soloSuyos = scope?.kind === 'participant' ? scope.userId : requesterAthleteId;
+    return this.tripsService.findAll(soloSuyos, delegationId);
   }
 
   /* ─── Panel financiero ─── */

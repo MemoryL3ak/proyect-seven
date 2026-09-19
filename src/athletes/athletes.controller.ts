@@ -47,6 +47,8 @@ export class AthletesController {
     // completa de cualquier otra región a un cambio de URL de distancia.
     // El personal del panel sí necesita consultarlas todas.
     const alcance = await this.scope.forRequest(req);
+    // El Coordinador de Comité queda fuera a propósito: ve la nómina
+    // completa del evento, que es lo que coordina.
     const acotado =
       alcance?.kind === 'mission_head' ||
       alcance?.kind === 'participant' ||

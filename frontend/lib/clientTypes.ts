@@ -6,6 +6,7 @@ export const CLIENT_TYPE_OPTIONS = [
   { label: "TF (Oficiales Técnicos)", value: "TF" },
   { label: "TM (Prensa)", value: "TM" },
   { label: "Jefe de Misión", value: "JEFE_MISION" },
+  { label: "Coordinador Comité", value: "COORDINADOR_COMITE" },
   { label: "Comité Organizador", value: "COMITE_ORGANIZADOR" },
   { label: "Proveedores", value: "PROVEEDORES" }
 ] as const;
