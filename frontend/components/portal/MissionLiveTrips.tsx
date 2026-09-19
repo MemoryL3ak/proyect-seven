@@ -17,9 +17,10 @@ import type { MissionTrip } from "@/components/portal/MissionTrips";
  * los viajes de la región y llamaba "tuyo" a un bus con 46 personas. Con tres
  * buses andando a la vez, el jefe veía uno y los otros dos en ninguna parte.
  *
- * Este banner no pretende mostrarlos todos: dice cuántos hay, enseña los tres
- * que salieron antes y manda a la lista para el resto. Así funciona igual con
- * uno que con veinte, y cuando no hay ninguno en ruta no ocupa pantalla.
+ * Este bloque no pretende mostrarlos todos: dice cuántos hay y enseña los tres
+ * que salieron antes; tocando uno se abre el mapa en vivo centrado en ese bus,
+ * sin salir de Actividades. Funciona igual con uno que con veinte, y cuando no
+ * hay ninguno en ruta no ocupa pantalla.
  *
  * El encabezado dice "Ahora mismo" y no "En curso" porque el chip morado de
  * PICKED_UP ya se llama "En curso" en toda la plataforma: dos cosas distintas
@@ -245,30 +246,11 @@ export default function MissionLiveTrips({
           );
         })}
 
-        <button
-          type="button"
-          onClick={() => onVerEnVivo(null)}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 6,
-            width: "100%",
-            padding: "9px 10px",
-            borderRadius: 10,
-            border: `1px solid ${SURFACE.border}`,
-            background: SURFACE.card,
-            color: BRAND.tealInk,
-            fontSize: 12,
-            fontWeight: 700,
-            cursor: "pointer",
-          }}
-        >
-          {resto > 0
-            ? `${t("Ver los")} ${enCurso.length} ${t("en el mapa")}`
-            : t("Ver la flota en el mapa")}
-          <ChevronRightIcon size={14} strokeWidth={2.2} />
-        </button>
+        {resto > 0 && (
+          <p style={{ fontSize: 11.5, color: SURFACE.textFaint, textAlign: "center", margin: 0 }}>
+            {`${t("y")} ${resto} ${resto === 1 ? t("más en ruta") : t("más en ruta")}`}
+          </p>
+        )}
       </div>
     </div>
   );

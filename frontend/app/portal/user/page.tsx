@@ -72,6 +72,7 @@ import MissionFleet from "@/components/portal/MissionFleet";
 import MissionIncidents from "@/components/portal/MissionIncidents";
 import MissionTrips from "@/components/portal/MissionTrips";
 import MissionLiveTrips from "@/components/portal/MissionLiveTrips";
+import MissionLiveMap from "@/components/portal/MissionLiveMap";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
@@ -621,6 +622,15 @@ export default function UserPortalPage() {
   const isChief =
     athlete?.isDelegationLead === true ||
     normalizeClientType(athlete?.userType) === "JEFE_MISION";
+
+  /** Buses de la delegación que van en ruta ahora, del que sale antes al último. */
+  const viajesEnRuta = useMemo(
+    () =>
+      delegationTrips
+        .filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(String(tr.status ?? "").toUpperCase()))
+        .sort((a, b) => new Date(a.scheduledAt ?? 0).getTime() - new Date(b.scheduledAt ?? 0).getTime()),
+    [delegationTrips],
+  );
   // Nombre visible de la delegación: región ("Región de Valparaíso") o país.
   const delegationName = delegation ? (delegation.name || countryLabels[delegation.countryCode] || delegation.countryCode) : "";
   // TA (deportistas): vista simplificada — sin premiaciones, sin asistencia,
@@ -733,6 +743,9 @@ export default function UserPortalPage() {
   const listaViajesRef = useRef<HTMLDivElement | null>(null);
   // Traslado que el jefe fue a mirar en vivo desde el banner "Ahora mismo".
   const [focoViajeId, setFocoViajeId] = useState<string | null>(null);
+  // Mapa en vivo dentro del banner: abierto o no, y en qué bus está centrado.
+  const [mapaVivo, setMapaVivo] = useState<{ abierto: boolean; tripId: string | null }>({ abierto: false, tripId: null });
+  const mapaVivoRef = useRef<HTMLDivElement | null>(null);
 
   /**
    * Todo lo que se puede pedir sabiendo sólo quién es el usuario, pedido de
@@ -1759,12 +1772,12 @@ export default function UserPortalPage() {
         <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
 
         {/* ═══ Banner de viaje en curso ═══
-            Sólo para quien viaja: dice "tu conductor está en camino" y muestra
-            UN traslado. Al jefe de misión no le corresponde — los viajes son de
-            su delegación, él figura como quien los pide, y con varios buses
-            andando este banner elegía uno y callaba el resto. Lo suyo es el
-            bloque "Ahora mismo", que dice cuántos hay y lleva al mapa. */}
-        {!isChief && trip && ["EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") && (
+            Para quien viaja dice lo de siempre: su conductor va en camino.
+            Para el jefe de misión el mismo banner cuenta lo de su delegación
+            —cuántos buses van en ruta y cuál sale antes— porque los traslados
+            son de la región y él figura como quien los pide. El botón abre el
+            mapa aquí mismo, sin mandarlo a otro módulo. */}
+        {(isChief ? viajesEnRuta.length > 0 : !!trip && ["EN_ROUTE","PICKED_UP"].includes(trip.status ?? "")) && (
           <div style={{ position:"relative",overflow:"hidden",borderRadius:16,padding:"14px 16px",
             background:`linear-gradient(135deg,${BRAND.navyLight} 0%,#0a3356 55%,${BRAND.navyLight} 100%)`,
             border:"1px solid rgba(33,208,179,0.35)",boxShadow:"0 6px 24px rgba(6,34,64,0.35)" }}>
@@ -1776,27 +1789,59 @@ export default function UserPortalPage() {
               </span>
               <div style={{ flex:1,minWidth:0 }}>
                 <p style={{ fontSize:9.5,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealLight,margin:0 }}>
-                  {trip.status==="EN_ROUTE" ? "En ruta a recogerte" : `Rumbo a ${trip.destination || "tu destino"}`}
+                  {isChief
+                    ? (viajesEnRuta.length > 1 ? `${viajesEnRuta.length} buses en ruta` : "Bus en ruta")
+                    : (trip?.status==="EN_ROUTE" ? "En ruta a recogerte" : `Rumbo a ${trip?.destination || "tu destino"}`)}
                 </p>
                 <p style={{ fontSize:14.5,fontWeight:800,color:SURFACE.card,margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                  {trip.status==="EN_ROUTE" ? "Tu conductor está en camino" : "Viaje en curso"}
+                  {isChief
+                    ? `${puntoViaje(viajesEnRuta[0], "origin").nombre || puntoViaje(viajesEnRuta[0], "origin").direccion || "—"} → ${puntoViaje(viajesEnRuta[0], "destination").nombre || puntoViaje(viajesEnRuta[0], "destination").direccion || "—"}`
+                    : (trip?.status==="EN_ROUTE" ? "Tu conductor está en camino" : "Viaje en curso")}
                 </p>
-                {driverEta && (
-                  <p style={{ fontSize:12,fontWeight:700,color:BRAND.tealLight,margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                    {trip.status==="EN_ROUTE" ? "Llega en" : "Llegas en"} ~{driverEta.duration} · {driverEta.distance}
-                  </p>
-                )}
-                {driver && (
+                {isChief ? (
                   <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                    <UserIcon size={12} className="inline mr-1" />{driver.fullName || "Conductor"}
+                    {horaViaje(viajesEnRuta[0]?.scheduledAt)}
+                    {viajesEnRuta[0]?.vehiclePlate ? ` · ${viajesEnRuta[0].vehiclePlate}` : ""}
+                    {viajesEnRuta.length > 1 ? ` · ${viajesEnRuta.length - 1} más en ruta` : ""}
                   </p>
+                ) : (
+                  <>
+                    {driverEta && (
+                      <p style={{ fontSize:12,fontWeight:700,color:BRAND.tealLight,margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                        {trip?.status==="EN_ROUTE" ? "Llega en" : "Llegas en"} ~{driverEta.duration} · {driverEta.distance}
+                      </p>
+                    )}
+                    {driver && (
+                      <p style={{ fontSize:11.5,color:"rgba(255,255,255,0.7)",margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                        <UserIcon size={12} className="inline mr-1" />{driver.fullName || "Conductor"}
+                      </p>
+                    )}
+                  </>
                 )}
               </div>
-              <button type="button" onClick={() => setShowTripModal(true)}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isChief) { setShowTripModal(true); return; }
+                  // El jefe quiere el mapa, no otra pantalla: se abre aquí.
+                  setMapaVivo((v) => (v.abierto ? { abierto: false, tripId: null } : { abierto: true, tripId: viajesEnRuta[0]?.id ?? null }));
+                }}
                 style={{ flexShrink:0,padding:"9px 16px",borderRadius:10,border:"none",cursor:"pointer",fontSize:12,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight,whiteSpace:"nowrap" }}>
-                Ver viaje
+                {isChief ? (mapaVivo.abierto ? "Ocultar mapa" : "Ver en el mapa") : "Ver viaje"}
               </button>
             </div>
+            {/* El mapa, dentro del propio banner. */}
+            {isChief && mapaVivo.abierto && (
+              <div ref={mapaVivoRef} style={{ marginTop:12 }}>
+                <MissionLiveMap
+                  eventId={athlete.eventId}
+                  trips={delegationTrips}
+                  focoTripId={mapaVivo.tripId}
+                  venues={venues}
+                  accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+                />
+              </div>
+            )}
           </div>
         )}
 
@@ -1969,10 +2014,14 @@ export default function UserPortalPage() {
                 venues={venues}
                 accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
                 onVerEnVivo={(tripId) => {
-                  // Lo que quiere ver es el bus moviéndose, no una lista
-                  // filtrada: se va a Flota, con el mapa puesto en ese bus.
+                  // El mapa se abre en el banner de arriba, centrado en ese
+                  // bus. Antes esto saltaba al módulo Flota y sacaba a la
+                  // persona de la pantalla donde estaba mirando.
+                  setMapaVivo({ abierto: true, tripId: tripId ?? null });
                   setFocoViajeId(tripId ?? null);
-                  setActiveTab("flota");
+                  requestAnimationFrame(() =>
+                    mapaVivoRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }),
+                  );
                 }}
               />
             )}

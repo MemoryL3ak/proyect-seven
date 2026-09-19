@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { STATE, SURFACE, ACCENT } from "@/lib/design";
 
 export type PresenceMarker = {
@@ -138,6 +138,11 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
   const mapRef = useRef<any>(null);
   // Último chofer al que se centró, para no repetir el movimiento en cada tic.
   const focoAplicadoRef = useRef<string | null>(null);
+  // El mapa de Google se carga aparte y puede llegar DESPUÉS de los
+  // marcadores. Sin esta señal, el encuadre se perdía: el efecto salía sin
+  // hacer nada y no volvía a entrar hasta el siguiente refresco, así que el
+  // mapa se quedaba en su centro por defecto (Santiago) con el bus fuera.
+  const [mapaListo, setMapaListo] = useState(false);
   const gmMarkersRef = useRef<Record<string, any>>({});
   // Last accent applied per marker — drives icon regeneration only when the
   // online/offline color actually flips (the markers array re-renders every
@@ -201,6 +206,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
           { featureType: "transit", stylers: [{ visibility: "off" }] },
         ],
       });
+      setMapaListo(true);
       infoWindowRef.current = new google.maps.InfoWindow();
     });
 
@@ -340,7 +346,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
       }
       didFitRef.current = true;
     }
-  }, [markers, focoId]);
+  }, [markers, focoId, mapaListo]);
 
   return (
     <div ref={containerRef} style={{ width: "100%", height: `${height}px`, borderRadius: 12 }} />

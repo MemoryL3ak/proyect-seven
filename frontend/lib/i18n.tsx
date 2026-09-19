@@ -43,6 +43,7 @@ const translations: Record<Locale, Record<string, string>> = {
     // Banner de lo que está andando ahora (Jefe de Misión).
     "Ahora mismo": "Right now",
     "en curso": "in progress",
+    "más en ruta": "more on the road",
     "en el mapa": "on the map",
     "Ver la flota en el mapa": "See the fleet on the map",
     "Ver en la lista": "See in the list",
@@ -2638,6 +2639,7 @@ const translations: Record<Locale, Record<string, string>> = {
     // Banner de lo que está andando ahora (Jefe de Misión).
     "Ahora mismo": "Agora mesmo",
     "en curso": "em andamento",
+    "más en ruta": "mais a caminho",
     "en el mapa": "no mapa",
     "Ver la flota en el mapa": "Ver a frota no mapa",
     "Ver en la lista": "Ver na lista",
