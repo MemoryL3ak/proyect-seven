@@ -399,7 +399,7 @@ export default function UserPortalPage() {
   const [activeTab, setActiveTab] = useState<PortalTab>(() =>
     restoreOnReload<PortalTab>(
       "portal_user_tab",
-      ["itinerario", "actividades", "calendario", "premiaciones", "sedes", "alimentacion", "delegacion", "cupones", "documentos", "cuenta"],
+      ["itinerario", "flota", "incidencias", "actividades", "calendario", "premiaciones", "sedes", "alimentacion", "delegacion", "cupones", "documentos", "cuenta"],
       "itinerario",
     ),
   );
@@ -655,10 +655,8 @@ export default function UserPortalPage() {
   }, []);
 
   // Set default tab based on profile
-  useEffect(() => {
-    if (!athlete) return;
-    setActiveTab("actividades");
-  }, [athlete?.id, isChief]);
+  // Nada de forzar la pestaña al cargar: al actualizar, portal-tab restaura
+  // el módulo donde estaba el usuario. Sólo se corrige si no le corresponde.
 
   // El jefe ya no tiene pestaña de premiaciones: si venía persistida de una
   // sesión anterior, volver al itinerario para no dejar la pantalla vacía.
@@ -741,9 +739,9 @@ export default function UserPortalPage() {
       setLoading(false);
       try { sessionStorage.setItem("portal_user_id", data.id); } catch {}
       if (!directId) {
-        // Login manual: siempre parte en el home (Itinerario).
+        // Login manual: siempre parte en el home.
         clearPersistedTabs();
-        setActiveTab("itinerario");
+        setActiveTab("actividades");
       }
 
       const conNombres = data as AthleteConNombres;
@@ -1618,7 +1616,7 @@ export default function UserPortalPage() {
                 <HeadphonesIcon size={15} color={BRAND.teal} strokeWidth={2} />
               </button>
             )}
-            <button type="button" onClick={() => window.location.reload()} disabled={loading} title="Actualizar"
+            <button type="button" onClick={() => { if (athlete) void loadAthlete(athlete.id); }} disabled={loading} title="Actualizar"
               style={{ display:"flex",alignItems:"center",justifyContent:"center",width:34,height:34,borderRadius:10,border:"1px solid rgba(33,208,179,0.4)",background:"rgba(33,208,179,0.12)",cursor:"pointer",flexShrink:0,opacity:loading?0.5:1 }}>
               <RefreshIcon size={14} color={BRAND.teal} strokeWidth={2} />
             </button>
