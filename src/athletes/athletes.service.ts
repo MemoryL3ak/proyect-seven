@@ -347,10 +347,37 @@ export class AthletesService {
     }
   }
 
+  /**
+   * La ficha incluye el nombre del evento y de la delegación resueltos en la
+   * misma consulta: el portal los mostraba pidiendo /events/:id y
+   * /delegations/:id completos, dos peticiones que encadenan media docena de
+   * consultas cada una sólo para leer un nombre.
+   */
   async findOne(id: string) {
-    let data: Athlete | null;
+    let data: (Athlete & { eventName?: string | null; delegationName?: string | null; delegationCountryCode?: string | null }) | null;
     try {
-      data = await this.athleteRepository.findOne({ where: { id } });
+      const rows = await this.dataSource.query<
+        Array<{ a: Athlete; event_name: string | null; delegation_name: string | null; delegation_country: string | null }>
+      >(
+        `select to_jsonb(a) as a,
+                e.name as event_name,
+                d.metadata->>'name' as delegation_name,
+                d.country_code as delegation_country
+           from core.athletes a
+           left join core.events e on e.id = a.event_id
+           left join core.delegations d on d.id = a.delegation_id
+          where a.id = $1`,
+        [id],
+      );
+      const row = rows[0];
+      data = row
+        ? {
+            ...this.toEntity(row.a as unknown as AthleteRow),
+            eventName: row.event_name,
+            delegationName: row.delegation_name,
+            delegationCountryCode: row.delegation_country,
+          }
+        : null;
     } catch (error) {
       throw new InternalServerErrorException(
         error instanceof Error ? error.message : 'Error fetching athlete',

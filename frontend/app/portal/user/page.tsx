@@ -138,6 +138,12 @@ type Driver = { id: string; fullName: string; userId?: string | null };
 type Event = { id: string; name: string };
 // name: las delegaciones de los Juegos Escolares son regiones con nombre visible.
 type Delegation = { id: string; countryCode: string; name?: string | null };
+// La ficha del participante ya trae estos nombres resueltos.
+type AthleteConNombres = Athlete & {
+  eventName?: string | null;
+  delegationName?: string | null;
+  delegationCountryCode?: string | null;
+};
 type CalendarEvent = {
   id: string;
   name?: string | null;
@@ -739,7 +745,8 @@ export default function UserPortalPage() {
         setActiveTab("itinerario");
       }
 
-      const [flightData, hotelData, vehicleData, tripData, tripsList, eventData, delegationData, assignmentData] = await Promise.all([
+      const conNombres = data as AthleteConNombres;
+      const [flightData, hotelData, vehicleData, tripData, tripsList, assignmentData] = await Promise.all([
         data.arrivalFlightId ? apiFetch<Flight>(`/flights/${data.arrivalFlightId}`) : Promise.resolve(null),
         data.hotelAccommodationId ? apiFetch<Hotel>(`/accommodations/${data.hotelAccommodationId}`) : Promise.resolve(null),
         data.transportVehicleId ? apiFetch<Vehicle>(`/transports/${data.transportVehicleId}`) : Promise.resolve(null),
@@ -748,13 +755,21 @@ export default function UserPortalPage() {
         // fijado: ese puede ser antiguo y elegirlo a ciegas dejaba la tarjeta
         // mostrando un traslado posterior mientras otro estaba en ruta.
         apiFetch<Trip[]>(`/trips?requesterAthleteId=${data.id}`).catch(() => [] as Trip[]),
-        data.eventId ? apiFetch<Event>(`/events/${data.eventId}`) : Promise.resolve(null),
-        data.delegationId ? apiFetch<Delegation>(`/delegations/${data.delegationId}`) : Promise.resolve(null),
         apiFetch<HotelAssignment | null>(`/hotel-assignments/by-participant/${data.id}`)
       ]);
 
       const assignment = assignmentData ? normalizeHA(assignmentData) : null;
-      setFlight(flightData); setHotelAssignment(assignment); setEvent(eventData); setDelegation(delegationData);
+      setFlight(flightData); setHotelAssignment(assignment);
+      setEvent(conNombres.eventName ? ({ id: data.eventId ?? "", name: conNombres.eventName } as Event) : null);
+      setDelegation(
+        data.delegationId
+          ? ({
+              id: data.delegationId,
+              countryCode: conNombres.delegationCountryCode ?? "",
+              name: conNombres.delegationName ?? null,
+            } as Delegation)
+          : null,
+      );
 
       let resolvedHotel = hotelData;
       if (assignment?.hotelId && (!resolvedHotel || resolvedHotel.id !== assignment.hotelId)) {
