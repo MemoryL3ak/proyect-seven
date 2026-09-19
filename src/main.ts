@@ -72,6 +72,14 @@ async function bootstrap() {
     // sea el doble de espera. Con el permiso guardado, se pregunta una vez.
     maxAge: 86400,
   });
+  // Las respuestas de la API no se guardan en el navegador. Esto lo pedia el
+  // cliente con cache:'no-store' en cada peticion, pero esa opcion hace que
+  // Chrome se salte el permiso guardado de arriba y vuelva a preguntar: un
+  // viaje de ida y vuelta de mas por peticion. Dicho desde aqui, no pasa.
+  app.use((_req: unknown, res: { setHeader: (k: string, v: string) => void }, next: () => void) => {
+    res.setHeader('Cache-Control', 'no-store');
+    next();
+  });
   const port = Number(process.env.PORT) || 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`Listening on ${port} (${httpsOptions ? 'HTTPS' : 'HTTP'})`);

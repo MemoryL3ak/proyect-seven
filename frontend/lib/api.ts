@@ -238,7 +238,6 @@ async function tryRefreshSession(): Promise<boolean> {
         const { response } = await fetchWithBaseFallback("/auth/refresh", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          cache: "no-store",
           body: JSON.stringify({ refreshToken: tokens.refreshToken }),
         });
         if (!response.ok) return false;
@@ -302,11 +301,17 @@ function handleDeadSession() {
   window.location.replace(`/login?expired=1&next=${encodeURIComponent(next)}`);
 }
 
+/**
+ * Nota sobre cache: estas peticiones NO llevan `cache: "no-store"` a proposito.
+ * Esa opcion hace que Chrome se salte el permiso de CORS ya concedido y lo
+ * vuelva a pedir antes de cada peticion, que desde Chile es medio segundo de
+ * mas cada vez. Que las respuestas no se guarden lo dice el servidor con
+ * `Cache-Control: no-store` (ver src/main.ts).
+ */
 export async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   let { response, base } = await fetchWithBaseFallback(path, {
       ...options,
       headers: withAuthHeaders(options.headers),
-      cache: "no-store"
     });
 
   // Sesión del panel expirada: refrescar una vez y reintentar el request.
@@ -316,7 +321,6 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
       ({ response, base } = await fetchWithBaseFallback(path, {
         ...options,
         headers: withAuthHeaders(options.headers),
-        cache: "no-store"
       }));
     } else {
       handleDeadSession();
@@ -358,7 +362,6 @@ export async function login(email: string, password: string) {
     headers: {
       "Content-Type": "application/json"
     },
-    cache: "no-store",
     body: JSON.stringify({ email, password })
   });
 
@@ -430,7 +433,6 @@ export async function mobileLogin(code: string): Promise<MobileLoginPayload> {
   const { response, base } = await fetchWithBaseFallback("/m/auth/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    cache: "no-store",
     body: JSON.stringify({ code }),
   });
 
@@ -465,7 +467,6 @@ export async function mobileRecover(email: string): Promise<MobileRecoverPayload
   const { response, base } = await fetchWithBaseFallback("/m/auth/recover", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    cache: "no-store",
     body: JSON.stringify({ email }),
   });
 
