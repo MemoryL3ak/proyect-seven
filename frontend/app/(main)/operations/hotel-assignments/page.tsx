@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import DistribucionHotelera from "@/components/operations/DistribucionHotelera";
+import AsignarPorGrupo from "@/components/operations/AsignarPorGrupo";
 
 type BulkRow = { participant_id: string; hotel_id: string; room_number?: string; checkin_at?: string; checkout_at?: string };
 type BulkResult = { participantId: string; status: "created" | "error"; message?: string };
@@ -236,6 +237,9 @@ const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
 
       {tab === "manual" ? (
         <>
+          {/* La distribución se decide por región y deporte: esto la aplica de
+              una vez, sin tener que crear una ficha por persona. */}
+          <AsignarPorGrupo onAsignado={() => setRefreshKey((k) => k + 1)} />
 <section className="surface rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between">
               <p className="section-label">{t("Carga masiva de asignaciones")}</p>

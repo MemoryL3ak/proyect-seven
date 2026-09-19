@@ -18,6 +18,31 @@ export class DelegationHotelsController {
     return this.service.saveMany(body?.eventId, body?.cells ?? []);
   }
 
+  /** Cuántos participantes hay en una región + deporte. */
+  @Get('group-count')
+  contarGrupo(
+    @Query('eventId') eventId: string,
+    @Query('delegationId') delegationId: string,
+    @Query('disciplineId') disciplineId: string,
+  ) {
+    return this.service.contarGrupo(eventId, delegationId, disciplineId);
+  }
+
+  /** Deja a toda una selección (región + deporte) en un hotel. */
+  @Post('assign-group')
+  assignGroup(
+    @Body()
+    body: {
+      eventId: string;
+      delegationId: string;
+      disciplineId: string;
+      accommodationId: string;
+      branch?: 'DAMAS' | 'VARONES';
+    },
+  ) {
+    return this.service.assignGroup(body);
+  }
+
   /** Baja la planilla a la ficha de cada participante. */
   @Post('apply')
   apply(@Body() body: { eventId: string }) {

@@ -113,6 +113,99 @@ export class DelegationHotelsService {
   }
 
   /**
+   * Cuántos participantes hay en una selección (región + deporte) y cuántos
+   * ya tienen hotel. Sirve para que el panel diga a cuántos va a mover antes
+   * de tocar nada.
+   */
+  async contarGrupo(eventId: string, delegationId: string, disciplineId: string) {
+    if (!eventId || !delegationId || !disciplineId) {
+      throw new BadRequestException('Faltan evento, delegación o disciplina.');
+    }
+    const filas: { total: string; con_hotel: string }[] = await this.dataSource.query(
+      `select count(*) as total,
+              count(ha.id) as con_hotel
+         from core.athletes a
+         left join logistics.hotel_assignments ha on ha.participant_id = a.id
+        where a.event_id = $1
+          and a.delegation_id = $2
+          and (a.discipline_id = $3
+               or a.discipline_id in (select id from core.disciplines where parent_id = $3))`,
+      [eventId, delegationId, disciplineId],
+    );
+    const fila = filas[0] ?? { total: '0', con_hotel: '0' };
+    return { total: Number(fila.total), conHotel: Number(fila.con_hotel) };
+  }
+
+  /**
+   * Deja a toda una selección (región + deporte) en un hotel, de una vez, y
+   * guarda la celda en la planilla para que las dos vistas digan lo mismo.
+   */
+  async assignGroup(params: {
+    eventId: string;
+    delegationId: string;
+    disciplineId: string;
+    accommodationId: string;
+    branch?: Rama;
+  }): Promise<{ actualizados: number; creados: number; total: number }> {
+    const { eventId, delegationId, disciplineId, accommodationId } = params;
+    if (!eventId || !delegationId || !disciplineId || !accommodationId) {
+      throw new BadRequestException('Faltan evento, delegación, disciplina u hotel.');
+    }
+
+    // La rama sale del género del deporte; en los mixtos, de lo que pidan, y
+    // si no piden nada, damas (las dos celdas suelen coincidir).
+    const generos: { gender: string | null }[] = await this.dataSource.query(
+      `select gender from core.disciplines where id = $1`,
+      [disciplineId],
+    );
+    const genero = String(generos[0]?.gender ?? '').toUpperCase();
+    const rama: Rama =
+      genero === 'FEMALE' ? 'DAMAS' : genero === 'MALE' ? 'VARONES' : (params.branch ?? 'DAMAS');
+
+    const participantes: { id: string; ya_tiene: string | null }[] = await this.dataSource.query(
+      `select a.id,
+              (select ha.id from logistics.hotel_assignments ha
+                where ha.participant_id = a.id limit 1) as ya_tiene
+         from core.athletes a
+        where a.event_id = $1
+          and a.delegation_id = $2
+          and (a.discipline_id = $3
+               or a.discipline_id in (select id from core.disciplines where parent_id = $3))`,
+      [eventId, delegationId, disciplineId],
+    );
+
+    let actualizados = 0;
+    let creados = 0;
+    await this.dataSource.transaction(async (manager) => {
+      await manager.query(
+        `insert into logistics.delegation_hotels
+           (event_id, delegation_id, discipline_id, branch, accommodation_id)
+         values ($1, $2, $3, $4, $5)
+         on conflict on constraint delegation_hotels_celda_unica
+         do update set accommodation_id = excluded.accommodation_id, updated_at = now()`,
+        [eventId, delegationId, disciplineId, rama, accommodationId],
+      );
+      for (const p of participantes) {
+        if (p.ya_tiene) {
+          await manager.query(
+            `update logistics.hotel_assignments set hotel_id = $2, updated_at = now() where id = $1`,
+            [p.ya_tiene, accommodationId],
+          );
+          actualizados += 1;
+        } else {
+          await manager.query(
+            `insert into logistics.hotel_assignments (participant_id, hotel_id) values ($1, $2)`,
+            [p.id, accommodationId],
+          );
+          creados += 1;
+        }
+      }
+    });
+
+    return { actualizados, creados, total: participantes.length };
+  }
+
+  /**
    * Baja la planilla a los participantes: cada uno queda con el hotel de su
    * delegación y disciplina. Quien ya tenía asignación se actualiza; quien no
    * la tenía, se le crea. No se tocan habitación ni cama: eso es la asignación
