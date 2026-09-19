@@ -43,6 +43,12 @@ type NamedPlace = { id: string; name?: string | null };
 type DriverRow = { id: string; userId?: string | null; fullName?: string | null; phone?: string | null };
 
 const ACTIVOS = new Set(["SCHEDULED", "REQUESTED", "EN_ROUTE", "PICKED_UP"]);
+/**
+ * Los que están andando ahora mismo. "Por realizar" los mete en el mismo saco
+ * que los de pasado mañana, así que un bus en ruta quedaba perdido entre los
+ * programados y sólo se distinguía por el color de su chip.
+ */
+const EN_CURSO = new Set(["EN_ROUTE", "PICKED_UP"]);
 const norm = (v?: string | null) => String(v ?? "").trim().toUpperCase();
 
 const fechaCorta = (iso?: string | null) =>
@@ -68,6 +74,8 @@ export default function MissionTrips({
   disciplines,
   venues,
   accommodations,
+  estado,
+  onEstado,
 }: {
   trips: MissionTrip[];
   delegationId?: string | null;
@@ -77,10 +85,19 @@ export default function MissionTrips({
   disciplines: DisciplineLike[];
   venues: NamedPlace[];
   accommodations: NamedPlace[];
+  /** Filtro de estado mandado desde fuera (el banner "En curso ahora"). */
+  estado?: string;
+  onEstado?: (valor: string) => void;
 }) {
   const { t } = useI18n();
   const [disciplinaFiltro, setDisciplinaFiltro] = useState("");
-  const [estadoFiltro, setEstadoFiltro] = useState("ACTIVOS");
+  const [estadoInterno, setEstadoInterno] = useState("ACTIVOS");
+  // Si quien usa la lista lleva el filtro, manda él; si no, el de aquí.
+  const estadoFiltro = estado ?? estadoInterno;
+  const setEstadoFiltro = (valor: string) => {
+    setEstadoInterno(valor);
+    onEstado?.(valor);
+  };
   const [abierto, setAbierto] = useState<string | null>(null);
   const [drivers, setDrivers] = useState<DriverRow[] | null>(null);
 
@@ -113,6 +130,11 @@ export default function MissionTrips({
     [trips, delegationId, miembros],
   );
 
+  const hayEnCurso = useMemo(
+    () => propios.some((tr) => EN_CURSO.has(norm(tr.status))),
+    [propios],
+  );
+
   // Disciplinas presentes, para no ofrecer filtros vacíos.
   const opcionesDisciplina = useMemo(() => {
     const vistas = new Map<string, { label: string; total: number }>();
@@ -132,9 +154,10 @@ export default function MissionTrips({
         const clave = tr.disciplineId ?? disciplinaDe(tr) ?? "";
         if (clave !== disciplinaFiltro) return false;
       }
-      const estado = norm(tr.status);
-      if (estadoFiltro === "ACTIVOS") return ACTIVOS.has(estado);
-      if (estadoFiltro === "TERMINADOS") return !ACTIVOS.has(estado);
+      const suEstado = norm(tr.status);
+      if (estadoFiltro === "EN_CURSO") return EN_CURSO.has(suEstado);
+      if (estadoFiltro === "ACTIVOS") return ACTIVOS.has(suEstado);
+      if (estadoFiltro === "TERMINADOS") return !ACTIVOS.has(suEstado);
       return true;
     });
     // Del más temprano al más tarde, sin excepciones: el jefe lee la jornada
@@ -168,12 +191,16 @@ export default function MissionTrips({
           {delegationName ? `${delegationName} · ` : ""}
           {visibles.length} {visibles.length === 1 ? t("traslado") : t("traslados")}
           {estadoFiltro === "ACTIVOS" ? ` · ${t("por realizar")}` : ""}
+          {estadoFiltro === "EN_CURSO" ? ` · ${t("en curso")}` : ""}
         </p>
         <SegmentedFilter
           style={{ marginTop: 10 }}
           value={estadoFiltro}
           onChange={setEstadoFiltro}
           options={[
+            // "En curso" sólo se ofrece cuando hay algo andando: un filtro
+            // que siempre da vacío estorba más de lo que ayuda.
+            ...(hayEnCurso ? [{ value: "EN_CURSO", label: t("En curso") }] : []),
             { value: "ACTIVOS", label: t("Por realizar") },
             { value: "TERMINADOS", label: t("Terminados") },
             { value: "TODOS", label: t("Todos") },

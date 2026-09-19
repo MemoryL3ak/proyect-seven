@@ -71,6 +71,7 @@ import MissionCalendar from "@/components/portal/MissionCalendar";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionIncidents from "@/components/portal/MissionIncidents";
 import MissionTrips from "@/components/portal/MissionTrips";
+import MissionLiveTrips from "@/components/portal/MissionLiveTrips";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
@@ -717,6 +718,9 @@ export default function UserPortalPage() {
   // mapa en vez de dejarlo vacío sin explicación.
   const fallosRastreoRef = useRef(0);
   const [bootCheckDone, setBootCheckDone] = useState(false);
+  // Filtro de la lista de viajes de la delegación. Vive aquí porque el banner
+  // "En curso ahora" lo cambia al tocar "ver los N en curso".
+  const [filtroViajes, setFiltroViajes] = useState("ACTIVOS");
 
   /**
    * Todo lo que se puede pedir sabiendo sólo quién es el usuario, pedido de
@@ -1925,8 +1929,21 @@ export default function UserPortalPage() {
         {/* ─── Actividades tab (chief only) ─── */}
         {activeTab === "actividades" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            {/* El jefe de misión ve arriba lo que está andando en su
+                delegación; el conmutador y la tarjeta de abajo son para quien
+                viaja en un traslado propio. */}
+            {isChief && (
+              <MissionLiveTrips
+                trips={delegationTrips}
+                delegationId={athlete.delegationId}
+                memberIds={[athlete.id, ...delegationMembers.map((m) => m.id)]}
+                venues={venues}
+                accommodations={allAccommodations}
+                onVerTodos={() => setFiltroViajes("EN_CURSO")}
+              />
+            )}
             {/* TA: sólo viajes programados/en curso, sin historial */}
-            {!isTA && (
+            {!isTA && !isChief && (
               <div style={{ display:"flex",gap:6 }}>
                 {(["curso","historial"] as const).map(sub => (
                   <button key={sub} type="button" onClick={() => setActSubTab(sub)}
@@ -1939,7 +1956,7 @@ export default function UserPortalPage() {
                 ))}
               </div>
             )}
-            {(actSubTab === "curso" || isTA) && (
+            {!isChief && (actSubTab === "curso" || isTA) && (
               trip && ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(trip.status ?? "") ? (
                 /* Este traslado es el del propio usuario. Para un Jefe de
                    Misión aparece además en la lista de su delegación, justo
@@ -2002,7 +2019,7 @@ export default function UserPortalPage() {
                 </div>
               ) : <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>Sin viajes activos</p>
             )}
-            {!isTA && actSubTab === "historial" && (() => {
+            {!isTA && !isChief && actSubTab === "historial" && (() => {
               const completed = trip && ["COMPLETED","DROPPED_OFF"].includes(trip.status ?? "") ? [trip] : [];
               return completed.length > 0 ? (
                 <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
@@ -2038,6 +2055,8 @@ export default function UserPortalPage() {
             {/* Jefe de Misión: viajes asignados a su delegación */}
             {isChief && (
               <MissionTrips
+                estado={filtroViajes}
+                onEstado={setFiltroViajes}
                 trips={delegationTrips}
                 delegationId={athlete.delegationId}
                 delegationName={delegationName}

@@ -40,6 +40,10 @@ const translations: Record<Locale, Record<string, string>> = {
     "IDIOMA": "LANGUAGE",
     // Tarjeta del traslado propio en Actividades.
     "Tu traslado": "Your transfer",
+    // Banner de lo que está andando ahora (Jefe de Misión).
+    "Ahora mismo": "Right now",
+    "en curso": "in progress",
+    "Ver en la lista": "See in the list",
     // Viajes de la delegación (portal del Jefe de Misión).
     "Viajes de mi delegación": "My delegation's trips",
     "traslado": "transfer",
@@ -2629,6 +2633,10 @@ const translations: Record<Locale, Record<string, string>> = {
     "IDIOMA": "IDIOMA",
     // Tarjeta del traslado propio en Actividades.
     "Tu traslado": "Sua viagem",
+    // Banner de lo que está andando ahora (Jefe de Misión).
+    "Ahora mismo": "Agora mesmo",
+    "en curso": "em andamento",
+    "Ver en la lista": "Ver na lista",
     "Viajes de mi delegación": "Viagens da minha delegação",
     "traslado": "traslado",
     "traslados": "traslados",
