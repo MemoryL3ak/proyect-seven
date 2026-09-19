@@ -727,6 +727,11 @@ export default function UserPortalPage() {
       }
 
       setAthlete(data);
+      // La pantalla se pinta con la ficha del participante; el resto (sedes,
+      // alimentación, viajes de la delegación) llega después y va llenando la
+      // vista. Antes el esqueleto seguía hasta que terminaba la última
+      // petición, y eran varios segundos mirando una pantalla gris.
+      setLoading(false);
       try { sessionStorage.setItem("portal_user_id", data.id); } catch {}
       if (!directId) {
         // Login manual: siempre parte en el home (Itinerario).
@@ -793,61 +798,50 @@ export default function UserPortalPage() {
         try { setHotelBed(await apiFetch<HotelBed>(`/hotel-beds/${assignment.bedId}`)); } catch { setHotelBed(null); }
       } else { setHotelBed(null); }
 
-      // Load disciplines (pruebas) for calendar
-      try {
-        const discData = await apiFetch<CalendarEvent[]>("/disciplines");
-        const allDiscs = Array.isArray(discData) ? discData : [];
-        // Parents (sports) for label lookup
-        setDisciplineParents(allDiscs.filter((d) => !d.parentId));
-        // Pruebas with scheduledAt, filtered by event
-        setCalendarEvents(
-          allDiscs
-            .filter((d) => d.parentId && d.scheduledAt)
-            .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime()),
-        );
-      } catch { setCalendarEvents([]); setDisciplineParents([]); }
+      const esJefe =
+        data.isDelegationLead === true ||
+        normalizeClientType(data.userType) === "JEFE_MISION";
 
-      // Load premiaciones (no role/client-type filter — all premiaciones visible)
-      try {
-        const prems = await apiFetch<Premiacion[]>("/premiaciones");
-        setPremiaciones(Array.isArray(prems) ? prems : []);
-      } catch { setPremiaciones([]); }
-
-      // Load venues, accommodations, food locations and menus
-      try {
-        const [venueData, accomData, foodLocData, foodMenuData] = await Promise.all([
-          apiFetch<Venue[]>("/venues").catch(() => []),
-          apiFetch<Accommodation[]>("/accommodations").catch(() => []),
-          apiFetch<FoodLocation[]>("/food-locations").catch(() => []),
-          apiFetch<FoodMenu[]>("/food-menus").catch(() => []),
+      // Todo el resto de la pantalla en una sola tanda: en cascada eran seis
+      // idas y vueltas más, que en el teléfono se notan al abrir la app.
+      const [discData, prems, venueData, accomData, foodLocData, foodMenuData, miembros, viajesDelegacion] =
+        await Promise.all([
+          apiFetch<CalendarEvent[]>("/disciplines").catch(() => [] as CalendarEvent[]),
+          // Premiaciones: el Jefe de Misión no tiene esa pestaña.
+          esJefe ? Promise.resolve([] as Premiacion[]) : apiFetch<Premiacion[]>("/premiaciones").catch(() => [] as Premiacion[]),
+          apiFetch<Venue[]>("/venues").catch(() => [] as Venue[]),
+          apiFetch<Accommodation[]>("/accommodations").catch(() => [] as Accommodation[]),
+          apiFetch<FoodLocation[]>("/food-locations").catch(() => [] as FoodLocation[]),
+          apiFetch<FoodMenu[]>("/food-menus").catch(() => [] as FoodMenu[]),
+          // Sólo los participantes de su delegación, filtrados en el servidor.
+          esJefe && data.delegationId
+            ? apiFetch<Athlete[]>(`/athletes?delegationId=${encodeURIComponent(data.delegationId)}`).catch(() => [] as Athlete[])
+            : Promise.resolve([] as Athlete[]),
+          // Viajes: el backend ya los acota a su delegación.
+          esJefe && data.delegationId
+            ? apiFetch<Trip[]>("/trips").catch(() => [] as Trip[])
+            : Promise.resolve([] as Trip[]),
         ]);
-        setVenues((venueData || []).filter(v => !data.eventId || v.eventId === data.eventId));
-        setAllAccommodations(accomData || []);
-        // Alimentación visible para todos — sin filtrar por clientType
-        setFoodLocations(foodLocData || []);
-        setFoodMenus(foodMenuData || []);
-      } catch { /* ignore */ }
+
+      const allDiscs = Array.isArray(discData) ? discData : [];
+      setDisciplineParents(allDiscs.filter((d) => !d.parentId));
+      setCalendarEvents(
+        allDiscs
+          .filter((d) => d.parentId && d.scheduledAt)
+          .sort((a, b) => new Date(a.scheduledAt!).getTime() - new Date(b.scheduledAt!).getTime()),
+      );
+      setPremiaciones(Array.isArray(prems) ? prems : []);
+      setVenues((venueData || []).filter(v => !data.eventId || v.eventId === data.eventId));
+      setAllAccommodations(accomData || []);
+      // Alimentación visible para todos — sin filtrar por clientType
+      setFoodLocations(foodLocData || []);
+      setFoodMenus(foodMenuData || []);
+      setDelegationMembers((miembros || []).filter(a => a.id !== data.id));
+      setDelegationTrips(Array.isArray(viajesDelegacion) ? viajesDelegacion : []);
 
       // Load health record from athlete metadata
       const hr = (data as any).metadata?.healthRecord ?? null;
       setHealthRecord(hr);
-
-      // Load delegation members for delegation leads
-      const esJefe =
-        data.isDelegationLead === true ||
-        normalizeClientType(data.userType) === "JEFE_MISION";
-      if (esJefe && data.delegationId) {
-        try {
-          const allAthletes = await apiFetch<Athlete[]>("/athletes");
-          setDelegationMembers((allAthletes || []).filter(a => a.delegationId === data.delegationId && a.id !== data.id));
-        } catch { setDelegationMembers([]); }
-        // Viajes del evento: el tab Actividades del jefe los filtra por los
-        // miembros y disciplinas de su delegación.
-        try {
-          const allTrips = await apiFetch<Trip[]>("/trips");
-          setDelegationTrips(Array.isArray(allTrips) ? allTrips : []);
-        } catch { setDelegationTrips([]); }
-      }
 
     } catch (err) {
       let message = err instanceof Error ? err.message : "";

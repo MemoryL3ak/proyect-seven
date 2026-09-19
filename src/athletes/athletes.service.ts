@@ -330,9 +330,13 @@ export class AthletesService {
     await this.syncHotelAssignment(athlete, createAthleteDto);
     return athlete;
   }
-  async findAll() {
+  async findAll(filters?: { delegationId?: string; eventId?: string }) {
     try {
+      const where: Record<string, string> = {};
+      if (filters?.delegationId) where.delegationId = filters.delegationId;
+      if (filters?.eventId) where.eventId = filters.eventId;
       const athletes = await this.athleteRepository.find({
+        where: Object.keys(where).length > 0 ? where : undefined,
         order: { fullName: 'ASC' },
       });
       return athletes.map((athlete) => this.withDerivedFields(athlete));

@@ -1,7 +1,7 @@
 import { isSelfCaller, isStaffCaller } from '../auth/api-auth.guard';
 import type { ApiRequest } from '../auth/api-auth.guard';
 import { Public } from '../auth/public.decorator';
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Query } from '@nestjs/common';
 import { AthletesService } from './athletes.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { RequestAthleteAccessDto } from './dto/request-athlete-access.dto';
@@ -30,8 +30,13 @@ export class AthletesController {
    * el personal del panel o el propio titular (su credencial digital).
    */
   @Get()
-  async findAll() {
-    const athletes = await this.athletesService.findAll();
+  async findAll(
+    @Query('delegationId') delegationId?: string,
+    @Query('eventId') eventId?: string,
+  ) {
+    // Filtros del servidor: el portal del Jefe de Misión traía los ~2.400
+    // participantes del evento sólo para quedarse con los de su región.
+    const athletes = await this.athletesService.findAll({ delegationId, eventId });
     return athletes.map(({ credentialCode: _omit, ...rest }) => rest);
   }
 
