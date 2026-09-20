@@ -112,19 +112,24 @@ const enlaceStyle: React.CSSProperties = {
   color: BRAND.tealInk,
 };
 
-/** Caja con las fichas: con dieciséis regiones el modal no puede crecer sin fin. */
-const cajaChips: React.CSSProperties = {
+/**
+ * Caja con las fichas: el modal no puede crecer sin fin, pero una fila cortada
+ * por la mitad parece un error. Las dieciséis regiones entran completas en
+ * cuatro filas; los quince deportes sí se desplazan, y ahí la fila asomada es
+ * justamente lo que avisa que hay más.
+ */
+const cajaChips = (alto: number): React.CSSProperties => ({
   marginTop: "6px",
   display: "flex",
   flexWrap: "wrap",
   gap: "6px",
-  maxHeight: "132px",
+  maxHeight: alto,
   overflowY: "auto",
   padding: "8px",
   borderRadius: "10px",
   border: `1px solid ${SURFACE.border}`,
   background: SURFACE.bg,
-};
+});
 
 const chipStyle = (activo: boolean): React.CSSProperties => ({
   borderRadius: "99px",
@@ -652,7 +657,7 @@ export default function FoodLocationsPage() {
                     </button>
                   )}
                 </div>
-                <div style={cajaChips}>
+                <div style={cajaChips(172)}>
                   {regionesDelEvento.map((d) => {
                     const activo = form.delegationIds.includes(d.id);
                     return (
@@ -681,7 +686,7 @@ export default function FoodLocationsPage() {
                     </button>
                   )}
                 </div>
-                <div style={cajaChips}>
+                <div style={cajaChips(132)}>
                   {deportesDelEvento.map((d) => {
                     const activo = form.disciplineIds.includes(d.id);
                     return (
