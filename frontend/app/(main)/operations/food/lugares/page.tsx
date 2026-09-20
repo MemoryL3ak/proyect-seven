@@ -10,9 +10,14 @@ type FoodLocation = {
   id: string;
   accommodationId?: string | null;
   name: string;
+  address?: string | null;
   description?: string | null;
   capacity?: number | null;
   clientTypes: string[];
+  /** Vacío = el lugar sirve a todas las regiones. */
+  delegationIds?: string[] | null;
+  /** Vacío = el lugar sirve a todos los deportes. */
+  disciplineIds?: string[] | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -21,6 +26,24 @@ type Accommodation = {
   id: string;
   name?: string | null;
 };
+
+type Delegacion = { id: string; eventId?: string | null; countryCode?: string | null; name?: string | null };
+type Disciplina = { id: string; name?: string | null; parentId?: string | null; category?: string | null; gender?: string | null };
+
+/** Las regiones de Chile, de norte a sur, con el nombre corto de siempre. */
+const ORDEN_REGION = [
+  "CL-AP", "CL-TA", "CL-AN", "CL-AT", "CL-CO", "CL-VS", "CL-RM", "CL-LI",
+  "CL-ML", "CL-NB", "CL-BI", "CL-AR", "CL-LR", "CL-LL", "CL-AI", "CL-MA",
+];
+const REGION_CORTA: Record<string, string> = {
+  "CL-AP": "Arica", "CL-TA": "Tarapacá", "CL-AN": "Antofagasta", "CL-AT": "Atacama",
+  "CL-CO": "Coquimbo", "CL-VS": "Valparaíso", "CL-RM": "Metropolitana", "CL-LI": "O'Higgins",
+  "CL-ML": "Maule", "CL-NB": "Ñuble", "CL-BI": "Biobío", "CL-AR": "Araucanía",
+  "CL-LR": "Los Ríos", "CL-LL": "Los Lagos", "CL-AI": "Aysén", "CL-MA": "Magallanes",
+};
+const nombreCorto = (d: Delegacion) =>
+  REGION_CORTA[d.countryCode ?? ""] ??
+  (d.name ?? d.countryCode ?? "—").replace(/^regi[oó]n\s+(de\s+la\s+|del\s+|de\s+)?/i, "").trim();
 
 const CLIENT_TYPES: { value: string; label: string; color: string; bg: string; border: string }[] = [
   { value: "VIP",               label: "VIP",               color: "#a855f7", bg: "rgba(168,85,247,0.12)",  border: "rgba(168,85,247,0.3)" },
@@ -39,17 +62,23 @@ const CLIENT_MAP = Object.fromEntries(CLIENT_TYPES.map((c) => [c.value, c]));
 type FormState = {
   name: string;
   accommodationId: string;
+  address: string;
   description: string;
   capacity: string;
   clientTypes: string[];
+  delegationIds: string[];
+  disciplineIds: string[];
 };
 
 const EMPTY_FORM: FormState = {
   name: "",
   accommodationId: "",
+  address: "",
   description: "",
   capacity: "",
   clientTypes: [],
+  delegationIds: [],
+  disciplineIds: [],
 };
 
 const fieldStyle: React.CSSProperties = {
@@ -61,6 +90,49 @@ const fieldStyle: React.CSSProperties = {
   fontSize: "14px",
   color: SURFACE.text,
   outline: "none",
+};
+
+/** Caja con las fichas: con dieciséis regiones el modal no puede crecer sin fin. */
+const cajaChips: React.CSSProperties = {
+  marginTop: "6px",
+  display: "flex",
+  flexWrap: "wrap",
+  gap: "6px",
+  maxHeight: "116px",
+  overflowY: "auto",
+  padding: "8px",
+  borderRadius: "10px",
+  border: `1px solid ${SURFACE.border}`,
+  background: SURFACE.bg,
+};
+
+const chipStyle = (activo: boolean): React.CSSProperties => ({
+  borderRadius: "99px",
+  padding: "5px 11px",
+  fontSize: "12px",
+  fontWeight: 700,
+  border: activo ? `1px solid ${BRAND.teal}` : `1px solid ${SURFACE.border}`,
+  background: activo ? "rgba(33,208,179,0.12)" : SURFACE.card,
+  color: activo ? BRAND.tealInk : SURFACE.textMuted,
+  cursor: "pointer",
+  transition: "all 120ms",
+});
+
+/** Resumen de a quién sirve el lugar, en la tarjeta del listado. */
+const resumenChip: React.CSSProperties = {
+  fontSize: "11px",
+  fontWeight: 600,
+  borderRadius: "8px",
+  padding: "3px 9px",
+  background: SURFACE.bg,
+  border: `1px solid ${SURFACE.border}`,
+  color: SURFACE.textMuted,
+};
+
+const pistaStyle: React.CSSProperties = {
+  marginTop: "6px",
+  fontSize: "12px",
+  color: SURFACE.textFaint,
 };
 
 const labelStyle: React.CSSProperties = {
@@ -77,6 +149,8 @@ export default function FoodLocationsPage() {
   const { t } = useI18n();
   const [locations, setLocations] = useState<FoodLocation[]>([]);
   const [accommodations, setAccommodations] = useState<Record<string, Accommodation>>({});
+  const [delegaciones, setDelegaciones] = useState<Delegacion[]>([]);
+  const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedClientType, setSelectedClientType] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
@@ -88,11 +162,26 @@ export default function FoodLocationsPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [locData, accData] = await Promise.all([
+      const [locData, accData, delData, discData] = await Promise.all([
         apiFetch<FoodLocation[]>("/food-locations"),
         apiFetch<Accommodation[]>("/accommodations"),
+        apiFetch<Delegacion[]>("/delegations").catch(() => [] as Delegacion[]),
+        apiFetch<Disciplina[]>("/disciplines").catch(() => [] as Disciplina[]),
       ]);
       setLocations(locData || []);
+      setDelegaciones(
+        [...(delData || [])].sort((a, b) => {
+          const ia = ORDEN_REGION.indexOf(a.countryCode ?? "");
+          const ib = ORDEN_REGION.indexOf(b.countryCode ?? "");
+          return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        }),
+      );
+      // Sólo los deportes padre: las pruebas hijas no se asignan a un comedor.
+      setDisciplinas(
+        (discData || [])
+          .filter((d) => !d.parentId)
+          .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")),
+      );
       setAccommodations(
         (accData || []).reduce<Record<string, Accommodation>>((acc, a) => {
           acc[a.id] = a;
@@ -134,9 +223,12 @@ export default function FoodLocationsPage() {
     setForm({
       name: loc.name,
       accommodationId: loc.accommodationId || "",
+      address: loc.address || "",
       description: loc.description || "",
       capacity: loc.capacity != null ? String(loc.capacity) : "",
       clientTypes: [...loc.clientTypes],
+      delegationIds: [...(loc.delegationIds ?? [])],
+      disciplineIds: [...(loc.disciplineIds ?? [])],
     });
     setEditingId(loc.id);
     setShowForm(true);
@@ -152,6 +244,16 @@ export default function FoodLocationsPage() {
     }));
   };
 
+  /** Región y deporte funcionan igual: vacío significa "todas". */
+  const alternar = (campo: "delegationIds" | "disciplineIds", value: string) => {
+    setForm((f) => ({
+      ...f,
+      [campo]: f[campo].includes(value)
+        ? f[campo].filter((v) => v !== value)
+        : [...f[campo], value],
+    }));
+  };
+
   const handleSave = async () => {
     if (!form.name.trim()) {
       setError(t("El nombre del lugar es obligatorio."));
@@ -163,9 +265,12 @@ export default function FoodLocationsPage() {
       const body = {
         name: form.name.trim(),
         accommodationId: form.accommodationId || undefined,
+        address: form.address.trim() || undefined,
         description: form.description || undefined,
         capacity: form.capacity ? parseInt(form.capacity, 10) : undefined,
         clientTypes: form.clientTypes,
+        delegationIds: form.delegationIds,
+        disciplineIds: form.disciplineIds,
       };
       if (editingId) {
         await apiFetch(`/food-locations/${editingId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -304,9 +409,36 @@ export default function FoodLocationsPage() {
                   )}
                 </div>
 
+                {loc.address && (
+                  <p style={{ fontSize: "12.5px", color: SURFACE.textMuted, lineHeight: 1.4 }}>{loc.address}</p>
+                )}
+
                 {loc.description && (
                   <p style={{ fontSize: "13px", color: SURFACE.textMuted, lineHeight: 1.4 }}>{loc.description}</p>
                 )}
+
+                {/* A quién sirve. Sin nada marcado, sirve a todo el evento. */}
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  <span style={resumenChip}>
+                    {(loc.delegationIds?.length ?? 0) === 0
+                      ? t("Todas las regiones")
+                      : (loc.delegationIds ?? [])
+                          .map((id) => {
+                            const d = delegaciones.find((x) => x.id === id);
+                            return d ? nombreCorto(d) : null;
+                          })
+                          .filter(Boolean)
+                          .join(" · ")}
+                  </span>
+                  <span style={resumenChip}>
+                    {(loc.disciplineIds?.length ?? 0) === 0
+                      ? t("Todos los deportes")
+                      : (loc.disciplineIds ?? [])
+                          .map((id) => disciplinas.find((x) => x.id === id)?.name ?? null)
+                          .filter(Boolean)
+                          .join(" · ")}
+                  </span>
+                </div>
 
                 {/* Client type chips */}
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "auto" }}>
@@ -413,6 +545,17 @@ export default function FoodLocationsPage() {
                 </select>
               </div>
 
+              <div>
+                <label style={labelStyle}>{t("Dirección")}</label>
+                <input
+                  type="text"
+                  style={fieldStyle}
+                  value={form.address}
+                  onChange={(e) => setForm((f) => ({ ...f, address: e.target.value }))}
+                  placeholder={t("Ej: Ecuador 299, Viña del Mar")}
+                />
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={labelStyle}>{t("Descripción")}</label>
@@ -435,6 +578,53 @@ export default function FoodLocationsPage() {
                     placeholder={t("Ej: 200")}
                   />
                 </div>
+              </div>
+
+              {/* Quién come aquí. Sin nada marcado el lugar sirve a todas las
+                  regiones o a todos los deportes, que es como se comportaba
+                  antes de que existieran estos dos campos. */}
+              <div>
+                <label style={labelStyle}>{t("Regiones que comen aquí")}</label>
+                <div style={cajaChips}>
+                  {delegaciones.map((d) => {
+                    const activo = form.delegationIds.includes(d.id);
+                    return (
+                      <button key={d.id} type="button" onClick={() => alternar("delegationIds", d.id)} style={chipStyle(activo)}>
+                        {nombreCorto(d)}
+                      </button>
+                    );
+                  })}
+                  {delegaciones.length === 0 && (
+                    <p style={{ fontSize: "12px", color: SURFACE.textFaint, margin: 0 }}>{t("No hay regiones registradas.")}</p>
+                  )}
+                </div>
+                <p style={pistaStyle}>
+                  {form.delegationIds.length === 0
+                    ? t("Sin marcar: todas las regiones.")
+                    : `${form.delegationIds.length} ${form.delegationIds.length === 1 ? t("región") : t("regiones")}`}
+                </p>
+              </div>
+
+              <div>
+                <label style={labelStyle}>{t("Deportes que comen aquí")}</label>
+                <div style={cajaChips}>
+                  {disciplinas.map((d) => {
+                    const activo = form.disciplineIds.includes(d.id);
+                    return (
+                      <button key={d.id} type="button" onClick={() => alternar("disciplineIds", d.id)} style={chipStyle(activo)}>
+                        {d.name || d.id}
+                      </button>
+                    );
+                  })}
+                  {disciplinas.length === 0 && (
+                    <p style={{ fontSize: "12px", color: SURFACE.textFaint, margin: 0 }}>{t("No hay deportes registrados.")}</p>
+                  )}
+                </div>
+                <p style={pistaStyle}>
+                  {form.disciplineIds.length === 0
+                    ? t("Sin marcar: todos los deportes.")
+                    : `${form.disciplineIds.length} ${form.disciplineIds.length === 1 ? t("deporte") : t("deportes")}`}
+                </p>
               </div>
 
               <div>

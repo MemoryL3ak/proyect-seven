@@ -13,9 +13,12 @@ type FoodLocationRow = {
   id: string;
   accommodation_id: string | null;
   name: string;
+  address: string | null;
   description: string | null;
   capacity: number | null;
   client_types: string[];
+  delegation_ids: string[] | null;
+  discipline_ids: string[] | null;
   created_at: string;
   updated_at: string;
 };
@@ -29,9 +32,12 @@ export class FoodLocationsService {
       id: row.id,
       accommodationId: row.accommodation_id ?? undefined,
       name: row.name,
+      address: row.address ?? undefined,
       description: row.description ?? undefined,
       capacity: row.capacity ?? undefined,
       clientTypes: row.client_types ?? [],
+      delegationIds: row.delegation_ids ?? [],
+      disciplineIds: row.discipline_ids ?? [],
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -41,16 +47,20 @@ export class FoodLocationsService {
     try {
       const rows = (await this.dataSource.query(
         `
-        insert into logistics.food_locations (accommodation_id, name, description, capacity, client_types)
-        values ($1, $2, $3, $4, $5)
+        insert into logistics.food_locations
+          (accommodation_id, name, address, description, capacity, client_types, delegation_ids, discipline_ids)
+        values ($1, $2, $3, $4, $5, $6, $7::uuid[], $8::uuid[])
         returning *
         `,
         [
           dto.accommodationId ?? null,
           dto.name,
+          dto.address ?? null,
           dto.description ?? null,
           dto.capacity ?? null,
           dto.clientTypes ?? [],
+          dto.delegationIds ?? [],
+          dto.disciplineIds ?? [],
         ],
       )) as FoodLocationRow[];
       return this.toEntity(rows[0]);
@@ -104,9 +114,12 @@ export class FoodLocationsService {
     const map: Record<string, unknown> = {};
     if (dto.accommodationId !== undefined) map.accommodation_id = dto.accommodationId;
     if (dto.name !== undefined) map.name = dto.name;
+    if (dto.address !== undefined) map.address = dto.address;
     if (dto.description !== undefined) map.description = dto.description;
     if (dto.capacity !== undefined) map.capacity = dto.capacity;
     if (dto.clientTypes !== undefined) map.client_types = dto.clientTypes;
+    if (dto.delegationIds !== undefined) map.delegation_ids = dto.delegationIds;
+    if (dto.disciplineIds !== undefined) map.discipline_ids = dto.disciplineIds;
 
     const keys = Object.keys(map);
     if (keys.length === 0) return this.findOne(id);
