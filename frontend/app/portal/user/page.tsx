@@ -6,7 +6,6 @@ import {
   type IconComponent,
   PinIcon,
   PhoneIcon,
-  MessageIcon,
   MailIcon,
   PlaneIcon,
   HotelIcon,
@@ -75,6 +74,7 @@ import FiltrosComite, { nombreRegionCorto } from "@/components/portal/FiltrosCom
 import HotelesComite from "@/components/portal/HotelesComite";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import SelectorFiltro, { BotonQuitarFiltros } from "@/components/portal/SelectorFiltro";
+import TarjetaLugar from "@/components/portal/TarjetaLugar";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
@@ -3284,47 +3284,21 @@ export default function UserPortalPage() {
                     </p>
                   )}
                   <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-                  {sedesVista !== "hoteles" && visibles.map(v => {
-              const isOpen = expandedItemId === `venue-${v.id}`;
-              const addr = [v.address, v.commune, v.region].filter(Boolean).join(", ");
-              return (
-                <div key={v.id} style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
-                  <button type="button" onClick={() => setExpandedItemId(isOpen?null:`venue-${v.id}`)}
-                    style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                    <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
-                    <div style={{ flex:1,minWidth:0 }}>
-                      <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:0 }}>{v.name || "–"}</p>
-                      {v.address && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{v.address}</p>}
-                    </div>
-                    <ChevronDownIcon size={12} color={SURFACE.textFaint} strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
-                  </button>
-                  {isOpen && (
-                    <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:8 }}>
-                      {v.photoUrl && (
-                        <img src={v.photoUrl} alt={v.name || "Sede"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
-                      )}
-                      {addr && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>{addr}</p>}
-                      {isChief && (v.coordinatorName || v.coordinatorPhone) && (
-                        <div style={{ display:"flex",alignItems:"center",gap:10,padding:"8px 10px",borderRadius:10,background:SURFACE.borderMuted }}>
-                          <div style={{ flex:1,minWidth:0 }}>
-                            <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textMuted,margin:0 }}>{t("Coordinador de sede")}</p>
-                            <p style={{ fontSize:12.5,fontWeight:700,color:SURFACE.text,margin:"2px 0 0" }}>{v.coordinatorName || "—"}</p>
-                            {v.coordinatorPhone && <p style={{ fontSize:11.5,color:SURFACE.textMuted,margin:0 }}>{v.coordinatorPhone}</p>}
-                          </div>
-                          {v.coordinatorPhone && (
-                            <button type="button" onClick={() => openExternal(whatsappHref(v.coordinatorPhone as string))} title="WhatsApp"
-                              style={{ width:34,height:34,borderRadius:"50%",border:`1px solid ${SURFACE.border}`,background:SURFACE.card,display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",color:BRAND.tealInk,flexShrink:0 }}>
-                              <MessageIcon size={15} />
-                            </button>
-                          )}
-                        </div>
-                      )}
-                      {addr && <VenueMap title={v.name || "Sede"} query={addr} />}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                  {sedesVista !== "hoteles" && visibles.map(v => (
+                    <TarjetaLugar
+                      key={v.id}
+                      nombre={v.name || "–"}
+                      direccion={v.address}
+                      lugar={[v.commune, v.region].filter(Boolean).join(", ") || null}
+                      foto={v.photoUrl}
+                      tipo={(v.venueType ?? "SEDE") === "COMEDOR" ? "comedor" : "sede"}
+                      coordinador={isChief && (v.coordinatorName || v.coordinatorPhone)
+                        ? { nombre: v.coordinatorName, telefono: v.coordinatorPhone, rotulo: t("Coordinador de sede") }
+                        : null}
+                      abierta={expandedItemId === `venue-${v.id}`}
+                      onToggle={() => setExpandedItemId(expandedItemId === `venue-${v.id}` ? null : `venue-${v.id}`)}
+                    />
+                  ))}
                   </div>
                 </>
               );
@@ -3340,36 +3314,24 @@ export default function UserPortalPage() {
                 {isChief ? t("Tu delegación aún no tiene hotel asignado.") : t("No hay hoteles registrados")}
               </p>
             )}
-            {sedesVista === "hoteles" && allAccommodations.map(h => {
-              const isOpen = expandedItemId === `hotel-${h.id}`;
-              const addr = [h.address, h.city, h.country].filter(Boolean).join(", ");
-              return (
-                <div key={h.id} style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
-                  <button type="button" onClick={() => setExpandedItemId(isOpen?null:`hotel-${h.id}`)}
-                    style={{ width:"100%",display:"flex",alignItems:"center",gap:10,padding:"12px 14px",background:"none",border:"none",cursor:"pointer",textAlign:"left" }}>
-                    <IcoHotel />
-                    <div style={{ flex:1,minWidth:0 }}>
-                      <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:0 }}>{h.name || "–"}</p>
-                      {addr && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{addr}</p>}
-                    </div>
-                    <ChevronDownIcon size={12} color={SURFACE.textFaint} strokeWidth={2} style={{ transition:"transform .15s",transform:isOpen?"rotate(180deg)":"rotate(0)",flexShrink:0 }} />
-                  </button>
-                  {isOpen && (
-                    <div style={{ padding:"0 14px 14px",display:"flex",flexDirection:"column",gap:6 }}>
-                      {h.photoUrl && (
-                        <img src={h.photoUrl} alt={h.name || "Hotel"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
-                      )}
-                      {addr && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>{addr}</p>}
-                      {h.checkIn && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>Check-in: {new Date(h.checkIn).toLocaleDateString("es-CL")}</p>}
-                      {h.checkOut && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>Check-out: {new Date(h.checkOut).toLocaleDateString("es-CL")}</p>}
-                      {h.roomType && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>Tipo: {h.roomType}</p>}
-                      {h.contactPhone && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>Teléfono: {h.contactPhone}</p>}
-                      {addr && <VenueMap title={h.name || "Hotel"} query={addr} />}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            {sedesVista === "hoteles" && allAccommodations.map(h => (
+              <TarjetaLugar
+                key={h.id}
+                nombre={h.name || "–"}
+                direccion={h.address}
+                lugar={[h.city, h.country].filter(Boolean).join(", ") || null}
+                foto={h.photoUrl}
+                tipo="hotel"
+                coordinador={h.contactPhone ? { telefono: h.contactPhone, rotulo: t("Contacto del hotel") } : null}
+                datos={[
+                  ...(h.checkIn ? [{ etiqueta: "Check-in", valor: new Date(h.checkIn).toLocaleDateString("es-CL") }] : []),
+                  ...(h.checkOut ? [{ etiqueta: "Check-out", valor: new Date(h.checkOut).toLocaleDateString("es-CL") }] : []),
+                  ...(h.roomType ? [{ etiqueta: t("Habitación"), valor: h.roomType }] : []),
+                ]}
+                abierta={expandedItemId === `hotel-${h.id}`}
+                onToggle={() => setExpandedItemId(expandedItemId === `hotel-${h.id}` ? null : `hotel-${h.id}`)}
+              />
+            ))}
           </div>
         )}
 

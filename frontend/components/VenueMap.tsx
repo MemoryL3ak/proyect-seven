@@ -14,11 +14,28 @@ import { BRAND, SURFACE } from "@/lib/design";
  * visible — antes el embed navegaba a Google Maps dentro del WebView y no
  * había forma de regresar.
  */
-export default function VenueMap({ title, query }: { title: string; query: string }) {
+export default function VenueMap({ title, query, alto = 180 }: { title: string; query: string; alto?: number }) {
   const [open, setOpen] = useState(false);
+  const [sinImagen, setSinImagen] = useState(false);
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const embedSrc = apiKey
     ? `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(query)}`
+    : null;
+  /**
+   * La vista previa es una imagen del mapa, no el embed.
+   *
+   * El iframe traía consigo toda la interfaz de Google —"Combinaciones de
+   * teclas", "Datos del mapa ©2026", "Condiciones"— apretada contra el borde
+   * inferior de una tarjeta de 180 px, y encima cargaba un mapa interactivo
+   * completo por cada sede de la lista. La imagen estática pesa una fracción,
+   * se ve limpia y lleva nuestro marcador. Al tocarla sigue abriéndose el mapa
+   * de verdad a pantalla completa.
+   */
+  const imagenSrc = apiKey
+    ? `https://maps.googleapis.com/maps/api/staticmap?size=640x240&scale=2&zoom=15` +
+      `&center=${encodeURIComponent(query)}` +
+      `&markers=${encodeURIComponent(`color:0x21d0b3|${query}`)}` +
+      `&key=${apiKey}`
     : null;
   const externalHref = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
   // Ruta de navegación: en el teléfono abre la app de Google Maps con las
@@ -54,17 +71,25 @@ export default function VenueMap({ title, query }: { title: string; query: strin
           background: "#eef2f6",
         }}
       >
-        {embedSrc ? (
+        {imagenSrc && !sinImagen ? (
+          <img
+            src={imagenSrc}
+            alt={`Mapa de ${title}`}
+            loading="lazy"
+            onError={() => setSinImagen(true)}
+            style={{ width: "100%", height: alto, objectFit: "cover", display: "block" }}
+          />
+        ) : embedSrc ? (
           <iframe
             src={embedSrc}
             title={`Mapa de ${title}`}
             loading="lazy"
             tabIndex={-1}
             aria-hidden
-            style={{ width: "100%", height: 180, border: "none", pointerEvents: "none", display: "block" }}
+            style={{ width: "100%", height: alto, border: "none", pointerEvents: "none", display: "block" }}
           />
         ) : (
-          <div style={{ height: 120, display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textFaint }}>
+          <div style={{ height: alto, display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textFaint }}>
             <PinIcon size={28} strokeWidth={1.8} />
           </div>
         )}
