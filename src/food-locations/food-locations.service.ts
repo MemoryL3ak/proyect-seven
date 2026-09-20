@@ -23,6 +23,20 @@ type FoodLocationRow = {
   updated_at: string;
 };
 
+/**
+ * Filas de un `returning *`.
+ *
+ * En un UPDATE o un DELETE, `dataSource.query` devuelve `[filas, afectadas]`
+ * en vez de las filas a secas, así que `rows[0]` era el arreglo entero y la
+ * entidad salía con todos sus campos vacíos: editar un lugar respondía
+ * `{"clientTypes":[],"createdAt":null}` aunque en la base quedara bien. El
+ * formulario recargaba la lista enseguida y por eso no se notaba.
+ */
+const filasDe = <T>(resultado: unknown): T[] => {
+  if (!Array.isArray(resultado)) return [];
+  return Array.isArray(resultado[0]) ? (resultado[0] as T[]) : (resultado as T[]);
+};
+
 @Injectable()
 export class FoodLocationsService {
   constructor(private readonly dataSource: DataSource) {}
@@ -128,10 +142,12 @@ export class FoodLocationsService {
     const values = keys.map((k) => map[k]);
 
     try {
-      const rows = (await this.dataSource.query(
-        `update logistics.food_locations set ${setSql}, updated_at = now() where id = $1 returning *`,
-        [id, ...values],
-      )) as FoodLocationRow[];
+      const rows = filasDe<FoodLocationRow>(
+        await this.dataSource.query(
+          `update logistics.food_locations set ${setSql}, updated_at = now() where id = $1 returning *`,
+          [id, ...values],
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Food location ${id} not found`);
       return this.toEntity(rows[0]);
     } catch (error) {
@@ -144,10 +160,12 @@ export class FoodLocationsService {
 
   async remove(id: string) {
     try {
-      const rows = (await this.dataSource.query(
-        `delete from logistics.food_locations where id = $1 returning *`,
-        [id],
-      )) as FoodLocationRow[];
+      const rows = filasDe<FoodLocationRow>(
+        await this.dataSource.query(
+          `delete from logistics.food_locations where id = $1 returning *`,
+          [id],
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Food location ${id} not found`);
       return this.toEntity(rows[0]);
     } catch (error) {
