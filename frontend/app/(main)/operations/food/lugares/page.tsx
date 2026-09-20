@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 
 type FoodLocation = {
   id: string;
@@ -27,8 +28,9 @@ type Accommodation = {
   name?: string | null;
 };
 
+type Evento = { id: string; name?: string | null };
 type Delegacion = { id: string; eventId?: string | null; countryCode?: string | null; name?: string | null };
-type Disciplina = { id: string; name?: string | null; parentId?: string | null; category?: string | null; gender?: string | null };
+type Disciplina = { id: string; eventId?: string | null; name?: string | null; parentId?: string | null; category?: string | null; gender?: string | null };
 
 /** Las regiones de Chile, de norte a sur, con el nombre corto de siempre. */
 const ORDEN_REGION = [
@@ -92,13 +94,31 @@ const fieldStyle: React.CSSProperties = {
   outline: "none",
 };
 
+const encabezadoCampo: React.CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  gap: "10px",
+  marginBottom: "6px",
+};
+
+const enlaceStyle: React.CSSProperties = {
+  background: "none",
+  border: "none",
+  padding: 0,
+  cursor: "pointer",
+  fontSize: "11.5px",
+  fontWeight: 700,
+  color: BRAND.tealInk,
+};
+
 /** Caja con las fichas: con dieciséis regiones el modal no puede crecer sin fin. */
 const cajaChips: React.CSSProperties = {
   marginTop: "6px",
   display: "flex",
   flexWrap: "wrap",
   gap: "6px",
-  maxHeight: "116px",
+  maxHeight: "132px",
   overflowY: "auto",
   padding: "8px",
   borderRadius: "10px",
@@ -151,6 +171,11 @@ export default function FoodLocationsPage() {
   const [accommodations, setAccommodations] = useState<Record<string, Accommodation>>({});
   const [delegaciones, setDelegaciones] = useState<Delegacion[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
+  // Las regiones y los deportes existen una vez por evento. Sin acotar, el
+  // formulario ofrecía las 20 delegaciones y las 59 disciplinas de los dos
+  // eventos juntos: siete fichas "Atletismo" y regiones de otro campeonato.
+  const [eventos, setEventos] = useState<Evento[]>([]);
+  const [eventoId, setEventoId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [selectedClientType, setSelectedClientType] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
@@ -162,12 +187,16 @@ export default function FoodLocationsPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [locData, accData, delData, discData] = await Promise.all([
+      const [locData, accData, delData, discData, evData] = await Promise.all([
         apiFetch<FoodLocation[]>("/food-locations"),
         apiFetch<Accommodation[]>("/accommodations"),
         apiFetch<Delegacion[]>("/delegations").catch(() => [] as Delegacion[]),
         apiFetch<Disciplina[]>("/disciplines").catch(() => [] as Disciplina[]),
+        apiFetch<Evento[]>("/events").catch(() => [] as Evento[]),
       ]);
+      const listaEventos = [...(evData || [])].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
+      setEventos(listaEventos);
+      setEventoId((actual) => actual || listaEventos[0]?.id || "");
       setLocations(locData || []);
       setDelegaciones(
         [...(delData || [])].sort((a, b) => {
@@ -196,6 +225,23 @@ export default function FoodLocationsPage() {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  const regionesDelEvento = useMemo(
+    () => delegaciones.filter((d) => !eventoId || d.eventId === eventoId),
+    [delegaciones, eventoId],
+  );
+  const deportesDelEvento = useMemo(
+    () => disciplinas.filter((d) => !eventoId || d.eventId === eventoId),
+    [disciplinas, eventoId],
+  );
+
+  /**
+  * El mismo deporte existe una vez por variante, así que mostrar sólo el
+  * nombre dejaba siete fichas "Atletismo" idénticas y ninguna forma de saber
+  * cuál se estaba marcando. Esta es la misma desambiguación que usan los
+  * filtros de los portales.
+  */
+  const etiquetaDeporte = useMemo(() => buildDisciplineLabelMap(deportesDelEvento), [deportesDelEvento]);
 
   const filtered = useMemo(() => {
     if (!selectedClientType) return locations;
@@ -317,6 +363,18 @@ export default function FoodLocationsPage() {
           </button>
         </div>
 
+        {/* Un evento a la vez: sus regiones y sus deportes. */}
+        {eventos.length > 1 && (
+          <div style={{ marginTop: "14px", maxWidth: "420px" }}>
+            <label style={labelStyle}>{t("Evento")}</label>
+            <select style={fieldStyle} value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
+              {eventos.map((ev) => (
+                <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* Client type filter chips */}
         <div style={{ marginTop: "16px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
           <button
@@ -434,7 +492,9 @@ export default function FoodLocationsPage() {
                     {(loc.disciplineIds?.length ?? 0) === 0
                       ? t("Todos los deportes")
                       : (loc.disciplineIds ?? [])
-                          .map((id) => disciplinas.find((x) => x.id === id)?.name ?? null)
+                          // Un lugar guardado puede apuntar a un deporte de
+                          // otro evento: el nombre se busca en la lista completa.
+                          .map((id) => etiquetaDeporte.get(id) ?? disciplinas.find((x) => x.id === id)?.name ?? null)
                           .filter(Boolean)
                           .join(" · ")}
                   </span>
@@ -584,9 +644,16 @@ export default function FoodLocationsPage() {
                   regiones o a todos los deportes, que es como se comportaba
                   antes de que existieran estos dos campos. */}
               <div>
-                <label style={labelStyle}>{t("Regiones que comen aquí")}</label>
+                <div style={encabezadoCampo}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>{t("Regiones que comen aquí")}</label>
+                  {form.delegationIds.length > 0 && (
+                    <button type="button" onClick={() => setForm((f) => ({ ...f, delegationIds: [] }))} style={enlaceStyle}>
+                      {t("Quitar selección")}
+                    </button>
+                  )}
+                </div>
                 <div style={cajaChips}>
-                  {delegaciones.map((d) => {
+                  {regionesDelEvento.map((d) => {
                     const activo = form.delegationIds.includes(d.id);
                     return (
                       <button key={d.id} type="button" onClick={() => alternar("delegationIds", d.id)} style={chipStyle(activo)}>
@@ -594,7 +661,7 @@ export default function FoodLocationsPage() {
                       </button>
                     );
                   })}
-                  {delegaciones.length === 0 && (
+                  {regionesDelEvento.length === 0 && (
                     <p style={{ fontSize: "12px", color: SURFACE.textFaint, margin: 0 }}>{t("No hay regiones registradas.")}</p>
                   )}
                 </div>
@@ -606,17 +673,24 @@ export default function FoodLocationsPage() {
               </div>
 
               <div>
-                <label style={labelStyle}>{t("Deportes que comen aquí")}</label>
+                <div style={encabezadoCampo}>
+                  <label style={{ ...labelStyle, marginBottom: 0 }}>{t("Deportes que comen aquí")}</label>
+                  {form.disciplineIds.length > 0 && (
+                    <button type="button" onClick={() => setForm((f) => ({ ...f, disciplineIds: [] }))} style={enlaceStyle}>
+                      {t("Quitar selección")}
+                    </button>
+                  )}
+                </div>
                 <div style={cajaChips}>
-                  {disciplinas.map((d) => {
+                  {deportesDelEvento.map((d) => {
                     const activo = form.disciplineIds.includes(d.id);
                     return (
                       <button key={d.id} type="button" onClick={() => alternar("disciplineIds", d.id)} style={chipStyle(activo)}>
-                        {d.name || d.id}
+                        {etiquetaDeporte.get(d.id) ?? d.name ?? d.id}
                       </button>
                     );
                   })}
-                  {disciplinas.length === 0 && (
+                  {deportesDelEvento.length === 0 && (
                     <p style={{ fontSize: "12px", color: SURFACE.textFaint, margin: 0 }}>{t("No hay deportes registrados.")}</p>
                   )}
                 </div>
