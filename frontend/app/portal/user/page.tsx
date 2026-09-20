@@ -74,6 +74,7 @@ import MissionLiveMap from "@/components/portal/MissionLiveMap";
 import FiltrosComite, { nombreRegionCorto } from "@/components/portal/FiltrosComite";
 import HotelesComite from "@/components/portal/HotelesComite";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
+import SelectorFiltro, { BotonQuitarFiltros } from "@/components/portal/SelectorFiltro";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
@@ -2462,6 +2463,40 @@ export default function UserPortalPage() {
                   </div>
                 </div>
 
+                {/* Filtros — ocultos para TA: su calendario queda fijo en su
+                    disciplina. Van aquí arriba, junto a la navegación, porque
+                    abajo del todo había que bajar la pantalla entera para
+                    alcanzarlos. Cada uno abre su hoja inferior. */}
+                {!isTA && (
+                  <div style={{ display:"flex",gap:6,alignItems:"stretch" }}>
+                    <SelectorFiltro
+                      rotulo={t("Tipo")}
+                      titulo={t("Tipo de evento")}
+                      opciones={(Object.keys(TYPE_CFG) as CalType[]).map(tp => ({ value: tp, label: TYPE_CFG[tp].label }))}
+                      etiquetaTodos={t("Todos los tipos")}
+                      valor={calTypeFilter}
+                      onChange={setCalTypeFilter}
+                    />
+                    {/* El Coordinador de Comité elige deporte en su propia
+                        barra, arriba: dos controles para lo mismo confunden. */}
+                    {!isComite && discOptions.length > 0 && (
+                      <SelectorFiltro
+                        rotulo={t("Disciplina")}
+                        opciones={discOptions.map(([id,name]) => ({ value: id, label: name }))}
+                        etiquetaTodos={t("Todas las disciplinas")}
+                        valor={calDiscFilter}
+                        onChange={setCalDiscFilter}
+                      />
+                    )}
+                    {(calTypeFilter || calDiscFilter || calSelectedDay) && (
+                      <BotonQuitarFiltros
+                        titulo={t("Ver todo")}
+                        onClick={()=>{ setCalTypeFilter(""); setCalDiscFilter(""); setCalSelectedDay(null); }}
+                      />
+                    )}
+                  </div>
+                )}
+
                 {/* Vista MES: cuadrícula */}
                 {calView==="mes" && (
                   <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px" }}>
@@ -2713,6 +2748,22 @@ export default function UserPortalPage() {
 
               {/* ════ Columna lateral ════ */}
               <div className="cal-lateral" style={{ flex:"0 1 260px",minWidth:230,display:"flex",flexDirection:"column",gap:12 }}>
+                {/* Leyenda: qué significa cada punto de la cuadrícula. Una
+                    línea envolvente en vez de la lista de cinco filas que
+                    ocupaba una tarjeta entera; tocar un color sigue filtrando
+                    por ese tipo. */}
+                {!isTA && (
+                <div style={{ display:"flex",flexWrap:"wrap",gap:"6px 12px",padding:"2px 2px 0" }}>
+                  {(Object.keys(TYPE_CFG) as CalType[]).map(tp => (
+                    <button key={tp} type="button" onClick={()=>setCalTypeFilter(calTypeFilter===tp?"":tp)}
+                      style={{ display:"flex",alignItems:"center",gap:5,background:"none",border:"none",cursor:"pointer",padding:0,opacity: calTypeFilter && calTypeFilter!==tp ? 0.35 : 1 }}>
+                      <span style={{ width:8,height:8,borderRadius:"50%",background:TYPE_CFG[tp].color,flexShrink:0 }} />
+                      <span style={{ fontSize:11.5,fontWeight:600,color:SURFACE.textMuted }}>{TYPE_CFG[tp].label}</span>
+                    </button>
+                  ))}
+                </div>
+                )}
+
                 {/* Próxima competencia — lo más valioso, primero (clave en móvil) */}
                 {nextComp && (
                   <div style={{ background:`linear-gradient(135deg,#fff1f2,${SURFACE.card})`,borderRadius:14,border:"1px solid #fecdd3",padding:"14px" }}>
@@ -2757,56 +2808,6 @@ export default function UserPortalPage() {
                     })}
                   </div>
                 </div>
-
-                {/* Filtros — ocultos para TA: su calendario queda fijo en su disciplina */}
-                {!isTA && (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px",minWidth:0,overflow:"hidden" }}>
-                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 8px" }}>{t("Filtros")}</p>
-                  <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted }}>{t("Tipo de evento")}</label>
-                  <ChipFilter
-                    style={{ marginTop:6 }}
-                    value={calTypeFilter}
-                    onChange={setCalTypeFilter}
-                    allLabel={t("Todos")}
-                    options={(Object.keys(TYPE_CFG) as CalType[]).map(tp => ({ value: tp, label: TYPE_CFG[tp].label }))}
-                  />
-                  {/* TA: sin filtro de disciplina — el calendario queda fijo en la suya */}
-                  {!isTA && discOptions.length > 0 && (
-                    <>
-                      <label style={{ fontSize:11,fontWeight:600,color:SURFACE.textMuted,display:"block",marginTop:10 }}>{t("Disciplina")}</label>
-                      <ChipFilter
-                        style={{ marginTop:6 }}
-                        value={calDiscFilter}
-                        onChange={setCalDiscFilter}
-                        allLabel={t("Todas")}
-                        options={discOptions.map(([id,name]) => ({ value: id, label: name }))}
-                      />
-                    </>
-                  )}
-                  {(calTypeFilter || calDiscFilter || calSelectedDay) && (
-                    <button type="button" onClick={()=>{ setCalTypeFilter(""); setCalDiscFilter(""); setCalSelectedDay(null); }}
-                      style={{ marginTop:10,width:"100%",fontSize:11,fontWeight:700,color:STATE.dangerText,background:STATE.dangerSoft,border:`1px solid ${STATE.dangerBorder}`,borderRadius:8,padding:"6px",cursor:"pointer" }}>
-                      <XIcon size={12} className="inline mr-1" />Limpiar filtros
-                    </button>
-                  )}
-                </div>
-                )}
-
-                {/* Leyenda — oculta para TA junto con los filtros */}
-                {!isTA && (
-                <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"12px 14px" }}>
-                  <p style={{ fontSize:10,fontWeight:800,letterSpacing:"0.14em",textTransform:"uppercase",color:SURFACE.textFaint,margin:"0 0 8px" }}>Leyenda</p>
-                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                    {(Object.keys(TYPE_CFG) as CalType[]).map(tp => (
-                      <button key={tp} type="button" onClick={()=>setCalTypeFilter(calTypeFilter===tp?"":tp)}
-                        style={{ display:"flex",alignItems:"center",gap:8,background:"none",border:"none",cursor:"pointer",padding:0,opacity: calTypeFilter && calTypeFilter!==tp ? 0.4 : 1 }}>
-                        <span style={{ width:10,height:10,borderRadius:"50%",background:TYPE_CFG[tp].color }} />
-                        <span style={{ fontSize:12,fontWeight:600,color:SURFACE.textStrong }}>{TYPE_CFG[tp].label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                )}
 
               </div>
             </div>
