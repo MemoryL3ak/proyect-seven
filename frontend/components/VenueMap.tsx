@@ -17,6 +17,7 @@ import { BRAND, SURFACE } from "@/lib/design";
 export default function VenueMap({ title, query, alto = 180 }: { title: string; query: string; alto?: number }) {
   const [open, setOpen] = useState(false);
   const [sinImagen, setSinImagen] = useState(false);
+  const compacto = alto < 140;
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
   const embedSrc = apiKey
     ? `https://www.google.com/maps/embed/v1/place?key=${apiKey}&q=${encodeURIComponent(query)}`
@@ -93,15 +94,19 @@ export default function VenueMap({ title, query, alto = 180 }: { title: string; 
             <PinIcon size={28} strokeWidth={1.8} />
           </div>
         )}
+        {/* En una vista previa chica —el mapa que comparte franja con la foto
+            en la tarjeta de sede— la píldora con texto tapaba medio mapa, así
+            que ahí queda sólo el icono. */}
         <span
           style={{
             position: "absolute",
-            bottom: 8,
-            right: 8,
+            bottom: compacto ? 6 : 8,
+            right: compacto ? 6 : 8,
             display: "inline-flex",
             alignItems: "center",
+            justifyContent: "center",
             gap: 6,
-            padding: "6px 12px",
+            padding: compacto ? 6 : "6px 12px",
             borderRadius: 999,
             background: "rgba(4,26,46,0.85)",
             color: BRAND.tealLight,
@@ -110,8 +115,8 @@ export default function VenueMap({ title, query, alto = 180 }: { title: string; 
             boxShadow: "0 2px 8px rgba(0,0,0,0.25)",
           }}
         >
-          <MaximizeIcon size={12} strokeWidth={2} />
-          Ver mapa
+          <MaximizeIcon size={compacto ? 13 : 12} strokeWidth={2} />
+          {!compacto && "Ver mapa"}
         </span>
       </button>
 
