@@ -301,8 +301,19 @@ export default function ResourceScreen({
   const plateLookupTimerRef = useRef<number | null>(null);
   const lastPlateLookupRef = useRef<string>("");
   const isAccommodation = config.endpoint === "/accommodations";
+  /**
+   * Inventario de habitaciones tal como se abrió la ficha del hotel.
+   *
+   * Guardar rehacía el inventario a partir de estos cuatro campos y llamaba a
+   * sync-rooms con el resultado, en toda edición. Cambiar sólo la dirección de
+   * un hotel le borraba las habitaciones y dejaba su capacidad en cero: para
+   * editar cualquier cosa había que volver a escribir el inventario completo.
+   * Con esto, el inventario sólo viaja si alguien lo tocó.
+   */
+  const habitacionesAlAbrir = useRef<Record<string, string> | null>(null);
   const isTrips = config.endpoint === "/trips";
   const isEventsEndpoint = config.endpoint === "/events";
+  const CLAVES_HABITACION = ["roomSingle", "roomDouble", "roomTriple", "roomSuite"] as const;
   const roomCapacityByType: Record<string, number> = {
     SINGLE: 1,
     DOUBLE: 2,
@@ -1548,6 +1559,18 @@ export default function ResourceScreen({
       }
 
       let finalPayload = { ...payload };
+      /**
+       * ¿Alguien tocó el inventario de habitaciones? Si no, ni se manda ni se
+       * sincroniza: así editar el nombre o la dirección de un hotel deja sus
+       * habitaciones como estaban. En un hotel nuevo siempre se manda.
+       */
+      const tocoHabitaciones =
+        config.endpoint === "/accommodations" &&
+        (!editingId ||
+          habitacionesAlAbrir.current === null ||
+          CLAVES_HABITACION.some(
+            (k) => String(form[k] ?? "") !== (habitacionesAlAbrir.current?.[k] ?? ""),
+          ));
       if (
         config.endpoint === "/athletes" &&
         String(form.userType ?? "").trim().toUpperCase() === "COORDINADOR_COMITE"
@@ -1601,7 +1624,12 @@ export default function ResourceScreen({
           });
         }
       }
-      if (config.endpoint === "/accommodations") {
+      if (config.endpoint === "/accommodations" && !tocoHabitaciones) {
+        // La capacidad la calcula el servidor desde el inventario; mandarla
+        // desde una ficha que no tocó habitaciones sólo puede empeorarla.
+        delete finalPayload.totalCapacity;
+      }
+      if (config.endpoint === "/accommodations" && tocoHabitaciones) {
         const roomInventory: Record<string, number> = {};
 
         const roomMap: Record<string, string> = {
@@ -1693,7 +1721,7 @@ export default function ResourceScreen({
         });
       }
 
-      if (config.endpoint === "/accommodations") {
+      if (config.endpoint === "/accommodations" && tocoHabitaciones) {
         const accommodationId = (editingId ?? result?.id) as string | undefined;
         const roomInventory =
           (finalPayload as { roomInventory?: Record<string, number> }).roomInventory ?? {};
@@ -1962,6 +1990,9 @@ export default function ResourceScreen({
     }
     setForm(next);
     setEditingId(item.id ?? null);
+    habitacionesAlAbrir.current = isAccommodation
+      ? Object.fromEntries(CLAVES_HABITACION.map((k) => [k, String(next[k] ?? "")]))
+      : null;
   };
 
   const loadVenues = async () => {
