@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import { usePathname } from "next/navigation";
 
 type Locale = "es" | "en" | "pt";
 
@@ -5246,8 +5247,23 @@ const I18nContext = createContext<I18nContextValue | null>(null);
 const CLAVE_IDIOMA = "seven.idioma.elegido";
 const CLAVE_ANTIGUA = "seven.locale";
 
+/**
+ * Los portales (participante, jefe de delegación, conductor) van siempre en
+ * español.
+ *
+ * El diccionario se mantiene a mano y nunca cubre cada frase, así que elegir
+ * otro idioma dejaba la pantalla a medias: "GENERAL COORDINATOR" y "Venues ·
+ * 22" sobre "Región de Ñuble", con la barra inferior en español porque sus
+ * rótulos son fijos. Se quitó el selector de Cuenta; esto además ignora la
+ * elección que quedó guardada en los teléfonos que ya la tenían, sin borrarla,
+ * para no tocar la del panel, que comparte la clave y sí conserva su selector.
+ */
+const esRutaDePortal = (ruta: string | null) =>
+  Boolean(ruta && (ruta.startsWith("/portal") || ruta.startsWith("/m/") || ruta === "/m"));
+
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>("es");
+  const ruta = usePathname();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -5285,18 +5301,20 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  const vigente: Locale = esRutaDePortal(ruta) ? "es" : locale;
+
   useEffect(() => {
     if (typeof window === "undefined") return;
-    document.documentElement.lang = locale;
-  }, [locale]);
+    document.documentElement.lang = vigente;
+  }, [vigente]);
 
   const value = useMemo<I18nContextValue>(() => {
     return {
-      locale,
+      locale: vigente,
       setLocale,
-      t: (value: string) => translations[locale]?.[value] ?? value
+      t: (value: string) => translations[vigente]?.[value] ?? value
     };
-  }, [locale, setLocale]);
+  }, [vigente, setLocale]);
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;
 }

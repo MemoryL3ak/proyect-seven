@@ -65,9 +65,7 @@ import DeleteAccountSection from "@/components/DeleteAccountSection";
 import EventDocumentsSection from "@/components/EventDocumentsSection";
 import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
-import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import SofiaWidget from "@/components/SofiaWidget";
-import GeneralCoordinatorCard from "@/components/portal/GeneralCoordinatorCard";
 import BannerCoordinador from "@/components/portal/BannerCoordinador";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionTrips from "@/components/portal/MissionTrips";
@@ -78,7 +76,6 @@ import HotelesComite from "@/components/portal/HotelesComite";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
-import LanguageSection from "@/components/LanguageSection";
 import PushTokenSync from "@/components/PushTokenSync";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
@@ -2453,7 +2450,9 @@ export default function UserPortalPage() {
                     );
                   })()}
                   <div style={{ display:"flex",flexWrap:"wrap",background:SURFACE.borderMuted,borderRadius:10,padding:3,gap:2 }}>
-                    {([["gantt","Gantt"],["semana","Semana"],["dia","Día"],["agenda","Agenda"],["mes","Mes"]] as const).map(([v,label]) => (
+                    {/* Mes primero: es la vista con la que se mira el calendario del
+                        evento. El Gantt queda al final, que es donde se busca. */}
+                    {([["mes","Mes"],["semana","Semana"],["dia","Día"],["agenda","Agenda"],["gantt","Gantt"]] as const).map(([v,label]) => (
                       <button key={v} type="button" onClick={() => setCalView(v)}
                         style={{ fontSize:12,fontWeight:700,padding:"5px 12px",borderRadius:8,border:"none",cursor:"pointer",
                           background: calView===v ? BRAND.teal : "transparent", color: calView===v ? SURFACE.card : SURFACE.textSecondary }}>
@@ -3262,7 +3261,6 @@ export default function UserPortalPage() {
         )}
         {activeTab === "sedes" && (
           <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
-            {isChief && <GeneralCoordinatorCard />}
             {(() => {
               // Sedes de competencia y comedores son recintos distintos.
               const sedes = venues.filter(v => (v.venueType ?? "SEDE") !== "COMEDOR");
@@ -3897,7 +3895,6 @@ export default function UserPortalPage() {
         {/* ─── Documentos tab ─── */}
         {activeTab === "documentos" && (
           <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
-            {isChief && <CuadernoCargoSection />}
             <EventDocumentsSection audience="PARTICIPANTE" eventId={athlete.eventId} />
           </div>
         )}
@@ -3997,12 +3994,8 @@ export default function UserPortalPage() {
             </a>
             {/* Números de emergencia */}
             <EmergencyNumbersSection />
-            {/* Cuaderno de cargo */}
-            <CuadernoCargoSection />
             {/* Device permissions (only visible inside the mobile app) */}
             <DevicePermissionsSection />
-            {/* Idioma: se entra en español y aquí se cambia si hace falta. */}
-            <LanguageSection />
             {/* Logout */}
             <button type="button" onClick={() => { if (athlete) clearPortalSession("athlete", athlete.id); setAthlete(null); setAthleteId(""); try { sessionStorage.removeItem("portal_user_id"); } catch {} clearPersistedTabs(); setActiveTab("itinerario"); }}
               style={{ width:"100%",padding:12,borderRadius:12,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,color:STATE.danger,fontSize:13,fontWeight:600,cursor:"pointer" }}>
