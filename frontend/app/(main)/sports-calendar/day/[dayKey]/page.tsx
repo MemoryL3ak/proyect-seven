@@ -184,9 +184,18 @@ function isoBounds(dayKey: string) {
   return { start: start.toISOString(), end: end.toISOString() };
 }
 
+/**
+ * ¿Ocurre en ese día? La comparación va en hora local, no en UTC: con
+ * `toISOString()` un traslado de las 23:00 en Chile (02:00 UTC) se contaba en
+ * el día siguiente y desaparecía de la agenda del día que le corresponde.
+ */
 function isSameDay(value: string | null | undefined, dayKey: string) {
   if (!value) return false;
-  return new Date(value).toISOString().slice(0, 10) === dayKey;
+  const fecha = new Date(value);
+  if (Number.isNaN(fecha.getTime())) return false;
+  const dosDigitos = (n: number) => String(n).padStart(2, "0");
+  const local = `${fecha.getFullYear()}-${dosDigitos(fecha.getMonth() + 1)}-${dosDigitos(fecha.getDate())}`;
+  return local === dayKey;
 }
 
 function delegationLabel(options: DelegationOption[], id?: string | null) {
@@ -360,8 +369,11 @@ export default function SportsCalendarDayDetailPage() {
     return trips
       .filter((trip) => {
         if (eventId && trip.eventId && trip.eventId !== eventId) return false;
-        const linkedToDay = (trip.athleteIds || []).some((athleteId) => dayPeopleSet.has(athleteId));
-        return linkedToDay || tripIsOfDay(trip);
+        // La agenda de un día son los traslados de ESE día. Antes bastaba con
+        // que el viaje tocara a alguien que competía ese día para colarse, así
+        // que en el detalle del 23 aparecían traslados del 18 y del 21 y los
+        // del propio día quedaban mezclados con ellos.
+        return tripIsOfDay(trip);
       })
       .map((trip) => {
         const linkedAthletes = (trip.athleteIds || [])

@@ -20,11 +20,13 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MedalIcon,
+  BusIcon,
 } from "@/components/ui/Icons";
 import { delegationLabel } from "@/lib/delegations";
 
 type EventOption = { id: string; name: string };
 type VenueOption = { id: string; name: string; address?: string | null; eventId?: string | null };
+type ViajeDelDia = { id: string; eventId?: string | null; scheduledAt?: string | null; startedAt?: string | null };
 type DisciplineOption = {
   id: string;
   name?: string | null;
@@ -173,9 +175,16 @@ function dayLabel(date: Date) {
   }).format(date);
 }
 
+/**
+ * Día al que pertenece un instante, en hora local. Con `toISOString()` todo lo
+ * programado después de las 21:00 en Chile (00:00 UTC) caía en la casilla del
+ * día siguiente, así que la agenda de la tarde-noche aparecía corrida un día.
+ */
 function isoDayKey(value: string | Date) {
   const d = typeof value === "string" ? new Date(value) : value;
-  return d.toISOString().slice(0, 10);
+  if (Number.isNaN(d.getTime())) return "";
+  const dosDigitos = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${dosDigitos(d.getMonth() + 1)}-${dosDigitos(d.getDate())}`;
 }
 
 function parseCsvLine(line: string) {
@@ -345,6 +354,9 @@ export default function SportsCalendarPage() {
   const [disciplineOptions, setDisciplineOptions] = useState<DisciplineOption[]>([]);
   const [delegationOptions, setDelegationOptions] = useState<DelegationOption[]>([]);
   const [venueOptions, setVenueOptions] = useState<VenueOption[]>([]);
+  // Traslados del evento: el calendario no los agendaba, pero son parte de
+  // la operación del día tanto como las competencias.
+  const [viajes, setViajes] = useState<ViajeDelDia[]>([]);
   const [athletes, setAthletes] = useState<AthleteAndItem[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [selectedDelegationId, setSelectedDelegationId] = useState("");
@@ -399,6 +411,15 @@ export default function SportsCalendarPage() {
       setVenueOptions(Array.isArray(data) ? data : []);
     } catch {
       setVenueOptions([]);
+    }
+  };
+
+  const loadViajes = async () => {
+    try {
+      const data = await apiFetch<ViajeDelDia[]>("/trips");
+      setViajes(Array.isArray(data) ? data : []);
+    } catch {
+      setViajes([]);
     }
   };
 
@@ -460,6 +481,7 @@ export default function SportsCalendarPage() {
     loadDelegations();
     loadVenues();
     loadAthletes();
+    loadViajes();
   }, []);
 
   useEffect(() => {
@@ -788,6 +810,22 @@ export default function SportsCalendarPage() {
     return map;
   }, [calendarDisplayEntries]);
   const selectedDayEntries = groupedByDay.get(selectedDayKey) ?? [];
+
+  /**
+   * Traslados por día. El calendario mostraba sólo actividades deportivas, así
+   * que un día con siete buses en operación se veía vacío y el detalle del día
+   * —que sí los lista— parecía no tener nada que abrir.
+   */
+  const trasladosPorDia = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const viaje of viajes) {
+      if (selectedEventId && viaje.eventId && viaje.eventId !== selectedEventId) continue;
+      const key = isoDayKey(viaje.scheduledAt || viaje.startedAt || "");
+      if (!key) continue;
+      map.set(key, (map.get(key) ?? 0) + 1);
+    }
+    return map;
+  }, [viajes, selectedEventId]);
 
   const createEntry = async (e: FormEvent) => {
     e.preventDefault();
@@ -1304,12 +1342,23 @@ export default function SportsCalendarPage() {
 
           {view === "day" && (
             <div className="space-y-2">
+              {(trasladosPorDia.get(selectedDayKey) ?? 0) > 0 && (
+                <div className="rounded-xl p-3 flex items-center gap-3"
+                  style={{ background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.3)" }}>
+                  <BusIcon size={16} color={BRAND.teal} strokeWidth={2} />
+                  <p className="text-xs font-bold" style={{ color: SURFACE.textSecondary, margin: 0 }}>
+                    {trasladosPorDia.get(selectedDayKey)}{" "}
+                    {trasladosPorDia.get(selectedDayKey) === 1 ? t("traslado programado") : t("traslados programados")}
+                    <span style={{ fontWeight: 600, color: SURFACE.textMuted }}> · {t("en Ver detalle del día")}</span>
+                  </p>
+                </div>
+              )}
               {selectedDayEntries.length === 0 ? (
                 <div className="p-12 text-center rounded-2xl"
                   style={{ background: `linear-gradient(135deg, ${SURFACE.bg} 0%, ${SURFACE.card} 100%)`, border: `1px dashed ${SURFACE.border}` }}>
                   <CalendarIcon size={36} color={SURFACE.borderStrong} />
                   <p className="text-sm font-semibold mt-3" style={{ color: SURFACE.textSecondary }}>
-                    {t("Sin actividades para este día")}
+                    {t("Sin actividades deportivas para este día")}
                   </p>
                   <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
                     {t("Programá una desde el panel lateral.")}
@@ -1437,6 +1486,14 @@ export default function SportsCalendarPage() {
                     {dayEntries.length > 3 ? (
                       <p className="text-[10px] font-semibold" style={{ color: SURFACE.textFaint, textAlign: "center" }}>+{dayEntries.length - 3} {t("más")}</p>
                     ) : null}
+                    {/* Los traslados no son actividades deportivas, pero un día
+                        con buses en operación no puede verse vacío. */}
+                    {(trasladosPorDia.get(key) ?? 0) > 0 && (
+                      <p className="text-[10px] font-bold truncate" style={{ color: BRAND.teal, display: "flex", alignItems: "center", gap: 4 }}>
+                        <BusIcon size={10} strokeWidth={2} />
+                        {trasladosPorDia.get(key)} {trasladosPorDia.get(key) === 1 ? t("traslado") : t("traslados")}
+                      </p>
+                    )}
                   </div>
                 </button>
               );

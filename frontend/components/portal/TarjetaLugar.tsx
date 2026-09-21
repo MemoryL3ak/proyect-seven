@@ -26,7 +26,8 @@ export type CoordinadorLugar = {
   rotulo?: string;
 };
 
-export type DatoLugar = { etiqueta: string; valor: string };
+/** `ancho` ocupa toda la fila y deja que el valor se reparta en varias líneas. */
+export type DatoLugar = { etiqueta: string; valor: string; ancho?: boolean };
 
 /** Iniciales para el círculo del coordinador: "Marta Valdenegro" → "MV". */
 const iniciales = (nombre: string) =>
@@ -357,7 +358,7 @@ export default function TarjetaLugar({
                 }}
               >
                 {datos.map((d) => (
-                  <span key={d.etiqueta} style={{ minWidth: 0 }}>
+                  <span key={d.etiqueta} style={{ minWidth: 0, gridColumn: d.ancho ? "1 / -1" : undefined }}>
                     <span
                       style={{
                         display: "block",
@@ -376,9 +377,10 @@ export default function TarjetaLugar({
                         fontSize: 12.5,
                         fontWeight: 600,
                         color: SURFACE.text,
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
+                        overflow: d.ancho ? undefined : "hidden",
+                        textOverflow: d.ancho ? undefined : "ellipsis",
+                        whiteSpace: d.ancho ? "normal" : "nowrap",
+                        lineHeight: d.ancho ? 1.4 : undefined,
                       }}
                     >
                       {d.valor}

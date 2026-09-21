@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BedIcon, PinIcon, UsersIcon } from "@/components/ui/Icons";
+import TarjetaLugar from "@/components/portal/TarjetaLugar";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
@@ -22,6 +22,7 @@ type Hotel = {
   name?: string | null;
   address?: string | null;
   contactPhone?: string | null;
+  photoUrl?: string | null;
 };
 type Celda = {
   delegationId: string;
@@ -48,15 +49,8 @@ export default function HotelesComite({
   const { t } = useI18n();
   const [celdas, setCeldas] = useState<Celda[] | null>(null);
   const [fallo, setFallo] = useState(false);
-  /** Hoteles con el detalle por región desplegado. */
-  const [expandidos, setExpandidos] = useState<Set<string>>(new Set());
-  const alternarHotel = (id: string) =>
-    setExpandidos((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+  /** Ficha abierta, una a la vez: igual que el listado de sedes. */
+  const [abierto, setAbierto] = useState<string | null>(null);
 
   useEffect(() => {
     if (!eventId) return;
@@ -156,125 +150,49 @@ export default function HotelesComite({
         // una pared de fichas "Región · Deporte · Rama" imposible de leer, y
         // repetía el nombre de la región en cada una. La región manda, porque
         // es como se reparte el alojamiento.
-        const porRegion = new Map<string, { deporte: string; rama: string }[]>();
+        const porRegion = new Map<string, string[]>();
         for (const s of selecciones) {
           const lista = porRegion.get(s.region) ?? [];
-          lista.push({ deporte: s.deporte, rama: s.rama });
+          lista.push([s.deporte, s.rama].filter(Boolean).join(" · "));
           porRegion.set(s.region, lista);
         }
         const regiones = [...porRegion.entries()];
         const deportes = new Set(selecciones.map((s) => s.deporte));
-        const abierto = expandidos.has(h.id);
+        const resumen = [
+          `${selecciones.length} ${selecciones.length === 1 ? t("selección") : t("selecciones")}`,
+          `${regiones.length} ${regiones.length === 1 ? t("región") : t("regiones")}`,
+          `${deportes.size} ${deportes.size === 1 ? t("deporte") : t("deportes")}`,
+        ].join(" · ");
+
         return (
-          <div key={h.id} style={{ background: SURFACE.card, borderRadius: 14, border: `1px solid ${SURFACE.border}`, overflow: "hidden" }}>
-            <div style={{ padding: "12px 14px", display: "flex", alignItems: "flex-start", gap: 10 }}>
-              <span style={{ flexShrink: 0, width: 32, height: 32, borderRadius: 10, background: "rgba(33,208,179,0.10)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <BedIcon size={16} color={BRAND.teal} strokeWidth={2} />
-              </span>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <p style={{ fontSize: 14, fontWeight: 800, color: SURFACE.text, margin: 0 }}>{h.name ?? "—"}</p>
-                {h.address && (
-                  <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "2px 0 0", display: "flex", alignItems: "center", gap: 4 }}>
-                    <PinIcon size={11} /> {h.address}
-                  </p>
-                )}
-                <p style={{ fontSize: 11, color: SURFACE.textFaint, margin: "4px 0 0", display: "flex", alignItems: "center", gap: 4, flexWrap: "wrap" }}>
-                  <UsersIcon size={11} />
-                  {selecciones.length === 0
-                    ? t("Sin selecciones asignadas")
-                    : [
-                        `${selecciones.length} ${selecciones.length === 1 ? t("selección") : t("selecciones")}`,
-                        `${regiones.length} ${regiones.length === 1 ? t("región") : t("regiones")}`,
-                        `${deportes.size} ${deportes.size === 1 ? t("deporte") : t("deportes")}`,
-                      ].join(" · ")}
-                </p>
-              </div>
-            </div>
-
-            {selecciones.length > 0 && !abierto && (
-              // Plegado: una ficha por región con su cantidad, en vez de una
-              // por cada combinación región+deporte+rama.
-              <div style={{ padding: "0 14px 10px", display: "flex", flexWrap: "wrap", gap: 5 }}>
-                {regiones.map(([region, items]) => (
-                  <span
-                    key={region}
-                    style={{
-                      fontSize: 10.5,
-                      fontWeight: 700,
-                      padding: "3px 8px",
-                      borderRadius: 999,
-                      background: SURFACE.bg,
-                      border: `1px solid ${SURFACE.borderMuted}`,
-                      color: SURFACE.textSecondary,
-                      whiteSpace: "nowrap",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 5,
-                    }}
-                  >
-                    {region}
-                    <span style={{ color: BRAND.teal, fontWeight: 800 }}>{items.length}</span>
-                  </span>
-                ))}
-              </div>
-            )}
-
-            {selecciones.length > 0 && abierto && (
-              // Desplegado: la región como encabezado y sus deportes debajo,
-              // sin repetir el nombre de la región en cada línea.
-              <div style={{ padding: "0 14px 10px", display: "flex", flexDirection: "column", gap: 8 }}>
-                {regiones.map(([region, items]) => (
-                  <div key={region}>
-                    <p style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>
-                      {region}
-                    </p>
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-                      {items.map((s, i) => (
-                        <span
-                          key={`${s.deporte}-${s.rama}-${i}`}
-                          style={{
-                            fontSize: 10.5,
-                            fontWeight: 600,
-                            padding: "3px 8px",
-                            borderRadius: 999,
-                            background: SURFACE.bg,
-                            border: `1px solid ${SURFACE.borderMuted}`,
-                            color: SURFACE.textSecondary,
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {[s.deporte, s.rama].filter(Boolean).join(" · ")}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {selecciones.length > 0 && (
-              <button
-                type="button"
-                onClick={() => alternarHotel(h.id)}
-                style={{
-                  width: "100%",
-                  background: "transparent",
-                  border: "none",
-                  borderTop: `1px solid ${SURFACE.borderMuted}`,
-                  padding: "9px 14px",
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  color: BRAND.teal,
-                  cursor: "pointer",
-                  textAlign: "center",
-                }}
-              >
-                {abierto ? t("Ocultar detalle") : t("Ver qué deporte va en cada región")}
-              </button>
-            )}
-          </div>
+          <TarjetaLugar
+            key={h.id}
+            nombre={h.name ?? "—"}
+            direccion={h.address}
+            foto={h.photoUrl}
+            tipo="hotel"
+            // En la fila, una ficha por región con su cantidad; el detalle
+            // completo queda para la ficha abierta.
+            etiquetas={regiones.map(([region, items]) => `${region} (${items.length})`)}
+            coordinador={h.contactPhone ? { telefono: h.contactPhone, rotulo: t("Contacto del hotel") } : null}
+            datos={[
+              ...(selecciones.length > 0
+                ? [{ etiqueta: t("Alojados"), valor: resumen, ancho: true }]
+                : []),
+              // Cada región encabeza sus propios deportes, en vez de repetir su
+              // nombre en cada línea.
+              ...regiones.map(([region, items]) => ({
+                etiqueta: region,
+                valor: items.join(" · "),
+                ancho: true,
+              })),
+            ]}
+            abierta={abierto === h.id}
+            onToggle={() => setAbierto(abierto === h.id ? null : h.id)}
+          />
         );
       })}
+
     </div>
   );
 }
