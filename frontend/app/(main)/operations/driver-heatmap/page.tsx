@@ -129,6 +129,15 @@ function formatRating(val: number | null): string {
   return val.toFixed(1);
 }
 
+/**
+ * Nombre del conductor. Cuando el id no resuelve —fichas borradas que dejaron
+ * viajes apuntando a ellas— el panel imprimía un pedazo del uuid, que no le
+ * dice nada a nadie. Mejor decir qué pasó.
+ */
+function nombreConductor(driver: DriverItem | undefined): string {
+  return driver?.fullName?.trim() || "Conductor no registrado";
+}
+
 function toLocalDate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
@@ -352,7 +361,7 @@ export default function DriverHeatmapPage() {
       const activeHoursSet = new Set(todayDriverTrips.map((tr) => new Date(tr.scheduledAt || tr.startedAt!).getHours()));
       return {
         driverId,
-        name: drivers[driverId]?.fullName || "Sin nombre",
+        name: nombreConductor(drivers[driverId]),
         totalTrips: driverTrips.length,
         todayTrips: todayDriverTrips.length,
         avgRating,
@@ -505,7 +514,7 @@ export default function DriverHeatmapPage() {
                       <span style={{ width: 8, height: 8, borderRadius: "50%", background: sem.color, flexShrink: 0, boxShadow: `0 0 6px ${sem.color}40` }} />
                       <div style={{ minWidth: 0 }}>
                         <p style={{ fontSize: "12px", fontWeight: 600, color: pal.textPrimary, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                          {driver?.fullName || driverId.slice(-8)}
+                          {nombreConductor(driver)}
                         </p>
                         <p style={{ fontSize: "10px", color: pal.labelColor, margin: 0 }}>{todayCount} viajes</p>
                       </div>
@@ -630,7 +639,7 @@ export default function DriverHeatmapPage() {
                 >
                   <div style={{ flex: "1 1 200px", minWidth: 0 }}>
                     <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {chofer?.fullName || j.driverId.slice(0, 8)}
+                      {nombreConductor(chofer)}
                     </p>
                     <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "3px 0 0" }}>
                       {j.inicio
