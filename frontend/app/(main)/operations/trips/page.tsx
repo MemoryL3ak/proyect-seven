@@ -278,18 +278,6 @@ const COLUMN_PREVIEW = 3;
 const CLOSED_STATUSES = new Set(["DROPPED_OFF", "COMPLETED", "CANCELLED"]);
 /** Rejilla de la lista "En curso": casilla, hora, estado, servicio, ruta, conductor, acciones. */
 const ONGOING_PAGE_SIZE = 25;
-/** Chip del selector de día. */
-const diaChipStyle = (activo: boolean) => ({
-  borderRadius: "8px",
-  border: `1px solid ${activo ? BRAND.teal : SURFACE.border}`,
-  background: activo ? "rgba(33,208,179,0.10)" : SURFACE.card,
-  color: activo ? BRAND.tealInk : SURFACE.textSecondary,
-  padding: "5px 12px",
-  fontSize: "12.5px",
-  fontWeight: activo ? 600 : 500,
-  cursor: "pointer",
-  whiteSpace: "nowrap" as const,
-});
 const ongoingPaginaStyle = (deshabilitado: boolean) => ({
   borderRadius: "7px",
   border: `1px solid ${SURFACE.border}`,
@@ -335,11 +323,11 @@ const formatDayLabel = (dayKey: string) => {
   const [a, m, d] = dayKey.split("-").map(Number);
   if (!a || !m || !d) return dayKey;
   const texto = new Date(a, m - 1, d).toLocaleDateString("es-CL", {
-    weekday: "short",
+    weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
   });
-  return texto.charAt(0).toUpperCase() + texto.slice(1).replace(/\./g, "");
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 };
 
 // Estados en los que un viaje sigue "vivo" y por tanto puede cancelarse.
@@ -1748,29 +1736,40 @@ export default function TripsPage() {
               </div>
             </div>
 
-            {/* Selector de día: cada jornada con su carga, para saber de
-                antemano dónde está el trabajo de la semana. */}
+            {/* Filtro de jornada. Con chips, una semana cargada llenaba dos
+                filas de botones; como campo, la lista crece sin deformar la
+                vista y cada opción lleva su carga. */}
             {ongoingDays.length > 0 && (
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
-                <button
-                  type="button"
-                  onClick={() => { setOngoingDay(""); setOngoingPage(0); }}
-                  style={diaChipStyle(ongoingDay === "")}
-                >
-                  {t("Todos")}
-                  <span style={{ opacity: 0.6, marginLeft: 6, fontVariantNumeric: "tabular-nums" }}>{ongoingTrips.length}</span>
-                </button>
-                {ongoingDays.map((d) => (
-                  <button
-                    key={d.key}
-                    type="button"
-                    onClick={() => { setOngoingDay(d.key); setOngoingPage(0); }}
-                    style={diaChipStyle(ongoingDay === d.key)}
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+                <label className="text-sm block" style={{ minWidth: 240 }}>
+                  <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Jornada")}</span>
+                  <select
+                    className="input"
+                    value={ongoingDay}
+                    onChange={(e) => { setOngoingDay(e.target.value); setOngoingPage(0); }}
                   >
-                    {d.label}
-                    <span style={{ opacity: 0.6, marginLeft: 6, fontVariantNumeric: "tabular-nums" }}>{d.count}</span>
+                    <option value="">
+                      {t("Todas las jornadas")} ({ongoingTrips.length})
+                    </option>
+                    {ongoingDays.map((d) => (
+                      <option key={d.key} value={d.key}>
+                        {d.label} ({d.count})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {ongoingDay && (
+                  <button
+                    type="button"
+                    onClick={() => { setOngoingDay(""); setOngoingPage(0); }}
+                    style={{
+                      border: `1px solid ${SURFACE.border}`, borderRadius: 8, background: SURFACE.card,
+                      color: SURFACE.textMuted, padding: "8px 14px", fontSize: "12.5px", fontWeight: 500, cursor: "pointer",
+                    }}
+                  >
+                    {t("Quitar filtro")}
                   </button>
-                ))}
+                )}
               </div>
             )}
 
