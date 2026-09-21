@@ -13,6 +13,9 @@ import { ApiRequest } from './api-auth.guard';
  *  - committee:    Coordinador de Comité = participante que coordina el
  *                  evento entero. Ve todas las delegaciones y disciplinas,
  *                  sólo de consulta; filtra en pantalla lo que necesita.
+ *                  El Coordinador de Transporte entra por aquí también: los
+ *                  mismos datos y los mismos módulos; lo suyo aparte pasa en
+ *                  el portal, donde sí contacta a los conductores.
  *  - participant:  cualquier otro participante del portal (sin alcance
  *                  operativo: no ve flota ni incidencias).
  *  - driver / provider_staff: sesiones de portal de conductor y de staff de
@@ -48,6 +51,14 @@ export const MISSION_HEAD_CLIENT_TYPE = 'JEFE_MISION';
 /** Coordinador de Comité: mira el evento completo, sin acotarse a una región. */
 export const COMMITTEE_CLIENT_TYPE = 'COORDINADOR_COMITE';
 export const COMMITTEE_ROLE = 'Coordinador de Comité';
+
+/**
+ * Coordinador de Transporte: mismo alcance que el comité —el evento entero,
+ * sin región— y los mismos módulos. La diferencia está en el portal: es el
+ * único tipo de cliente que le escribe al conductor del traslado.
+ */
+export const TRANSPORT_CLIENT_TYPE = 'COORDINADOR_TRANSPORTE';
+export const TRANSPORT_ROLE = 'Coordinador de Transporte';
 
 const CACHE_TTL_MS = 60_000;
 
@@ -154,14 +165,23 @@ export class StaffScopeService {
       const isHead =
         (row.is_delegation_lead === true || tipo === MISSION_HEAD_CLIENT_TYPE) &&
         Boolean(row.delegation_id);
-      // El Coordinador de Comité no se acota a una región: coordina el evento
-      // entero y filtra en pantalla. Por eso no lleva delegación.
-      const isCommittee = !isHead && tipo === COMMITTEE_CLIENT_TYPE;
+      // Ni el Coordinador de Comité ni el de Transporte se acotan a una
+      // región: coordinan el evento entero y filtran en pantalla. Por eso no
+      // llevan delegación.
+      const isTransport = !isHead && tipo === TRANSPORT_CLIENT_TYPE;
+      const isCommittee =
+        !isHead && (isTransport || tipo === COMMITTEE_CLIENT_TYPE);
       const scope: StaffScope = {
         kind: isHead ? 'mission_head' : isCommittee ? 'committee' : 'participant',
         userId: row.id,
         name: asString(row.full_name),
-        role: isHead ? MISSION_HEAD_ROLE : isCommittee ? COMMITTEE_ROLE : 'Participante',
+        role: isHead
+          ? MISSION_HEAD_ROLE
+          : isTransport
+            ? TRANSPORT_ROLE
+            : isCommittee
+              ? COMMITTEE_ROLE
+              : 'Participante',
         delegationId: isHead ? row.delegation_id : null,
         delegationName: isHead ? await this.delegationNameOf(row.delegation_id) : null,
       };

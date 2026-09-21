@@ -1,13 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarIcon, CarIcon, ChevronDownIcon, UsersIcon } from "@/components/ui/Icons";
+import { CalendarIcon, CarIcon, ChevronDownIcon, MessageIcon, UsersIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
 import TripMap from "@/components/TripMap";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import { mapaDeLugares } from "@/lib/lugares";
+import { openExternal, whatsappHref } from "@/lib/external-link";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -83,6 +84,8 @@ export default function MissionTrips({
   hotelFiltro = "",
   titulo,
   nombreDelegacion,
+  contactoChofer = false,
+  nombreContacto = null,
 }: {
   trips: MissionTrip[];
   delegationId?: string | null;
@@ -110,6 +113,14 @@ export default function MissionTrips({
   titulo?: string;
   /** Nombre de una región para mostrarlo en cada tarjeta cuando se ven todas. */
   nombreDelegacion?: (delegationId?: string | null) => string | null;
+  /**
+   * Contacto directo con el chofer del traslado. Es lo único que separa al
+   * Coordinador de Transporte del Coordinador de Comité: los demás perfiles
+   * del portal escriben al Coordinador General, no al conductor.
+   */
+  contactoChofer?: boolean;
+  /** Quién escribe, para que el mensaje llegue firmado. */
+  nombreContacto?: string | null;
 }) {
   const { t } = useI18n();
   const [disciplinaFiltro, setDisciplinaFiltro] = useState("");
@@ -204,8 +215,23 @@ export default function MissionTrips({
       .catch(() => setDrivers([]));
   }, [propios, drivers]);
 
-  const chofer = (tr: MissionTrip) =>
-    tr.driverId ? (drivers ?? []).find((d) => d.id === tr.driverId || d.userId === tr.driverId)?.fullName ?? null : null;
+  const chofer = (tr: MissionTrip): DriverRow | null =>
+    tr.driverId ? (drivers ?? []).find((d) => d.id === tr.driverId || d.userId === tr.driverId) ?? null : null;
+
+  /**
+   * WhatsApp al chofer con el traslado ya escrito en el mensaje: el
+   * coordinador no tiene que explicarle de cuál de los traslados del día le
+   * está hablando, que es donde se va el tiempo en una llamada.
+   */
+  const escribirAlChofer = (tr: MissionTrip, d: DriverRow) => {
+    const nombre = (d.fullName ?? "").trim().split(" ")[0];
+    const saludo = nombre ? `Hola ${nombre}` : "Hola";
+    const firma = nombreContacto
+      ? `, te escribe ${nombreContacto} de la coordinación de transporte`
+      : ", te escribe la coordinación de transporte";
+    const texto = `${saludo}${firma}. Es por el traslado de las ${hora(tr.scheduledAt)} (${puntoOrigen(tr)} → ${puntoDestino(tr)}).`;
+    openExternal(whatsappHref(String(d.phone), texto));
+  };
 
   return (
     <div style={{ background: SURFACE.card, borderRadius: 14, border: `1px solid ${SURFACE.border}`, overflow: "hidden" }}>
@@ -264,7 +290,8 @@ export default function MissionTrips({
           const disciplina = disciplinaDe(tr);
           const abiertaEsta = abierto === tr.id;
           const pasajeros = (tr.athleteNames ?? []).filter(Boolean);
-          const nombreChofer = chofer(tr);
+          const choferViaje = chofer(tr);
+          const nombreChofer = choferViaje?.fullName ?? null;
           return (
             <div
               key={tr.id}
@@ -316,6 +343,35 @@ export default function MissionTrips({
                       <CarIcon size={11} /> {nombreChofer ?? t("Sin chofer")}
                       {tr.vehiclePlate ? ` · ${tr.vehiclePlate}` : ""}
                     </span>
+                  )}
+                  {/* El botón va junto al nombre del chofer y no dentro del
+                      detalle: escribirle es lo primero que se hace cuando un
+                      traslado se atrasa, y abrir la tarjeta para llegar a él
+                      es un toque de más. */}
+                  {contactoChofer && choferViaje?.phone && (
+                    <button
+                      type="button"
+                      title={t("WhatsApp al conductor")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        escribirAlChofer(tr, choferViaje);
+                      }}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "2px 9px",
+                        borderRadius: 999,
+                        border: `1px solid ${SURFACE.border}`,
+                        background: SURFACE.card,
+                        color: BRAND.tealInk,
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <MessageIcon size={11} /> {t("WhatsApp")}
+                    </button>
                   )}
                   {(tr.passengerCount || pasajeros.length > 0) && (
                     <span style={{ fontSize: 11, color: SURFACE.textMuted, display: "inline-flex", alignItems: "center", gap: 4 }}>

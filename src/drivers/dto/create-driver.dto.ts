@@ -98,6 +98,7 @@ export class CreateDriverDto {
       'FAMILIA_PARAPAN',
       'JEFE_MISION',
       'COORDINADOR_COMITE',
+      'COORDINADOR_TRANSPORTE',
       'COMITE_ORGANIZADOR',
       'PROVEEDORES',
     ],

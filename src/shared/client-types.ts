@@ -19,6 +19,10 @@ export const CLIENT_TYPES = [
   // Su portal muestra actividades, calendario, sedes y hoteles de todas las
   // delegaciones, con filtros por región y deporte.
   'COORDINADOR_COMITE',
+  // Coordinador de Transporte: los mismos módulos que el Coordinador de
+  // Comité —el evento entero, de consulta— y además el contacto directo con
+  // el conductor de cada traslado, que el resto del portal no ofrece.
+  'COORDINADOR_TRANSPORTE',
   'COMITE_ORGANIZADOR',
   'PROVEEDORES',
 ] as const;

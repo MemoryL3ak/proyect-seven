@@ -7,6 +7,7 @@ import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { nombrePropio } from "@/lib/nombres";
 import { AlertIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon } from "@/components/ui/Icons";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
+import { isEventCoordinator } from "@/lib/clientTypes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import StyledSelect from "@/components/StyledSelect";
@@ -1577,10 +1578,7 @@ export default function ResourceScreen({
           CLAVES_HABITACION.some(
             (k) => String(form[k] ?? "") !== (habitacionesAlAbrir.current?.[k] ?? ""),
           ));
-      if (
-        config.endpoint === "/athletes" &&
-        String(form.userType ?? "").trim().toUpperCase() === "COORDINADOR_COMITE"
-      ) {
+      if (config.endpoint === "/athletes" && isEventCoordinator(form.userType as string)) {
         // Explícitos en null: el payload omite los campos vacíos, así que al
         // cambiarle el tipo a alguien que ya tenía región o deporte, los
         // valores viejos se quedaban guardados y lo acotaban en el portal.
@@ -3385,12 +3383,12 @@ export default function ResourceScreen({
                     hotelFieldOrder.indexOf(a.key) - hotelFieldOrder.indexOf(b.key)
                 );
               const athleteCountry = (form.countryCode as string | undefined) ?? "";
-              // El Coordinador de Comité no pertenece a una región ni a un
-              // deporte: coordina el evento completo. Pedirle delegación,
-              // categoría, género o disciplina invita a acotarlo por error,
-              // que es justo lo contrario de lo que hace su portal.
-              const esCoordinadorComite =
-                String(form.userType ?? "").trim().toUpperCase() === "COORDINADOR_COMITE";
+              // Los coordinadores de evento —Comité y Transporte— no
+              // pertenecen a una región ni a un deporte: coordinan el evento
+              // completo. Pedirles delegación, categoría, género o disciplina
+              // invita a acotarlos por error, que es justo lo contrario de lo
+              // que hace su portal.
+              const esCoordinadorComite = isEventCoordinator(form.userType as string);
               const noAplicaAlComite = new Set([
                 "delegationId",
                 "disciplineCategory",

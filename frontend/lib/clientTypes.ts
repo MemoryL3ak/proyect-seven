@@ -7,6 +7,9 @@ export const CLIENT_TYPE_OPTIONS = [
   { label: "TM (Prensa)", value: "TM" },
   { label: "Jefe de Misión", value: "JEFE_MISION" },
   { label: "Coordinador Comité", value: "COORDINADOR_COMITE" },
+  // Coordinador Transporte: los mismos módulos del Coordinador Comité y, de
+  // más, el contacto con el conductor de cada traslado.
+  { label: "Coordinador Transporte", value: "COORDINADOR_TRANSPORTE" },
   // Responsable de un recinto. Se asigna a la sede desde el maestro de Sedes,
   // que sale a buscar justamente a los participantes con este rol.
   { label: "Coordinador de Sede", value: "COORDINADOR_SEDE" },
@@ -35,4 +38,26 @@ export function clientTypeLabel(value?: string | null) {
     CLIENT_TYPE_OPTIONS.find((item) => item.value === normalized)?.label ||
     normalized
   );
+}
+
+/**
+ * Los dos coordinadores que miran el evento entero, no una región: Comité y
+ * Transporte. Comparten los módulos del portal (actividades, calendario,
+ * sedes, hoteles, alimentación, documentos) y la misma ficha en el panel, sin
+ * delegación ni deporte que los acote.
+ */
+export function isEventCoordinator(value?: string | null) {
+  const tipo = normalizeClientType(value);
+  return tipo === "COORDINADOR_COMITE" || tipo === "COORDINADOR_TRANSPORTE";
+}
+
+/**
+ * Quién puede escribirle directo al chofer. Para el resto del portal el
+ * contacto es el Coordinador General —decisión de producto: al conductor no
+ * lo llama cualquiera—, y el Coordinador Transporte es la excepción, porque
+ * hablar con ellos es justamente su trabajo. El Jefe de Misión tiene lo suyo
+ * aparte, en el módulo Flota de su región.
+ */
+export function canContactDrivers(value?: string | null) {
+  return normalizeClientType(value) === "COORDINADOR_TRANSPORTE";
 }

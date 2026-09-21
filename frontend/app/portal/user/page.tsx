@@ -48,7 +48,7 @@ import {
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
-import { normalizeClientType } from "@/lib/clientTypes";
+import { canContactDrivers, isEventCoordinator, normalizeClientType } from "@/lib/clientTypes";
 import { catalogoConCache } from "@/lib/catalog-cache";
 import { mapaDeLugares } from "@/lib/lugares";
 import VenueMap from "@/components/VenueMap";
@@ -732,8 +732,13 @@ export default function UserPortalPage() {
    * por delegación y disciplina, que es como trabaja: "muéstrame lo de Ñuble
    * en vóleibol". En actividades tiene además el hotel de destino, para leer
    * la otra pregunta que se hace: hacia qué hotel van los conductores.
+   *
+   * El Coordinador de Transporte usa esos mismos módulos —por eso comparte
+   * esta bandera— y se separa en una sola cosa: puede escribirle al chofer
+   * de cada traslado. Ver `puedeContactarChoferes`.
    */
-  const isComite = normalizeClientType(athlete?.userType) === "COORDINADOR_COMITE";
+  const isComite = isEventCoordinator(athlete?.userType);
+  const puedeContactarChoferes = canContactDrivers(athlete?.userType);
 
   // El deporte que el Coordinador de Comité elige arriba manda también en el
   // calendario, que tiene su propio filtro de disciplina.
@@ -1080,7 +1085,7 @@ export default function UserPortalPage() {
       // si el usuario cambió de delegación desde la última vez, se descarta.
       const sirveLoPedido = !!tanda && tanda.delegacionPedida === (data.delegationId ?? null);
 
-      const esComiteAhora = normalizeClientType(data.userType) === "COORDINADOR_COMITE";
+      const esComiteAhora = isEventCoordinator(data.userType);
       // Las regiones las usa el comité en su barra de filtros y ahora también
       // el calendario de cualquier perfil, así que se cargan siempre. Va por
       // el mismo caché de catálogos: no agrega una ida y vuelta al abrir.
@@ -2139,6 +2144,8 @@ export default function UserPortalPage() {
               <MissionTrips
                 todas
                 titulo="Traslados del evento"
+                contactoChofer={puedeContactarChoferes}
+                nombreContacto={athlete.fullName}
                 delegacionFiltro={comiteDelegacion}
                 disciplinaExterna={comiteDisciplina}
                 hotelFiltro={comiteHotel}
