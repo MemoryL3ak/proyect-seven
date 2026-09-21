@@ -7,6 +7,70 @@ import { StarIcon, MedalIcon, RefreshIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 
 /* ─── Types ─── */
+/** Estados en los que un viaje ya no le exige nada al conductor. */
+const CERRADOS = new Set(["DROPPED_OFF", "COMPLETED", "CANCELLED"]);
+
+/**
+ * Jornada del conductor: 13 horas desde que inicia su primer viaje del día.
+ *
+ * Al cumplirse el plazo el contador NO se corta solo. Sigue corriendo como
+ * horas extra mientras al conductor le quede trabajo: un viaje en curso que
+ * todavía no termina, o viajes programados del mismo día sin completar. Se
+ * cierra recién cuando termina el último viaje, y las extras son lo que va
+ * desde el plazo hasta ese cierre.
+ */
+const JORNADA_HORAS = 13;
+const JORNADA_MS = JORNADA_HORAS * 60 * 60 * 1000;
+/** Umbral para avisar que la jornada está por vencer. */
+const JORNADA_AVISO_MS = 60 * 60 * 1000;
+
+/** Color por estado: el operador mira la franja izquierda, no el texto. */
+const ESTADO_JORNADA: Record<
+  string,
+  { label: string; color: string; bg: string; borde: string; texto: string }
+> = {
+  SIN_INICIAR: { label: "Sin iniciar", color: "#cbd5e1", bg: "#f8fafc", borde: "#e2e8f0", texto: "#64748b" },
+  EN_JORNADA: { label: "En jornada", color: "#21d0b3", bg: "rgba(33,208,179,0.10)", borde: "rgba(33,208,179,0.3)", texto: "#0a7a6b" },
+  POR_VENCER: { label: "Por vencer", color: "#f59e0b", bg: "#fef3c7", borde: "rgba(245,158,11,0.4)", texto: "#92400e" },
+  EXTRA: { label: "Horas extra", color: "#ef4444", bg: "rgba(239,68,68,0.1)", borde: "rgba(239,68,68,0.35)", texto: "#b91c1c" },
+  CERRADA: { label: "Cerrada", color: "#94a3b8", bg: "#f1f5f9", borde: "#e2e8f0", texto: "#475569" },
+};
+
+type EstadoJornada = "SIN_INICIAR" | "EN_JORNADA" | "POR_VENCER" | "EXTRA" | "CERRADA";
+
+type Jornada = {
+  driverId: string;
+  inicio: Date | null;
+  /** Inicio + 13 h. */
+  limite: Date | null;
+  /** Cierre real: fin del último viaje, o null si la jornada sigue abierta. */
+  cierre: Date | null;
+  estado: EstadoJornada;
+  /** Milisegundos trabajados, hasta ahora o hasta el cierre. */
+  trabajadoMs: number;
+  /** Milisegundos por sobre las 13 h. */
+  extraMs: number;
+  /** Lo que mantiene la jornada abierta pasado el plazo. */
+  viajeEnCurso: boolean;
+  pendientes: number;
+  totalViajes: number;
+};
+
+/** "4 h 20 min", "35 min". Un contador de jornada no necesita segundos. */
+function formatoDuracion(ms: number): string {
+  const total = Math.max(0, Math.round(ms / 60000));
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  if (h === 0) return `${m} min`;
+  if (m === 0) return `${h} h`;
+  return `${h} h ${m} min`;
+}
+
+function horaCorta(fecha: Date | null): string {
+  if (!fecha) return "—";
+  return fecha.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
 type Trip = {
   id: string;
   driverId?: string | null;
@@ -137,6 +201,82 @@ export default function DriverHeatmapPage() {
       return d >= dayStart && d <= dayEnd;
     }),
   [trips, dayStart, dayEnd, isViewingToday]);
+
+  /* ─── Jornadas del día: 13 h desde el primer viaje iniciado ─── */
+  const jornadas = useMemo<Jornada[]>(() => {
+    const ahora = new Date();
+    const porConductor = new Map<string, Trip[]>();
+    for (const tr of dayTrips) {
+      if (!tr.driverId) continue;
+      const lista = porConductor.get(tr.driverId) ?? [];
+      lista.push(tr);
+      porConductor.set(tr.driverId, lista);
+    }
+
+    const filas: Jornada[] = [];
+    porConductor.forEach((viajes, driverId) => {
+      const iniciados = viajes
+        .map((v) => (v.startedAt ? new Date(v.startedAt) : null))
+        .filter((d): d is Date => !!d && !Number.isNaN(d.getTime()))
+        .sort((a, b) => a.getTime() - b.getTime());
+
+      // Sin un viaje iniciado no hay jornada que contar: lo programado no
+      // empieza a correr el reloj.
+      if (iniciados.length === 0) {
+        filas.push({
+          driverId, inicio: null, limite: null, cierre: null, estado: "SIN_INICIAR",
+          trabajadoMs: 0, extraMs: 0, viajeEnCurso: false,
+          pendientes: viajes.length, totalViajes: viajes.length,
+        });
+        return;
+      }
+
+      const inicio = iniciados[0];
+      const limite = new Date(inicio.getTime() + JORNADA_MS);
+      const viajeEnCurso = viajes.some((v) => v.status === "EN_ROUTE" || v.status === "PICKED_UP");
+      // Programados del día que todavía no se hacen. Son los que mantienen el
+      // contador corriendo pasado el plazo.
+      const pendientes = viajes.filter(
+        (v) => !CERRADOS.has(v.status ?? "") && v.status !== "CANCELLED",
+      ).length;
+
+      const cierres = viajes
+        .map((v) => (v.completedAt ? new Date(v.completedAt) : null))
+        .filter((d): d is Date => !!d && !Number.isNaN(d.getTime()))
+        .sort((a, b) => b.getTime() - a.getTime());
+      const ultimoCierre = cierres[0] ?? null;
+
+      const abierta = viajeEnCurso || pendientes > 0;
+      const cierre = abierta ? null : ultimoCierre;
+      const hasta = abierta ? ahora : (ultimoCierre ?? ahora);
+      const trabajadoMs = Math.max(0, hasta.getTime() - inicio.getTime());
+      const extraMs = Math.max(0, hasta.getTime() - limite.getTime());
+
+      let estado: EstadoJornada;
+      if (!abierta) estado = "CERRADA";
+      else if (ahora >= limite) estado = "EXTRA";
+      else if (limite.getTime() - ahora.getTime() <= JORNADA_AVISO_MS) estado = "POR_VENCER";
+      else estado = "EN_JORNADA";
+
+      filas.push({
+        driverId, inicio, limite, cierre, estado,
+        trabajadoMs, extraMs, viajeEnCurso, pendientes,
+        totalViajes: viajes.length,
+      });
+    });
+
+    // Primero quien está en extras, después quien va a vencer: es el orden en
+    // que el operador tiene que actuar.
+    const peso: Record<EstadoJornada, number> = {
+      EXTRA: 0, POR_VENCER: 1, EN_JORNADA: 2, CERRADA: 3, SIN_INICIAR: 4,
+    };
+    return filas.sort(
+      (a, b) =>
+        peso[a.estado] - peso[b.estado] ||
+        b.extraMs - a.extraMs ||
+        (drivers[a.driverId]?.fullName ?? "").localeCompare(drivers[b.driverId]?.fullName ?? ""),
+    );
+  }, [dayTrips, drivers]);
 
   /* ─── Active driver IDs for the day ─── */
   const activeDriverIds = useMemo(() => {
@@ -427,6 +567,127 @@ export default function DriverHeatmapPage() {
           )}
         </div>
       </div>
+
+      {/* ── Jornadas: el reloj de 13 h de cada conductor ──
+          Regla: arranca con el primer viaje iniciado del día. Al cumplirse el
+          plazo no se corta: sigue como horas extra mientras al conductor le
+          quede un viaje en curso o viajes del día sin hacer. */}
+      <section style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "20px", padding: "20px", boxShadow: pal.shadow }}>
+        <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+          <div>
+            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: pal.labelColor }}>
+              {t("Control de jornada")}
+            </p>
+            <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: pal.textPrimary }}>
+              {t("Jornada de 13 horas")}
+            </h3>
+            <p style={{ marginTop: "2px", fontSize: "12px", color: pal.textMuted }}>
+              {t("Cuenta desde el primer viaje iniciado. Pasado el plazo sigue como horas extra hasta que el conductor termine el último viaje del día.")}
+            </p>
+          </div>
+          <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
+            {[
+              { label: t("En jornada"), valor: jornadas.filter((j) => j.estado === "EN_JORNADA").length, color: null },
+              { label: t("Por vencer"), valor: jornadas.filter((j) => j.estado === "POR_VENCER").length, color: STATE.warning },
+              { label: t("En extras"), valor: jornadas.filter((j) => j.estado === "EXTRA").length, color: STATE.danger },
+            ].map((k) => (
+              <span key={k.label} style={{ display: "inline-flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: pal.labelColor, whiteSpace: "nowrap" }}>
+                  {k.label}
+                </span>
+                <span style={{ fontSize: "20px", lineHeight: 1, fontWeight: 600, fontVariantNumeric: "tabular-nums", color: k.color && k.valor > 0 ? k.color : pal.textPrimary }}>
+                  {k.valor}
+                </span>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {jornadas.length === 0 ? (
+          <div style={{ borderRadius: "14px", border: `1px dashed ${pal.cardBorder}`, padding: "36px 20px", textAlign: "center", color: pal.textMuted, fontSize: "13px" }}>
+            {t("Ningún conductor con viajes este día.")}
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {jornadas.map((j) => {
+              const tono = ESTADO_JORNADA[j.estado];
+              const chofer = drivers[j.driverId];
+              // La barra se llena con las 13 h; en extras se pinta completa.
+              const avance = j.limite && j.inicio
+                ? Math.min(100, (j.trabajadoMs / JORNADA_MS) * 100)
+                : 0;
+              const restante = j.limite ? j.limite.getTime() - Date.now() : 0;
+              return (
+                <div
+                  key={j.driverId}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap",
+                    padding: "12px 14px", borderRadius: 14,
+                    border: `1px solid ${SURFACE.border}`,
+                    borderLeft: `4px solid ${tono.color}`,
+                    background: SURFACE.card,
+                  }}
+                >
+                  <div style={{ flex: "1 1 200px", minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {chofer?.fullName || j.driverId.slice(0, 8)}
+                    </p>
+                    <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "3px 0 0" }}>
+                      {j.inicio
+                        ? `${t("Inicio")} ${horaCorta(j.inicio)} · ${t("plazo hasta")} ${horaCorta(j.limite)}`
+                        : t("Sin viajes iniciados")}
+                    </p>
+                  </div>
+
+                  <div style={{ flex: "1 1 220px", minWidth: 180 }}>
+                    <div style={{ height: 7, borderRadius: 99, background: SURFACE.borderMuted, overflow: "hidden" }}>
+                      <div style={{ width: `${avance}%`, height: "100%", background: tono.color, transition: "width .3s" }} />
+                    </div>
+                    <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "5px 0 0", fontVariantNumeric: "tabular-nums" }}>
+                      {j.inicio ? `${formatoDuracion(j.trabajadoMs)} ${t("de")} ${JORNADA_HORAS} h` : "—"}
+                      {j.estado === "EN_JORNADA" || j.estado === "POR_VENCER"
+                        ? ` · ${t("quedan")} ${formatoDuracion(restante)}`
+                        : ""}
+                    </p>
+                  </div>
+
+                  <div style={{ flex: "0 0 auto", textAlign: "right", minWidth: 150 }}>
+                    <span style={{
+                      display: "inline-block", fontSize: 10.5, fontWeight: 700,
+                      padding: "3px 10px", borderRadius: 99,
+                      background: tono.bg, border: `1px solid ${tono.borde}`, color: tono.texto,
+                    }}>
+                      {t(tono.label)}
+                    </span>
+                    <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "5px 0 0" }}>
+                      {j.extraMs > 0 ? (
+                        <span style={{ color: STATE.dangerText, fontWeight: 700 }}>
+                          +{formatoDuracion(j.extraMs)} {t("extra")}
+                        </span>
+                      ) : (
+                        `${j.totalViajes} ${j.totalViajes === 1 ? t("viaje") : t("viajes")}`
+                      )}
+                    </p>
+                    {/* Por qué sigue corriendo el contador pasado el plazo. */}
+                    {j.estado === "EXTRA" && (
+                      <p style={{ fontSize: 11, color: SURFACE.textFaint, margin: "2px 0 0" }}>
+                        {j.viajeEnCurso
+                          ? t("viaje en curso sin terminar")
+                          : `${j.pendientes} ${j.pendientes === 1 ? t("viaje pendiente del día") : t("viajes pendientes del día")}`}
+                      </p>
+                    )}
+                    {j.estado === "CERRADA" && j.cierre && (
+                      <p style={{ fontSize: 11, color: SURFACE.textFaint, margin: "2px 0 0" }}>
+                        {t("cerró")} {horaCorta(j.cierre)}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
 
       {/* ── Rankings ── apilados en móvil, lado a lado desde lg ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
