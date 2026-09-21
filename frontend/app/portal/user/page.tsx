@@ -2384,6 +2384,22 @@ export default function UserPortalPage() {
               soft: cfg.soft,
             });
           };
+          /**
+           * Actividades por bloque horario. Una jornada de atletismo son
+           * cincuenta pruebas que arrancan de a varias a la misma hora: en
+           * lista corrida hay que leer la hora de cada fila para ubicarse.
+           */
+          const bloquesPorHora = (lista: CalItem[]): [string, CalItem[]][] => {
+            const bloques = new Map<string, CalItem[]>();
+            lista.forEach((it) => {
+              const clave = `${String(it.date.getHours()).padStart(2, "0")}:00`;
+              const enLaHora = bloques.get(clave) ?? [];
+              enLaHora.push(it);
+              bloques.set(clave, enLaHora);
+            });
+            return Array.from(bloques.entries());
+          };
+
           /** Hora en 24 h: "10:00 a. m." ocupa el doble y se corta el título. */
           const hhmm = (d: Date) =>
             d.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false });
@@ -2693,20 +2709,9 @@ export default function UserPortalPage() {
                           {selItems.length===0 ? (
                             <p style={{ fontSize:12,color:SURFACE.textFaint,margin:0 }}>Sin actividades este día.</p>
                           ) : (() => {
-                            // Por bloque horario. Una jornada de atletismo son
-                            // cincuenta pruebas: en lista corrida hay que leer
-                            // la hora de cada fila para ubicarse, y la hora se
-                            // repite en las que arrancan juntas.
-                            const bloques = new Map<string, typeof selItems>();
-                            selItems.forEach(it => {
-                              const clave = `${String(it.date.getHours()).padStart(2,"0")}:00`;
-                              const lista = bloques.get(clave) ?? [];
-                              lista.push(it);
-                              bloques.set(clave, lista);
-                            });
                             return (
                               <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
-                                {Array.from(bloques.entries()).map(([bloque, items]) => (
+                                {bloquesPorHora(selItems).map(([bloque, items]) => (
                                   <div key={bloque}>
                                     <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
                                       <span style={{ fontSize:12,fontWeight:800,color:SURFACE.text,fontVariantNumeric:"tabular-nums" }}>{bloque}</span>
@@ -2755,36 +2760,92 @@ export default function UserPortalPage() {
                       </div>
                     ) : agendaDays.map((dayNum, di) => {
                       const dayDate = new Date(y,m,dayNum);
+                      const clave = keyOf(dayDate);
                       const isToday = dayDate.toDateString()===now.toDateString();
+                      const delDia = byDay.get(dayNum)!.slice().sort((a,b)=>a.date.getTime()-b.date.getTime());
+                      const abierto = semanaAbiertos.has(clave);
+                      const rango = delDia.length===1
+                        ? hhmm(delDia[0].date)
+                        : `${hhmm(delDia[0].date)}–${hhmm(delDia[delDia.length-1].date)}`;
+                      const sedes = Array.from(new Set(delDia.map(e=>e.venue).filter(Boolean))) as string[];
+                      const verTodo = semanaVerTodo.has(clave);
+                      const visibles = verTodo ? delDia : delDia.slice(0, SEMANA_TOPE);
+                      const ocultos = delDia.length - visibles.length;
                       return (
-                        <div key={dayNum} style={{ display:"flex",gap:0,borderTop: di===0?"none":`1px solid ${SURFACE.borderMuted}` }}>
-                          {/* Chip de fecha */}
-                          <div style={{ flex:"0 0 64px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-start",padding:"14px 0",background:isToday?"#f0fdfa":SURFACE.bg,borderRight:`1px solid ${SURFACE.borderMuted}` }}>
-                            <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.08em",color:isToday?BRAND.tealDark:SURFACE.textFaint }}>{fmtDow(dayDate)}</span>
-                            <span style={{ fontSize:22,fontWeight:800,color:isToday?BRAND.tealDark:SURFACE.text,lineHeight:1.1 }}>{dayNum}</span>
-                            <span style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint }}>{fmtMon(dayDate)}</span>
-                          </div>
-                          {/* Actividades del día */}
-                          <div style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column" }}>
-                            {byDay.get(dayNum)!.sort((a,b)=>a.date.getTime()-b.date.getTime()).map((it, ii) => {
-                              const cfg = TYPE_CFG[it.type];
-                              return (
-                                <button key={it.id} type="button" onClick={()=>abrirDetalle(it)}
-                                  style={{ width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",
-                                    display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderTop: ii===0?"none":`1px solid ${SURFACE.bg}` }}>
-                                  <span style={{ flexShrink:0,fontSize:12.5,fontWeight:700,color:SURFACE.text,width:38,fontVariantNumeric:"tabular-nums" }}>{hhmm(it.date)}</span>
-                                  <span style={{ flexShrink:0,width:32,height:32,borderRadius:9,background:cfg.soft,display:"inline-flex",alignItems:"center",justifyContent:"center" }}><cfg.icon size={16} /></span>
-                                  <span style={{ flex:1,minWidth:0 }}>
-                                    <span style={{ display:"block",fontSize:13,fontWeight:600,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}</span>
-                                    <span style={{ display:"block",fontSize:11,color:SURFACE.textFaint,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                                      {[it.subtitle, it.venue].filter(Boolean).join(" · ") || cfg.label}
+                        <div key={dayNum} style={{ borderTop: di===0?"none":`1px solid ${SURFACE.borderMuted}` }}>
+                          <button
+                            type="button"
+                            onClick={()=>alternarDiaSemana(clave)}
+                            style={{
+                              width:"100%",textAlign:"left",border:"none",cursor:"pointer",
+                              display:"flex",alignItems:"center",gap:0,padding:0,
+                              background:isToday?"#f0fdfa":"transparent",
+                            }}
+                          >
+                            {/* Chip de fecha */}
+                            <span style={{ flex:"0 0 64px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"12px 0",background:isToday?"#f0fdfa":SURFACE.bg,borderRight:`1px solid ${SURFACE.borderMuted}` }}>
+                              <span style={{ fontSize:10,fontWeight:800,letterSpacing:"0.08em",color:isToday?BRAND.tealDark:SURFACE.textFaint }}>{fmtDow(dayDate)}</span>
+                              <span style={{ fontSize:22,fontWeight:800,color:isToday?BRAND.tealDark:SURFACE.text,lineHeight:1.1 }}>{dayNum}</span>
+                              <span style={{ fontSize:9,fontWeight:700,color:SURFACE.textFaint }}>{fmtMon(dayDate)}</span>
+                            </span>
+                            {/* Resumen: plegado tiene que informar, no esconder. */}
+                            <span style={{ flex:1,minWidth:0,padding:"10px 12px" }}>
+                              <span style={{ display:"block",fontSize:12.5,fontWeight:700,color:isToday?BRAND.tealDark:SURFACE.text }}>
+                                {cap1(dayDate.toLocaleDateString("es-CL",{weekday:"long"}))}
+                              </span>
+                              <span style={{ display:"block",fontSize:10.5,color:SURFACE.textFaint,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                {rango}
+                                {sedes.length>0 && ` · ${sedes.slice(0,2).join(" · ")}`}
+                                {sedes.length>2 && ` +${sedes.length-2}`}
+                              </span>
+                            </span>
+                            <span style={{ flexShrink:0,display:"flex",alignItems:"center",gap:8,padding:"0 12px" }}>
+                              <span style={{ fontSize:10,fontWeight:800,color:BRAND.tealDark,background:"rgba(33,208,179,0.12)",borderRadius:20,padding:"2px 9px" }}>{delDia.length}</span>
+                              <ChevronDownIcon size={14} color={SURFACE.textFaint} strokeWidth={2}
+                                style={{ transition:"transform .15s",transform:abierto?"rotate(180deg)":"rotate(0)" }} />
+                            </span>
+                          </button>
+
+                          {abierto && (
+                            <div style={{ padding:"4px 12px 12px 64px",display:"flex",flexDirection:"column",gap:12 }}>
+                              {bloquesPorHora(visibles).map(([bloque, deLaHora]) => (
+                                <div key={bloque}>
+                                  <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
+                                    <span style={{ fontSize:12,fontWeight:800,color:SURFACE.text,fontVariantNumeric:"tabular-nums" }}>{bloque}</span>
+                                    <span style={{ flex:1,height:1,background:SURFACE.borderMuted }} />
+                                    <span style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint }}>
+                                      {deLaHora.length} {deLaHora.length===1?"actividad":"actividades"}
                                     </span>
-                                  </span>
-                                  <ChevronRightIcon size={14} color={SURFACE.borderStrong} strokeWidth={2} />
+                                  </div>
+                                  <div style={{ display:"flex",flexDirection:"column",gap:5 }}>
+                                    {deLaHora.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
+                                      <button key={it.id} type="button" onClick={()=>abrirDetalle(it)}
+                                        style={{ width:"100%",textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:9,
+                                          background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"8px 10px" }}>
+                                        <span style={{ fontSize:11.5,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{hhmm(it.date)}</span>
+                                        <span style={{ flexShrink:0,width:26,height:26,borderRadius:8,background:cfg.soft,display:"inline-flex",alignItems:"center",justifyContent:"center" }}><cfg.icon size={14} /></span>
+                                        <span style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column" }}>
+                                          <span style={{ fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}</span>
+                                          {(it.subtitle || it.venue) && (
+                                            <span style={{ fontSize:10.5,color:SURFACE.textFaint,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                              {[it.subtitle, it.venue].filter(Boolean).join(" · ")}
+                                            </span>
+                                          )}
+                                        </span>
+                                        <ChevronRightIcon size={13} color={SURFACE.borderStrong} strokeWidth={2} />
+                                      </button>
+                                    ); })}
+                                  </div>
+                                </div>
+                              ))}
+                              {ocultos>0 && (
+                                <button type="button" onClick={()=>marcarVerTodo(clave)}
+                                  style={{ background:"none",border:"none",cursor:"pointer",padding:"2px 0",fontSize:11.5,fontWeight:700,color:BRAND.tealDark,textAlign:"center" }}>
+                                  Ver las {ocultos} restantes
                                 </button>
-                              );
-                            })}
-                          </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
