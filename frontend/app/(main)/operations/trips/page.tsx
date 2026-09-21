@@ -276,7 +276,38 @@ const COLUMN_PREVIEW = 3;
 /** Estados que sacan un viaje de la operación viva. */
 const CLOSED_STATUSES = new Set(["DROPPED_OFF", "COMPLETED", "CANCELLED"]);
 /** Rejilla de la lista "En curso": casilla, hora, estado, servicio, ruta, conductor, acciones. */
-const ONGOING_COLUMNS = "18px 52px 108px 168px minmax(240px, 1fr) 176px 104px";
+const ONGOING_COLUMNS = "18px 50px 62px 116px 150px minmax(220px, 1fr) 170px 96px";
+const ONGOING_PAGE_SIZE = 25;
+const ONGOING_HEAD_STYLE = {
+  fontSize: "10px",
+  fontWeight: 600,
+  letterSpacing: "0.12em",
+  textTransform: "uppercase" as const,
+  color: SURFACE.textFaint,
+} as const;
+/** Chip del selector de día. */
+const diaChipStyle = (activo: boolean) => ({
+  borderRadius: "8px",
+  border: `1px solid ${activo ? BRAND.teal : SURFACE.border}`,
+  background: activo ? "rgba(33,208,179,0.10)" : SURFACE.card,
+  color: activo ? BRAND.tealInk : SURFACE.textSecondary,
+  padding: "5px 12px",
+  fontSize: "12.5px",
+  fontWeight: activo ? 600 : 500,
+  cursor: "pointer",
+  whiteSpace: "nowrap" as const,
+});
+const ongoingPaginaStyle = (deshabilitado: boolean) => ({
+  borderRadius: "7px",
+  border: `1px solid ${SURFACE.border}`,
+  background: SURFACE.card,
+  color: deshabilitado ? SURFACE.textFaint : SURFACE.textSecondary,
+  padding: "5px 12px",
+  fontSize: "12px",
+  fontWeight: 500,
+  cursor: deshabilitado ? "default" : "pointer",
+  opacity: deshabilitado ? 0.55 : 1,
+});
 /** Botón de acción del final de cada fila. */
 const ONGOING_ACTION_STYLE = {
   display: "inline-flex",
@@ -311,11 +342,11 @@ const formatDayLabel = (dayKey: string) => {
   const [a, m, d] = dayKey.split("-").map(Number);
   if (!a || !m || !d) return dayKey;
   const texto = new Date(a, m - 1, d).toLocaleDateString("es-CL", {
-    weekday: "long",
+    weekday: "short",
     day: "numeric",
-    month: "long",
+    month: "short",
   });
-  return texto.charAt(0).toUpperCase() + texto.slice(1);
+  return texto.charAt(0).toUpperCase() + texto.slice(1).replace(/\./g, "");
 };
 
 // Estados en los que un viaje sigue "vivo" y por tanto puede cancelarse.
@@ -483,6 +514,9 @@ export default function TripsPage() {
     const destino = tabPrevia.current;
     setActiveTab(destino === "editor" || destino === "portal" ? "ongoing" : destino);
   };
+  // Vista "En curso": día elegido ("" = todos) y página de la tabla.
+  const [ongoingDay, setOngoingDay] = useState("");
+  const [ongoingPage, setOngoingPage] = useState(0);
   // Selección múltiple para borrado en lote.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -794,17 +828,42 @@ export default function TripsPage() {
     [generalTrips]
   );
 
-  /** Los viajes en curso agrupados por día, respetando el orden por hora. */
-  const ongoingByDay = useMemo(() => {
-    const porDia = new Map<string, Trip[]>();
+  /**
+   * Días con carga, para el selector. Antes la lista venía partida por
+   * encabezados de jornada: con una semana entera eso obliga a bajar a ciegas
+   * hasta encontrar el día que se busca.
+   */
+  const ongoingDays = useMemo(() => {
+    const porDia = new Map<string, number>();
     for (const trip of ongoingTrips) {
       const clave = trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha";
-      const lista = porDia.get(clave) ?? [];
-      lista.push(trip);
-      porDia.set(clave, lista);
+      porDia.set(clave, (porDia.get(clave) ?? 0) + 1);
     }
-    return [...porDia.entries()];
-  }, [ongoingTrips]);
+    return [...porDia.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, count]) => ({ key, count, label: key === "sin-fecha" ? t("Sin fecha") : formatDayLabel(key) }));
+  }, [ongoingTrips, t]);
+
+  const ongoingFiltered = useMemo(
+    () =>
+      ongoingDay
+        ? ongoingTrips.filter(
+            (trip) => (trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha") === ongoingDay,
+          )
+        : ongoingTrips,
+    [ongoingTrips, ongoingDay],
+  );
+
+  const ongoingTotalPages = Math.max(1, Math.ceil(ongoingFiltered.length / ONGOING_PAGE_SIZE));
+  const ongoingVisible = useMemo(
+    () => ongoingFiltered.slice(ongoingPage * ONGOING_PAGE_SIZE, (ongoingPage + 1) * ONGOING_PAGE_SIZE),
+    [ongoingFiltered, ongoingPage],
+  );
+  // Cambiar de día o quedarse sin filas no puede dejar la vista en una página
+  // que ya no existe.
+  useEffect(() => {
+    if (ongoingPage > 0 && ongoingPage >= ongoingTotalPages) setOngoingPage(0);
+  }, [ongoingPage, ongoingTotalPages]);
 
   const portalVipTrips = useMemo(
     () => filteredTrips.filter(isPortalVipTrip),
@@ -1651,272 +1710,257 @@ export default function TripsPage() {
           </div>
         </div>
 
-        {/* ── EN CURSO: la operación viva, en lista ──
-            Agrupada por día y ordenada por hora. Cada fila se puede editar,
-            revisar en bitácora o eliminar, y la casilla de la izquierda suma a
-            la selección para borrar en lote. */}
+        {/* ── EN CURSO: la operación viva ──
+            Tabla, no tarjetas ni listas agrupadas: el día se elige arriba y la
+            tabla muestra sólo ese día, paginada. Con una semana cargada, los
+            encabezados de jornada intercalados obligaban a desplazarse a ciegas
+            para saber dónde empieza cada día. */}
         {activeTab === "ongoing" && (
           <div className="mt-6">
-            <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
+            <div className="flex flex-wrap items-end justify-between gap-3 mb-3">
               <div>
                 <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>
                   {t("Operación viva")}
                 </p>
                 <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: pal.textPrimary }}>{t("Viajes en curso")}</h3>
-                <p style={{ marginTop: "2px", fontSize: "12px", color: pal.textMuted }}>
-                  {t("Ordenados por hora. Salen de esta lista al completarse o cancelarse.")}
-                </p>
               </div>
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 20, flexWrap: "wrap", alignItems: "flex-end" }}>
                 {[
-                  { label: t("En curso"), value: ongoingTrips.length, color: BRAND.teal },
+                  { label: t("En curso"), value: ongoingTrips.length, color: null },
                   { label: t("Sin conductor"), value: ongoingTrips.filter((tr) => !tr.driverId).length, color: STATE.warning },
                   { label: t("En ruta"), value: ongoingTrips.filter((tr) => tr.status === "EN_ROUTE" || tr.status === "PICKED_UP").length, color: STATE.info },
                 ].map((k) => (
-                  <span key={k.label} style={{
-                    display: "inline-flex", flexDirection: "column", gap: 1,
-                    background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "12px",
-                    padding: "7px 16px", minWidth: 96,
-                  }}>
-                    <span style={{
-                      fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.14em",
-                      textTransform: "uppercase" as const, color: pal.labelColor, whiteSpace: "nowrap",
-                    }}>
+                  <span key={k.label} style={{ display: "inline-flex", flexDirection: "column", gap: 2 }}>
+                    <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: pal.labelColor, whiteSpace: "nowrap" }}>
                       {k.label}
                     </span>
-                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: k.color, flexShrink: 0 }} />
-                      <strong style={{ fontSize: "19px", lineHeight: 1, fontWeight: 800, color: pal.textPrimary, fontVariantNumeric: "tabular-nums" }}>
-                        {k.value}
-                      </strong>
+                    <span style={{
+                      fontSize: "20px", lineHeight: 1, fontWeight: 600, fontVariantNumeric: "tabular-nums",
+                      color: k.color && k.value > 0 ? k.color : pal.textPrimary,
+                    }}>
+                      {k.value}
                     </span>
                   </span>
                 ))}
               </div>
             </div>
 
-            {ongoingTrips.length === 0 ? (
-              <div style={{ borderRadius: "16px", border: `1px dashed ${pal.cardBorder}`, background: pal.cardBg, padding: "48px 24px", textAlign: "center" }}>
+            {/* Selector de día: cada jornada con su carga, para saber de
+                antemano dónde está el trabajo de la semana. */}
+            {ongoingDays.length > 0 && (
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 12 }}>
+                <button
+                  type="button"
+                  onClick={() => { setOngoingDay(""); setOngoingPage(0); }}
+                  style={diaChipStyle(ongoingDay === "")}
+                >
+                  {t("Todos")}
+                  <span style={{ opacity: 0.6, marginLeft: 6, fontVariantNumeric: "tabular-nums" }}>{ongoingTrips.length}</span>
+                </button>
+                {ongoingDays.map((d) => (
+                  <button
+                    key={d.key}
+                    type="button"
+                    onClick={() => { setOngoingDay(d.key); setOngoingPage(0); }}
+                    style={diaChipStyle(ongoingDay === d.key)}
+                  >
+                    {d.label}
+                    <span style={{ opacity: 0.6, marginLeft: 6, fontVariantNumeric: "tabular-nums" }}>{d.count}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {ongoingFiltered.length === 0 ? (
+              <div style={{ borderRadius: "14px", border: `1px dashed ${pal.cardBorder}`, background: pal.cardBg, padding: "48px 24px", textAlign: "center" }}>
                 <ClockIcon size={22} color={pal.labelColor} strokeWidth={1.8} />
-                <p style={{ marginTop: 10, color: pal.textMuted, fontSize: "14px", fontWeight: 600 }}>{t("No hay viajes en curso.")}</p>
+                <p style={{ marginTop: 10, color: pal.textMuted, fontSize: "14px", fontWeight: 500 }}>{t("No hay viajes en curso.")}</p>
                 <p style={{ marginTop: 2, color: pal.labelColor, fontSize: "12.5px" }}>
                   {t("Importa una planilla o crea uno manual para empezar el día.")}
                 </p>
               </div>
             ) : (
-              <div style={{ borderRadius: "16px", border: `1px solid ${pal.cardBorder}`, overflow: "hidden", boxShadow: pal.shadow, background: pal.cardBg }}>
+              <div style={{ borderRadius: "14px", border: `1px solid ${pal.cardBorder}`, overflow: "hidden", background: pal.cardBg }}>
                 <div style={{ overflowX: "auto" }}>
                   <div style={{ minWidth: "1040px" }}>
-                    {/* Cabecera */}
                     <div style={{
                       display: "grid",
                       gridTemplateColumns: ONGOING_COLUMNS,
                       gap: "14px",
                       alignItems: "center",
-                      padding: "9px 18px",
-                      background: SURFACE.bg,
+                      padding: "0 18px",
+                      height: 36,
                       borderBottom: `1px solid ${pal.cardBorder}`,
                     }}>
                       <input
                         type="checkbox"
-                        aria-label={t("Seleccionar todos los viajes en curso")}
-                        checked={ongoingTrips.length > 0 && ongoingTrips.every((tr) => selectedIds.has(tr.id))}
+                        aria-label={t("Seleccionar todos los viajes de la vista")}
+                        checked={ongoingFiltered.length > 0 && ongoingFiltered.every((tr) => selectedIds.has(tr.id))}
                         ref={(el) => {
                           if (el) {
-                            const marcados = ongoingTrips.filter((tr) => selectedIds.has(tr.id)).length;
-                            el.indeterminate = marcados > 0 && marcados < ongoingTrips.length;
+                            const marcados = ongoingFiltered.filter((tr) => selectedIds.has(tr.id)).length;
+                            el.indeterminate = marcados > 0 && marcados < ongoingFiltered.length;
                           }
                         }}
                         onChange={(e) => {
                           const marcar = e.target.checked;
                           setSelectedIds((prev) => {
                             const next = new Set(prev);
-                            ongoingTrips.forEach((tr) => (marcar ? next.add(tr.id) : next.delete(tr.id)));
+                            ongoingFiltered.forEach((tr) => (marcar ? next.add(tr.id) : next.delete(tr.id)));
                             return next;
                           });
                         }}
-                        style={{ width: 15, height: 15, cursor: "pointer", accentColor: BRAND.teal }}
+                        style={{ width: 14, height: 14, cursor: "pointer", accentColor: BRAND.teal }}
                       />
-                      {[t("Hora"), t("Estado"), t("Servicio"), t("Ruta"), t("Conductor")].map((h) => (
-                        <span key={h} style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: pal.labelColor }}>
-                          {h}
-                        </span>
+                      {[t("Hora"), t("Día"), t("Estado"), t("Servicio"), t("Ruta"), t("Conductor")].map((h) => (
+                        <span key={h} style={ONGOING_HEAD_STYLE}>{h}</span>
                       ))}
-                      <span style={{ fontSize: "10px", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: pal.labelColor, textAlign: "right" }}>
-                        {t("Acciones")}
-                      </span>
+                      <span style={{ ...ONGOING_HEAD_STYLE, textAlign: "right" as const }}>{t("Acciones")}</span>
                     </div>
 
-                    {/* La fecha encabeza su grupo en vez de repetirse en cada
-                        fila: en un día de operación son todas la misma. */}
-                    {ongoingByDay.map(([dia, viajesDelDia]) => (
-                      <div key={dia}>
-                        <div style={{
-                          display: "flex", alignItems: "center", gap: 10,
-                          padding: "8px 18px",
-                          background: SURFACE.bg,
-                          borderTop: `1px solid ${SURFACE.borderMuted}`,
-                          borderBottom: `1px solid ${SURFACE.borderMuted}`,
-                        }}>
-                          <span style={{
-                            fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.16em",
-                            textTransform: "uppercase" as const, color: pal.labelColor,
-                          }}>
-                            {t("Jornada")}
+                    {ongoingVisible.map((trip) => {
+                      const sc = STATUS_COLORS[trip.status ?? "SCHEDULED"] ?? STATUS_COLORS.SCHEDULED;
+                      const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
+                      const marcado = selectedIds.has(trip.id);
+                      const sinChofer = !trip.driverId;
+                      const vehiculo = trip.vehicleId ? vehicles[trip.vehicleId]?.plate : trip.vehiclePlate;
+                      return (
+                        <div
+                          key={trip.id}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: ONGOING_COLUMNS,
+                            gap: "14px",
+                            alignItems: "center",
+                            padding: "0 18px",
+                            minHeight: 46,
+                            background: marcado ? "rgba(33,208,179,0.06)" : "transparent",
+                            borderBottom: `1px solid ${SURFACE.borderMuted}`,
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={marcado}
+                            onChange={() => toggleSelected(trip.id)}
+                            aria-label={t("Seleccionar viaje")}
+                            style={{ width: 14, height: 14, cursor: "pointer", accentColor: BRAND.teal }}
+                          />
+
+                          <span style={{ fontSize: "13px", fontWeight: 600, color: pal.textPrimary, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                            {trip.scheduledAt
+                              ? new Date(trip.scheduledAt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false })
+                              : "—"}
                           </span>
-                          <span style={{ fontSize: "12.5px", fontWeight: 700, color: pal.textPrimary }}>
-                            {dia === "sin-fecha" ? t("Sin fecha programada") : formatDayLabel(dia)}
+
+                          {/* El día vuelve a la fila, como una columna más: es
+                              un dato del viaje, no un separador de la lista. */}
+                          <span style={{ fontSize: "12.5px", color: pal.textMuted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
+                            {trip.scheduledAt
+                              ? new Date(trip.scheduledAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })
+                              : "—"}
                           </span>
-                          <span style={{ fontSize: "11.5px", fontWeight: 600, color: pal.textMuted }}>
-                            · {viajesDelDia.length} {viajesDelDia.length === 1 ? t("viaje") : t("viajes")}
+
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+                            <span style={{
+                              width: 6, height: 6, borderRadius: "50%", background: sc.accent, flexShrink: 0,
+                              animation: sc.pulse ? "pulse 1.5s infinite" : undefined,
+                            }} />
+                            <span style={{ fontSize: "12.5px", color: pal.textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                              {t(statusTone(trip.status).label)}
+                            </span>
+                          </span>
+
+                          <span style={{ minWidth: 0, fontSize: "12.5px", color: pal.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {trip.discipline || resolveRequester(trip)}
+                            {trip.passengerCount ? (
+                              <span style={{ color: pal.labelColor }}> · {trip.passengerCount} pax</span>
+                            ) : null}
+                          </span>
+
+                          <span style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 7, fontSize: "12.5px" }}>
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: pal.textMuted, flex: "0 1 auto" }}>
+                              {trip.origin || t("Origen pendiente")}
+                            </span>
+                            <ArrowRightIcon size={12} color={pal.labelColor} strokeWidth={2} />
+                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: pal.textPrimary, flex: "1 1 auto" }}>
+                              {venue?.name || trip.destination || t("Destino pendiente")}
+                            </span>
+                          </span>
+
+                          <span style={{ minWidth: 0, fontSize: "12.5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: sinChofer ? STATE.warningText : pal.textPrimary }}>
+                            {resolveDriver(trip)}
+                            {vehiculo && <span style={{ color: pal.labelColor }}> · {vehiculo}</span>}
+                          </span>
+
+                          <span style={{ display: "inline-flex", justifySelf: "end", alignItems: "center", gap: 4 }}>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                recordarTab();
+                                setShowAdminEditor(true);
+                                setActiveTab("editor");
+                                setSelectedTripId(trip.id);
+                                setTimeout(() => {
+                                  document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                }, 120);
+                              }}
+                              title={t("Editar viaje")}
+                              style={ONGOING_ACTION_STYLE}
+                            >
+                              <PenLineIcon size={13} strokeWidth={1.8} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setLogTrip(trip)}
+                              title={t("Ver bitácora")}
+                              style={ONGOING_ACTION_STYLE}
+                            >
+                              <FileTextIcon size={13} strokeWidth={1.8} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setPendingAction({ trip, kind: "delete" })}
+                              title={t("Eliminar viaje")}
+                              style={{ ...ONGOING_ACTION_STYLE, color: STATE.danger }}
+                            >
+                              <TrashIcon size={13} strokeWidth={1.8} />
+                            </button>
                           </span>
                         </div>
-
-                        {viajesDelDia.map((trip, i) => {
-                          const sc = STATUS_COLORS[trip.status ?? "SCHEDULED"] ?? STATUS_COLORS.SCHEDULED;
-                          const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
-                          const marcado = selectedIds.has(trip.id);
-                          const sinChofer = !trip.driverId;
-                          const vehiculo = trip.vehicleId ? vehicles[trip.vehicleId]?.plate : trip.vehiclePlate;
-                          return (
-                            <div
-                              key={trip.id}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: ONGOING_COLUMNS,
-                                gap: "14px",
-                                alignItems: "center",
-                                padding: "10px 18px",
-                                background: marcado ? "rgba(33,208,179,0.07)" : pal.cardBg,
-                                borderBottom: i < viajesDelDia.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none",
-                                boxShadow: marcado ? `inset 3px 0 0 ${BRAND.teal}` : "none",
-                                transition: "background 120ms ease",
-                              }}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={marcado}
-                                onChange={() => toggleSelected(trip.id)}
-                                aria-label={t("Seleccionar viaje")}
-                                style={{ width: 15, height: 15, cursor: "pointer", accentColor: BRAND.teal }}
-                              />
-
-                              {/* 24 horas: con "p. m." la hora se partía en dos
-                                  líneas y estiraba toda la fila. */}
-                              <span style={{ fontSize: "15px", fontWeight: 800, color: pal.textPrimary, fontVariantNumeric: "tabular-nums", letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
-                                {trip.scheduledAt
-                                  ? new Date(trip.scheduledAt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false })
-                                  : "—"}
-                              </span>
-
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                                <span style={{
-                                  width: 7, height: 7, borderRadius: "50%", background: sc.accent, flexShrink: 0,
-                                  animation: sc.pulse ? "pulse 1.5s infinite" : undefined,
-                                }} />
-                                <span style={{ fontSize: "12.5px", fontWeight: 600, color: pal.textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                                  {t(statusTone(trip.status).label)}
-                                </span>
-                              </span>
-
-                              <span style={{ minWidth: 0 }}>
-                                <span style={{ display: "block", fontSize: "13px", fontWeight: 600, color: pal.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {trip.discipline || resolveRequester(trip)}
-                                </span>
-                                <span style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, fontSize: "11px", color: pal.textMuted }}>
-                                  {trip.clientType && (
-                                    <span style={{
-                                      fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.08em",
-                                      padding: "1px 5px", borderRadius: 4,
-                                      background: SURFACE.borderMuted, color: pal.textMuted, whiteSpace: "nowrap",
-                                    }}>
-                                      {trip.clientType}
-                                    </span>
-                                  )}
-                                  {trip.passengerCount ? `${trip.passengerCount} pax` : null}
-                                </span>
-                              </span>
-
-                              {/* Origen y destino con el mismo peso: la flecha
-                                  ya dice cuál es cuál. */}
-                              <span style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 7, fontSize: "12.5px" }}>
-                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: pal.textMuted, flex: "0 1 auto" }}>
-                                  {trip.origin || t("Origen pendiente")}
-                                </span>
-                                <ArrowRightIcon size={12} color={pal.labelColor} strokeWidth={2.2} />
-                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: pal.textPrimary, fontWeight: 600, flex: "1 1 auto" }}>
-                                  {venue?.name || trip.destination || t("Destino pendiente")}
-                                </span>
-                              </span>
-
-                              <span style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 7 }}>
-                                <span style={{
-                                  flexShrink: 0, width: 26, height: 26, borderRadius: "50%",
-                                  background: sinChofer ? STATE.warningSoft : "rgba(33,208,179,0.12)",
-                                  color: sinChofer ? STATE.warningText : BRAND.tealInk,
-                                  display: "inline-flex", alignItems: "center", justifyContent: "center",
-                                  fontSize: "10px", fontWeight: 800,
-                                }}>
-                                  {sinChofer ? "!" : inicialesDe(resolveDriver(trip))}
-                                </span>
-                                <span style={{ minWidth: 0 }}>
-                                  <span style={{
-                                    display: "block", fontSize: "12.5px", fontWeight: 600,
-                                    color: sinChofer ? STATE.warningText : pal.textPrimary,
-                                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-                                  }}>
-                                    {resolveDriver(trip)}
-                                  </span>
-                                  {vehiculo && (
-                                    <span style={{ display: "block", fontSize: "11px", color: pal.labelColor, fontVariantNumeric: "tabular-nums" }}>
-                                      {vehiculo}
-                                    </span>
-                                  )}
-                                </span>
-                              </span>
-
-                              {/* Un solo bloque segmentado, no tres botones
-                                  sueltos flotando contra el borde. */}
-                              <span style={{ display: "inline-flex", justifySelf: "end", alignItems: "center", gap: 5 }}>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    recordarTab();
-                                    setShowAdminEditor(true);
-                                    setActiveTab("editor");
-                                    setSelectedTripId(trip.id);
-                                    setTimeout(() => {
-                                      document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                    }, 120);
-                                  }}
-                                  title={t("Editar viaje")}
-                                  style={ONGOING_ACTION_STYLE}
-                                >
-                                  <PenLineIcon size={13} strokeWidth={2} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setLogTrip(trip)}
-                                  title={t("Ver bitácora")}
-                                  style={ONGOING_ACTION_STYLE}
-                                >
-                                  <FileTextIcon size={13} strokeWidth={2} />
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => setPendingAction({ trip, kind: "delete" })}
-                                  title={t("Eliminar viaje")}
-                                  style={{ ...ONGOING_ACTION_STYLE, color: STATE.danger, borderColor: "rgba(239,68,68,0.3)" }}
-                                >
-                                  <TrashIcon size={13} strokeWidth={2} />
-                                </button>
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
+                </div>
+
+                {/* Pie: sin esto, una semana cargada es un scroll sin fin. */}
+                <div style={{
+                  display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+                  padding: "10px 18px", background: SURFACE.bg, borderTop: `1px solid ${pal.cardBorder}`,
+                }}>
+                  <span style={{ fontSize: "12px", color: pal.textMuted, fontVariantNumeric: "tabular-nums" }}>
+                    {ongoingFiltered.length === 0
+                      ? "0"
+                      : `${ongoingPage * ONGOING_PAGE_SIZE + 1}–${Math.min((ongoingPage + 1) * ONGOING_PAGE_SIZE, ongoingFiltered.length)}`}{" "}
+                    {t("de")} {ongoingFiltered.length}
+                  </span>
+                  <span style={{ display: "inline-flex", gap: 6 }}>
+                    <button
+                      type="button"
+                      onClick={() => setOngoingPage((p) => Math.max(0, p - 1))}
+                      disabled={ongoingPage === 0}
+                      style={ongoingPaginaStyle(ongoingPage === 0)}
+                    >
+                      {t("Anterior")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setOngoingPage((p) => (p + 1 < ongoingTotalPages ? p + 1 : p))}
+                      disabled={ongoingPage + 1 >= ongoingTotalPages}
+                      style={ongoingPaginaStyle(ongoingPage + 1 >= ongoingTotalPages)}
+                    >
+                      {t("Siguiente")}
+                    </button>
+                  </span>
                 </div>
               </div>
             )}
