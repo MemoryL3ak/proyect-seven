@@ -116,4 +116,39 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
     expect(match('', '')).toBeNull();
     expect(match(undefined, undefined)).toBeNull();
   });
+
+  describe('horas de la planilla', () => {
+    type WithDates = {
+      parseDate: (raw?: string, defaultYear?: string) => Date | null;
+      mergeDateTime: (date: Date | null, hhmm?: string) => Date | null;
+    };
+    const instante = (fecha: string, hora: string, anio = '2026') => {
+      const svc = service as unknown as WithDates;
+      return svc.mergeDateTime(svc.parseDate(fecha, anio), hora);
+    };
+
+    it('guarda la hora del archivo como hora de Chile, no del servidor', () => {
+      // 08:30 en Valparaíso el 23-09-2026 (UTC-3) son las 11:30 UTC.
+      expect(instante('23-sept', '08:30')?.toISOString()).toBe(
+        '2026-09-23T11:30:00.000Z',
+      );
+    });
+
+    it('respeta el horario de invierno, cuando Chile está en UTC-4', () => {
+      // En julio el reloj chileno corre una hora más atrás que en septiembre.
+      expect(instante('15-jul', '08:30')?.toISOString()).toBe(
+        '2026-07-15T12:30:00.000Z',
+      );
+    });
+
+    it('la fecha del viaje no se corre por la zona horaria del servidor', () => {
+      const svc = service as unknown as WithDates;
+      expect(svc.parseDate('23-sept', '2026')?.toISOString().slice(0, 10)).toBe(
+        '2026-09-23',
+      );
+      expect(svc.parseDate('2026-11-01')?.toISOString().slice(0, 10)).toBe(
+        '2026-11-01',
+      );
+    });
+  });
 });

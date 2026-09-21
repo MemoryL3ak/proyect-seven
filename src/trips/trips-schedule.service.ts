@@ -60,6 +60,13 @@ const MONTHS_ES: Record<string, number> = {
   '12': 11,
 };
 
+/**
+ * Zona horaria en la que están escritas las horas de la planilla. El evento es
+ * en Chile y la base guarda en UTC; el servidor puede correr en cualquier lado,
+ * así que la conversión no puede depender de su reloj.
+ */
+const EVENT_TIME_ZONE = process.env.EVENT_TIME_ZONE || 'America/Santiago';
+
 const VALID_CLIENT_TYPES = [
   'TF',
   'TM',
@@ -132,6 +139,11 @@ export class TripsScheduleService {
   // Helpers de parsing
   // ─────────────────────────────────────────────────────────────────────────
 
+  /**
+   * La fecha se devuelve como medianoche UTC, o sea como fecha de calendario
+   * pura: así `toISOString().slice(0,10)` da siempre el mismo día, corra el
+   * servidor donde corra.
+   */
   private parseDate(raw: string | undefined, defaultYear?: string): Date | null {
     if (!raw) return null;
     const trimmed = String(raw).trim();
@@ -140,7 +152,9 @@ export class TripsScheduleService {
     // ISO yyyy-mm-dd or yyyy-mm-ddTHH:mm
     const iso = trimmed.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
     if (iso) {
-      return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+      return new Date(
+        Date.UTC(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3])),
+      );
     }
 
     // "1-nov" / "01-nov" / "1/11" / "1/11/2026"
@@ -154,22 +168,66 @@ export class TripsScheduleService {
           ? Number(parts[2])
           : Number(defaultYear || new Date().getFullYear());
       if (!Number.isNaN(day) && month >= 0 && month <= 11) {
-        return new Date(year, month, day);
+        return new Date(Date.UTC(year, month, day));
       }
     }
 
     return null;
   }
 
+  /** Desfase en minutos de la zona del evento para un instante UTC dado. */
+  private zoneOffsetMinutes(utcMs: number): number {
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: EVENT_TIME_ZONE,
+      hour12: false,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+    }).formatToParts(new Date(utcMs));
+
+    const get = (type: string) =>
+      Number(parts.find((p) => p.type === type)?.value ?? 0);
+    const hour = get('hour') === 24 ? 0 : get('hour');
+    const asIfUtc = Date.UTC(
+      get('year'),
+      get('month') - 1,
+      get('day'),
+      hour,
+      get('minute'),
+      get('second'),
+    );
+    return (asIfUtc - utcMs) / 60000;
+  }
+
+  /**
+   * Combina la fecha con la hora escrita en la planilla. Las horas del archivo
+   * son hora local del evento (Chile), no del servidor: sin esta conversión, un
+   * backend en UTC guardaba "08:30" como 08:30Z y el panel lo mostraba a las
+   * 05:30. Se resuelve el desfase con la zona horaria real, así que los cambios
+   * de horario de verano quedan cubiertos.
+   */
   private mergeDateTime(date: Date | null, hhmm: string | undefined): Date | null {
     if (!date) return null;
     const t = String(hhmm || '').trim();
     if (!t) return null;
     const m = t.match(/^(\d{1,2}):(\d{2})/);
     if (!m) return null;
-    const result = new Date(date);
-    result.setHours(Number(m[1]), Number(m[2]), 0, 0);
-    return result;
+
+    const naive = Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth(),
+      date.getUTCDate(),
+      Number(m[1]),
+      Number(m[2]),
+    );
+    // Dos pasadas: la primera estima el desfase, la segunda lo corrige en los
+    // días en que el reloj cambia.
+    let utcMs = naive - this.zoneOffsetMinutes(naive) * 60000;
+    utcMs = naive - this.zoneOffsetMinutes(utcMs) * 60000;
+    return new Date(utcMs);
   }
 
   private parseDurationMinutes(raw: string | undefined): number {

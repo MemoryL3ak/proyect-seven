@@ -1221,22 +1221,32 @@ export default function ProveedoresPage() {
                         <button
                           type="button"
                           onClick={(e) => { e.stopPropagation(); void copyAccessCode(p.id); }}
-                          title={t("Copiar código de acceso")}
+                          title={t("Código de acceso a la app — clic para copiar")}
                           style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
                             fontSize: "11px",
                             fontWeight: 700,
-                            fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
                             letterSpacing: "0.06em",
                             color: copiedId === p.id ? STATE.success : BRAND.teal,
                             background: "rgba(33,208,179,0.08)",
                             border: "1px solid rgba(33,208,179,0.25)",
                             borderRadius: "6px",
-                            padding: "0 6px",
+                            padding: "1px 7px",
                             cursor: "pointer",
                             lineHeight: "16px",
                           }}
                         >
-                          {copiedId === p.id ? t("copiado") : accessCode(p.id)}
+                          {/* El código iba sin etiqueta y se leía como un id
+                              cualquiera: nadie lo reconocía como la clave de
+                              acceso a la app. */}
+                          <span style={{ fontSize: "9px", fontWeight: 800, letterSpacing: "0.12em", opacity: 0.75 }}>
+                            {t("CÓDIGO APP")}
+                          </span>
+                          <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: "12px" }}>
+                            {copiedId === p.id ? t("copiado") : accessCode(p.id)}
+                          </span>
                         </button>
                       </div>
                     </div>
