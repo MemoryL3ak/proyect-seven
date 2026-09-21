@@ -160,6 +160,19 @@ type CalendarEvent = {
   gender?: string | null;
 };
 type DisciplineParent = { id: string; name?: string | null; category?: string | null; gender?: string | null };
+/**
+ * Región del evento. `/delegations` adjunta las disciplinas de cada una
+ * (core.delegation_disciplines), que es lo que permite filtrar el calendario
+ * por región sin pedir nada más.
+ */
+type DelegacionEvento = {
+  id: string;
+  eventId?: string | null;
+  countryCode?: string | null;
+  name?: string | null;
+  disciplineIds?: string[] | null;
+  disciplineNames?: string[] | null;
+};
 type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null; coordinatorName?: string | null; coordinatorPhone?: string | null; venueType?: string | null; disciplineIds?: string[] | null };
 type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null; photoUrl?: string | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
@@ -441,7 +454,7 @@ export default function UserPortalPage() {
   const [nombresHoteles, setNombresHoteles] = useState<{ id: string; name?: string | null }[]>([]);
   // Coordinador de Comité: la lista de regiones y los dos filtros que manda
   // sobre todos sus módulos.
-  const [delegacionesEvento, setDelegacionesEvento] = useState<{ id: string; eventId?: string | null; countryCode?: string | null; name?: string | null }[]>([]);
+  const [delegacionesEvento, setDelegacionesEvento] = useState<DelegacionEvento[]>([]);
   const [comiteDelegacion, setComiteDelegacion] = useState("");
   const [comiteDisciplina, setComiteDisciplina] = useState("");
   // Hotel de destino: hacia dónde van los conductores. Sólo acota la lista de
@@ -477,6 +490,8 @@ export default function UserPortalPage() {
   const [calCursor, setCalCursor] = useState(() => new Date());
   const [calTypeFilter, setCalTypeFilter] = useState<string>("");
   const [calDiscFilter, setCalDiscFilter] = useState<string>("");
+  /** Región elegida en el calendario. "" = todas. */
+  const [calDelegacionFilter, setCalDelegacionFilter] = useState<string>("");
   const calAutoJumped = useRef(false);
   const calDiscAutoSet = useRef(false);
   const ganttScrollKey = useRef("");
@@ -1022,15 +1037,15 @@ export default function UserPortalPage() {
       // si el usuario cambió de delegación desde la última vez, se descarta.
       const sirveLoPedido = !!tanda && tanda.delegacionPedida === (data.delegationId ?? null);
 
-      // El Coordinador de Comité necesita la lista de regiones para filtrar.
       const esComiteAhora = normalizeClientType(data.userType) === "COORDINADOR_COMITE";
-      if (esComiteAhora) {
-        void catalogoConCache<{ id: string; eventId?: string | null; countryCode?: string | null; name?: string | null }[]>(
-          "delegations",
-          () => apiFetch<{ id: string; eventId?: string | null; countryCode?: string | null; name?: string | null }[]>("/delegations"),
-          (lista) => setDelegacionesEvento((lista || []).filter((d) => !data.eventId || d.eventId === data.eventId)),
-        );
-      }
+      // Las regiones las usa el comité en su barra de filtros y ahora también
+      // el calendario de cualquier perfil, así que se cargan siempre. Va por
+      // el mismo caché de catálogos: no agrega una ida y vuelta al abrir.
+      void catalogoConCache<DelegacionEvento[]>(
+        "delegations",
+        () => apiFetch<DelegacionEvento[]>("/delegations"),
+        (lista) => setDelegacionesEvento((lista || []).filter((d) => !data.eventId || d.eventId === data.eventId)),
+      );
 
       // Lo que sí es propio del usuario se espera: es lo que se ve primero.
       const [prems, miembros, viajesDelegacion] = await Promise.all([
@@ -2367,6 +2382,39 @@ export default function UserPortalPage() {
             });
             return ids.size > 0 ? { ids, nombres } : null;
           })();
+          /**
+           * Disciplinas de la región elegida en el filtro. Vienen adjuntas a
+           * la delegación, y se guarda también el nombre normalizado porque el
+           * mismo deporte está repetido entre eventos y una prueba puede
+           * colgar de la copia de al lado.
+           */
+          const regionElegida = calDelegacionFilter
+            ? delegacionesEvento.find((d) => d.id === calDelegacionFilter) ?? null
+            : null;
+          const discRegion = (() => {
+            if (!regionElegida) return null;
+            const ids = new Set<string>(regionElegida.disciplineIds ?? []);
+            const nombres = new Set<string>();
+            (regionElegida.disciplineIds ?? []).forEach((id) => {
+              const d = disciplinasTodas.find((c) => c.id === id);
+              if (d?.name) nombres.add(norma(d.name));
+            });
+            (regionElegida.disciplineNames ?? []).forEach((n) => nombres.add(norma(n)));
+            return { ids, nombres };
+          })();
+
+          const esDeLaRegion = (discId?: string | null) => {
+            if (!discRegion) return true;
+            // Las ceremonias generales no cuelgan de un deporte: valen para
+            // todas las regiones.
+            if (!discId) return true;
+            const suya = disciplinasTodas.find((c) => c.id === discId);
+            const padreId = suya?.parentId || discId;
+            if (discRegion.ids.has(padreId) || discRegion.ids.has(discId)) return true;
+            const nombre = norma(disciplinasTodas.find((c) => c.id === padreId)?.name);
+            return nombre ? discRegion.nombres.has(nombre) : false;
+          };
+
           const esDeLaDelegacion = (discId?: string | null) => {
             if (!chiefDisc) return true;
             if (!discId) return true; // ceremonias generales
@@ -2393,9 +2441,12 @@ export default function UserPortalPage() {
           const typed = items.filter(i =>
             (!calTypeFilter || i.type===calTypeFilter) &&
             (!calDiscFilter || i.discId===calDiscFilter) &&
-            // Jefe: solo actividades de las disciplinas de su delegación (las
-            // sin disciplina —ceremonias generales— se mantienen visibles).
-            esDeLaDelegacion(i.discId),
+            esDeLaRegion(i.discId) &&
+            // Jefe: por defecto sólo las disciplinas de su delegación (las sin
+            // disciplina —ceremonias generales— se mantienen visibles). Si
+            // elige una región en el filtro, esa elección manda: pidió ver
+            // otra cosa a propósito.
+            (regionElegida ? true : esDeLaDelegacion(i.discId)),
           );
           const inMonth = typed.filter(i => i.date.getFullYear()===y && i.date.getMonth()===m);
           const daysWithEvents = new Set(inMonth.map(i => i.date.getDate()));
@@ -2496,6 +2547,21 @@ export default function UserPortalPage() {
                       valor={calTypeFilter}
                       onChange={setCalTypeFilter}
                     />
+                    {/* Región: el calendario completo es del evento, y sin
+                        esto no había forma de ver la jornada de una delegación
+                        en particular. El comité la elige en su propia barra. */}
+                    {!isComite && delegacionesEvento.length > 0 && (
+                      <SelectorFiltro
+                        rotulo={t("Delegación")}
+                        titulo={t("Delegación")}
+                        opciones={[...delegacionesEvento]
+                          .map((d) => ({ value: d.id, label: nombreRegionCorto(d) }))
+                          .sort((a, b) => a.label.localeCompare(b.label, "es"))}
+                        etiquetaTodos={t("Todas las delegaciones")}
+                        valor={calDelegacionFilter}
+                        onChange={setCalDelegacionFilter}
+                      />
+                    )}
                     {/* El Coordinador de Comité elige deporte en su propia
                         barra, arriba: dos controles para lo mismo confunden. */}
                     {!isComite && discOptions.length > 0 && (
@@ -2507,10 +2573,10 @@ export default function UserPortalPage() {
                         onChange={setCalDiscFilter}
                       />
                     )}
-                    {(calTypeFilter || calDiscFilter || calSelectedDay) && (
+                    {(calTypeFilter || calDiscFilter || calDelegacionFilter || calSelectedDay) && (
                       <BotonQuitarFiltros
                         titulo={t("Ver todo")}
-                        onClick={()=>{ setCalTypeFilter(""); setCalDiscFilter(""); setCalSelectedDay(null); }}
+                        onClick={()=>{ setCalTypeFilter(""); setCalDiscFilter(""); setCalDelegacionFilter(""); setCalSelectedDay(null); }}
                       />
                     )}
                   </div>
