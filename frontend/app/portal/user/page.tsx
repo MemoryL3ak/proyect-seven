@@ -490,6 +490,8 @@ export default function UserPortalPage() {
   const [calCursor, setCalCursor] = useState(() => new Date());
   const [calTypeFilter, setCalTypeFilter] = useState<string>("");
   const [calDiscFilter, setCalDiscFilter] = useState<string>("");
+  /** Tope de actividades visibles al desplegar un día de la semana. */
+  const SEMANA_TOPE = 12;
   /** Región elegida en el calendario. "" = todas. */
   const [calDelegacionFilter, setCalDelegacionFilter] = useState<string>("");
   /**
@@ -497,6 +499,30 @@ export default function UserPortalPage() {
    * cortan —"Lanzamiento Bala PARA Atle…"— y no había forma de leerlos
    * completos ni de ver dónde ni a qué hora exacta.
    */
+  /**
+   * Días desplegados en la vista semana. Con 50 pruebas en una jornada, abrir
+   * todos los días de golpe hace la semana ilegible: se pliega y cada
+   * encabezado lleva su resumen —cuántas, entre qué horas y en qué sedes— para
+   * que plegar ordene en vez de esconder.
+   */
+  const [semanaAbiertos, setSemanaAbiertos] = useState<Set<string>>(() => {
+    // Hoy arranca desplegado: es el día que se viene a mirar. El resto se abre
+    // tocándolo, para que la semana entre de una pantalla.
+    const d = new Date();
+    return new Set([`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`]);
+  });
+  /** Días donde se pidió ver la lista completa, más allá del tope. */
+  const [semanaVerTodo, setSemanaVerTodo] = useState<Set<string>>(new Set());
+  const alternarDiaSemana = (clave: string) =>
+    setSemanaAbiertos((prev) => {
+      const next = new Set(prev);
+      if (next.has(clave)) next.delete(clave);
+      else next.add(clave);
+      return next;
+    });
+  const marcarVerTodo = (clave: string) =>
+    setSemanaVerTodo((prev) => new Set(prev).add(clave));
+
   const [calDetalle, setCalDetalle] = useState<{
     id: string;
     titulo: string;
@@ -2802,48 +2828,97 @@ export default function UserPortalPage() {
                     como fila compacta en vez de tarjetas vacías con "—". */}
                 {calView==="semana" && (
                   <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
-                    {weekDays.map(({day,events},di)=>{ const isToday=keyOf(day)===keyOf(now); return (
-                      <div key={keyOf(day)} style={{ borderTop: di===0?"none":`1px solid ${SURFACE.borderMuted}` }}>
-                        <div style={{ display:"flex",alignItems:"center",gap:10,padding: events.length?"10px 14px 6px":"9px 14px",
-                          background:isToday?"rgba(33,208,179,0.06)":"transparent" }}>
-                          <span style={{
-                            flexShrink:0,width:38,height:38,borderRadius:10,display:"inline-flex",flexDirection:"column",
-                            alignItems:"center",justifyContent:"center",lineHeight:1.1,
-                            background:isToday?BRAND.teal:SURFACE.bg,border:isToday?"none":`1px solid ${SURFACE.borderMuted}`,
-                          }}>
-                            <span style={{ fontSize:8,fontWeight:800,letterSpacing:"0.08em",color:isToday?"rgba(255,255,255,0.85)":SURFACE.textFaint }}>{fmtDow(day)}</span>
-                            <span style={{ fontSize:15,fontWeight:800,color:isToday?SURFACE.card:SURFACE.text }}>{day.getDate()}</span>
-                          </span>
-                          <span style={{ flex:1,fontSize:12.5,fontWeight:700,color:isToday?BRAND.tealDark:SURFACE.text }}>
-                            {cap1(day.toLocaleDateString("es-CL",{weekday:"long"}))}
-                            {isToday && <span style={{ marginLeft:6,fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:BRAND.tealDark,background:"rgba(33,208,179,0.14)",borderRadius:99,padding:"2px 7px" }}>HOY</span>}
-                          </span>
-                          {events.length>0
-                            ? <span style={{ fontSize:10,fontWeight:800,color:BRAND.tealDark,background:"rgba(33,208,179,0.12)",borderRadius:20,padding:"2px 9px" }}>{events.length}</span>
-                            : <span style={{ fontSize:10.5,fontWeight:600,color:SURFACE.borderStrong }}>Sin actividades</span>}
-                        </div>
-                        {events.length>0 && (
-                          <div style={{ padding:"0 14px 10px 62px",display:"flex",flexDirection:"column",gap:6 }}>
-                            {events.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                              <button key={it.id} type="button" onClick={()=>abrirDetalle(it)}
-                                style={{ width:"100%",textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:9,
-                                  background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"8px 10px" }}>
-                                <span style={{ fontSize:11.5,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{hhmm(it.date)}</span>
-                                <span style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column" }}>
-                                  <span style={{ fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}</span>
-                                  {(it.subtitle || it.venue) && (
-                                    <span style={{ fontSize:10.5,color:SURFACE.textFaint,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                                      {[it.subtitle, it.venue].filter(Boolean).join(" · ")}
-                                    </span>
-                                  )}
+                    {weekDays.map(({day,events},di)=>{
+                      const clave = keyOf(day);
+                      const isToday = clave===keyOf(now);
+                      const abierto = semanaAbiertos.has(clave);
+                      // Resumen para el día plegado: sin esto, plegar esconde
+                      // la información en vez de ordenarla.
+                      const horas = events.map(e=>e.date).sort((a,b)=>a.getTime()-b.getTime());
+                      const rango = horas.length
+                        ? horas.length===1 ? hhmm(horas[0]) : `${hhmm(horas[0])}–${hhmm(horas[horas.length-1])}`
+                        : "";
+                      const sedes = Array.from(new Set(events.map(e=>e.venue).filter(Boolean))) as string[];
+                      const visibles = abierto ? (semanaVerTodo.has(clave) ? events : events.slice(0, SEMANA_TOPE)) : [];
+                      const ocultos = events.length - visibles.length;
+                      return (
+                        <div key={clave} style={{ borderTop: di===0?"none":`1px solid ${SURFACE.borderMuted}` }}>
+                          <button
+                            type="button"
+                            onClick={()=>{ if(events.length) alternarDiaSemana(clave); }}
+                            disabled={events.length===0}
+                            style={{
+                              width:"100%",textAlign:"left",border:"none",
+                              display:"flex",alignItems:"center",gap:10,padding:"10px 14px",
+                              background:isToday?"rgba(33,208,179,0.06)":"transparent",
+                              cursor:events.length?"pointer":"default",
+                            }}
+                          >
+                            <span style={{
+                              flexShrink:0,width:38,height:38,borderRadius:10,display:"inline-flex",flexDirection:"column",
+                              alignItems:"center",justifyContent:"center",lineHeight:1.1,
+                              background:isToday?BRAND.teal:SURFACE.bg,border:isToday?"none":`1px solid ${SURFACE.borderMuted}`,
+                            }}>
+                              <span style={{ fontSize:8,fontWeight:800,letterSpacing:"0.08em",color:isToday?"rgba(255,255,255,0.85)":SURFACE.textFaint }}>{fmtDow(day)}</span>
+                              <span style={{ fontSize:15,fontWeight:800,color:isToday?SURFACE.card:SURFACE.text }}>{day.getDate()}</span>
+                            </span>
+
+                            <span style={{ flex:1,minWidth:0 }}>
+                              <span style={{ display:"flex",alignItems:"center",gap:6 }}>
+                                <span style={{ fontSize:12.5,fontWeight:700,color:isToday?BRAND.tealDark:SURFACE.text }}>
+                                  {cap1(day.toLocaleDateString("es-CL",{weekday:"long"}))}
                                 </span>
-                                <ChevronRightIcon size={13} color={SURFACE.borderStrong} strokeWidth={2} />
-                              </button>
-                            ); })}
-                          </div>
-                        )}
-                      </div>
-                    ); })}
+                                {isToday && <span style={{ fontSize:9,fontWeight:800,letterSpacing:"0.08em",color:BRAND.tealDark,background:"rgba(33,208,179,0.14)",borderRadius:99,padding:"2px 7px" }}>HOY</span>}
+                              </span>
+                              {events.length>0 && (
+                                <span style={{ display:"block",fontSize:10.5,color:SURFACE.textFaint,marginTop:2,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                  {rango}
+                                  {sedes.length>0 && ` · ${sedes.slice(0,2).join(" · ")}`}
+                                  {sedes.length>2 && ` +${sedes.length-2}`}
+                                </span>
+                              )}
+                            </span>
+
+                            {events.length>0 ? (
+                              <>
+                                <span style={{ flexShrink:0,fontSize:10,fontWeight:800,color:BRAND.tealDark,background:"rgba(33,208,179,0.12)",borderRadius:20,padding:"2px 9px" }}>{events.length}</span>
+                                <ChevronDownIcon size={14} color={SURFACE.textFaint} strokeWidth={2}
+                                  style={{ flexShrink:0,transition:"transform .15s",transform:abierto?"rotate(180deg)":"rotate(0)" }} />
+                              </>
+                            ) : (
+                              <span style={{ flexShrink:0,fontSize:10.5,fontWeight:600,color:SURFACE.borderStrong }}>Sin actividades</span>
+                            )}
+                          </button>
+
+                          {abierto && (
+                            <div style={{ padding:"0 14px 10px 62px",display:"flex",flexDirection:"column",gap:6 }}>
+                              {visibles.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
+                                <button key={it.id} type="button" onClick={()=>abrirDetalle(it)}
+                                  style={{ width:"100%",textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:9,
+                                    background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"8px 10px" }}>
+                                  <span style={{ fontSize:11.5,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{hhmm(it.date)}</span>
+                                  <span style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column" }}>
+                                    <span style={{ fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}</span>
+                                    {(it.subtitle || it.venue) && (
+                                      <span style={{ fontSize:10.5,color:SURFACE.textFaint,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                        {[it.subtitle, it.venue].filter(Boolean).join(" · ")}
+                                      </span>
+                                    )}
+                                  </span>
+                                  <ChevronRightIcon size={13} color={SURFACE.borderStrong} strokeWidth={2} />
+                                </button>
+                              ); })}
+                              {ocultos>0 && (
+                                <button type="button" onClick={()=>marcarVerTodo(clave)}
+                                  style={{ background:"none",border:"none",cursor:"pointer",padding:"6px 0",fontSize:11.5,fontWeight:700,color:BRAND.tealDark,textAlign:"center" }}>
+                                  Ver las {ocultos} restantes
+                                </button>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
 
