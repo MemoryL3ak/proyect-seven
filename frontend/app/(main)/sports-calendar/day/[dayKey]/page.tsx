@@ -129,7 +129,7 @@ function tripStatusLabel(value?: string | null) {
   if (value === "EN_ROUTE") return "En ruta";
   if (value === "SCHEDULED") return "Programado";
   if (value === "PICKED_UP") return "Recogido";
-  if (value === "DROPPED_OFF") return "Dejado";
+  if (value === "DROPPED_OFF") return "Completado";
   if (value === "COMPLETED") return "Completado";
   return value || "Sin estado";
 }

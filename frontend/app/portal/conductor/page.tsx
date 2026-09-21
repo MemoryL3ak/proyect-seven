@@ -253,7 +253,7 @@ const statusLabel: Record<string, string> = {
   SCHEDULED: "Programado",
   EN_ROUTE: "En ruta al punto de encuentro",
   PICKED_UP: "En curso",
-  DROPPED_OFF: "Dejado en hotel",
+  DROPPED_OFF: "Viaje completado",
   COMPLETED: "Viaje completado"
 };
 

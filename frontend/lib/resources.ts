@@ -1168,7 +1168,7 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Programado", value: "SCHEDULED" },
           { label: "En ruta", value: "EN_ROUTE" },
           { label: "Recogido", value: "PICKED_UP" },
-          { label: "Dejado en hotel", value: "DROPPED_OFF" },
+          { label: "Completado", value: "DROPPED_OFF" },
           { label: "Completado", value: "COMPLETED" },
           { label: "Cancelado", value: "CANCELLED" }
         ]

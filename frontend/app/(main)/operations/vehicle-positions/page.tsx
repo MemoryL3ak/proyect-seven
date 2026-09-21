@@ -96,7 +96,7 @@ const STATUS_LABEL: Record<string, string> = {
   SCHEDULED: TRIP_STATUS_META.SCHEDULED.label,
   EN_ROUTE: "En ruta al punto de encuentro",
   PICKED_UP: TRIP_STATUS_META.PICKED_UP.label,
-  DROPPED_OFF: "Dejado en hotel",
+  DROPPED_OFF: TRIP_STATUS_META.DROPPED_OFF.label,
   COMPLETED: TRIP_STATUS_META.COMPLETED.label,
   CANCELLED: TRIP_STATUS_META.CANCELLED.label,
 };
