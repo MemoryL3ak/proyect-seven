@@ -2658,9 +2658,18 @@ export default function UserPortalPage() {
                               cursor:day?"pointer":"default",
                               background:isSel?"#f0fdfa":day?SURFACE.card:"transparent",display:"flex",flexDirection:"column",alignItems:"flex-start",gap:3 }}>
                             <span style={{ fontSize:12,fontWeight:(isSel||isTodayCell)?800:600,color:day?(isTodayCell?BRAND.tealDark:SURFACE.text):"transparent" }}>{day||""}</span>
-                            <div style={{ display:"flex",flexWrap:"wrap",gap:2 }}>
-                              {dayItems.slice(0,3).map(it => <span key={it.id} style={{ width:6,height:6,borderRadius:"50%",background:TYPE_CFG[it.type].color }} />)}
-                              {dayItems.length>3 && <span style={{ fontSize:8,fontWeight:800,color:SURFACE.textFaint }}>+{dayItems.length-3}</span>}
+                            {/* Un punto por TIPO presente, no por actividad:
+                                tres puntos rojos iguales sólo decían "hay
+                                competencias", y el conteo real quedaba en un
+                                "+25" al lado. Ahora el color dice qué clase de
+                                día es y el número, cuánto hay. */}
+                            <div style={{ display:"flex",alignItems:"center",flexWrap:"wrap",gap:3 }}>
+                              {Array.from(new Set(dayItems.map(it=>it.type))).slice(0,4).map(tp => (
+                                <span key={tp} style={{ width:6,height:6,borderRadius:"50%",background:TYPE_CFG[tp as CalType].color }} />
+                              ))}
+                              {dayItems.length>0 && (
+                                <span style={{ fontSize:9,fontWeight:800,color:SURFACE.textMuted,fontVariantNumeric:"tabular-nums" }}>{dayItems.length}</span>
+                              )}
                             </div>
                           </button>
                         );
@@ -2671,22 +2680,64 @@ export default function UserPortalPage() {
                       const selItems = inMonth.filter(it => it.date.getDate()===calSelectedDay).sort((a,b)=>a.date.getTime()-b.date.getTime());
                       return (
                         <div style={{ marginTop:12,borderTop:`1px solid ${SURFACE.borderMuted}`,paddingTop:10 }}>
-                          <p style={{ fontSize:11,fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase",color:BRAND.tealDark,margin:"0 0 8px" }}>
-                            {cap1(new Date(y,m,calSelectedDay).toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"}))}
-                          </p>
+                          <div style={{ display:"flex",alignItems:"baseline",gap:8,margin:"0 0 10px" }}>
+                            <p style={{ fontSize:11,fontWeight:800,letterSpacing:"0.1em",textTransform:"uppercase",color:BRAND.tealDark,margin:0 }}>
+                              {cap1(new Date(y,m,calSelectedDay).toLocaleDateString("es-CL",{weekday:"long",day:"2-digit",month:"long"}))}
+                            </p>
+                            {selItems.length>0 && (
+                              <span style={{ fontSize:11,fontWeight:700,color:SURFACE.textFaint }}>
+                                {selItems.length} {selItems.length===1?"actividad":"actividades"}
+                              </span>
+                            )}
+                          </div>
                           {selItems.length===0 ? (
                             <p style={{ fontSize:12,color:SURFACE.textFaint,margin:0 }}>Sin actividades este día.</p>
-                          ) : (
-                            <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                              {selItems.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                                <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
-                                  <span style={{ fontSize:11,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
-                                  <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.venue?` · ${it.venue}`:""}</span>
-                                  <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
-                                </div>
-                              ); })}
-                            </div>
-                          )}
+                          ) : (() => {
+                            // Por bloque horario. Una jornada de atletismo son
+                            // cincuenta pruebas: en lista corrida hay que leer
+                            // la hora de cada fila para ubicarse, y la hora se
+                            // repite en las que arrancan juntas.
+                            const bloques = new Map<string, typeof selItems>();
+                            selItems.forEach(it => {
+                              const clave = `${String(it.date.getHours()).padStart(2,"0")}:00`;
+                              const lista = bloques.get(clave) ?? [];
+                              lista.push(it);
+                              bloques.set(clave, lista);
+                            });
+                            return (
+                              <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
+                                {Array.from(bloques.entries()).map(([bloque, items]) => (
+                                  <div key={bloque}>
+                                    <div style={{ display:"flex",alignItems:"center",gap:8,marginBottom:6 }}>
+                                      <span style={{ fontSize:12,fontWeight:800,color:SURFACE.text,fontVariantNumeric:"tabular-nums" }}>{bloque}</span>
+                                      <span style={{ flex:1,height:1,background:SURFACE.borderMuted }} />
+                                      <span style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint }}>
+                                        {items.length} {items.length===1?"actividad":"actividades"}
+                                      </span>
+                                    </div>
+                                    <div style={{ display:"flex",flexDirection:"column",gap:5 }}>
+                                      {items.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
+                                        <button key={it.id} type="button" onClick={()=>abrirDetalle(it)}
+                                          style={{ width:"100%",textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:9,
+                                            background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"8px 10px" }}>
+                                          <span style={{ fontSize:11.5,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{hhmm(it.date)}</span>
+                                          <span style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column" }}>
+                                            <span style={{ fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}</span>
+                                            {(it.subtitle || it.venue) && (
+                                              <span style={{ fontSize:10.5,color:SURFACE.textFaint,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                                {[it.subtitle, it.venue].filter(Boolean).join(" · ")}
+                                              </span>
+                                            )}
+                                          </span>
+                                          <ChevronRightIcon size={13} color={SURFACE.borderStrong} strokeWidth={2} />
+                                        </button>
+                                      ); })}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })()}
                         </div>
                       );
                     })()}
