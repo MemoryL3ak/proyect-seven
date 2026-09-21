@@ -22,7 +22,10 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const GENDER_LABELS: Record<string, string> = {
   MALE: "Masculino",
-  FEMALE: "Femenino"
+  FEMALE: "Femenino",
+  // Las disciplinas sin rama —ajedrez, natación, tenis de mesa— se cargan como
+  // mixtas. Faltaba acá y no había forma de registrarlas desde esta pantalla.
+  MIXED: "Mixto"
 };
 
 const EMPTY_FORM = {
@@ -346,6 +349,7 @@ export default function DisciplinesPage() {
                   <option value="">—</option>
                   <option value="MALE">{t("Masculino")}</option>
                   <option value="FEMALE">{t("Femenino")}</option>
+                  <option value="MIXED">{t("Mixto")}</option>
                 </select>
               </label>
             </div>
