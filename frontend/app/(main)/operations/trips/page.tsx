@@ -276,16 +276,17 @@ const COLUMN_PREVIEW = 3;
 /** Estados que sacan un viaje de la operación viva. */
 const CLOSED_STATUSES = new Set(["DROPPED_OFF", "COMPLETED", "CANCELLED"]);
 /** Rejilla de la lista "En curso": casilla, hora, estado, servicio, ruta, conductor, acciones. */
-const ONGOING_COLUMNS = "20px 52px 116px 1.05fr 1.75fr 1fr 104px";
-/** Botón de acción dentro del bloque segmentado del final de cada fila. */
+const ONGOING_COLUMNS = "18px 52px 108px 168px minmax(240px, 1fr) 176px 104px";
+/** Botón de acción del final de cada fila. */
 const ONGOING_ACTION_STYLE = {
   display: "inline-flex",
   alignItems: "center",
   justifyContent: "center",
-  width: "32px",
+  width: "28px",
   height: "28px",
-  border: "none",
-  background: "transparent",
+  borderRadius: "7px",
+  border: `1px solid ${SURFACE.border}`,
+  background: SURFACE.card,
   color: SURFACE.textSecondary,
   cursor: "pointer",
   flexShrink: 0,
@@ -1808,32 +1809,42 @@ export default function TripsPage() {
                                   : "—"}
                               </span>
 
-                              <span style={{
-                                background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, borderRadius: "7px",
-                                padding: "3px 9px", fontSize: "11px", fontWeight: 700, color: sc.accent,
-                                display: "inline-flex", alignItems: "center", gap: "5px", width: "fit-content", whiteSpace: "nowrap",
-                              }}>
-                                {sc.pulse && <span style={{ width: 5, height: 5, borderRadius: "50%", background: sc.accent, display: "inline-block", animation: "pulse 1.5s infinite" }} />}
-                                {t(statusTone(trip.status).label)}
+                              <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
+                                <span style={{
+                                  width: 7, height: 7, borderRadius: "50%", background: sc.accent, flexShrink: 0,
+                                  animation: sc.pulse ? "pulse 1.5s infinite" : undefined,
+                                }} />
+                                <span style={{ fontSize: "12.5px", fontWeight: 600, color: pal.textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                                  {t(statusTone(trip.status).label)}
+                                </span>
                               </span>
 
                               <span style={{ minWidth: 0 }}>
-                                <span style={{ display: "block", fontSize: "13px", fontWeight: 700, color: pal.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {resolveRequester(trip)}
+                                <span style={{ display: "block", fontSize: "13px", fontWeight: 600, color: pal.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {trip.discipline || resolveRequester(trip)}
                                 </span>
-                                <span style={{ display: "block", fontSize: "11.5px", color: pal.textMuted, marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {[trip.discipline, trip.passengerCount ? `${trip.passengerCount} pax` : null].filter(Boolean).join(" · ") || "—"}
+                                <span style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2, fontSize: "11px", color: pal.textMuted }}>
+                                  {trip.clientType && (
+                                    <span style={{
+                                      fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.08em",
+                                      padding: "1px 5px", borderRadius: 4,
+                                      background: SURFACE.borderMuted, color: pal.textMuted, whiteSpace: "nowrap",
+                                    }}>
+                                      {trip.clientType}
+                                    </span>
+                                  )}
+                                  {trip.passengerCount ? `${trip.passengerCount} pax` : null}
                                 </span>
                               </span>
 
                               {/* Origen y destino con el mismo peso: la flecha
                                   ya dice cuál es cuál. */}
-                              <span style={{ minWidth: 0, display: "grid", gridTemplateColumns: "1fr 14px 1fr", alignItems: "center", gap: 8, fontSize: "12.5px" }}>
-                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: pal.textMuted, textAlign: "right" }}>
+                              <span style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 7, fontSize: "12.5px" }}>
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: pal.textMuted, flex: "0 1 auto" }}>
                                   {trip.origin || t("Origen pendiente")}
                                 </span>
-                                <ArrowRightIcon size={13} color={pal.labelColor} strokeWidth={2.2} />
-                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: pal.textPrimary, fontWeight: 600 }}>
+                                <ArrowRightIcon size={12} color={pal.labelColor} strokeWidth={2.2} />
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: pal.textPrimary, fontWeight: 600, flex: "1 1 auto" }}>
                                   {venue?.name || trip.destination || t("Destino pendiente")}
                                 </span>
                               </span>
@@ -1866,10 +1877,7 @@ export default function TripsPage() {
 
                               {/* Un solo bloque segmentado, no tres botones
                                   sueltos flotando contra el borde. */}
-                              <span style={{
-                                display: "inline-flex", justifySelf: "end", alignItems: "stretch",
-                                border: `1px solid ${SURFACE.border}`, borderRadius: "9px", overflow: "hidden", background: SURFACE.card,
-                              }}>
+                              <span style={{ display: "inline-flex", justifySelf: "end", alignItems: "center", gap: 5 }}>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1890,7 +1898,7 @@ export default function TripsPage() {
                                   type="button"
                                   onClick={() => setLogTrip(trip)}
                                   title={t("Ver bitácora")}
-                                  style={{ ...ONGOING_ACTION_STYLE, borderLeft: `1px solid ${SURFACE.borderMuted}` }}
+                                  style={ONGOING_ACTION_STYLE}
                                 >
                                   <FileTextIcon size={13} strokeWidth={2} />
                                 </button>
@@ -1898,7 +1906,7 @@ export default function TripsPage() {
                                   type="button"
                                   onClick={() => setPendingAction({ trip, kind: "delete" })}
                                   title={t("Eliminar viaje")}
-                                  style={{ ...ONGOING_ACTION_STYLE, borderLeft: `1px solid ${SURFACE.borderMuted}`, color: STATE.danger }}
+                                  style={{ ...ONGOING_ACTION_STYLE, color: STATE.danger, borderColor: "rgba(239,68,68,0.3)" }}
                                 >
                                   <TrashIcon size={13} strokeWidth={2} />
                                 </button>
