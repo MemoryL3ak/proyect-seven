@@ -7,6 +7,7 @@ import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import StyledSelect from "@/components/StyledSelect";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -186,6 +187,8 @@ type VenueItem = {
   commune?: string | null;
   region?: string | null;
 };
+/** Hotel del evento. Un viaje "toca" un hotel si sale o llega a él. */
+type HotelItem = { id: string; name?: string | null; eventId?: string | null };
 
 type StatusTone = {
   label: string;
@@ -333,6 +336,19 @@ const formatDayLabel = (dayKey: string) => {
 // Estados en los que un viaje sigue "vivo" y por tanto puede cancelarse.
 const CANCELLABLE_STATUSES = new Set(["REQUESTED", "SCHEDULED", "ASSIGNED", "EN_ROUTE", "PICKED_UP"]);
 
+/**
+ * Nombre de lugar comparable: sin tildes, sin mayúsculas, sin dobles espacios.
+ * Los viajes de planilla traen origen y destino escritos a mano, así que
+ * "Comedor LRH (EX GALA)" y "comedor lrh  (ex gala)" tienen que calzar.
+ */
+const normalizarLugar = (valor?: string | null) =>
+  String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
 /** Día local de un instante: agrupar por UTC corría los viajes de la noche. */
 const isoDayKeyLocal = (value: string) => {
   const d = new Date(value);
@@ -400,6 +416,7 @@ export default function TripsPage() {
   const [drivers, setDrivers] = useState<Record<string, DriverItem>>({});
   const [vehicles, setVehicles] = useState<Record<string, VehicleItem>>({});
   const [venues, setVenues] = useState<Record<string, VenueItem>>({});
+  const [hoteles, setHoteles] = useState<HotelItem[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [selectedClientType, setSelectedClientType] = useState("");
   const [search, setSearch] = useState("");
@@ -505,8 +522,11 @@ export default function TripsPage() {
     const destino = tabPrevia.current;
     setActiveTab(destino === "editor" || destino === "portal" ? "ongoing" : destino);
   };
-  // Vista "En curso": día elegido ("" = todos) y página de la tabla.
+  // Vista "En curso": filtros propios de la vista y página de la lista.
   const [ongoingDay, setOngoingDay] = useState("");
+  const [ongoingDiscipline, setOngoingDiscipline] = useState("");
+  const [ongoingHotel, setOngoingHotel] = useState("");
+  const [ongoingVenue, setOngoingVenue] = useState("");
   const [ongoingPage, setOngoingPage] = useState(0);
   // Selección múltiple para borrado en lote.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -531,7 +551,7 @@ export default function TripsPage() {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData] =
+      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData, hotelData] =
         await Promise.all([
           apiFetch<Trip[]>("/trips"),
           apiFetch<EventItem[]>("/events"),
@@ -540,6 +560,7 @@ export default function TripsPage() {
           apiFetch<DriverItem[]>("/drivers"),
           apiFetch<VehicleItem[]>("/transports"),
           apiFetch<VenueItem[]>("/venues"),
+          apiFetch<HotelItem[]>("/accommodations").catch(() => [] as HotelItem[]),
         ]);
 
       const nextTrips = tripData || [];
@@ -591,6 +612,7 @@ export default function TripsPage() {
           return acc;
         }, {})
       );
+      setHoteles(hotelData || []);
       setVenues(
         (venueData || []).reduce<Record<string, VenueItem>>((acc, item) => {
           acc[item.id] = item;
@@ -835,14 +857,60 @@ export default function TripsPage() {
       .map(([key, count]) => ({ key, count, label: key === "sin-fecha" ? t("Sin fecha") : formatDayLabel(key) }));
   }, [ongoingTrips, t]);
 
+  /** Deportes presentes en la operación viva, para el filtro. */
+  const ongoingDisciplines = useMemo(
+    () =>
+      [...new Set(ongoingTrips.map((t2) => t2.discipline).filter((d): d is string => Boolean(d)))].sort(
+        (a, b) => a.localeCompare(b, "es"),
+      ),
+    [ongoingTrips],
+  );
+
+  /**
+   * Hoteles y sedes que aparecen en la operación. Los viajes de planilla traen
+   * origen y destino como texto, no como id de recinto, así que el calce es por
+   * nombre normalizado: es lo que hay hasta que la planilla los referencie.
+   */
+  const tocaLugar = (trip: Trip, nombre: string) => {
+    const objetivo = normalizarLugar(nombre);
+    if (!objetivo) return false;
+    const destinoSede = trip.destinationVenueId ? venues[trip.destinationVenueId]?.name : null;
+    return [trip.origin, trip.destination, destinoSede].some(
+      (valor) => normalizarLugar(valor).includes(objetivo) || objetivo.includes(normalizarLugar(valor)),
+    );
+  };
+
+  const ongoingHoteles = useMemo(
+    () =>
+      hoteles
+        .filter((h) => h.name && ongoingTrips.some((t2) => tocaLugar(t2, h.name as string)))
+        .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "es")),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hoteles, ongoingTrips, venues],
+  );
+
+  const ongoingSedes = useMemo(
+    () =>
+      Object.values(venues)
+        .filter((v) => v.name && ongoingTrips.some((t2) => tocaLugar(t2, v.name as string)))
+        .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "es")),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [venues, ongoingTrips],
+  );
+
   const ongoingFiltered = useMemo(
     () =>
-      ongoingDay
-        ? ongoingTrips.filter(
-            (trip) => (trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha") === ongoingDay,
-          )
-        : ongoingTrips,
-    [ongoingTrips, ongoingDay],
+      ongoingTrips
+        .filter(
+          (trip) =>
+            !ongoingDay ||
+            (trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha") === ongoingDay,
+        )
+        .filter((trip) => !ongoingDiscipline || trip.discipline === ongoingDiscipline)
+        .filter((trip) => !ongoingHotel || tocaLugar(trip, ongoingHotel))
+        .filter((trip) => !ongoingVenue || tocaLugar(trip, ongoingVenue)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [ongoingTrips, ongoingDay, ongoingDiscipline, ongoingHotel, ongoingVenue, venues],
   );
 
   const ongoingTotalPages = Math.max(1, Math.ceil(ongoingFiltered.length / ONGOING_PAGE_SIZE));
@@ -1736,49 +1804,92 @@ export default function TripsPage() {
               </div>
             </div>
 
-            {/* Filtro de jornada. Con chips, una semana cargada llenaba dos
-                filas de botones; como campo, la lista crece sin deformar la
-                vista y cada opción lleva su carga. */}
-            {ongoingDays.length > 0 && (
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-                <label className="text-sm block" style={{ minWidth: 240 }}>
-                  <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Jornada")}</span>
-                  <select
-                    className="input"
-                    value={ongoingDay}
-                    onChange={(e) => { setOngoingDay(e.target.value); setOngoingPage(0); }}
-                  >
-                    <option value="">
-                      {t("Todas las jornadas")} ({ongoingTrips.length})
-                    </option>
-                    {ongoingDays.map((d) => (
-                      <option key={d.key} value={d.key}>
-                        {d.label} ({d.count})
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                {ongoingDay && (
-                  <button
-                    type="button"
-                    onClick={() => { setOngoingDay(""); setOngoingPage(0); }}
-                    style={{
-                      border: `1px solid ${SURFACE.border}`, borderRadius: 8, background: SURFACE.card,
-                      color: SURFACE.textMuted, padding: "8px 14px", fontSize: "12.5px", fontWeight: 500, cursor: "pointer",
-                    }}
-                  >
-                    {t("Quitar filtro")}
-                  </button>
-                )}
-              </div>
-            )}
+            {/* Filtros de la vista. Van con StyledSelect y no con el select
+                nativo: el desplegable del sistema operativo rompe el lenguaje
+                visual del resto del panel. */}
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
+              <label className="text-sm block" style={{ minWidth: 230 }}>
+                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Jornada")}</span>
+                <StyledSelect
+                  value={ongoingDay}
+                  onChange={(e) => { setOngoingDay(e.target.value); setOngoingPage(0); }}
+                >
+                  <option value="">{`${t("Todas las jornadas")} (${ongoingTrips.length})`}</option>
+                  {ongoingDays.map((d) => (
+                    <option key={d.key} value={d.key}>{`${d.label} (${d.count})`}</option>
+                  ))}
+                </StyledSelect>
+              </label>
+
+              <label className="text-sm block" style={{ minWidth: 180 }}>
+                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Disciplina")}</span>
+                <StyledSelect
+                  value={ongoingDiscipline}
+                  onChange={(e) => { setOngoingDiscipline(e.target.value); setOngoingPage(0); }}
+                >
+                  <option value="">{t("Todas")}</option>
+                  {ongoingDisciplines.map((d) => (
+                    <option key={d} value={d}>{d}</option>
+                  ))}
+                </StyledSelect>
+              </label>
+
+              <label className="text-sm block" style={{ minWidth: 200 }}>
+                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Hotel")}</span>
+                <StyledSelect
+                  value={ongoingHotel}
+                  onChange={(e) => { setOngoingHotel(e.target.value); setOngoingPage(0); }}
+                >
+                  <option value="">{t("Todos")}</option>
+                  {ongoingHoteles.map((h) => (
+                    <option key={h.id} value={h.name ?? ""}>{h.name}</option>
+                  ))}
+                </StyledSelect>
+              </label>
+
+              <label className="text-sm block" style={{ minWidth: 220 }}>
+                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Sede")}</span>
+                <StyledSelect
+                  value={ongoingVenue}
+                  onChange={(e) => { setOngoingVenue(e.target.value); setOngoingPage(0); }}
+                >
+                  <option value="">{t("Todas")}</option>
+                  {ongoingSedes.map((v) => (
+                    <option key={v.id} value={v.name ?? ""}>{v.name}</option>
+                  ))}
+                </StyledSelect>
+              </label>
+
+              {(ongoingDay || ongoingDiscipline || ongoingHotel || ongoingVenue) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setOngoingDay("");
+                    setOngoingDiscipline("");
+                    setOngoingHotel("");
+                    setOngoingVenue("");
+                    setOngoingPage(0);
+                  }}
+                  style={{
+                    border: `1px solid ${SURFACE.border}`, borderRadius: 8, background: SURFACE.card,
+                    color: SURFACE.textMuted, padding: "9px 14px", fontSize: "12.5px", fontWeight: 500, cursor: "pointer",
+                  }}
+                >
+                  {t("Limpiar filtros")}
+                </button>
+              )}
+            </div>
 
             {ongoingFiltered.length === 0 ? (
               <div style={{ borderRadius: "14px", border: `1px dashed ${pal.cardBorder}`, background: pal.cardBg, padding: "48px 24px", textAlign: "center" }}>
                 <ClockIcon size={22} color={pal.labelColor} strokeWidth={1.8} />
-                <p style={{ marginTop: 10, color: pal.textMuted, fontSize: "14px", fontWeight: 500 }}>{t("No hay viajes en curso.")}</p>
+                <p style={{ marginTop: 10, color: pal.textMuted, fontSize: "14px", fontWeight: 500 }}>
+                  {ongoingTrips.length === 0 ? t("No hay viajes en curso.") : t("Ningún viaje coincide con los filtros.")}
+                </p>
                 <p style={{ marginTop: 2, color: pal.labelColor, fontSize: "12.5px" }}>
-                  {t("Importa una planilla o crea uno manual para empezar el día.")}
+                  {ongoingTrips.length === 0
+                    ? t("Importa una planilla o crea uno manual para empezar el día.")
+                    : t("Prueba quitando alguno de los filtros de arriba.")}
                 </p>
               </div>
             ) : (
