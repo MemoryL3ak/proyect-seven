@@ -112,6 +112,10 @@ const navSections: NavSection[] = [
   {
     title: "Deportes", icon: "sports-rings",
     items: [
+      // El maestro va primero: las disciplinas son lo que después se planifica.
+      // Existía como página pero sin entrada en el menú, así que sólo se
+      // llegaba escribiendo la URL.
+      { href: "/masters/disciplines", label: "Disciplinas", icon: "sports-rings" },
       { href: "/deportes", label: "Planificación deportiva", icon: "sports-rings" },
       { href: "/deportes/premiaciones", label: "Premiaciones", icon: "trophy" }
     ]
@@ -264,6 +268,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/clientes": "clientes",
   "/deportes": "deportes",
   "/deportes/premiaciones": "deportes",
+  "/masters/disciplines": "deportes",
   "/sede": "sede",
   "/incidents": "incidencias",
   "/sports-calendar": "calendario",
