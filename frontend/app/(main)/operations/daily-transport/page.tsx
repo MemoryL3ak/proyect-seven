@@ -95,12 +95,48 @@ type ScheduleRow = {
   notes?: string;
   observation?: string;
 };
+// La vista previa muestra TODAS las columnas de la planilla, en el mismo orden
+// del archivo, para que el operador pueda comparar 1:1 contra su Excel antes de
+// importar. Una columna que llega vacía en todas las filas es la señal de que
+// no se reconoció la cabecera (típicamente un CSV con los acentos rotos), y por
+// eso se marcan aparte en vez de pasar desapercibidas.
+const PREVIEW_COLUMNS: Array<{ key: keyof ScheduleRow; label: string }> = [
+  { key: "busNumber", label: "N° Bus" },
+  { key: "legType", label: "Destino" },
+  { key: "clientType", label: "Acrónimo" },
+  { key: "clientName", label: "Tipo de Cliente" },
+  { key: "date", label: "Fecha" },
+  { key: "discipline", label: "Disciplina" },
+  { key: "gender", label: "Género" },
+  { key: "activity", label: "Actividad" },
+  { key: "presentationTime", label: "Presentación" },
+  { key: "originName", label: "Lugar Origen" },
+  { key: "originAddress", label: "Dirección" },
+  { key: "departureTime", label: "Hora Llegada Bus" },
+  { key: "travelTime", label: "T° Traslado" },
+  { key: "arrivalTime", label: "Hora Llegada Recinto" },
+  { key: "destinationName", label: "Recinto" },
+  { key: "returnTime", label: "Regresar a las" },
+  { key: "passengerCount", label: "PAX" },
+  { key: "wheelchairCount", label: "Sillas de Rueda" },
+  { key: "fleetAcronym", label: "Acrónimo Flota" },
+  { key: "fleetType", label: "Tipo Flota" },
+  { key: "vehiclePlate", label: "Patente" },
+  { key: "driverName", label: "Conductor" },
+  { key: "driverPhone", label: "Teléfono" },
+  { key: "notes", label: "Notas" },
+  { key: "observation", label: "Obs" },
+];
+
 type ImportResult = {
-  created: Array<{ index: number; id: string; label?: string }>;
+  created: Array<{ index: number; id: string; label?: string; driver?: string }>;
   skipped: Array<{ index: number; reason: string }>;
   warnings?: string[];
   createdCount: number;
   skippedCount: number;
+  // Viajes que quedaron con el conductor que ya venía escrito en la planilla
+  // (columnas Conductor / Patente), sin pasar por la auto-asignación.
+  driverAssignedCount?: number;
 };
 type AssignParams = {
   eventId?: string;
@@ -330,6 +366,19 @@ export default function DailyTransportPage() {
   // saltar directo a "Vista del día" ya posicionado en el día correcto.
   const [lastImportedDate, setLastImportedDate] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Columnas de la planilla que no traen dato en NINGUNA fila: casi siempre
+  // significa que la cabecera no se reconoció, no que el operador las dejó en
+  // blanco. Se avisan arriba de la tabla para que no pase inadvertido.
+  const emptyPreviewColumns = useMemo(() => {
+    if (rows.length === 0) return [];
+    return PREVIEW_COLUMNS.filter((col) =>
+      rows.every((r) => {
+        const v = r[col.key];
+        return v === undefined || v === null || v === "";
+      }),
+    ).map((col) => col.label);
+  }, [rows]);
 
   // Año por defecto = año de inicio del evento seleccionado
   const defaultYear = useMemo(() => {
@@ -726,52 +775,68 @@ export default function DailyTransportPage() {
             </button>
           </div>
           {rows.length > 0 && (
-            <div className="overflow-auto rounded-xl" style={{ border: "1px solid var(--border)" }}>
-              <table className="w-full text-xs">
-                <thead style={{ background: "var(--elevated)", color: "var(--text-muted)" }}>
-                  <tr>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">#</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Fecha")}</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Pres.")}</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Cliente")}</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Disciplina")}</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Origen")}</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Destino")}</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Flota")}</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("PAX")}</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("SR")}</th>
-                    <th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Vuelta")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rows.slice(0, 50).map((r, i) => (
-                    <tr key={i} style={{ borderTop: "1px solid var(--border-muted)", background: i % 2 === 0 ? "var(--surface)" : "var(--elevated)" }}>
-                      <td className="p-2">{i + 1}</td>
-                      <td className="p-2">{r.date}</td>
-                      <td className="p-2">{r.presentationTime}</td>
-                      <td className="p-2">{r.clientType}</td>
-                      <td className="p-2">{r.discipline}</td>
-                      <td className="p-2">{r.originName}</td>
-                      <td className="p-2">{r.destinationName}</td>
-                      <td className="p-2">{r.fleetAcronym}</td>
-                      <td className="p-2">{r.passengerCount ?? "-"}</td>
-                      <td className="p-2">{r.wheelchairCount ?? "-"}</td>
-                      <td className="p-2">{r.returnTime ?? "-"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {rows.length > 50 && (
-                <p className="p-2 text-xs" style={{ color: "var(--text-muted)" }}>
-                  {t("Mostrando 50 de")} {rows.length}. {t("Todas se importarán al confirmar.")}
+            <div className="space-y-2">
+              {emptyPreviewColumns.length > 0 && (
+                <p className="rounded-lg p-2 text-xs" style={{ background: "var(--warning-soft, rgba(245,158,11,0.12))", color: "var(--text-secondary)", border: "1px solid rgba(245,158,11,0.4)" }}>
+                  <strong>{emptyPreviewColumns.length} {t("columna(s) llegaron vacías")}:</strong>{" "}
+                  {emptyPreviewColumns.join(", ")}.{" "}
+                  {t("Si en tu archivo esas columnas tienen datos, la cabecera no se reconoció: guarda la planilla como .xlsx y vuelve a cargarla.")}
                 </p>
               )}
+              <div className="overflow-auto rounded-xl" style={{ border: "1px solid var(--border)", maxHeight: "60vh" }}>
+                <table className="text-xs" style={{ minWidth: "100%", borderCollapse: "collapse" }}>
+                  <thead style={{ background: "var(--elevated)", color: "var(--text-muted)", position: "sticky", top: 0, zIndex: 1 }}>
+                    <tr>
+                      <th className="p-2 text-left font-semibold uppercase tracking-wide" style={{ position: "sticky", left: 0, background: "var(--elevated)", zIndex: 2 }}>#</th>
+                      {PREVIEW_COLUMNS.map((col) => {
+                        const vacia = emptyPreviewColumns.includes(col.label);
+                        return (
+                          <th
+                            key={col.key}
+                            className="p-2 text-left font-semibold uppercase tracking-wide"
+                            style={{ whiteSpace: "nowrap", color: vacia ? "var(--danger, #ef4444)" : undefined }}
+                            title={vacia ? t("Esta columna llegó vacía en todas las filas") : col.label}
+                          >
+                            {col.label}
+                          </th>
+                        );
+                      })}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.slice(0, 50).map((r, i) => (
+                      <tr key={i} style={{ borderTop: "1px solid var(--border-muted)", background: i % 2 === 0 ? "var(--surface)" : "var(--elevated)" }}>
+                        <td className="p-2" style={{ position: "sticky", left: 0, background: "inherit", fontWeight: 600 }}>{i + 1}</td>
+                        {PREVIEW_COLUMNS.map((col) => {
+                          const value = r[col.key];
+                          const texto = value === undefined || value === null || value === "" ? null : String(value);
+                          return (
+                            <td key={col.key} className="p-2" style={{ whiteSpace: "nowrap" }}>
+                              {texto ?? <span style={{ color: "var(--text-muted)" }}>—</span>}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs" style={{ color: "var(--text-muted)" }}>
+                {rows.length > 50
+                  ? `${t("Mostrando 50 de")} ${rows.length}. ${t("Todas se importarán al confirmar.")}`
+                  : `${rows.length} ${t("fila(s)")} × ${PREVIEW_COLUMNS.length} ${t("columnas de la planilla. Desplázate horizontalmente para ver el resto.")}`}
+              </p>
             </div>
           )}
           {importResult && (
             <div className="space-y-3 rounded-xl p-4" style={{ background: "var(--elevated)", border: "1px solid var(--border)" }}>
               <div className="flex flex-wrap items-center gap-2">
                 <span className="badge badge-success">{importResult.createdCount} {t("viajes creados")}</span>
+                {(importResult.driverAssignedCount ?? 0) > 0 && (
+                  <span className="badge badge-success">
+                    {importResult.driverAssignedCount} {t("con el conductor de la planilla")}
+                  </span>
+                )}
                 {importResult.skippedCount > 0 && (
                   <span className="badge badge-danger">{importResult.skippedCount} {t("saltados")}</span>
                 )}
@@ -791,13 +856,16 @@ export default function DailyTransportPage() {
                   <div className="rounded-lg max-h-48 overflow-auto mt-2" style={{ border: "1px solid var(--border)" }}>
                     <table className="w-full text-xs">
                       <thead style={{ background: "var(--surface)", color: "var(--text-muted)" }}>
-                        <tr><th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Fila")}</th><th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Viaje")}</th></tr>
+                        <tr><th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Fila")}</th><th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Viaje")}</th><th className="p-2 text-left font-semibold uppercase tracking-wide">{t("Conductor")}</th></tr>
                       </thead>
                       <tbody>
                         {importResult.created.map((c, i) => (
                           <tr key={i} style={{ borderTop: "1px solid var(--border-muted)" }}>
                             <td className="p-2">{c.index + 1}</td>
                             <td className="p-2">{c.label || c.id.slice(0, 8)}</td>
+                            <td className="p-2">
+                              {c.driver || <span style={{ color: "var(--text-muted)" }}>{t("sin asignar")}</span>}
+                            </td>
                           </tr>
                         ))}
                       </tbody>

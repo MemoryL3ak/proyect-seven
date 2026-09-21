@@ -109,6 +109,18 @@ type TripCandidate = {
   legType: string | null;
 };
 
+/**
+ * Conductor candidato para emparejar con la columna "Conductor"/"Patente" de la
+ * planilla de operatividad. Vive en transport.drivers (Flota propia) o en
+ * core.provider_participants marcados como conductor, que es donde se
+ * administran hoy el vehículo y la patente de cada chofer.
+ */
+type ScheduleDriver = {
+  id: string;
+  fullName: string;
+  plate: string | null;
+};
+
 @Injectable()
 export class TripsScheduleService {
   constructor(
@@ -237,13 +249,165 @@ export class TripsScheduleService {
   }
 
   // ─────────────────────────────────────────────────────────────────────────
+  // Emparejado del conductor que ya viene escrito en la planilla
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /** Nombre comparable: sin tildes, sin dobles espacios, en minúsculas. */
+  private normalizeName(raw: string | null | undefined): string {
+    return String(raw ?? '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** Patente comparable: solo letras y dígitos ("SP GY 95" ≡ "SPGY95"). */
+  private normalizePlate(raw: string | null | undefined): string {
+    return String(raw ?? '')
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, '');
+  }
+
+  /**
+   * Pool de conductores contra el que se empareja la planilla: la Flota del
+   * evento más los participantes de proveedor marcados como conductor. Se
+   * carga una sola vez por importación, no una vez por fila.
+   */
+  private async fetchScheduleDrivers(eventId: string): Promise<ScheduleDriver[]> {
+    const drivers: ScheduleDriver[] = [];
+
+    const { data: fleetRows } = await this.supabase
+      .schema('transport')
+      .from('drivers')
+      .select('id, full_name, vehicle_id')
+      .eq('status', 'ACTIVE')
+      .eq('event_id', eventId);
+
+    const fleet = (fleetRows as Array<Record<string, unknown>>) ?? [];
+    const vehicleIds = fleet
+      .map((d) => d.vehicle_id as string | null)
+      .filter((v): v is string => !!v);
+
+    const plateByVehicle = new Map<string, string>();
+    if (vehicleIds.length) {
+      const { data: vehicleRows } = await this.supabase
+        .schema('transport')
+        .from('vehicles')
+        .select('id, plate')
+        .in('id', vehicleIds);
+      ((vehicleRows as Array<Record<string, unknown>>) ?? []).forEach((v) => {
+        if (v.plate) plateByVehicle.set(v.id as string, String(v.plate));
+      });
+    }
+
+    fleet.forEach((d) => {
+      drivers.push({
+        id: d.id as string,
+        fullName: (d.full_name as string) ?? '',
+        plate: d.vehicle_id
+          ? (plateByVehicle.get(d.vehicle_id as string) ?? null)
+          : null,
+      });
+    });
+
+    // Una persona puede existir en ambas tablas con el MISMO id; el de Flota
+    // manda y el de proveedor se omite, igual que en fetchDriverProfiles.
+    const knownIds = new Set(drivers.map((d) => d.id));
+    const { data: ppRows } = await this.supabase
+      .schema('core')
+      .from('provider_participants')
+      .select('id, full_name, metadata')
+      .eq('metadata->>isDriver', 'true');
+
+    ((ppRows as Array<Record<string, unknown>>) ?? []).forEach((p) => {
+      if (knownIds.has(p.id as string)) return;
+      const meta =
+        p.metadata && typeof p.metadata === 'object'
+          ? (p.metadata as Record<string, unknown>)
+          : {};
+      drivers.push({
+        id: p.id as string,
+        fullName: (p.full_name as string) ?? '',
+        plate: String(meta.vehiclePatente ?? '').trim() || null,
+      });
+    });
+
+    return drivers;
+  }
+
+  /**
+   * Resuelve el conductor de una fila. Devuelve null cuando la planilla no dice
+   * nada (no es un problema: lo resolverá la auto-asignación), el conductor
+   * cuando la coincidencia es inequívoca, y un motivo cuando hay empate,
+   * contradicción o ningún registro — en esos casos el viaje se crea sin chofer
+   * en vez de arriesgar una asignación equivocada.
+   */
+  private matchScheduleDriver(
+    drivers: ScheduleDriver[],
+    rawName: string | undefined,
+    rawPlate: string | undefined,
+  ): { driver: ScheduleDriver } | { reason: string } | null {
+    const name = this.normalizeName(rawName);
+    const plate = this.normalizePlate(rawPlate);
+    if (!name && !plate) return null;
+
+    const byName = name
+      ? drivers.filter((d) => this.normalizeName(d.fullName) === name)
+      : [];
+    const byPlate = plate
+      ? drivers.filter((d) => this.normalizePlate(d.plate) === plate)
+      : [];
+
+    // Nombre + patente es la clave más específica: desempata los nombres
+    // repetidos y las patentes compartidas entre dos choferes.
+    const both = byName.filter((d) => byPlate.some((p) => p.id === d.id));
+    if (both.length === 1) return { driver: both[0] };
+
+    if (byName.length === 1 && byPlate.length === 1) {
+      return {
+        reason:
+          `el conductor "${rawName}" y la patente ${rawPlate} apuntan a personas distintas ` +
+          `("${byName[0].fullName}" y "${byPlate[0].fullName}")`,
+      };
+    }
+    if (byName.length === 1) return { driver: byName[0] };
+    if (byPlate.length === 1) return { driver: byPlate[0] };
+
+    const ambiguous = Math.max(byName.length, byPlate.length, both.length);
+    if (ambiguous > 1) {
+      return {
+        reason: `"${rawName || rawPlate}" coincide con ${ambiguous} conductores registrados`,
+      };
+    }
+    return {
+      reason: `no hay ningún conductor registrado que coincida con "${[rawName, rawPlate]
+        .filter(Boolean)
+        .join(' / ')}"`,
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // 1) Bulk import desde CSV / XLSX
   // ─────────────────────────────────────────────────────────────────────────
 
   async bulkFromSchedule(dto: BulkFromScheduleDto) {
-    const created: Array<{ index: number; id: string; label: string }> = [];
+    const created: Array<{
+      index: number;
+      id: string;
+      label: string;
+      driver?: string;
+    }> = [];
     const skipped: Array<{ index: number; reason: string }> = [];
     const warnings: string[] = [];
+    // La planilla ya trae escrito quién maneja cada bus. Se respeta: si el
+    // nombre o la patente identifican a un conductor registrado sin ambigüedad,
+    // el viaje se crea YA asignado y no pasa por la auto-asignación. Los
+    // motivos por los que una fila no pudo emparejarse se agrupan para no
+    // repetir la misma advertencia en cada tramo del mismo bus.
+    const scheduleDrivers = await this.fetchScheduleDrivers(dto.eventId);
+    const driverIssues = new Map<string, number[]>();
+    let driverAssignedCount = 0;
     // Columnas que la base desplegada no tiene (desfase de esquema). Se detectan
     // en el primer insert que falla y se omiten en el resto de las filas; antes
     // esto hacía fallar TODAS las filas con un error críptico de PostgREST y la
@@ -300,8 +464,25 @@ export class TripsScheduleService {
         const legType = this.isReturnLeg(row.legType) ? 'RETURN' : 'OUTBOUND';
         const isRoundTrip = !!returnAt && legType === 'OUTBOUND';
 
+        const driverMatch = this.matchScheduleDriver(
+          scheduleDrivers,
+          row.driverName,
+          row.vehiclePlate,
+        );
+        let driverId: string | null = null;
+        let driverName: string | null = null;
+        if (driverMatch && 'driver' in driverMatch) {
+          driverId = driverMatch.driver.id;
+          driverName = driverMatch.driver.fullName;
+        } else if (driverMatch) {
+          const rows = driverIssues.get(driverMatch.reason) ?? [];
+          rows.push(i + 1);
+          driverIssues.set(driverMatch.reason, rows);
+        }
+
         const tripRow: Record<string, unknown> = {
           event_id: dto.eventId,
+          driver_id: driverId,
           origin: row.originName || row.originAddress || null,
           destination: row.destinationName || row.destinationAddress || null,
           trip_type: row.activity || null,
@@ -341,7 +522,9 @@ export class TripsScheduleService {
           index: i,
           id: inserted.id,
           label: this.describeTripRow(tripRow),
+          driver: driverName ?? undefined,
         });
+        if (driverId) driverAssignedCount++;
 
         // Si es ida con retorno, crear el viaje de retorno asociado
         if (isRoundTrip && returnAt) {
@@ -367,7 +550,9 @@ export class TripsScheduleService {
               index: i,
               id: returnInserted.id,
               label: this.describeTripRow(returnRow),
+              driver: driverName ?? undefined,
             });
+            if (driverId) driverAssignedCount++;
           }
         }
       } catch (err) {
@@ -385,10 +570,18 @@ export class TripsScheduleService {
       );
     }
 
+    driverIssues.forEach((rows, reason) => {
+      const etiqueta = rows.length > 1 ? `Filas ${rows.join(', ')}` : `Fila ${rows[0]}`;
+      warnings.push(
+        `${etiqueta}: ${reason}. El viaje se creó sin conductor — asígnalo en "Asignar conductores".`,
+      );
+    });
+
     return {
       created,
       skipped,
       warnings,
+      driverAssignedCount,
       createdCount: created.length,
       skippedCount: skipped.length,
     };
