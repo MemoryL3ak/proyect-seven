@@ -1280,7 +1280,12 @@ export default function ResourceScreen({
           const count = typeof raw === "string" && raw !== "" ? Number(raw) : 0;
           return Number.isNaN(count) ? sum : sum + count;
         }, 0);
-        if (totalRooms <= 0) {
+        // La exigencia aplica al dar de alta un alojamiento, no al editarlo.
+        // Los hoteles cargados antes de que existiera el inventario quedaban
+        // con 0 habitaciones, y la regla impedía tocarles cualquier otro campo:
+        // no se les podía subir la foto ni fijar el check-in sin inventarlos
+        // primero.
+        if (totalRooms <= 0 && !editingId) {
           setError(t("Debes ingresar al menos una habitación."));
           return;
         }
