@@ -301,15 +301,20 @@ const inicialesDe = (nombre: string) =>
     .join("")
     .toUpperCase();
 
-/** "2026-09-23" → "miércoles 23 de septiembre", para encabezar el grupo. */
+/**
+ * "2026-09-23" → "Miércoles 23 de septiembre". Sólo la inicial va en mayúscula:
+ * `textTransform: capitalize` dejaba un "Miércoles 23 De Septiembre" que en
+ * español está mal escrito.
+ */
 const formatDayLabel = (dayKey: string) => {
   const [a, m, d] = dayKey.split("-").map(Number);
   if (!a || !m || !d) return dayKey;
-  return new Date(a, m - 1, d).toLocaleDateString("es-CL", {
+  const texto = new Date(a, m - 1, d).toLocaleDateString("es-CL", {
     weekday: "long",
     day: "numeric",
     month: "long",
   });
+  return texto.charAt(0).toUpperCase() + texto.slice(1);
 };
 
 // Estados en los que un viaje sigue "vivo" y por tanto puede cancelarse.
@@ -464,6 +469,19 @@ export default function TripsPage() {
   // (la edición queda como acción explícita dentro del popup).
   const [infoTrip, setInfoTrip] = useState<Trip | null>(null);
   const [pendingAction, setPendingAction] = useState<{ trip: Trip; kind: "cancel" | "delete" } | null>(null);
+  // Pestaña desde la que se abrió el editor, para volver ahí al cerrarlo en
+  // vez de caer siempre en Despacho.
+  const tabPrevia = useRef<typeof activeTab>("ongoing");
+  /** Se llama justo antes de abrir el editor, para saber a dónde volver. */
+  const recordarTab = () => {
+    if (activeTab !== "editor") tabPrevia.current = activeTab;
+  };
+  const cerrarEditor = () => {
+    setShowAdminEditor(false);
+    setSelectedTripId(null);
+    const destino = tabPrevia.current;
+    setActiveTab(destino === "editor" || destino === "portal" ? "ongoing" : destino);
+  };
   // Selección múltiple para borrado en lote.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -1083,6 +1101,7 @@ export default function TripsPage() {
                   key={child.id}
                   type="button"
                   onClick={() => {
+                    recordarTab();
                     setShowAdminEditor(true);
                     setActiveTab("editor");
                     setSelectedTripId(child.id);
@@ -1125,6 +1144,7 @@ export default function TripsPage() {
               <button
                 type="button"
                 onClick={() => {
+                  recordarTab();
                   setShowAdminEditor(true);
                   setActiveTab("editor");
                   setSelectedTripId(trip.id);
@@ -1558,6 +1578,7 @@ export default function TripsPage() {
             <button
               type="button"
               onClick={() => {
+                recordarTab();
                 setActiveTab("editor");
                 setShowAdminEditor(true);
                 setSelectedTripId(null);
@@ -1647,17 +1668,27 @@ export default function TripsPage() {
               </div>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {[
-                  { label: t("en curso"), value: ongoingTrips.length, color: BRAND.teal },
-                  { label: t("sin conductor"), value: ongoingTrips.filter((tr) => !tr.driverId).length, color: STATE.warning },
-                  { label: t("en ruta"), value: ongoingTrips.filter((tr) => tr.status === "EN_ROUTE" || tr.status === "PICKED_UP").length, color: STATE.info },
+                  { label: t("En curso"), value: ongoingTrips.length, color: BRAND.teal },
+                  { label: t("Sin conductor"), value: ongoingTrips.filter((tr) => !tr.driverId).length, color: STATE.warning },
+                  { label: t("En ruta"), value: ongoingTrips.filter((tr) => tr.status === "EN_ROUTE" || tr.status === "PICKED_UP").length, color: STATE.info },
                 ].map((k) => (
                   <span key={k.label} style={{
-                    display: "inline-flex", alignItems: "baseline", gap: 6,
-                    background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "99px",
-                    padding: "5px 14px", fontSize: "12px", color: pal.textMuted, fontWeight: 600,
+                    display: "inline-flex", flexDirection: "column", gap: 1,
+                    background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "12px",
+                    padding: "7px 16px", minWidth: 96,
                   }}>
-                    <strong style={{ fontSize: "15px", fontWeight: 800, color: k.color, fontVariantNumeric: "tabular-nums" }}>{k.value}</strong>
-                    {k.label}
+                    <span style={{
+                      fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.14em",
+                      textTransform: "uppercase" as const, color: pal.labelColor, whiteSpace: "nowrap",
+                    }}>
+                      {k.label}
+                    </span>
+                    <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: k.color, flexShrink: 0 }} />
+                      <strong style={{ fontSize: "19px", lineHeight: 1, fontWeight: 800, color: pal.textPrimary, fontVariantNumeric: "tabular-nums" }}>
+                        {k.value}
+                      </strong>
+                    </span>
                   </span>
                 ))}
               </div>
@@ -1720,16 +1751,23 @@ export default function TripsPage() {
                     {ongoingByDay.map(([dia, viajesDelDia]) => (
                       <div key={dia}>
                         <div style={{
-                          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
-                          padding: "7px 18px",
-                          background: "rgba(33,208,179,0.06)",
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: "8px 18px",
+                          background: SURFACE.bg,
+                          borderTop: `1px solid ${SURFACE.borderMuted}`,
                           borderBottom: `1px solid ${SURFACE.borderMuted}`,
                         }}>
-                          <span style={{ fontSize: "11.5px", fontWeight: 800, color: BRAND.tealInk, textTransform: "capitalize" as const }}>
+                          <span style={{
+                            fontSize: "9.5px", fontWeight: 800, letterSpacing: "0.16em",
+                            textTransform: "uppercase" as const, color: pal.labelColor,
+                          }}>
+                            {t("Jornada")}
+                          </span>
+                          <span style={{ fontSize: "12.5px", fontWeight: 700, color: pal.textPrimary }}>
                             {dia === "sin-fecha" ? t("Sin fecha programada") : formatDayLabel(dia)}
                           </span>
-                          <span style={{ fontSize: "11px", fontWeight: 700, color: pal.textMuted }}>
-                            {viajesDelDia.length} {viajesDelDia.length === 1 ? t("viaje") : t("viajes")}
+                          <span style={{ fontSize: "11.5px", fontWeight: 600, color: pal.textMuted }}>
+                            · {viajesDelDia.length} {viajesDelDia.length === 1 ? t("viaje") : t("viajes")}
                           </span>
                         </div>
 
@@ -1835,6 +1873,7 @@ export default function TripsPage() {
                                 <button
                                   type="button"
                                   onClick={() => {
+                                    recordarTab();
                                     setShowAdminEditor(true);
                                     setActiveTab("editor");
                                     setSelectedTripId(trip.id);
@@ -2205,13 +2244,20 @@ export default function TripsPage() {
             </div>
             <button
               type="button"
-              onClick={() => { setShowAdminEditor(false); setSelectedTripId(null); setActiveTab("dispatch"); }}
+              onClick={cerrarEditor}
               style={{ display: "inline-flex", alignItems: "center", borderRadius: "99px", border: `1px solid ${SURFACE.border}`, padding: "6px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: "pointer" }}
             >
               Cerrar editor
             </button>
           </div>
-          <ResourceScreen config={resources.trips} externalEditingId={selectedTripId} />
+          <ResourceScreen
+            config={resources.trips}
+            externalEditingId={selectedTripId}
+            // Cancelar la edición y cerrar el editor eran dos pasos para lo
+            // mismo: quien cancela quiere volver a la lista, no quedarse en un
+            // formulario vacío.
+            onEditCancelled={cerrarEditor}
+          />
         </section>
       )}
       {/* ── Modal Bitácora ── */}
@@ -2273,6 +2319,7 @@ export default function TripsPage() {
                 </button>
                 <button type="button" onClick={() => {
                     const target = infoTrip;
+                    recordarTab();
                     setInfoTrip(null);
                     setShowAdminEditor(true);
                     setActiveTab("editor");
