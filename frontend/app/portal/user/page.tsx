@@ -492,6 +492,21 @@ export default function UserPortalPage() {
   const [calDiscFilter, setCalDiscFilter] = useState<string>("");
   /** Región elegida en el calendario. "" = todas. */
   const [calDelegacionFilter, setCalDelegacionFilter] = useState<string>("");
+  /**
+   * Actividad abierta en la ficha de detalle. Los títulos del calendario se
+   * cortan —"Lanzamiento Bala PARA Atle…"— y no había forma de leerlos
+   * completos ni de ver dónde ni a qué hora exacta.
+   */
+  const [calDetalle, setCalDetalle] = useState<{
+    id: string;
+    titulo: string;
+    subtitulo?: string;
+    sede?: string;
+    fecha: Date;
+    tipoLabel: string;
+    color: string;
+    soft: string;
+  } | null>(null);
   const calAutoJumped = useRef(false);
   const calDiscAutoSet = useRef(false);
   const ganttScrollKey = useRef("");
@@ -2329,6 +2344,24 @@ export default function UserPortalPage() {
 
           // ── Universo de actividades: competencias/calendario + premiaciones
           type CalItem = { id:string; type:CalType; date:Date; title:string; subtitle?:string; venue?:string; discId?:string|null };
+          /** Abre la ficha de una actividad. Misma ficha en las cuatro vistas. */
+          const abrirDetalle = (it: CalItem) => {
+            const cfg = TYPE_CFG[it.type];
+            setCalDetalle({
+              id: it.id,
+              titulo: it.title,
+              subtitulo: it.subtitle,
+              sede: it.venue,
+              fecha: it.date,
+              tipoLabel: cfg.label,
+              color: cfg.color,
+              soft: cfg.soft,
+            });
+          };
+          /** Hora en 24 h: "10:00 a. m." ocupa el doble y se corta el título. */
+          const hhmm = (d: Date) =>
+            d.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false });
+
           const items: CalItem[] = [];
           calendarEvents.forEach(ev => {
             if (!ev.scheduledAt) return;
@@ -2659,21 +2692,19 @@ export default function UserPortalPage() {
                             {byDay.get(dayNum)!.sort((a,b)=>a.date.getTime()-b.date.getTime()).map((it, ii) => {
                               const cfg = TYPE_CFG[it.type];
                               return (
-                                <div key={it.id} style={{ display:"flex",alignItems:"center",gap:10,padding:"12px 14px",borderTop: ii===0?"none":`1px solid ${SURFACE.bg}` }}>
-                                  <span style={{ flexShrink:0,fontSize:12,fontWeight:700,color:SURFACE.textMuted,width:42 }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
-                                  <span style={{ flexShrink:0,width:34,height:34,borderRadius:10,background:cfg.soft,display:"inline-flex",alignItems:"center",justifyContent:"center",fontSize:16 }}><cfg.icon size={18} /></span>
-                                  <div style={{ flex:1,minWidth:0 }}>
-                                    <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0,overflow:"hidden",
-                                      display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical" as any,lineHeight:1.25 }}>{it.title}</p>
-                                    <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"1px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
-                                      {it.subtitle ? it.subtitle : cfg.label}{it.venue ? ` · ${it.venue}` : ""}
-                                    </p>
-                                  </div>
-                                  <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"3px 9px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
-                                  {it.type==="COMPETENCIA" && (
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="#eab308" stroke="#eab308" strokeWidth="1"><polygon points="12 2 15 9 22 9.5 17 14 18.5 21 12 17.5 5.5 21 7 14 2 9.5 9 9"/></svg>
-                                  )}
-                                </div>
+                                <button key={it.id} type="button" onClick={()=>abrirDetalle(it)}
+                                  style={{ width:"100%",textAlign:"left",background:"none",border:"none",cursor:"pointer",
+                                    display:"flex",alignItems:"center",gap:10,padding:"11px 14px",borderTop: ii===0?"none":`1px solid ${SURFACE.bg}` }}>
+                                  <span style={{ flexShrink:0,fontSize:12.5,fontWeight:700,color:SURFACE.text,width:38,fontVariantNumeric:"tabular-nums" }}>{hhmm(it.date)}</span>
+                                  <span style={{ flexShrink:0,width:32,height:32,borderRadius:9,background:cfg.soft,display:"inline-flex",alignItems:"center",justifyContent:"center" }}><cfg.icon size={16} /></span>
+                                  <span style={{ flex:1,minWidth:0 }}>
+                                    <span style={{ display:"block",fontSize:13,fontWeight:600,color:SURFACE.text,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}</span>
+                                    <span style={{ display:"block",fontSize:11,color:SURFACE.textFaint,marginTop:1,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                      {[it.subtitle, it.venue].filter(Boolean).join(" · ") || cfg.label}
+                                    </span>
+                                  </span>
+                                  <ChevronRightIcon size={14} color={SURFACE.borderStrong} strokeWidth={2} />
+                                </button>
                               );
                             })}
                           </div>
@@ -2794,11 +2825,20 @@ export default function UserPortalPage() {
                         {events.length>0 && (
                           <div style={{ padding:"0 14px 10px 62px",display:"flex",flexDirection:"column",gap:6 }}>
                             {events.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                              <div key={it.id} style={{ display:"flex",alignItems:"center",gap:8,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"7px 10px" }}>
-                                <span style={{ fontSize:11,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
-                                <span style={{ flex:1,minWidth:0,fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}{it.subtitle?` · ${it.subtitle}`:""}</span>
-                                <span style={{ flexShrink:0,fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
-                              </div>
+                              <button key={it.id} type="button" onClick={()=>abrirDetalle(it)}
+                                style={{ width:"100%",textAlign:"left",cursor:"pointer",display:"flex",alignItems:"center",gap:9,
+                                  background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,borderLeft:`3px solid ${cfg.color}`,borderRadius:9,padding:"8px 10px" }}>
+                                <span style={{ fontSize:11.5,fontWeight:800,color:SURFACE.text,flexShrink:0,fontVariantNumeric:"tabular-nums" }}>{hhmm(it.date)}</span>
+                                <span style={{ flex:1,minWidth:0,display:"flex",flexDirection:"column" }}>
+                                  <span style={{ fontSize:11.5,fontWeight:600,color:SURFACE.textStrong,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{it.title}</span>
+                                  {(it.subtitle || it.venue) && (
+                                    <span style={{ fontSize:10.5,color:SURFACE.textFaint,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                                      {[it.subtitle, it.venue].filter(Boolean).join(" · ")}
+                                    </span>
+                                  )}
+                                </span>
+                                <ChevronRightIcon size={13} color={SURFACE.borderStrong} strokeWidth={2} />
+                              </button>
                             ); })}
                           </div>
                         )}
@@ -2815,23 +2855,117 @@ export default function UserPortalPage() {
                         <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Sin actividades este día</p>
                       </div>
                     ) : cursorDayItems.map(it=>{ const cfg=TYPE_CFG[it.type]; return (
-                      <div key={it.id} style={{ display:"flex",gap:10,padding:"10px 12px",borderRadius:12,background:SURFACE.card,border:`1px solid ${SURFACE.border}`,borderLeft:`4px solid ${cfg.color}` }}>
-                        <div style={{ display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,minWidth:46 }}>
-                          <span style={{ fontSize:13,fontWeight:800,color:SURFACE.text }}>{it.date.toLocaleTimeString("es-CL",{hour:"2-digit",minute:"2-digit"})}</span>
-                          <span style={{ display:"inline-flex",marginTop:2 }}><cfg.icon size={15} /></span>
-                        </div>
-                        <div style={{ flex:1,minWidth:0 }}>
-                          <p style={{ fontSize:13,fontWeight:600,color:SURFACE.text,margin:0 }}>{it.title}</p>
-                          {(it.subtitle||it.venue) && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"2px 0 0" }}>{[it.subtitle,it.venue].filter(Boolean).join(" · ")}</p>}
-                          <span style={{ display:"inline-block",marginTop:4,fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:99,background:cfg.soft,color:cfg.color }}>{cfg.label}</span>
-                        </div>
-                      </div>
+                      <button key={it.id} type="button" onClick={()=>abrirDetalle(it)}
+                        style={{ width:"100%",textAlign:"left",cursor:"pointer",display:"flex",gap:10,padding:"10px 12px",borderRadius:12,
+                          background:SURFACE.card,border:`1px solid ${SURFACE.border}`,borderLeft:`4px solid ${cfg.color}` }}>
+                        <span style={{ display:"flex",flexDirection:"column",alignItems:"center",flexShrink:0,minWidth:44 }}>
+                          <span style={{ fontSize:13.5,fontWeight:800,color:SURFACE.text,fontVariantNumeric:"tabular-nums" }}>{hhmm(it.date)}</span>
+                          <span style={{ display:"inline-flex",marginTop:3 }}><cfg.icon size={15} /></span>
+                        </span>
+                        <span style={{ flex:1,minWidth:0 }}>
+                          <span style={{ display:"block",fontSize:13,fontWeight:600,color:SURFACE.text }}>{it.title}</span>
+                          {(it.subtitle||it.venue) && (
+                            <span style={{ display:"block",fontSize:11,color:SURFACE.textMuted,marginTop:2 }}>{[it.subtitle,it.venue].filter(Boolean).join(" · ")}</span>
+                          )}
+                        </span>
+                        <ChevronRightIcon size={14} color={SURFACE.borderStrong} strokeWidth={2} style={{ flexShrink:0,alignSelf:"center" }} />
+                      </button>
                     ); })}
                   </div>
                 )}
               </div>
 
-              {/* ════ Columna lateral ════ */}
+              {/* ── Ficha de una actividad ──
+          Las cuatro vistas del calendario cortan el título para que quepa;
+          acá se lee completo, con su hora, su sede y su disciplina. */}
+      {calDetalle && (
+        <div
+          onClick={() => setCalDetalle(null)}
+          style={{
+            position: "fixed", inset: 0, zIndex: 80,
+            background: "rgba(15,23,42,0.55)", backdropFilter: "blur(2px)",
+            display: "flex", alignItems: "flex-end", justifyContent: "center",
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "100%", maxWidth: 520, background: SURFACE.card,
+              borderRadius: "20px 20px 0 0", padding: "18px 18px 24px",
+              boxShadow: "0 -8px 40px rgba(15,23,42,0.25)",
+              maxHeight: "80vh", overflowY: "auto",
+            }}
+          >
+            {/* Tirador: en el teléfono la hoja se lee como algo que se cierra
+                arrastrando, aunque también se cierre tocando fuera. */}
+            <div style={{ width: 38, height: 4, borderRadius: 99, background: SURFACE.border, margin: "0 auto 14px" }} />
+
+            <span style={{
+              display: "inline-block", fontSize: 10, fontWeight: 800, letterSpacing: "0.12em",
+              textTransform: "uppercase", padding: "3px 10px", borderRadius: 99,
+              background: calDetalle.soft, color: calDetalle.color,
+            }}>
+              {calDetalle.tipoLabel}
+            </span>
+
+            <p style={{ fontSize: 18, fontWeight: 800, color: SURFACE.text, margin: "10px 0 0", lineHeight: 1.25 }}>
+              {calDetalle.titulo}
+            </p>
+            {calDetalle.subtitulo && (
+              <p style={{ fontSize: 13, color: SURFACE.textMuted, margin: "4px 0 0" }}>{calDetalle.subtitulo}</p>
+            )}
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 12, background: SURFACE.bg, border: `1px solid ${SURFACE.borderMuted}` }}>
+                <CalendarIcon size={16} color={BRAND.teal} strokeWidth={2} />
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 9.5, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textFaint }}>
+                    Cuándo
+                  </span>
+                  <span style={{ display: "block", fontSize: 13.5, fontWeight: 600, color: SURFACE.text, textTransform: "capitalize" }}>
+                    {calDetalle.fecha.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" })}
+                    {" · "}
+                    {calDetalle.fecha.toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false })} h
+                  </span>
+                </span>
+              </div>
+
+              {calDetalle.sede && (
+                <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 12px", borderRadius: 12, background: SURFACE.bg, border: `1px solid ${SURFACE.borderMuted}` }}>
+                  <PinIcon size={16} color={BRAND.teal} strokeWidth={2} />
+                  <span style={{ minWidth: 0 }}>
+                    <span style={{ display: "block", fontSize: 9.5, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textFaint }}>
+                      Dónde
+                    </span>
+                    <span style={{ display: "block", fontSize: 13.5, fontWeight: 600, color: SURFACE.text }}>{calDetalle.sede}</span>
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+              {calDetalle.sede && (
+                <button
+                  type="button"
+                  onClick={() => openExternal(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(calDetalle.sede as string)}`)}
+                  style={{ flex: 1, padding: "11px 14px", borderRadius: 12, border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textSecondary, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+                >
+                  Cómo llegar
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setCalDetalle(null)}
+                style={{ flex: 1, padding: "11px 14px", borderRadius: 12, border: "none", background: BRAND.teal, color: SURFACE.card, fontSize: 13, fontWeight: 700, cursor: "pointer" }}
+              >
+                Cerrar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ════ Columna lateral ════ */}
               <div className="cal-lateral" style={{ flex:"0 1 260px",minWidth:230,display:"flex",flexDirection:"column",gap:12 }}>
                 {/* Leyenda: qué significa cada punto de la cuadrícula. Una
                     línea envolvente en vez de la lista de cinco filas que
