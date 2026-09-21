@@ -52,6 +52,7 @@ export default function TarjetaLugar({
   tipo = "sede",
   coordinador,
   datos = [],
+  etiquetas = [],
   abierta,
   onToggle,
 }: {
@@ -66,6 +67,8 @@ export default function TarjetaLugar({
   coordinador?: CoordinadorLugar | null;
   /** Pares sueltos: check-in, tipo de habitación, teléfono… */
   datos?: DatoLugar[];
+  /** Fichas en la fila: las disciplinas que se presentan en la sede. */
+  etiquetas?: string[];
   abierta: boolean;
   onToggle: () => void;
 }) {
@@ -153,6 +156,42 @@ export default function TarjetaLugar({
               }}
             >
               {lugar || direccion}
+            </span>
+          )}
+
+          {/* Qué se compite acá. Sin esto, una lista de veintidós recintos no
+              dice nada: todos son "un gimnasio en Viña". */}
+          {etiquetas.length > 0 && (
+            <span style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 5 }}>
+              {etiquetas.slice(0, 3).map((e) => (
+                <span
+                  key={e}
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "2px 7px",
+                    borderRadius: 999,
+                    background: "rgba(33,208,179,0.10)",
+                    color: BRAND.tealInk,
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {e}
+                </span>
+              ))}
+              {etiquetas.length > 3 && (
+                <span style={{ fontSize: 10, fontWeight: 700, color: SURFACE.textFaint, alignSelf: "center" }}>
+                  +{etiquetas.length - 3}
+                </span>
+              )}
+            </span>
+          )}
+
+          {/* Con quién hablar en el recinto, sin tener que abrir la ficha. */}
+          {coordinador?.nombre && (
+            <span style={{ display: "block", marginTop: 4, fontSize: 11, color: SURFACE.textFaint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {coordinador.rotulo ?? t("Coordinador")}:{" "}
+              <span style={{ color: SURFACE.textSecondary, fontWeight: 700 }}>{coordinador.nombre}</span>
             </span>
           )}
         </span>

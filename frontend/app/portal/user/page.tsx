@@ -160,6 +160,14 @@ type CalendarEvent = {
   gender?: string | null;
 };
 type DisciplineParent = { id: string; name?: string | null; category?: string | null; gender?: string | null };
+/** Clave para calzar una disciplina con su sede: sin tildes, ni mayúsculas, ni dobles espacios. */
+const claveSede = (nombre?: string | null) =>
+  String(nombre ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
 type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null; coordinatorName?: string | null; coordinatorPhone?: string | null; venueType?: string | null };
 type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null; photoUrl?: string | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
@@ -411,6 +419,25 @@ export default function UserPortalPage() {
   // deporte existe una vez por género/categoría y mostrar solo `name`
   // producía opciones y filas duplicadas en el calendario.
   const discLabelMap = useMemo(() => buildDisciplineLabelMap(disciplineParents), [disciplineParents]);
+  /**
+   * Disciplinas que se presentan en cada sede. El vínculo disciplina→recinto es
+   * por nombre (`core.disciplines.venue_name`), no por id, así que se compara
+   * normalizado para que una tilde o un espacio de más no rompan el calce.
+   */
+  const disciplinasPorSede = useMemo(() => {
+    const m = new Map<string, string[]>();
+    const agregar = (sede: string | null | undefined, etiqueta: string) => {
+      const clave = claveSede(sede);
+      if (!clave || !etiqueta) return;
+      const lista = m.get(clave) ?? [];
+      if (!lista.includes(etiqueta)) lista.push(etiqueta);
+      m.set(clave, lista);
+    };
+    for (const d of disciplinasTodas) agregar(d.venueName, discLabelMap.get(d.id) ?? d.name ?? "");
+    for (const c of calendarEvents) agregar(c.venueName, discLabelMap.get(c.id) ?? c.name ?? "");
+    for (const lista of m.values()) lista.sort((a, b) => a.localeCompare(b));
+    return m;
+  }, [disciplinasTodas, calendarEvents, discLabelMap]);
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
   const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
   const [delegationTrips, setDelegationTrips] = useState<Trip[]>([]);
@@ -689,7 +716,9 @@ export default function UserPortalPage() {
       { key:"cuenta", label:"Cuenta", icon:<UserIcon size={16} strokeWidth={1.8} /> },
     ];
     if (isComite) {
-      const ORDEN_COMITE: PortalTab[] = ["actividades", "calendario", "sedes", "hoteles", "cuenta"];
+      // Alimentación y Documentos entran también para el comité: el informativo
+      // del evento y los comedores son parte de lo que coordina.
+      const ORDEN_COMITE: PortalTab[] = ["actividades", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"];
       return ORDEN_COMITE.map(key => all.find(t => t.key === key)).filter((t): t is typeof all[number] => Boolean(t));
     }
     if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
@@ -707,7 +736,7 @@ export default function UserPortalPage() {
   const { primaryTabs, overflowTabs } = useMemo(() => {
     const MAX_PRIMARY = 4;
     const PRIORITY = isComite
-      ? ["actividades", "calendario", "sedes", "hoteles", "cuenta"]
+      ? ["actividades", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"]
       : isChief
       ? ["actividades", "flota", "calendario", "sedes", "alimentacion", "documentos", "cuenta"]
       : ["itinerario", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "documentos", "premiaciones", "cupones"];
@@ -3292,7 +3321,11 @@ export default function UserPortalPage() {
                       lugar={[v.commune, v.region].filter(Boolean).join(", ") || null}
                       foto={v.photoUrl}
                       tipo={(v.venueType ?? "SEDE") === "COMEDOR" ? "comedor" : "sede"}
-                      coordinador={isChief && (v.coordinatorName || v.coordinatorPhone)
+                      etiquetas={disciplinasPorSede.get(claveSede(v.name)) ?? []}
+                      // El coordinador de sede es el contacto operativo del
+                      // recinto, como el del hotel: lo ve cualquiera que llegue
+                      // ahí, no sólo el jefe de misión.
+                      coordinador={(v.coordinatorName || v.coordinatorPhone)
                         ? { nombre: v.coordinatorName, telefono: v.coordinatorPhone, rotulo: t("Coordinador de sede") }
                         : null}
                       abierta={expandedItemId === `venue-${v.id}`}
