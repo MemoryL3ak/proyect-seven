@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { StarIcon, MedalIcon, RefreshIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { nombrePropio } from "@/lib/nombres";
 
 /* ─── Types ─── */
 /** Estados en los que un viaje ya no le exige nada al conductor. */
@@ -135,7 +136,7 @@ function formatRating(val: number | null): string {
  * dice nada a nadie. Mejor decir qué pasó.
  */
 function nombreConductor(driver: DriverItem | undefined): string {
-  return driver?.fullName?.trim() || "Conductor no registrado";
+  return nombrePropio(driver?.fullName) || "Conductor no registrado";
 }
 
 function toLocalDate(d: Date): string {

@@ -55,6 +55,11 @@ export type FieldDef = {
   showWhenAny?: { field: string; values: string[] };
   /** Oculta este campo cuando el campo `field` tenga el valor `value` */
   hideWhen?: { field: string; value: string };
+  /**
+   * Cómo se muestra el valor en la tabla. "nombrePropio" empareja nombres de
+   * persona escritos en mayúsculas o en minúsculas, sin tocar lo guardado.
+   */
+  displayFormat?: "nombrePropio";
 };
 
 export type ResourceConfig = {
@@ -520,7 +525,7 @@ export const resources: Record<string, ResourceConfig> = {
       { key: "providerId", label: "Proveedor", type: "select", required: true, optionsSource: "providers" },
       { key: "delegationId", label: "Delegación (región)", type: "select", optionsSource: "delegations" },
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
-      { key: "fullName", label: "Nombre completo", type: "text", required: true },
+      { key: "fullName", label: "Nombre completo", type: "text", required: true, displayFormat: "nombrePropio" },
       { key: "rut", label: "RUT", type: "text", required: true },
       { key: "email", label: "Correo electrónico", type: "text", required: true },
       {

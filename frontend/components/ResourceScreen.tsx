@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
+import { nombrePropio } from "@/lib/nombres";
 import { AlertIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon } from "@/components/ui/Icons";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
@@ -2475,6 +2476,10 @@ export default function ResourceScreen({
     const value = item[fieldKey];
     const field = config.fields.find((item) => item.key === fieldKey);
     if (!field) return formatValue(value);
+    // Formato declarado en el recurso. Los nombres de persona llegan de la
+    // carga masiva, de la ficha de proveedor y del alta a mano, cada uno con
+    // su criterio de mayúsculas; en la tabla se muestran parejos.
+    if (field.displayFormat === "nombrePropio") return nombrePropio(String(value ?? ""));
     if (config.endpoint === "/accommodations") {
       const roomMap: Record<string, string> = {
         roomSingle: "SINGLE",
