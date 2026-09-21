@@ -1259,30 +1259,32 @@ export default function TripsPage() {
             </p>
           )}
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            {(emphasis === "request" || emphasis === "dispatch") && (
-              <button
-                type="button"
-                onClick={() => {
-                  recordarTab();
-                  setShowAdminEditor(true);
-                  setActiveTab("editor");
-                  setSelectedTripId(trip.id);
-                  setTimeout(() => {
-                    document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                  }, 120);
-                }}
-                style={{
-                  background: hasDriver ? sc.chipBg : `linear-gradient(135deg, ${STATE.warning}, #d97706)`,
-                  border: hasDriver ? `1px solid ${sc.chipBorder}` : "none",
-                  borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 700,
-                  color: hasDriver ? sc.accent : SURFACE.card,
-                  boxShadow: hasDriver ? "none" : "0 2px 8px rgba(245,158,11,0.35)",
-                  cursor: "pointer",
-                }}
-              >
-                {hasDriver ? "Gestionar servicio" : "Asignar conductor"}
-              </button>
-            )}
+            {/* Un viaje se edita en cualquier estado. La tarjeta de un viaje en
+                curso no ofrecía nada: si el chofer se cambiaba a mitad de
+                jornada había que ir a buscarlo a otra pantalla. */}
+            <button
+              type="button"
+              onClick={() => {
+                recordarTab();
+                setShowAdminEditor(true);
+                setActiveTab("editor");
+                setSelectedTripId(trip.id);
+                setTimeout(() => {
+                  document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 120);
+              }}
+              style={{
+                background: hasDriver ? sc.chipBg : `linear-gradient(135deg, ${STATE.warning}, #d97706)`,
+                border: hasDriver ? `1px solid ${sc.chipBorder}` : "none",
+                borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 700,
+                color: hasDriver ? sc.accent : SURFACE.card,
+                boxShadow: hasDriver ? "none" : "0 2px 8px rgba(245,158,11,0.35)",
+                cursor: "pointer",
+              }}
+            >
+              {hasDriver ? "Gestionar servicio" : "Asignar conductor"}
+            </button>
+
             <button type="button" onClick={() => setLogTrip(trip)}
               style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "99px", padding: "7px 16px", fontSize: "13px", fontWeight: 600, color: pal.textMuted, cursor: "pointer" }}>
               Ver bitácora
@@ -2255,11 +2257,33 @@ export default function TripsPage() {
                         <span style={{ fontSize: "13px", color: pal.textMuted }}>{venue?.name || trip.destination || "-"}</span>
                         <span style={{ fontSize: "13px", color: pal.textMuted }}>{resolveDriver(trip)}</span>
                         <span style={{ fontSize: "12px", color: pal.labelColor, fontVariantNumeric: "tabular-nums" }}>{formatDateTime(trip.completedAt || trip.updatedAt)}</span>
-                        <button type="button" onClick={() => setLogTrip(trip)}
-                          style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.textSecondary, fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
-                          <FileTextIcon size={12} strokeWidth={2} />
-                          Ver bitácora
-                        </button>
+                        {/* Un viaje cerrado también se corrige: la hora real,
+                            el conductor que finalmente lo hizo, los pasajeros.
+                            Antes el historial era de sólo lectura. */}
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, justifyContent: "flex-end" }}>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              recordarTab();
+                              setShowAdminEditor(true);
+                              setActiveTab("editor");
+                              setSelectedTripId(trip.id);
+                              setTimeout(() => {
+                                document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                              }, 120);
+                            }}
+                            title={t("Editar viaje")}
+                            style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.textSecondary, fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                          >
+                            <PenLineIcon size={12} strokeWidth={2} />
+                            {t("Editar")}
+                          </button>
+                          <button type="button" onClick={() => setLogTrip(trip)}
+                            style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.textSecondary, fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
+                            <FileTextIcon size={12} strokeWidth={2} />
+                            Ver bitácora
+                          </button>
+                        </span>
                       </div>
                     );
                   })}
