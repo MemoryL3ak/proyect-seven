@@ -27,6 +27,7 @@ import {
   FileTextIcon,
   TrashIcon,
   ArrowRightIcon,
+  ChevronRightIcon,
 } from "@/components/ui/Icons";
 
 // ── Trip bulk import ─────────────────────────────────────────────────────────
@@ -276,15 +277,7 @@ const COLUMN_PREVIEW = 3;
 /** Estados que sacan un viaje de la operación viva. */
 const CLOSED_STATUSES = new Set(["DROPPED_OFF", "COMPLETED", "CANCELLED"]);
 /** Rejilla de la lista "En curso": casilla, hora, estado, servicio, ruta, conductor, acciones. */
-const ONGOING_COLUMNS = "18px 50px 62px 116px 150px minmax(220px, 1fr) 170px 96px";
 const ONGOING_PAGE_SIZE = 25;
-const ONGOING_HEAD_STYLE = {
-  fontSize: "10px",
-  fontWeight: 600,
-  letterSpacing: "0.12em",
-  textTransform: "uppercase" as const,
-  color: SURFACE.textFaint,
-} as const;
 /** Chip del selector de día. */
 const diaChipStyle = (activo: boolean) => ({
   borderRadius: "8px",
@@ -358,6 +351,16 @@ const isoDayKeyLocal = (value: string) => {
   if (Number.isNaN(d.getTime())) return "sin-fecha";
   const dos = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${dos(d.getMonth() + 1)}-${dos(d.getDate())}`;
+};
+
+/**
+ * Mapa de la ruta planificada origen→destino. Mismo recurso que usa el
+ * seguimiento de vehículos; sin la key configurada simplemente no se muestra.
+ */
+const buildDirectionsEmbed = (origin?: string | null, destination?: string | null): string | null => {
+  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+  if (!apiKey || !origin || !destination) return null;
+  return `https://www.google.com/maps/embed/v1/directions?key=${apiKey}&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(destination)}&mode=driving`;
 };
 
 const formatDateTime = (value?: string | null) =>
@@ -1780,17 +1783,14 @@ export default function TripsPage() {
                 </p>
               </div>
             ) : (
-              <div style={{ borderRadius: "14px", border: `1px solid ${pal.cardBorder}`, overflow: "hidden", background: pal.cardBg }}>
-                <div style={{ overflowX: "auto" }}>
-                  <div style={{ minWidth: "1040px" }}>
+              <div>
+                <div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {/* Barra de selección: la casilla de "todos" vive acá,
+                        porque las filas ya no son una grilla con cabecera. */}
                     <div style={{
-                      display: "grid",
-                      gridTemplateColumns: ONGOING_COLUMNS,
-                      gap: "14px",
-                      alignItems: "center",
-                      padding: "0 18px",
-                      height: 36,
-                      borderBottom: `1px solid ${pal.cardBorder}`,
+                      display: "flex", alignItems: "center", gap: 10,
+                      padding: "0 2px 10px",
                     }}>
                       <input
                         type="checkbox"
@@ -1810,12 +1810,11 @@ export default function TripsPage() {
                             return next;
                           });
                         }}
-                        style={{ width: 14, height: 14, cursor: "pointer", accentColor: BRAND.teal }}
+                        style={{ width: 15, height: 15, cursor: "pointer", accentColor: BRAND.teal }}
                       />
-                      {[t("Hora"), t("Día"), t("Estado"), t("Servicio"), t("Ruta"), t("Conductor")].map((h) => (
-                        <span key={h} style={ONGOING_HEAD_STYLE}>{h}</span>
-                      ))}
-                      <span style={{ ...ONGOING_HEAD_STYLE, textAlign: "right" as const }}>{t("Acciones")}</span>
+                      <span style={{ fontSize: 11.5, color: SURFACE.textMuted }}>
+                        {t("Seleccionar todo")}
+                      </span>
                     </div>
 
                     {ongoingVisible.map((trip) => {
@@ -1824,108 +1823,125 @@ export default function TripsPage() {
                       const marcado = selectedIds.has(trip.id);
                       const sinChofer = !trip.driverId;
                       const vehiculo = trip.vehicleId ? vehicles[trip.vehicleId]?.plate : trip.vehiclePlate;
+                      const meta = [
+                        sinChofer ? t("Sin conductor") : resolveDriver(trip),
+                        vehiculo ? String(vehiculo).toUpperCase() : null,
+                        trip.discipline || null,
+                        trip.passengerCount ? `${trip.passengerCount} pax` : null,
+                        trip.clientType || null,
+                      ]
+                        .filter(Boolean)
+                        .join("  ·  ");
                       return (
                         <div
                           key={trip.id}
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: ONGOING_COLUMNS,
-                            gap: "14px",
-                            alignItems: "center",
-                            padding: "0 18px",
-                            minHeight: 46,
-                            background: marcado ? "rgba(33,208,179,0.06)" : "transparent",
-                            borderBottom: `1px solid ${SURFACE.borderMuted}`,
-                          }}
+                          style={{ display: "flex", alignItems: "center", gap: 10 }}
                         >
                           <input
                             type="checkbox"
                             checked={marcado}
                             onChange={() => toggleSelected(trip.id)}
                             aria-label={t("Seleccionar viaje")}
-                            style={{ width: 14, height: 14, cursor: "pointer", accentColor: BRAND.teal }}
+                            style={{ flexShrink: 0, width: 15, height: 15, cursor: "pointer", accentColor: BRAND.teal }}
                           />
 
-                          <span style={{ fontSize: "13px", fontWeight: 600, color: pal.textPrimary, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                            {trip.scheduledAt
-                              ? new Date(trip.scheduledAt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false })
-                              : "—"}
-                          </span>
+                          {/* Misma tarjeta que el listado de tracking: barra de
+                              estado a la izquierda, ruta como título, y al
+                              pinchar se abre el detalle con el mapa. */}
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setInfoTrip(trip)}
+                            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setInfoTrip(trip); } }}
+                            style={{
+                              flex: 1, minWidth: 0,
+                              display: "flex", alignItems: "center", gap: 12,
+                              padding: "13px 16px", borderRadius: 14,
+                              border: `1px solid ${marcado ? "rgba(33,208,179,0.5)" : SURFACE.border}`,
+                              borderLeft: `4px solid ${sc.accent}`,
+                              background: marcado ? "rgba(33,208,179,0.06)" : SURFACE.card,
+                              cursor: "pointer", transition: "all .15s",
+                            }}
+                            onMouseEnter={(e) => {
+                              const el = e.currentTarget as HTMLElement;
+                              el.style.background = SURFACE.bg;
+                              el.style.borderColor = SURFACE.borderStrong;
+                              el.style.borderLeftColor = sc.accent;
+                              el.style.transform = "translateX(2px)";
+                            }}
+                            onMouseLeave={(e) => {
+                              const el = e.currentTarget as HTMLElement;
+                              el.style.background = marcado ? "rgba(33,208,179,0.06)" : SURFACE.card;
+                              el.style.borderColor = marcado ? "rgba(33,208,179,0.5)" : SURFACE.border;
+                              el.style.borderLeftColor = sc.accent;
+                              el.style.transform = "";
+                            }}
+                          >
+                            <span style={{ flexShrink: 0, width: 10, height: 10, borderRadius: "50%", background: sc.accent, boxShadow: `0 0 0 4px ${sc.chipBg}` }} />
 
-                          {/* El día vuelve a la fila, como una columna más: es
-                              un dato del viaje, no un separador de la lista. */}
-                          <span style={{ fontSize: "12.5px", color: pal.textMuted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                            {trip.scheduledAt
-                              ? new Date(trip.scheduledAt).toLocaleDateString("es-CL", { day: "2-digit", month: "short" })
-                              : "—"}
-                          </span>
-
-                          <span style={{ display: "inline-flex", alignItems: "center", gap: 7, minWidth: 0 }}>
-                            <span style={{
-                              width: 6, height: 6, borderRadius: "50%", background: sc.accent, flexShrink: 0,
-                              animation: sc.pulse ? "pulse 1.5s infinite" : undefined,
-                            }} />
-                            <span style={{ fontSize: "12.5px", color: pal.textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                              {t(statusTone(trip.status).label)}
+                            <span style={{ flexShrink: 0, fontSize: 15, fontWeight: 700, color: SURFACE.text, fontVariantNumeric: "tabular-nums", width: 46 }}>
+                              {trip.scheduledAt
+                                ? new Date(trip.scheduledAt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false })
+                                : "—"}
                             </span>
-                          </span>
 
-                          <span style={{ minWidth: 0, fontSize: "12.5px", color: pal.textPrimary, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                            {trip.discipline || resolveRequester(trip)}
-                            {trip.passengerCount ? (
-                              <span style={{ color: pal.labelColor }}> · {trip.passengerCount} pax</span>
-                            ) : null}
-                          </span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                                <span style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
+                                  {trip.origin || t("Origen pendiente")}{" "}
+                                  <span style={{ color: SURFACE.textFaint, display: "inline-flex", verticalAlign: "middle" }}><ArrowRightIcon size={12} /></span>{" "}
+                                  {venue?.name || trip.destination || t("Destino pendiente")}
+                                </span>
+                                <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, color: sc.accent }}>
+                                  {t(statusTone(trip.status).label)}
+                                </span>
+                                {sinChofer && (
+                                  <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: STATE.warningSoft, border: `1px solid ${STATE.warningBorder}`, color: STATE.warningText }}>
+                                    {t("Por asignar")}
+                                  </span>
+                                )}
+                              </div>
+                              <p style={{ fontSize: 12, color: SURFACE.textMuted, margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {meta}
+                              </p>
+                            </div>
 
-                          <span style={{ minWidth: 0, display: "flex", alignItems: "center", gap: 7, fontSize: "12.5px" }}>
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: pal.textMuted, flex: "0 1 auto" }}>
-                              {trip.origin || t("Origen pendiente")}
+                            <span style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  recordarTab();
+                                  setShowAdminEditor(true);
+                                  setActiveTab("editor");
+                                  setSelectedTripId(trip.id);
+                                  setTimeout(() => {
+                                    document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                  }, 120);
+                                }}
+                                title={t("Editar viaje")}
+                                style={ONGOING_ACTION_STYLE}
+                              >
+                                <PenLineIcon size={13} strokeWidth={1.8} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setLogTrip(trip)}
+                                title={t("Ver bitácora")}
+                                style={ONGOING_ACTION_STYLE}
+                              >
+                                <FileTextIcon size={13} strokeWidth={1.8} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setPendingAction({ trip, kind: "delete" })}
+                                title={t("Eliminar viaje")}
+                                style={{ ...ONGOING_ACTION_STYLE, color: STATE.danger }}
+                              >
+                                <TrashIcon size={13} strokeWidth={1.8} />
+                              </button>
+                              <ChevronRightIcon size={16} color={SURFACE.borderStrong} strokeWidth={2} />
                             </span>
-                            <ArrowRightIcon size={12} color={pal.labelColor} strokeWidth={2} />
-                            <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: pal.textPrimary, flex: "1 1 auto" }}>
-                              {venue?.name || trip.destination || t("Destino pendiente")}
-                            </span>
-                          </span>
-
-                          <span style={{ minWidth: 0, fontSize: "12.5px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: sinChofer ? STATE.warningText : pal.textPrimary }}>
-                            {resolveDriver(trip)}
-                            {vehiculo && <span style={{ color: pal.labelColor }}> · {vehiculo}</span>}
-                          </span>
-
-                          <span style={{ display: "inline-flex", justifySelf: "end", alignItems: "center", gap: 4 }}>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                recordarTab();
-                                setShowAdminEditor(true);
-                                setActiveTab("editor");
-                                setSelectedTripId(trip.id);
-                                setTimeout(() => {
-                                  document.getElementById("trip-editor-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                }, 120);
-                              }}
-                              title={t("Editar viaje")}
-                              style={ONGOING_ACTION_STYLE}
-                            >
-                              <PenLineIcon size={13} strokeWidth={1.8} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setLogTrip(trip)}
-                              title={t("Ver bitácora")}
-                              style={ONGOING_ACTION_STYLE}
-                            >
-                              <FileTextIcon size={13} strokeWidth={1.8} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setPendingAction({ trip, kind: "delete" })}
-                              title={t("Eliminar viaje")}
-                              style={{ ...ONGOING_ACTION_STYLE, color: STATE.danger }}
-                            >
-                              <TrashIcon size={13} strokeWidth={1.8} />
-                            </button>
-                          </span>
+                          </div>
                         </div>
                       );
                     })}
@@ -1935,7 +1951,7 @@ export default function TripsPage() {
                 {/* Pie: sin esto, una semana cargada es un scroll sin fin. */}
                 <div style={{
                   display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
-                  padding: "10px 18px", background: SURFACE.bg, borderTop: `1px solid ${pal.cardBorder}`,
+                  padding: "12px 4px 0",
                 }}>
                   <span style={{ fontSize: "12px", color: pal.textMuted, fontVariantNumeric: "tabular-nums" }}>
                     {ongoingFiltered.length === 0
@@ -2344,6 +2360,23 @@ export default function TripsPage() {
               </div>
               {/* Datos */}
               <div style={{ padding: "16px 24px", overflowY: "auto" }}>
+                {/* La ruta primero: es lo que se viene a ver al abrir un viaje. */}
+                {(() => {
+                  const destinoTexto = ivenue ? buildVenueAddress(ivenue) : infoTrip.destination;
+                  const embed = buildDirectionsEmbed(infoTrip.origin, destinoTexto);
+                  if (!embed) return null;
+                  return (
+                    <div style={{ marginBottom: 14, borderRadius: 14, overflow: "hidden", border: `1px solid ${SURFACE.border}` }}>
+                      <iframe
+                        title={t("Ruta del viaje")}
+                        src={embed}
+                        style={{ width: "100%", height: 220, border: "none", display: "block" }}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      />
+                    </div>
+                  );
+                })()}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
                   {fields.map((f) => (
                     <div key={f.label} style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: "9px 12px", gridColumn: f.label === "Destino" || f.label === "Origen" || f.label === "Participantes" ? "1 / -1" : undefined }}>
