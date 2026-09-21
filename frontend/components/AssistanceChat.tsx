@@ -7,6 +7,9 @@ import { useI18n } from "@/lib/i18n";
 import { REPORT_CATEGORY, REPORT_REASONS, reportReasonLabel } from "@/lib/chat-report";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 
+/** Flecha del desplegable, para reemplazar la nativa del navegador. */
+const CHEVRON_URL = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5 6 6.5 11 1.5'/%3E%3C/svg%3E")`;
+
 type AssistanceChatProps = {
   originType: "driver" | "athlete" | "provider_participant";
   originId: string;
@@ -385,7 +388,31 @@ export default function AssistanceChat({
             <div style={{ padding: "14px", display: "flex", flexDirection: "column", gap: "10px", flex: 1 }}>
               <div>
                 <label style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: SURFACE.textMuted }}>{t("Categoría")}</label>
-                <select value={newCategory} onChange={(e) => setNewCategory(e.target.value)} style={{ width: "100%", padding: "10px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, fontSize: "13px", marginTop: "4px" }}>
+                {/* Sin estilos propios el navegador lo pintaba gris con su
+                    flecha nativa, desentonando con los campos de abajo. */}
+                <select
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  style={{
+                    width: "100%",
+                    padding: "10px 34px 10px 12px",
+                    borderRadius: "8px",
+                    border: `1px solid ${SURFACE.border}`,
+                    fontSize: "13px",
+                    marginTop: "4px",
+                    background: SURFACE.card,
+                    color: SURFACE.text,
+                    fontWeight: 600,
+                    appearance: "none",
+                    WebkitAppearance: "none",
+                    MozAppearance: "none",
+                    backgroundImage: CHEVRON_URL,
+                    backgroundRepeat: "no-repeat",
+                    backgroundPosition: "right 12px center",
+                    backgroundSize: "11px",
+                    cursor: "pointer",
+                  }}
+                >
                   {categoriesFor(originType).map((c) => (<option key={c.value} value={c.value}>{t(c.label)}</option>))}
                 </select>
               </div>
