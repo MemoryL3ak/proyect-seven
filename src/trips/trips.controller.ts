@@ -3,6 +3,7 @@ import type { ApiRequest } from '../auth/api-auth.guard';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { BulkFromScheduleDto } from './dto/bulk-from-schedule.dto';
+import { BulkDeleteTripsDto } from './dto/bulk-delete-trips.dto';
 import { AutoAssignDriversDto } from './dto/auto-assign-drivers.dto';
 import { TripsService } from './trips.service';
 import { TripsScheduleService } from './trips-schedule.service';
@@ -28,6 +29,13 @@ export class TripsController {
   @Post('auto-assign-drivers')
   autoAssignDrivers(@Body() dto: AutoAssignDriversDto) {
     return this.scheduleService.autoAssignDrivers(dto);
+  }
+
+  // Borrado en lote desde la lista de viajes. Va como POST y no como
+  // DELETE ':id' para que "bulk-delete" no se confunda nunca con un id.
+  @Post('bulk-delete')
+  bulkDelete(@Body() dto: BulkDeleteTripsDto) {
+    return this.tripsService.removeMany(dto.ids);
   }
 
   @Post()

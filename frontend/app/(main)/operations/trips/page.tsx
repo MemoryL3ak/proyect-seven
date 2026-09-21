@@ -411,6 +411,11 @@ export default function TripsPage() {
   // (la edición queda como acción explícita dentro del popup).
   const [infoTrip, setInfoTrip] = useState<Trip | null>(null);
   const [pendingAction, setPendingAction] = useState<{ trip: Trip; kind: "cancel" | "delete" } | null>(null);
+  // Selección múltiple para borrado en lote.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [bulkNotice, setBulkNotice] = useState<string | null>(null);
   const [actionBusy, setActionBusy] = useState(false);
   const knownRequestedIdsRef = useRef<Set<string>>(new Set());
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -602,6 +607,47 @@ export default function TripsPage() {
         return bTime - aTime;
       });
   }, [athletes, delegations, drivers, search, selectedClientType, selectedEventId, trips, vehicles, venues, tripSource, selectedDriverId]);
+
+  const toggleSelected = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+
+  const selectAllFiltered = () => setSelectedIds(new Set(filteredTrips.map((trip) => trip.id)));
+  const clearSelection = () => setSelectedIds(new Set());
+
+  // Borrado en lote: una sola llamada al backend, que además arrastra los
+  // tramos de regreso. Borrar de a uno desde acá costaba ~300 ms por viaje.
+  const runBulkDelete = async () => {
+    if (bulkBusy || selectedIds.size === 0) return;
+    setBulkBusy(true);
+    setError(null);
+    try {
+      const result = await apiFetch<{ deletedCount: number; requestedCount: number }>(
+        "/trips/bulk-delete",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: Array.from(selectedIds) }),
+        },
+      );
+      const extra = result.deletedCount - result.requestedCount;
+      setBulkNotice(
+        `${result.deletedCount} viaje(s) eliminados` +
+          (extra > 0 ? ` (incluye ${extra} tramo(s) de regreso).` : "."),
+      );
+      clearSelection();
+      setBulkDeleteOpen(false);
+      await loadData(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudieron eliminar los viajes seleccionados.");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
 
   // Las solicitudes VIP/T1 del portal se gestionan sólo en su pestaña dedicada;
   // fuera de ella contaminaban el despacho y el historial general.
@@ -840,6 +886,14 @@ export default function TripsPage() {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+              <input
+                type="checkbox"
+                checked={selectedIds.has(trip.id)}
+                onChange={() => toggleSelected(trip.id)}
+                aria-label="Seleccionar este viaje"
+                title="Seleccionar para eliminar en lote"
+                style={{ width: 16, height: 16, cursor: "pointer", accentColor: STATE.danger, flexShrink: 0 }}
+              />
               <span style={chipStyle}>
                 {sc.pulse && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: sc.accent, animation: "pulse 1.5s infinite", display: "inline-block" }} />}
                 {t(tone.label)}
@@ -1128,6 +1182,33 @@ export default function TripsPage() {
             <span className="block mb-1">{t("Buscar")}</span>
             <input className="input" placeholder={t("Solicitante, sede, patente…")} value={search} onChange={(event) => setSearch(event.target.value)} />
           </label>
+        </div>
+        {/* Selección múltiple: punto de entrada para limpiar de una vez una
+            importación completa, en vez de borrar viaje por viaje. */}
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+          <button
+            type="button"
+            onClick={selectAllFiltered}
+            disabled={filteredTrips.length === 0}
+            style={{
+              background: SURFACE.card,
+              border: `1px solid ${SURFACE.border}`,
+              borderRadius: "99px",
+              padding: "6px 14px",
+              fontSize: 13,
+              fontWeight: 600,
+              color: SURFACE.textSecondary,
+              cursor: filteredTrips.length === 0 ? "not-allowed" : "pointer",
+              opacity: filteredTrips.length === 0 ? 0.5 : 1,
+            }}
+          >
+            Seleccionar los {filteredTrips.length} viajes filtrados
+          </button>
+          {selectedIds.size > 0 && (
+            <span style={{ color: SURFACE.textMuted, fontSize: 13 }}>
+              {selectedIds.size} seleccionado{selectedIds.size === 1 ? "" : "s"}
+            </span>
+          )}
         </div>
         {error && <p className="mt-3 text-sm" style={{ color: STATE.danger }}>{error}</p>}
       </section>
@@ -1962,6 +2043,107 @@ export default function TripsPage() {
           </div>
         </div>
       )}
+
+      {/* ── Barra flotante de selección múltiple ──
+          Aparece sólo con algo seleccionado y queda fija sobre el contenido,
+          para no tener que volver arriba después de marcar viajes. */}
+      {selectedIds.size > 0 && (
+        <div
+          style={{
+            position: "fixed",
+            left: "50%",
+            bottom: "24px",
+            transform: "translateX(-50%)",
+            zIndex: 60,
+            display: "flex",
+            alignItems: "center",
+            gap: "10px",
+            padding: "10px 12px 10px 18px",
+            background: SURFACE.card,
+            border: `1px solid ${SURFACE.border}`,
+            borderRadius: "999px",
+            boxShadow: "0 14px 38px rgba(15,23,42,0.26)",
+            maxWidth: "calc(100vw - 32px)",
+            flexWrap: "wrap",
+          }}
+        >
+          <span style={{ fontSize: 13, fontWeight: 800, color: SURFACE.textSecondary, whiteSpace: "nowrap" }}>
+            {selectedIds.size} viaje{selectedIds.size === 1 ? "" : "s"} seleccionado{selectedIds.size === 1 ? "" : "s"}
+          </span>
+          {selectedIds.size < filteredTrips.length && (
+            <button
+              type="button"
+              onClick={selectAllFiltered}
+              style={{
+                background: "transparent", border: "none", borderRadius: "99px",
+                padding: "6px 10px", fontSize: 13, fontWeight: 600,
+                color: BRAND.teal, cursor: "pointer", whiteSpace: "nowrap",
+              }}
+            >
+              Seleccionar los {filteredTrips.length}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={clearSelection}
+            style={{
+              background: "transparent", border: `1px solid ${SURFACE.borderMuted}`, borderRadius: "99px",
+              padding: "6px 14px", fontSize: 13, fontWeight: 600,
+              color: SURFACE.textMuted, cursor: "pointer", whiteSpace: "nowrap",
+            }}
+          >
+            Limpiar
+          </button>
+          <button
+            type="button"
+            onClick={() => setBulkDeleteOpen(true)}
+            style={{
+              background: STATE.danger, border: "none", borderRadius: "99px",
+              padding: "8px 18px", fontSize: 13, fontWeight: 700,
+              color: SURFACE.card, cursor: "pointer", whiteSpace: "nowrap",
+              boxShadow: "0 2px 10px rgba(239,68,68,0.4)",
+            }}
+          >
+            Eliminar seleccionados
+          </button>
+        </div>
+      )}
+
+      {bulkNotice && (
+        <div
+          style={{
+            position: "fixed", left: "50%", bottom: "24px", transform: "translateX(-50%)",
+            zIndex: 60, padding: "10px 18px", background: SURFACE.card,
+            border: `1px solid ${SURFACE.border}`, borderRadius: "999px",
+            boxShadow: "0 14px 38px rgba(15,23,42,0.26)", fontSize: 13, fontWeight: 600,
+            color: SURFACE.textSecondary, display: "flex", alignItems: "center", gap: 12,
+          }}
+        >
+          {bulkNotice}
+          <button
+            type="button"
+            onClick={() => setBulkNotice(null)}
+            style={{ background: "transparent", border: "none", color: SURFACE.textMuted, cursor: "pointer", fontWeight: 700 }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
+      {/* ── Confirmación de borrado en lote ── */}
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        danger
+        title={`Eliminar ${selectedIds.size} viaje${selectedIds.size === 1 ? "" : "s"}`}
+        message={
+          `Se eliminarán definitivamente ${selectedIds.size} viaje(s) seleccionado(s), ` +
+          "incluidos sus tramos de regreso, y no se podrán recuperar. ¿Eliminar?"
+        }
+        confirmLabel={bulkBusy ? "Eliminando…" : "Eliminar"}
+        cancelLabel="Volver"
+        onConfirm={runBulkDelete}
+        onCancel={() => { if (!bulkBusy) setBulkDeleteOpen(false); }}
+      />
 
       {/* ── Confirmación de cancelar / eliminar viaje ── */}
       <ConfirmDialog

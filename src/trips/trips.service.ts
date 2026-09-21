@@ -1031,6 +1031,60 @@ export class TripsService {
     return this.toEntity(data as TripRow);
   }
 
+  /**
+   * Borrado en lote. Existe para que la lista de viajes pueda eliminar una
+   * selección completa en UNA llamada: con el servidor en Houston y la base en
+   * Virginia, borrar de a uno costaba ~300 ms por viaje y limpiar una
+   * importación de 40 tramos se iba a medio minuto de espera.
+   */
+  async removeMany(ids: string[]) {
+    const requested = Array.from(new Set(ids.filter(Boolean)));
+    if (requested.length === 0) {
+      return { requestedCount: 0, deletedCount: 0, deletedIds: [] as string[] };
+    }
+
+    // Los tramos de regreso cuelgan de la ida: se borran con ella aunque el
+    // operador sólo haya marcado el viaje padre en la lista.
+    const { data: children, error: childrenError } = await this.supabase
+      .schema('transport')
+      .from('trips')
+      .select('id')
+      .in('parent_trip_id', requested);
+
+    if (childrenError) {
+      throw new InternalServerErrorException(
+        childrenError.message || 'Error looking up return legs',
+      );
+    }
+
+    const childIds = ((children as Array<{ id: string }>) ?? []).map(
+      (c) => c.id,
+    );
+    const targets = Array.from(new Set([...requested, ...childIds]));
+
+    const { data, error } = await this.supabase
+      .schema('transport')
+      .from('trips')
+      .delete()
+      .in('id', targets)
+      .select('id');
+
+    if (error) {
+      throw new InternalServerErrorException(
+        error.message || 'Error deleting trips',
+      );
+    }
+
+    const deletedIds = ((data as Array<{ id: string }>) ?? []).map((r) => r.id);
+    return {
+      requestedCount: requested.length,
+      deletedCount: deletedIds.length,
+      // Diferencia entre lo pedido y lo borrado: ids que ya no existían.
+      notFoundCount: targets.length - deletedIds.length,
+      deletedIds,
+    };
+  }
+
   /* ─── Passenger Position ─── */
 
   async updatePassengerPosition(tripId: string, lat: number, lng: number) {
