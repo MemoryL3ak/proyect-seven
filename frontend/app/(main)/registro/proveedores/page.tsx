@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
+import { descargarConductores, ES_CONDUCTOR } from "@/lib/export-conductores";
 import {
   CheckIcon,
   XIcon,
@@ -17,6 +18,7 @@ import {
   UploadIcon,
   AlertCircleIcon,
   CameraIcon,
+  DownloadIcon,
 } from "@/components/ui/Icons";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import CountrySelect from "@/components/CountrySelect";
@@ -556,6 +558,25 @@ export default function ProveedoresPage() {
 
   const isTransporteParticipant = selectedProviderForParticipant?.type === "TRANSPORTE";
 
+  /**
+   * Participantes de un proveedor, para descargar su nómina sin salir de la
+   * pestaña de proveedores. Acá la lista de participantes no está cargada:
+   * sólo se pide la de ese proveedor, no la del evento entero.
+   */
+  const conductoresDe = async (providerId: string): Promise<Participant[]> => {
+    if (providerFilter === providerId && participants.length > 0) {
+      return participants.filter(ES_CONDUCTOR);
+    }
+    try {
+      const lista = await apiFetch<Participant[]>(
+        `/provider-participants?providerId=${encodeURIComponent(providerId)}`,
+      );
+      return (lista || []).filter(ES_CONDUCTOR);
+    } catch {
+      return [];
+    }
+  };
+
   const filteredParticipants = useMemo(() => {
     const q = participantSearch.trim().toLowerCase();
     return participants.filter(p => {
@@ -989,6 +1010,26 @@ export default function ProveedoresPage() {
                                 </svg>
                                 <span style={{ fontSize: "11px", fontWeight: 600, color: typeColor }}>{t("Participantes")}</span>
                               </button>
+                              {/* Descarga de la nómina de ese proveedor, sin
+                                  tener que entrar a sus participantes y filtrar.
+                                  Sólo aparece si tiene conductores cargados. */}
+                              <button
+                                onClick={async () => {
+                                  const lista = await conductoresDe(p.id);
+                                  if (lista.length === 0) {
+                                    alert(t("Este proveedor no tiene conductores cargados."));
+                                    return;
+                                  }
+                                  descargarConductores(lista, providers, p);
+                                }}
+                                style={{ padding: "8px 14px", background: typeBg, border: "none", borderLeft: `1px solid ${typeColor}20`, cursor: "pointer", display: "flex", alignItems: "center", gap: "4px", transition: "background 0.15s" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = `${typeColor}18`; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = typeBg; }}
+                                title={`${t("Descargar conductores de")} ${p.name}`}
+                              >
+                                <DownloadIcon size={12} color={typeColor} strokeWidth={2} />
+                                <span style={{ fontSize: "10px", fontWeight: 600, color: typeColor }}>{t("Conductores")}</span>
+                              </button>
                               {!p.parentProviderId && (
                                 <button
                                   onClick={() => setProviderModal({ editing: null, parentId: p.id })}
@@ -1072,6 +1113,31 @@ export default function ProveedoresPage() {
             <span style={{ fontSize: "12px", color: "var(--text-faint)" }}>
               {filteredParticipants.length} {filteredParticipants.length !== 1 ? t("resultados") : t("resultado")}
             </span>
+            {/* Baja exactamente lo que se está viendo: con "Todos los
+                proveedores" es la nómina completa, y con uno elegido es la de
+                ese proveedor. Un solo botón para las dos preguntas. */}
+            {(() => {
+              const conductoresALaVista = filteredParticipants.filter(ES_CONDUCTOR);
+              if (conductoresALaVista.length === 0) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() =>
+                    descargarConductores(conductoresALaVista, providers, activeFilterProvider ?? null)
+                  }
+                  title={t("Descarga nombre, contacto, vehículo, código de app y proveedor de cada conductor")}
+                  style={{
+                    display: "inline-flex", alignItems: "center", gap: 6,
+                    fontSize: "12px", fontWeight: 600, padding: "7px 14px", borderRadius: "99px",
+                    background: SURFACE.card, border: `1px solid ${SURFACE.border}`,
+                    color: SURFACE.textSecondary, cursor: "pointer", whiteSpace: "nowrap",
+                  }}
+                >
+                  <DownloadIcon size={13} strokeWidth={2} />
+                  {t("Descargar conductores")} ({conductoresALaVista.length})
+                </button>
+              );
+            })()}
           </section>
 
           {/* Bulk photo upload */}
