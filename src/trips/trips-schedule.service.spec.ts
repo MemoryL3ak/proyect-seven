@@ -141,6 +141,17 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
       );
     });
 
+    it('la presentación queda 15 minutos antes de la hora del viaje', () => {
+      const svc = service as unknown as WithDates & {
+        withLead: (at: Date) => Date;
+      };
+      const viaje = svc.mergeDateTime(svc.parseDate('23-sept', '2026'), '07:45');
+      expect(viaje?.toISOString()).toBe('2026-09-23T10:45:00.000Z'); // 07:45 en Chile
+      expect(svc.withLead(viaje as Date).toISOString()).toBe(
+        '2026-09-23T10:30:00.000Z', // 07:30 en Chile
+      );
+    });
+
     it('la fecha del viaje no se corre por la zona horaria del servidor', () => {
       const svc = service as unknown as WithDates;
       expect(svc.parseDate('23-sept', '2026')?.toISOString().slice(0, 10)).toBe(

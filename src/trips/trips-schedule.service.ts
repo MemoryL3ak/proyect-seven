@@ -67,6 +67,14 @@ const MONTHS_ES: Record<string, number> = {
  */
 const EVENT_TIME_ZONE = process.env.EVENT_TIME_ZONE || 'America/Santiago';
 
+/**
+ * El conductor se presenta 15 minutos antes de la hora del viaje. La hora de
+ * presentación se calcula con esta regla y no se toma de la planilla: en los
+ * archivos reales esa columna venía con criterios distintos según quién los
+ * armaba.
+ */
+const PRESENTATION_LEAD_MINUTES = 15;
+
 const VALID_CLIENT_TYPES = [
   'TF',
   'TM',
@@ -173,6 +181,11 @@ export class TripsScheduleService {
     }
 
     return null;
+  }
+
+  /** Hora de presentación: los minutos de anticipación sobre la hora del viaje. */
+  private withLead(at: Date): Date {
+    return new Date(at.getTime() - PRESENTATION_LEAD_MINUTES * 60000);
   }
 
   /** Desfase en minutos de la zona del evento para un instante UTC dado. */
@@ -506,16 +519,27 @@ export class TripsScheduleService {
           continue;
         }
 
-        const presentationAt = this.mergeDateTime(tripDate, row.presentationTime);
+        const sheetPresentationAt = this.mergeDateTime(
+          tripDate,
+          row.presentationTime,
+        );
         const departureAt = this.mergeDateTime(tripDate, row.departureTime);
         const arrivalAt = this.mergeDateTime(tripDate, row.arrivalTime);
         const returnAt = this.mergeDateTime(tripDate, row.returnTime);
-        const scheduledAt = arrivalAt || departureAt || presentationAt;
+
+        // La hora del viaje es la hora del bus: cuando tiene que estar en el
+        // origen recogiendo ("Hora Llegada Bus"). Antes se usaba la llegada al
+        // recinto, que es el final del traslado y no su inicio. Si la planilla
+        // no trae esa columna se cae a la llegada al recinto y luego a la
+        // presentación, para no perder la fila.
+        const scheduledAt = departureAt || arrivalAt || sheetPresentationAt;
 
         if (!scheduledAt) {
           skipped.push({ index: i, reason: 'Sin hora de salida/llegada' });
           continue;
         }
+
+        const presentationAt = this.withLead(scheduledAt);
 
         const clientType = this.normalizeClientType(row.clientType);
         const fleetAcronym = String(row.fleetAcronym || '').trim().toUpperCase() || null;
@@ -591,7 +615,7 @@ export class TripsScheduleService {
             origin: row.destinationName || row.destinationAddress || null,
             destination: row.originName || row.originAddress || null,
             scheduled_at: returnAt.toISOString(),
-            presentation_at: returnAt.toISOString(),
+            presentation_at: this.withLead(returnAt).toISOString(),
             return_at: null,
             is_round_trip: true,
             leg_type: 'RETURN',
