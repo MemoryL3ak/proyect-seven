@@ -425,6 +425,24 @@ export default function UserPortalPage() {
    * normalizado para que una tilde o un espacio de más no rompan el calce.
    */
   const disciplinasPorSede = useMemo(() => {
+    // Las pruebas cuelgan de su deporte: "100 Metros Planos" tiene como padre a
+    // "Atletismo", y en una sede lo que interesa es el deporte, no cada prueba.
+    const porId = new Map<string, { id: string; name?: string | null; parentId?: string | null }>();
+    for (const d of [...disciplinasTodas, ...calendarEvents]) porId.set(d.id, d);
+    for (const p of disciplineParents) if (!porId.has(p.id)) porId.set(p.id, p);
+
+    const nombreDelDeporte = (id: string, nombre?: string | null, padreId?: string | null) => {
+      let actual = padreId;
+      // Guarda contra una jerarquía mal cargada que se apunte a sí misma.
+      for (let salto = 0; actual && salto < 5; salto++) {
+        const padre = porId.get(actual);
+        if (!padre || padre.id === id) break;
+        if (!padre.parentId) return padre.name ?? nombre ?? "";
+        actual = padre.parentId;
+      }
+      return nombre ?? "";
+    };
+
     const m = new Map<string, string[]>();
     const agregar = (sede: string | null | undefined, etiqueta: string) => {
       const clave = claveSede(sede);
@@ -433,11 +451,12 @@ export default function UserPortalPage() {
       if (!lista.includes(etiqueta)) lista.push(etiqueta);
       m.set(clave, lista);
     };
-    for (const d of disciplinasTodas) agregar(d.venueName, discLabelMap.get(d.id) ?? d.name ?? "");
-    for (const c of calendarEvents) agregar(c.venueName, discLabelMap.get(c.id) ?? c.name ?? "");
+    for (const d of [...disciplinasTodas, ...calendarEvents]) {
+      agregar(d.venueName, nombreDelDeporte(d.id, d.name, d.parentId));
+    }
     for (const lista of m.values()) lista.sort((a, b) => a.localeCompare(b));
     return m;
-  }, [disciplinasTodas, calendarEvents, discLabelMap]);
+  }, [disciplinasTodas, calendarEvents, disciplineParents]);
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
   const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
   const [delegationTrips, setDelegationTrips] = useState<Trip[]>([]);

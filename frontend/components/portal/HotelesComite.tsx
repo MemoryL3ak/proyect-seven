@@ -112,10 +112,21 @@ export default function HotelesComite({
     return [...base].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
   }, [hoteles, eventId, porHotel, delegacionFiltro, disciplinaFiltro]);
 
-  const totalSelecciones = useMemo(
-    () => [...porHotel.values()].reduce((n, l) => n + l.length, 0),
-    [porHotel],
-  );
+  /**
+   * Una "selección" es una combinación región + deporte + rama: la fila de la
+   * planilla de distribución (`logistics.delegation_hotels`). Damas y varones
+   * de un mismo deporte cuentan aparte porque pueden dormir en hoteles
+   * distintos, que es justo lo que esta pantalla resuelve. Sin decirlo, el
+   * total parecía un recuento de personas.
+   */
+  const resumen = useMemo(() => {
+    const filas = [...porHotel.values()].flat();
+    return {
+      total: filas.length,
+      regiones: new Set(filas.map((f) => f.region)).size,
+      deportes: new Set(filas.map((f) => f.deporte)).size,
+    };
+  }, [porHotel]);
 
   if (celdas === null) {
     return <p style={{ fontSize: 13, color: SURFACE.textFaint, textAlign: "center", padding: 18 }}>{t("Cargando…")}</p>;
@@ -129,8 +140,15 @@ export default function HotelesComite({
         </p>
         <p style={{ fontSize: 11.5, color: SURFACE.textFaint, margin: "3px 0 0" }}>
           {visibles.length} {visibles.length === 1 ? t("hotel") : t("hoteles")}
-          {totalSelecciones > 0 ? ` · ${totalSelecciones} ${totalSelecciones === 1 ? t("selección alojada") : t("selecciones alojadas")}` : ""}
+          {resumen.total > 0
+            ? ` · ${resumen.regiones} ${resumen.regiones === 1 ? t("región") : t("regiones")} · ${resumen.deportes} ${resumen.deportes === 1 ? t("deporte") : t("deportes")}`
+            : ""}
         </p>
+        {resumen.total > 0 && (
+          <p style={{ fontSize: 10.5, color: SURFACE.textFaint, margin: "2px 0 0" }}>
+            {resumen.total} {t("asignaciones de región + deporte + rama (damas y varones por separado)")}
+          </p>
+        )}
         {fallo && (
           <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "6px 0 0" }}>
             {t("No se pudo leer la distribución por región y deporte; se muestran los hoteles sin su detalle.")}
