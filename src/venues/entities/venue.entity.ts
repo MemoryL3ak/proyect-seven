@@ -42,6 +42,14 @@ export class Venue {
   disciplineIds: string[];
 
   // Coordinador de sede: lo ven los jefes de misión junto al Coordinador General.
+  /**
+   * Participante con rol COORDINADOR_SEDE a cargo del recinto. Los dos campos
+   * de abajo son la copia de su ficha, para que quien ya los lee no tenga que
+   * resolver la persona en una segunda consulta.
+   */
+  @Column({ name: 'coordinator_id', type: 'uuid', nullable: true })
+  coordinatorId?: string | null;
+
   @Column({ name: 'coordinator_name', type: 'text', nullable: true })
   coordinatorName?: string | null;
 

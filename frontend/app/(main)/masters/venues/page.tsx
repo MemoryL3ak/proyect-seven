@@ -26,8 +26,24 @@ type Venue = {
   photoUrl?: string | null;
   /** Deportes que se compiten acá; se eligen en este mismo formulario. */
   disciplineIds?: string[] | null;
+  /** Participante con rol Coordinador de Sede a cargo del recinto. */
+  coordinatorId?: string | null;
+  coordinatorName?: string | null;
+  coordinatorPhone?: string | null;
   createdAt?: string | Date;
   updatedAt?: string | Date;
+};
+
+/**
+ * Participante con rol Coordinador de Sede. La lista del formulario sale de
+ * acá: antes el coordinador se escribía a mano y cada sede lo tipeaba distinto.
+ */
+type Coordinador = {
+  id: string;
+  fullName?: string | null;
+  eventId?: string | null;
+  userType?: string | null;
+  phone?: string | null;
 };
 
 /** Deporte raíz del evento: lo que se puede asignar a una sede. */
@@ -47,6 +63,7 @@ type VenueForm = {
   region: string;
   commune: string;
   disciplineIds: string[];
+  coordinatorId: string;
 };
 
 const initialForm: VenueForm = {
@@ -56,6 +73,7 @@ const initialForm: VenueForm = {
   region: "",
   commune: "",
   disciplineIds: [],
+  coordinatorId: "",
 };
 
 const regionOptions = Object.values(clRegions.regions)
@@ -148,17 +166,26 @@ export default function VenuesMasterPage() {
   const disciplineLabel = (id: string) =>
     disciplineLabels.get(id) ?? disciplines.find((d) => d.id === id)?.name ?? id;
 
+  const [coordinadores, setCoordinadores] = useState<Coordinador[]>([]);
+
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [venuesData, eventsData, disciplinesData] = await Promise.all([
+      const [venuesData, eventsData, disciplinesData, participantesData] = await Promise.all([
         apiFetch<Venue[]>("/venues"),
         apiFetch<EventItem[]>("/events"),
         apiFetch<Discipline[]>("/disciplines").catch(() => [] as Discipline[]),
+        apiFetch<Coordinador[]>("/athletes").catch(() => [] as Coordinador[]),
       ]);
       setVenues((venuesData || []).sort((a, b) => a.name.localeCompare(b.name, "es")));
       setEvents(eventsData || []);
+      // Sólo los participantes con el rol; el resto no puede coordinar una sede.
+      setCoordinadores(
+        (participantesData || [])
+          .filter((p) => String(p.userType ?? "").toUpperCase() === "COORDINADOR_SEDE")
+          .sort((a, b) => (a.fullName ?? "").localeCompare(b.fullName ?? "", "es")),
+      );
       // Sólo los deportes padre: una prueba ("100 Metros Planos") no se asigna
       // a una sede, el deporte sí.
       setDisciplines(
@@ -222,6 +249,7 @@ export default function VenuesMasterPage() {
         region: form.region,
         commune: form.commune,
         disciplineIds: form.disciplineIds,
+        coordinatorId: form.coordinatorId || null,
       };
 
       let venueId = editingId;
@@ -270,6 +298,7 @@ export default function VenuesMasterPage() {
       region: venue.region || "",
       commune: venue.commune || "",
       disciplineIds: [...(venue.disciplineIds ?? [])],
+      coordinatorId: venue.coordinatorId ?? "",
     });
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -396,6 +425,33 @@ export default function VenuesMasterPage() {
                   <option key={c.value} value={c.value}>{c.label}</option>
                 ))}
               </StyledSelect>
+            </label>
+
+            {/* Coordinador del recinto. Se elige de los participantes con ese
+                rol en vez de escribirse: así el nombre y el teléfono salen
+                siempre de su ficha y no de lo que tipeó cada quien. */}
+            <label className="text-sm block md:col-span-2">
+              <span className="block mb-1">
+                {t("Coordinador de sede")}{" "}
+                <span className="font-normal text-slate-400">({t("opcional")})</span>
+              </span>
+              <StyledSelect
+                value={form.coordinatorId}
+                onChange={(e) => setForm((prev) => ({ ...prev, coordinatorId: e.target.value }))}
+              >
+                <option value="">{t("Sin coordinador asignado")}</option>
+                {coordinadores.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.fullName || c.id}
+                    {c.phone ? ` · ${c.phone}` : ""}
+                  </option>
+                ))}
+              </StyledSelect>
+              {coordinadores.length === 0 && (
+                <p className="text-xs text-slate-400 mt-1">
+                  {t("No hay participantes con el rol Coordinador de Sede. Se registran en Inscripción de Participantes con ese tipo de cliente.")}
+                </p>
+              )}
             </label>
 
             {/* Disciplinas de la sede: dato propio del recinto. Antes el portal
@@ -709,6 +765,29 @@ function VenueCard({
                     </span>
                   ))}
                 </div>
+              )}
+            </div>
+
+            {/* Quién responde por el recinto: sin esto había que abrir la
+                edición de cada sede para saberlo. */}
+            <div style={{ borderRadius: "14px", background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${BRAND.teal}`, padding: "12px 14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "6px" }}>
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                {t("Coordinador de sede")}
+              </div>
+              {venue.coordinatorName ? (
+                <p style={{ fontSize: "13px", color: SURFACE.text, fontWeight: 600, margin: 0 }}>
+                  {venue.coordinatorName}
+                  {venue.coordinatorPhone && (
+                    <span style={{ fontWeight: 500, color: SURFACE.textMuted }}> · {venue.coordinatorPhone}</span>
+                  )}
+                </p>
+              ) : (
+                <p style={{ fontSize: "13px", color: SURFACE.textFaint, fontWeight: 500, margin: 0 }}>
+                  {t("Sin coordinador asignado")}
+                </p>
               )}
             </div>
           </div>

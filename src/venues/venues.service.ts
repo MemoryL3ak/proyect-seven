@@ -41,10 +41,40 @@ export class VenuesService {
       photoUrl: createVenueDto.photoUrl ?? null,
       // Deportes de la sede: se declaran acá, no se deducen de las pruebas.
       disciplineIds: createVenueDto.disciplineIds ?? [],
+      coordinatorId: createVenueDto.coordinatorId || null,
       coordinatorName: createVenueDto.coordinatorName?.trim() || null,
       coordinatorPhone: createVenueDto.coordinatorPhone?.trim() || null,
     });
+    await this.copiarFichaCoordinador(venue, createVenueDto.coordinatorId);
     return this.venuesRepository.save(venue);
+  }
+
+  /**
+   * Copia nombre y teléfono del participante elegido a la sede. La sede se lee
+   * en el portal, en la tarjeta de recinto y en los listados; sin esta copia,
+   * cada uno tendría que ir a buscar la persona por su lado.
+   */
+  private async copiarFichaCoordinador(
+    venue: Venue,
+    coordinatorId?: string | null,
+  ): Promise<void> {
+    if (coordinatorId === undefined) return;
+    if (!coordinatorId) {
+      venue.coordinatorId = null;
+      venue.coordinatorName = null;
+      venue.coordinatorPhone = null;
+      return;
+    }
+    const { data } = await this.supabase
+      .schema('core')
+      .from('athletes')
+      .select('full_name, phone')
+      .eq('id', coordinatorId)
+      .maybeSingle();
+    const ficha = data as { full_name?: string; phone?: string } | null;
+    venue.coordinatorId = coordinatorId;
+    if (ficha?.full_name) venue.coordinatorName = ficha.full_name;
+    if (ficha?.phone) venue.coordinatorPhone = ficha.phone;
   }
 
   async findAll() {
@@ -73,6 +103,9 @@ export class VenuesService {
       ...(updateVenueDto.photoUrl !== undefined ? { photoUrl: updateVenueDto.photoUrl ?? null } : {}),
       ...(updateVenueDto.disciplineIds !== undefined
         ? { disciplineIds: updateVenueDto.disciplineIds ?? [] }
+        : {}),
+      ...(updateVenueDto.coordinatorId !== undefined
+        ? { coordinatorId: updateVenueDto.coordinatorId || null }
         : {}),
       ...(updateVenueDto.coordinatorName !== undefined
         ? { coordinatorName: updateVenueDto.coordinatorName?.trim() || null }

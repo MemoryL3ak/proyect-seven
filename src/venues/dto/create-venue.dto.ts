@@ -1,4 +1,10 @@
-import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateVenueDto {
   @IsString()
@@ -37,6 +43,11 @@ export class CreateVenueDto {
   disciplineIds?: string[];
 
   // Coordinador de sede: lo ven los jefes de misión junto al Coordinador General.
+  /** Participante con rol COORDINADOR_SEDE; de ahí salen nombre y teléfono. */
+  @IsOptional()
+  @IsUUID()
+  coordinatorId?: string | null;
+
   @IsString()
   @IsOptional()
   coordinatorName?: string | null;
