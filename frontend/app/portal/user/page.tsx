@@ -425,8 +425,11 @@ export default function UserPortalPage() {
    * normalizado para que una tilde o un espacio de más no rompan el calce.
    */
   const disciplinasPorSede = useMemo(() => {
-    // Las pruebas cuelgan de su deporte: "100 Metros Planos" tiene como padre a
-    // "Atletismo", y en una sede lo que interesa es el deporte, no cada prueba.
+    // Las pruebas cuelgan de su disciplina: "100 Metros Planos" tiene como
+    // padre a "Atletismo", y en una sede interesa la disciplina, no cada
+    // prueba. La disciplina ya es el deporte separado por género y categoría
+    // ("Balonmano · Femenino", "Atletismo · Paralímpico"), así que la etiqueta
+    // sale del mapa que desambigua esas variantes.
     const porId = new Map<string, { id: string; name?: string | null; parentId?: string | null }>();
     for (const d of [...disciplinasTodas, ...calendarEvents]) porId.set(d.id, d);
     for (const p of disciplineParents) if (!porId.has(p.id)) porId.set(p.id, p);
@@ -437,10 +440,10 @@ export default function UserPortalPage() {
       for (let salto = 0; actual && salto < 5; salto++) {
         const padre = porId.get(actual);
         if (!padre || padre.id === id) break;
-        if (!padre.parentId) return padre.name ?? nombre ?? "";
+        if (!padre.parentId) return discLabelMap.get(padre.id) ?? padre.name ?? "";
         actual = padre.parentId;
       }
-      return nombre ?? "";
+      return discLabelMap.get(id) ?? nombre ?? "";
     };
 
     const m = new Map<string, string[]>();
@@ -456,7 +459,7 @@ export default function UserPortalPage() {
     }
     for (const lista of m.values()) lista.sort((a, b) => a.localeCompare(b));
     return m;
-  }, [disciplinasTodas, calendarEvents, disciplineParents]);
+  }, [disciplinasTodas, calendarEvents, disciplineParents, discLabelMap]);
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
   const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
   const [delegationTrips, setDelegationTrips] = useState<Trip[]>([]);

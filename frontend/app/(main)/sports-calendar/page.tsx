@@ -1955,6 +1955,9 @@ export default function SportsCalendarPage() {
                   <h3 style={{ marginTop: 2, fontSize: 18, fontWeight: 800, color: SURFACE.card, textTransform: "capitalize", lineHeight: 1.2 }}>{dayLabel(selectedDay)}</h3>
                   <p style={{ marginTop: 4, fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.9)" }}>
                     {selectedDayEntries.length} {selectedDayEntries.length === 1 ? t("actividad") : t("actividades")}
+                    {(trasladosPorDia.get(selectedDayKey) ?? 0) > 0
+                      ? ` · ${trasladosPorDia.get(selectedDayKey)} ${trasladosPorDia.get(selectedDayKey) === 1 ? t("traslado") : t("traslados")}`
+                      : ""}
                   </p>
                 </div>
                 <button
@@ -1984,10 +1987,25 @@ export default function SportsCalendarPage() {
 
             {/* Cuerpo: lista de actividades */}
             <div className="stagger" style={{ padding: 16, overflowY: "auto", display: "flex", flexDirection: "column", gap: 10 }}>
+              {/* Los traslados no son actividades deportivas, pero son lo que
+                  hace que un día NO esté vacío aunque no haya competencias. */}
+              {(trasladosPorDia.get(selectedDayKey) ?? 0) > 0 && (
+                <div className="rounded-xl p-3 flex items-center gap-3"
+                  style={{ background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.3)" }}>
+                  <BusIcon size={16} color={BRAND.teal} strokeWidth={2} />
+                  <p style={{ fontSize: 12.5, fontWeight: 700, color: SURFACE.textSecondary, margin: 0 }}>
+                    {trasladosPorDia.get(selectedDayKey)}{" "}
+                    {trasladosPorDia.get(selectedDayKey) === 1 ? t("traslado programado") : t("traslados programados")}
+                    <span style={{ display: "block", fontWeight: 600, fontSize: 11.5, color: SURFACE.textMuted }}>
+                      {t("El desglose está en Ver detalle del día.")}
+                    </span>
+                  </p>
+                </div>
+              )}
               {selectedDayEntries.length === 0 ? (
                 <div style={{ padding: "32px 16px", textAlign: "center" }}>
                   <p style={{ marginBottom: 6, color: SURFACE.borderStrong, display: "flex", justifyContent: "center" }}><CalendarIcon size={40} /></p>
-                  <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.textSecondary }}>{t("Sin actividades para este día")}</p>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.textSecondary }}>{t("Sin actividades deportivas para este día")}</p>
                   <p style={{ fontSize: 12, color: SURFACE.textFaint, marginTop: 4 }}>{t("Programá una desde el panel lateral.")}</p>
                 </div>
               ) : selectedDayEntries.map((entry) => {

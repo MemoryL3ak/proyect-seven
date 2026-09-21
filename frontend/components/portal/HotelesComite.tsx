@@ -113,18 +113,20 @@ export default function HotelesComite({
   }, [hoteles, eventId, porHotel, delegacionFiltro, disciplinaFiltro]);
 
   /**
-   * Una "selección" es una combinación región + deporte + rama: la fila de la
-   * planilla de distribución (`logistics.delegation_hotels`). Damas y varones
-   * de un mismo deporte cuentan aparte porque pueden dormir en hoteles
-   * distintos, que es justo lo que esta pantalla resuelve. Sin decirlo, el
-   * total parecía un recuento de personas.
+   * Una "selección" es una fila de la planilla de distribución
+   * (`logistics.delegation_hotels`): una región con una disciplina. La
+   * disciplina ya viene separada por género y categoría, así que en las de un
+   * solo género hay una fila; en las mixtas (ajedrez, atletismo, ciclismo,
+   * judo, natación, tenis de mesa) hay dos, damas y varones, porque pueden
+   * dormir en hoteles distintos. Sin decirlo, el total parecía un recuento de
+   * personas.
    */
   const resumen = useMemo(() => {
     const filas = [...porHotel.values()].flat();
     return {
       total: filas.length,
       regiones: new Set(filas.map((f) => f.region)).size,
-      deportes: new Set(filas.map((f) => f.deporte)).size,
+      disciplinas: new Set(filas.map((f) => f.deporte)).size,
     };
   }, [porHotel]);
 
@@ -141,12 +143,12 @@ export default function HotelesComite({
         <p style={{ fontSize: 11.5, color: SURFACE.textFaint, margin: "3px 0 0" }}>
           {visibles.length} {visibles.length === 1 ? t("hotel") : t("hoteles")}
           {resumen.total > 0
-            ? ` · ${resumen.regiones} ${resumen.regiones === 1 ? t("región") : t("regiones")} · ${resumen.deportes} ${resumen.deportes === 1 ? t("deporte") : t("deportes")}`
+            ? ` · ${resumen.regiones} ${resumen.regiones === 1 ? t("región") : t("regiones")} · ${resumen.disciplinas} ${resumen.disciplinas === 1 ? t("disciplina") : t("disciplinas")}`
             : ""}
         </p>
         {resumen.total > 0 && (
           <p style={{ fontSize: 10.5, color: SURFACE.textFaint, margin: "2px 0 0" }}>
-            {resumen.total} {t("asignaciones de región + deporte + rama (damas y varones por separado)")}
+            {resumen.total} {t("asignaciones de región + disciplina (las mixtas se reparten en damas y varones)")}
           </p>
         )}
         {fallo && (
