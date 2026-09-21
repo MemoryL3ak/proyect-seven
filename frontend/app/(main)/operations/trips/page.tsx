@@ -267,6 +267,8 @@ const SOURCE_META: Record<TripSource | "", { label: string; color: string; bg: s
 };
 
 const STATUS_FLOW = ["REQUESTED", "SCHEDULED", "ASSIGNED", "EN_ROUTE", "PICKED_UP", "COMPLETED"] as const;
+/** Viajes visibles por columna del tablero antes de desplegar el resto. */
+const COLUMN_PREVIEW = 3;
 
 // Estados en los que un viaje sigue "vivo" y por tanto puede cancelarse.
 const CANCELLABLE_STATUSES = new Set(["REQUESTED", "SCHEDULED", "ASSIGNED", "EN_ROUTE", "PICKED_UP"]);
@@ -416,6 +418,16 @@ export default function TripsPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkNotice, setBulkNotice] = useState<string | null>(null);
+  // Columnas del tablero desplegadas: el "+N más" era texto muerto y no había
+  // forma de llegar a los viajes que quedaban ocultos.
+  const [expandedColumns, setExpandedColumns] = useState<Set<string>>(new Set());
+  const toggleColumn = (status: string) =>
+    setExpandedColumns((prev) => {
+      const next = new Set(prev);
+      if (next.has(status)) next.delete(status);
+      else next.add(status);
+      return next;
+    });
   const [actionBusy, setActionBusy] = useState(false);
   const knownRequestedIdsRef = useRef<Set<string>>(new Set());
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1362,8 +1374,16 @@ export default function TripsPage() {
                   </span>
                 </div>
                 {/* Mini trip cards */}
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {items.slice(0, 3).map((trip) => (
+                <div style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "8px",
+                  // Desplegada, una columna con muchos viajes estiraba todo el
+                  // tablero: se le pone scroll propio.
+                  maxHeight: expandedColumns.has(status) ? "60vh" : undefined,
+                  overflowY: expandedColumns.has(status) ? "auto" : undefined,
+                }}>
+                  {(expandedColumns.has(status) ? items : items.slice(0, COLUMN_PREVIEW)).map((trip) => (
                     <button
                       key={trip.id}
                       type="button"
@@ -1388,8 +1408,26 @@ export default function TripsPage() {
                   {items.length === 0 && (
                     <p style={{ fontSize: "12px", color: pal.labelColor, textAlign: "center", padding: "12px 0" }}>{t("Sin viajes.")}</p>
                   )}
-                  {items.length > 3 && (
-                    <p style={{ fontSize: "11px", color: sc.accent, textAlign: "center", fontWeight: 600 }}>+{items.length - 3} más</p>
+                  {items.length > COLUMN_PREVIEW && (
+                    <button
+                      type="button"
+                      onClick={() => toggleColumn(status)}
+                      style={{
+                        background: "transparent",
+                        border: "none",
+                        padding: "4px 0",
+                        fontSize: "11px",
+                        color: sc.accent,
+                        textAlign: "center",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                        width: "100%",
+                      }}
+                    >
+                      {expandedColumns.has(status)
+                        ? t("Ver menos")
+                        : `+${items.length - COLUMN_PREVIEW} ${t("más")}`}
+                    </button>
                   )}
                 </div>
               </div>
