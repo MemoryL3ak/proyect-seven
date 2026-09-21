@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsArray, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateVenueDto {
   @IsString()
@@ -29,6 +29,12 @@ export class CreateVenueDto {
   @IsString()
   @IsOptional()
   photoUrl?: string;
+
+  /** Deportes que se compiten en la sede. Vacío o ausente = ninguno declarado. */
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  disciplineIds?: string[];
 
   // Coordinador de sede: lo ven los jefes de misión junto al Coordinador General.
   @IsString()

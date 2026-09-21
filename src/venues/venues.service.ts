@@ -39,6 +39,8 @@ export class VenuesService {
       region: createVenueDto.region ?? null,
       commune: createVenueDto.commune ?? null,
       photoUrl: createVenueDto.photoUrl ?? null,
+      // Deportes de la sede: se declaran acá, no se deducen de las pruebas.
+      disciplineIds: createVenueDto.disciplineIds ?? [],
       coordinatorName: createVenueDto.coordinatorName?.trim() || null,
       coordinatorPhone: createVenueDto.coordinatorPhone?.trim() || null,
     });
@@ -69,6 +71,9 @@ export class VenuesService {
       ...(updateVenueDto.region !== undefined ? { region: updateVenueDto.region ?? null } : {}),
       ...(updateVenueDto.commune !== undefined ? { commune: updateVenueDto.commune ?? null } : {}),
       ...(updateVenueDto.photoUrl !== undefined ? { photoUrl: updateVenueDto.photoUrl ?? null } : {}),
+      ...(updateVenueDto.disciplineIds !== undefined
+        ? { disciplineIds: updateVenueDto.disciplineIds ?? [] }
+        : {}),
       ...(updateVenueDto.coordinatorName !== undefined
         ? { coordinatorName: updateVenueDto.coordinatorName?.trim() || null }
         : {}),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import {
   type IconComponent,
@@ -160,15 +160,7 @@ type CalendarEvent = {
   gender?: string | null;
 };
 type DisciplineParent = { id: string; name?: string | null; category?: string | null; gender?: string | null };
-/** Clave para calzar una disciplina con su sede: sin tildes, ni mayúsculas, ni dobles espacios. */
-const claveSede = (nombre?: string | null) =>
-  String(nombre ?? "")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
-type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null; coordinatorName?: string | null; coordinatorPhone?: string | null; venueType?: string | null };
+type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null; coordinatorName?: string | null; coordinatorPhone?: string | null; venueType?: string | null; disciplineIds?: string[] | null };
 type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null; photoUrl?: string | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
 type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null; clientTypes?: string[] | null; locationDetail?: string | null };
@@ -420,46 +412,22 @@ export default function UserPortalPage() {
   // producía opciones y filas duplicadas en el calendario.
   const discLabelMap = useMemo(() => buildDisciplineLabelMap(disciplineParents), [disciplineParents]);
   /**
-   * Disciplinas que se presentan en cada sede. El vínculo disciplina→recinto es
-   * por nombre (`core.disciplines.venue_name`), no por id, así que se compara
-   * normalizado para que una tilde o un espacio de más no rompan el calce.
+   * Disciplinas de una sede: las que el módulo Sede tiene asignadas al recinto.
+   * Antes se deducían recorriendo las pruebas y calzando su `venue_name` con el
+   * nombre de la sede; era un calce por texto que se perdía al renombrarla y
+   * que nunca mostraba nada en una sede sin pruebas cargadas.
    */
-  const disciplinasPorSede = useMemo(() => {
-    // Las pruebas cuelgan de su disciplina: "100 Metros Planos" tiene como
-    // padre a "Atletismo", y en una sede interesa la disciplina, no cada
-    // prueba. La disciplina ya es el deporte separado por género y categoría
-    // ("Balonmano · Femenino", "Atletismo · Paralímpico"), así que la etiqueta
-    // sale del mapa que desambigua esas variantes.
-    const porId = new Map<string, { id: string; name?: string | null; parentId?: string | null }>();
-    for (const d of [...disciplinasTodas, ...calendarEvents]) porId.set(d.id, d);
-    for (const p of disciplineParents) if (!porId.has(p.id)) porId.set(p.id, p);
-
-    const nombreDelDeporte = (id: string, nombre?: string | null, padreId?: string | null) => {
-      let actual = padreId;
-      // Guarda contra una jerarquía mal cargada que se apunte a sí misma.
-      for (let salto = 0; actual && salto < 5; salto++) {
-        const padre = porId.get(actual);
-        if (!padre || padre.id === id) break;
-        if (!padre.parentId) return discLabelMap.get(padre.id) ?? padre.name ?? "";
-        actual = padre.parentId;
-      }
-      return discLabelMap.get(id) ?? nombre ?? "";
-    };
-
-    const m = new Map<string, string[]>();
-    const agregar = (sede: string | null | undefined, etiqueta: string) => {
-      const clave = claveSede(sede);
-      if (!clave || !etiqueta) return;
-      const lista = m.get(clave) ?? [];
-      if (!lista.includes(etiqueta)) lista.push(etiqueta);
-      m.set(clave, lista);
-    };
-    for (const d of [...disciplinasTodas, ...calendarEvents]) {
-      agregar(d.venueName, nombreDelDeporte(d.id, d.name, d.parentId));
-    }
-    for (const lista of m.values()) lista.sort((a, b) => a.localeCompare(b));
-    return m;
-  }, [disciplinasTodas, calendarEvents, disciplineParents, discLabelMap]);
+  const etiquetasDeSede = useCallback(
+    (v: Venue) => {
+      const ids = v.disciplineIds ?? [];
+      if (ids.length === 0) return [] as string[];
+      return ids
+        .map((id) => discLabelMap.get(id) ?? disciplinasTodas.find((d) => d.id === id)?.name ?? "")
+        .filter((etiqueta): etiqueta is string => Boolean(etiqueta))
+        .sort((a, b) => a.localeCompare(b));
+    },
+    [discLabelMap, disciplinasTodas],
+  );
   const [healthRecord, setHealthRecord] = useState<Record<string, any> | null>(null);
   const [delegationMembers, setDelegationMembers] = useState<Athlete[]>([]);
   const [delegationTrips, setDelegationTrips] = useState<Trip[]>([]);
@@ -3343,7 +3311,7 @@ export default function UserPortalPage() {
                       lugar={[v.commune, v.region].filter(Boolean).join(", ") || null}
                       foto={v.photoUrl}
                       tipo={(v.venueType ?? "SEDE") === "COMEDOR" ? "comedor" : "sede"}
-                      etiquetas={disciplinasPorSede.get(claveSede(v.name)) ?? []}
+                      etiquetas={etiquetasDeSede(v)}
                       // El coordinador de sede es el contacto operativo del
                       // recinto, como el del hotel: lo ve cualquiera que llegue
                       // ahí, no sólo el jefe de misión.

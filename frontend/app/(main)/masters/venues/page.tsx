@@ -8,6 +8,7 @@ import PageHeader from "@/components/PageHeader";
 import StyledSelect from "@/components/StyledSelect";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 import { useI18n } from "@/lib/i18n";
 
 type EventItem = {
@@ -23,8 +24,20 @@ type Venue = {
   region?: string | null;
   commune?: string | null;
   photoUrl?: string | null;
+  /** Deportes que se compiten acá; se eligen en este mismo formulario. */
+  disciplineIds?: string[] | null;
   createdAt?: string | Date;
   updatedAt?: string | Date;
+};
+
+/** Deporte raíz del evento: lo que se puede asignar a una sede. */
+type Discipline = {
+  id: string;
+  name?: string | null;
+  eventId?: string | null;
+  parentId?: string | null;
+  category?: string | null;
+  gender?: string | null;
 };
 
 type VenueForm = {
@@ -33,6 +46,7 @@ type VenueForm = {
   address: string;
   region: string;
   commune: string;
+  disciplineIds: string[];
 };
 
 const initialForm: VenueForm = {
@@ -41,6 +55,7 @@ const initialForm: VenueForm = {
   address: "",
   region: "",
   commune: "",
+  disciplineIds: [],
 };
 
 const regionOptions = Object.values(clRegions.regions)
@@ -90,6 +105,7 @@ export default function VenuesMasterPage() {
   const { t } = useI18n();
   const [venues, setVenues] = useState<Venue[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
+  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [form, setForm] = useState<VenueForm>(initialForm);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -104,16 +120,52 @@ export default function VenuesMasterPage() {
   const communeOptions = useMemo(() => buildCommuneOptions(form.region), [form.region]);
   const currentMapsUrl = useMemo(() => mapsUrl(form), [form]);
 
+  // Sólo los deportes del evento de la sede: cada evento tiene los suyos y
+  // mezclarlos ofrecía deportes que no se compiten en este.
+  const eventDisciplines = useMemo(
+    () => disciplines.filter((d) => !form.eventId || d.eventId === form.eventId),
+    [disciplines, form.eventId],
+  );
+  /**
+   * El mismo deporte existe una vez por variante (género y categoría), así que
+   * mostrar sólo el nombre deja varias fichas "Atletismo" idénticas sin forma
+   * de saber cuál se está marcando. Misma desambiguación que usan los portales,
+   * pero por evento: el sufijo sólo tiene sentido frente a los deportes con los
+   * que compite en la misma lista, no contra los de otro evento.
+   */
+  const disciplineLabels = useMemo(() => {
+    const porEvento = new Map<string, Discipline[]>();
+    for (const d of disciplines) {
+      const clave = d.eventId ?? "";
+      porEvento.set(clave, [...(porEvento.get(clave) ?? []), d]);
+    }
+    const todas = new Map<string, string>();
+    for (const grupo of porEvento.values()) {
+      for (const [id, etiqueta] of buildDisciplineLabelMap(grupo)) todas.set(id, etiqueta);
+    }
+    return todas;
+  }, [disciplines]);
+  const disciplineLabel = (id: string) =>
+    disciplineLabels.get(id) ?? disciplines.find((d) => d.id === id)?.name ?? id;
+
   const loadData = async () => {
     setLoading(true);
     setError(null);
     try {
-      const [venuesData, eventsData] = await Promise.all([
+      const [venuesData, eventsData, disciplinesData] = await Promise.all([
         apiFetch<Venue[]>("/venues"),
         apiFetch<EventItem[]>("/events"),
+        apiFetch<Discipline[]>("/disciplines").catch(() => [] as Discipline[]),
       ]);
       setVenues((venuesData || []).sort((a, b) => a.name.localeCompare(b.name, "es")));
       setEvents(eventsData || []);
+      // Sólo los deportes padre: una prueba ("100 Metros Planos") no se asigna
+      // a una sede, el deporte sí.
+      setDisciplines(
+        (disciplinesData || [])
+          .filter((d) => !d.parentId)
+          .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "es")),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cargar sedes.");
     } finally {
@@ -130,6 +182,15 @@ export default function VenuesMasterPage() {
     setPhotoPreview(null);
     setExistingPhoto(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const toggleDiscipline = (id: string) => {
+    setForm((prev) => ({
+      ...prev,
+      disciplineIds: prev.disciplineIds.includes(id)
+        ? prev.disciplineIds.filter((x) => x !== id)
+        : [...prev.disciplineIds, id],
+    }));
   };
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -160,6 +221,7 @@ export default function VenuesMasterPage() {
         address: form.address.trim(),
         region: form.region,
         commune: form.commune,
+        disciplineIds: form.disciplineIds,
       };
 
       let venueId = editingId;
@@ -207,6 +269,7 @@ export default function VenuesMasterPage() {
       address: venue.address || "",
       region: venue.region || "",
       commune: venue.commune || "",
+      disciplineIds: [...(venue.disciplineIds ?? [])],
     });
     setPhotoFile(null);
     setPhotoPreview(null);
@@ -259,7 +322,13 @@ export default function VenuesMasterPage() {
             <label className="space-y-2 md:col-span-2">
               <span className="text-sm font-medium text-slate-700">{t("Evento")}</span>
               <StyledSelect value={form.eventId}
-                onChange={(e) => setForm((prev) => ({ ...prev, eventId: e.target.value }))}>
+                onChange={(e) => setForm((prev) => ({
+                  ...prev,
+                  eventId: e.target.value,
+                  // Los deportes son de un evento: al cambiarlo, lo marcado ya
+                  // no existe en el nuevo y quedaría guardado como ids huérfanos.
+                  disciplineIds: e.target.value === prev.eventId ? prev.disciplineIds : [],
+                }))}>
                 <option value="">{t("Selecciona un evento")}</option>
                 {events.map((ev) => (
                   <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>
@@ -328,6 +397,61 @@ export default function VenuesMasterPage() {
                 ))}
               </StyledSelect>
             </label>
+
+            {/* Disciplinas de la sede: dato propio del recinto. Antes el portal
+                las deducía calzando el nombre de la sede con el recinto escrito
+                en cada prueba, y renombrar la sede las hacía desaparecer. */}
+            <div className="space-y-2 md:col-span-2">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <span className="text-sm font-medium text-slate-700">
+                  {t("Disciplinas de la sede")}{" "}
+                  <span className="font-normal text-slate-400">({t("opcional")})</span>
+                </span>
+                {form.disciplineIds.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setForm((prev) => ({ ...prev, disciplineIds: [] }))}
+                    style={{ background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: "12px", fontWeight: 700, color: BRAND.tealInk }}
+                  >
+                    {t("Quitar selección")}
+                  </button>
+                )}
+              </div>
+
+              {!form.eventId ? (
+                <p className="text-xs text-slate-400">{t("Primero selecciona un evento.")}</p>
+              ) : eventDisciplines.length === 0 ? (
+                <p className="text-xs text-slate-400">{t("El evento no tiene deportes registrados.")}</p>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", maxHeight: 180, overflowY: "auto", padding: "8px", borderRadius: "12px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg }}>
+                  {eventDisciplines.map((d) => {
+                    const activo = form.disciplineIds.includes(d.id);
+                    return (
+                      <button
+                        key={d.id}
+                        type="button"
+                        onClick={() => toggleDiscipline(d.id)}
+                        style={{
+                          borderRadius: "99px", padding: "5px 11px", fontSize: "12px", fontWeight: 700,
+                          border: activo ? `1px solid ${BRAND.teal}` : `1px solid ${SURFACE.border}`,
+                          background: activo ? "rgba(33,208,179,0.12)" : SURFACE.card,
+                          color: activo ? BRAND.tealInk : SURFACE.textMuted,
+                          cursor: "pointer",
+                        }}
+                      >
+                        {disciplineLabel(d.id)}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              <p className="text-xs text-slate-400">
+                {form.disciplineIds.length === 0
+                  ? t("Sin marcar: la sede no declara disciplinas.")
+                  : `${form.disciplineIds.length} ${form.disciplineIds.length === 1 ? t("disciplina") : t("disciplinas")}`}
+              </p>
+            </div>
 
             {/* Photo upload */}
             <div className="space-y-2 md:col-span-2">
@@ -429,6 +553,7 @@ export default function VenuesMasterPage() {
                   key={venue.id}
                   venue={venue}
                   eventName={eventName}
+                  disciplineLabel={disciplineLabel}
                   onEdit={handleEdit}
                   onDelete={handleDelete}
                 />
@@ -444,11 +569,13 @@ export default function VenuesMasterPage() {
 function VenueCard({
   venue,
   eventName,
+  disciplineLabel,
   onEdit,
   onDelete,
 }: {
   venue: Venue;
   eventName: string;
+  disciplineLabel: (id: string) => string;
   onEdit: (v: Venue) => void;
   onDelete: (id: string) => void;
 }) {
@@ -559,6 +686,30 @@ function VenueCard({
               <p style={{ fontSize: "13px", color: "#1e293b", fontWeight: 500, margin: 0 }}>
                 {[venue.commune, venue.region].filter(Boolean).join(" · ") || "—"}
               </p>
+            </div>
+            <div style={{ borderRadius: "14px", background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${BRAND.teal}`, padding: "12px 14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "6px" }}>
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                {t("Disciplinas")}
+              </div>
+              {(venue.disciplineIds ?? []).length === 0 ? (
+                <p style={{ fontSize: "13px", color: SURFACE.textFaint, fontWeight: 500, margin: 0 }}>
+                  {t("Sin disciplinas asignadas")}
+                </p>
+              ) : (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {(venue.disciplineIds ?? []).map((id) => (
+                    <span
+                      key={id}
+                      style={{ borderRadius: "99px", padding: "3px 10px", fontSize: "11.5px", fontWeight: 700, border: `1px solid ${BRAND.teal}`, background: "rgba(33,208,179,0.12)", color: BRAND.tealInk }}
+                    >
+                      {disciplineLabel(id)}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
