@@ -25,9 +25,28 @@ const MAX_CODIGOS_POR_TANDA = MAX_CORREOS_POR_LOTE;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
- * El correo del código de acceso, uno solo para los dos caminos: el que pide
- * el participante desde la pantalla de ingreso y el que manda el panel. El
- * código son los últimos seis caracteres del id.
+ * ¿Esta ficha cuenta como validada? Mismo criterio que el panel
+ * (`isAthletePersonalDataValidated` en frontend/lib/athletes.ts): el estado o
+ * la marca en metadata, y nunca una cuenta dada de baja, que conserva
+ * `personalDataValidated` de antes de la baja.
+ */
+function estaValidado(fila: {
+  status?: string | null;
+  metadata?: Record<string, unknown> | null;
+}) {
+  const estado = String(fila.status ?? '');
+  if (estado.toUpperCase() === 'DELETED') return false;
+  return (
+    estado === 'PERSONAL_DATA_VALIDATED' ||
+    fila.metadata?.personalDataValidated === true
+  );
+}
+
+/**
+ * El correo del código de acceso, uno solo para los tres caminos: el que pide
+ * el participante desde la pantalla de ingreso, el que manda el panel y el
+ * que sale solo al validar la ficha. El código son los últimos seis
+ * caracteres del id.
  */
 function correoDeCodigo(fullName: string, athleteId: string) {
   const accessCode = athleteId.slice(-6);
@@ -420,6 +439,20 @@ export class AthletesService {
     const keys = Object.keys(row);
     if (keys.length === 0) return this.findOne(id);
 
+    // Cómo estaba antes, para saber si esta edición *valida* la ficha y no
+    // sólo la vuelve a guardar ya validada. Se lee únicamente cuando la
+    // edición toca lo que define la validación: el resto de los guardados no
+    // paga una consulta de más.
+    const tocaValidacion =
+      updateAthleteDto.status !== undefined || updateAthleteDto.metadata !== undefined;
+    const previas = tocaValidacion
+      ? ((await this.dataSource.query(
+          `select status, metadata from core.athletes where id = $1`,
+          [id],
+        )) as Array<{ status: string | null; metadata: Record<string, unknown> | null }>)
+      : [];
+    const validadoAntes = previas[0] ? estaValidado(previas[0]) : false;
+
     const setSql = keys.map((key, index) => `${key} = $${index + 2}`).join(', ');
     const values = keys.map((key) => row[key]);
 
@@ -452,7 +485,44 @@ export class AthletesService {
     if (shouldSyncHotel) {
       await this.syncHotelAssignment(athlete, updateAthleteDto);
     }
+
+    // Validar es el momento en que el participante pasa a poder entrar al
+    // portal, así que es cuando corresponde mandarle su código. Va acá y no
+    // en el panel para que valga por cualquier camino que valide la ficha.
+    //
+    // Sólo en el cruce de no-validado a validado: si no, cada guardado
+    // posterior de una ficha ya validada volvería a mandar el correo.
+    if (tocaValidacion && !validadoAntes && estaValidado(rows[0])) {
+      await this.enviarCodigoAlValidar(athlete);
+    }
     return athlete;
+  }
+
+  /**
+   * Manda el código de acceso al validar. Nunca hace fallar la validación: si
+   * el correo no sale, la ficha igual queda validada y el resultado viaja en
+   * `accessCodeSent` / `accessCodeNote` para que el panel lo diga. Al revés
+   * —cortar por un correo— dejaría al participante sin validar por algo que
+   * no tiene que ver con sus datos.
+   */
+  private async enviarCodigoAlValidar(athlete: Athlete) {
+    const email = String(athlete.email ?? '').trim().toLowerCase();
+    if (!email) {
+      athlete.accessCodeSent = false;
+      athlete.accessCodeNote = 'Sin correo registrado';
+      return;
+    }
+    try {
+      await sendResendEmail({
+        to: email,
+        ...correoDeCodigo(athlete.fullName ?? 'Participante', athlete.id),
+      });
+      athlete.accessCodeSent = true;
+    } catch (error) {
+      athlete.accessCodeSent = false;
+      athlete.accessCodeNote =
+        error instanceof Error ? error.message : 'No se pudo enviar el correo';
+    }
   }
   /**
    * Reactiva una cuenta dada de baja desde el portal (status DELETED):

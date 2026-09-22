@@ -210,6 +210,14 @@ export class Athlete {
   @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
   metadata: Record<string, unknown>;
 
+  /**
+   * Resultado del correo con el código de acceso que sale al validar la
+   * ficha. No son columnas: viajan sólo en la respuesta de ese PATCH, para
+   * que el panel pueda decir si el código salió y, si no, por qué.
+   */
+  accessCodeSent?: boolean;
+  accessCodeNote?: string;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

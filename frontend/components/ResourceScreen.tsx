@@ -2218,17 +2218,33 @@ export default function ResourceScreen({
         ? { ...item.metadata }
         : {};
 
-    await apiFetch(`/athletes/${item.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        status: "PERSONAL_DATA_VALIDATED",
-        metadata: {
-          ...metadata,
-          personalDataValidated: true,
-        },
-      }),
-    });
+    // Al validar, el servidor le manda el código de acceso al participante y
+    // cuenta en la respuesta si salió. Se dice acá: "validado" a secas dejaba
+    // creyendo que el correo se mandó incluso cuando la ficha no tiene uno.
+    const validado = await apiFetch<{ accessCodeSent?: boolean; accessCodeNote?: string }>(
+      `/athletes/${item.id}`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          status: "PERSONAL_DATA_VALIDATED",
+          metadata: {
+            ...metadata,
+            personalDataValidated: true,
+          },
+        }),
+      },
+    );
+
+    const nombre = item.fullName ?? t("El participante");
+    if (validado?.accessCodeSent) {
+      setSuccessMsg(`${nombre}: ${t("validado y código de acceso enviado por correo")}`);
+    } else {
+      setSuccessMsg(
+        `${nombre}: ${t("validado, pero el código no se envió")} — ${t(validado?.accessCodeNote ?? "Sin correo registrado")}`,
+      );
+    }
+    setTimeout(() => setSuccessMsg(null), 5000);
 
     await loadItems();
     onDataChanged?.();
