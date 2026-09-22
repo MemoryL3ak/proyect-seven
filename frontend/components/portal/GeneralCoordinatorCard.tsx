@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageIcon, PhoneIcon } from "@/components/ui/Icons";
+import { PhoneIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { BRAND, SURFACE } from "@/lib/design";
@@ -59,7 +59,7 @@ export default function GeneralCoordinatorCard() {
             style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
             onClick={() => openExternal(whatsappHref(coordinator.phone))}
           >
-            <MessageIcon size={16} /> {t("WhatsApp al Coordinador General")}
+            <WhatsappIcon size={16} /> {t("WhatsApp al Coordinador General")}
           </button>
         </>
       ) : (

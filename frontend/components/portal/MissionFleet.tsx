@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import DriverPresenceMap, { type PresenceMarker } from "@/components/DriverPresenceMap";
-import { MessageIcon, RefreshIcon } from "@/components/ui/Icons";
+import { RefreshIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { openExternal, whatsappHref } from "@/lib/external-link";
@@ -305,7 +305,7 @@ export default function MissionFleet({
                 onClick={() => openExternal(whatsappHref(d.phone as string))}
                 style={{ width: 36, height: 36, borderRadius: "50%", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: BRAND.tealInk, flexShrink: 0 }}
               >
-                <MessageIcon size={16} />
+                <WhatsappIcon size={16} />
               </button>
             )}
           </div>

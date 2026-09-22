@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarIcon, CarIcon, ChevronDownIcon, MessageIcon, UsersIcon } from "@/components/ui/Icons";
+import { CalendarIcon, CarIcon, ChevronDownIcon, UsersIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
@@ -450,7 +450,7 @@ export default function MissionTrips({
                         cursor: "pointer",
                       }}
                     >
-                      <MessageIcon size={11} /> {t("WhatsApp")}
+                      <WhatsappIcon size={11} /> {t("WhatsApp")}
                     </button>
                   )}
                   {(tr.passengerCount || pasajeros.length > 0) && (

@@ -1,7 +1,7 @@
 "use client";
 
 import VenueMap from "@/components/VenueMap";
-import { BedIcon, ChevronDownIcon, CoffeeIcon, MessageIcon, PhoneIcon, PinIcon } from "@/components/ui/Icons";
+import { BedIcon, ChevronDownIcon, CoffeeIcon, PhoneIcon, PinIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { BRAND, SURFACE } from "@/lib/design";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import { useI18n } from "@/lib/i18n";
@@ -139,7 +139,7 @@ function FilaContacto({
               color: BRAND.tealInk,
             }}
           >
-            <MessageIcon size={15} />
+            <WhatsappIcon size={15} />
           </button>
         </span>
       )}

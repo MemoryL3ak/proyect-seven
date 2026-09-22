@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { MessageIcon } from "@/components/ui/Icons";
+import { MessageIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { BRAND, SURFACE } from "@/lib/design";
@@ -129,7 +129,9 @@ export default function BannerCoordinador({
         background: SURFACE.card, color: BRAND.tealInk,
         boxShadow: "0 3px 12px rgba(0,0,0,0.18)",
       }}>
-        <MessageIcon size={15} strokeWidth={2.2} />
+        {/* La marca sólo cuando el botón abre WhatsApp: sin teléfono cargado
+            lleva a la sala de asistencia, que no es WhatsApp. */}
+        {coordinador ? <WhatsappIcon size={15} /> : <MessageIcon size={15} strokeWidth={2.2} />}
         {coordinador ? t("Escribir por WhatsApp") : t("Generar contacto")}
       </span>
     </button>

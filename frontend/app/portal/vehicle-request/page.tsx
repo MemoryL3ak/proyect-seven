@@ -36,7 +36,7 @@ import {
   ChevronRightIcon,
   ArrowRightIcon,
   DownloadIcon,
-  MessageIcon,
+  WhatsappIcon,
 } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { buildDisciplineLabelMap, categoryLabel, genderLabel, normalizeCategory, normalizeGender } from "@/lib/discipline-filters";
@@ -1984,7 +1984,7 @@ export default function VehicleRequestPortalPage() {
                           <button type="button"
                             onClick={() => waCoordinator(trip)}
                             style={{ flex:1,padding:"9px 12px",borderRadius:10,border:"1px solid rgba(52,243,198,0.4)",cursor:"pointer",fontSize:12,fontWeight:700,background:"rgba(33,208,179,0.12)",color:BRAND.tealLight,textAlign:"center",whiteSpace:"nowrap",display:"inline-flex",alignItems:"center",justifyContent:"center",gap:6 }}>
-                            <MessageIcon size={13} />{t("WhatsApp coordinador")}
+                            <WhatsappIcon size={13} />{t("WhatsApp coordinador")}
                           </button>
                         )}
                       </div>
@@ -2101,7 +2101,7 @@ export default function VehicleRequestPortalPage() {
                           <button type="button"
                             onClick={() => waCoordinator(tm)}
                             style={{ flex:1,padding:"12px",borderRadius:12,border:"none",cursor:"pointer",textAlign:"center",fontSize:13,fontWeight:700,background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:BRAND.navyLight }}>
-                            <MessageIcon size={12} className="inline mr-1" />{t("WhatsApp coordinador")}
+                            <WhatsappIcon size={12} className="inline mr-1" />{t("WhatsApp coordinador")}
                           </button>
                         )}
                         <button type="button" onClick={() => { setTripModal(null); setActiveTab("actividades"); setActividadesSubTab("en_curso"); }}
