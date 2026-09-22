@@ -8,7 +8,12 @@ import { ConfigService } from '@nestjs/config';
 import { createClient } from '@supabase/supabase-js';
 import { DataSource } from 'typeorm';
 import { delegationHotelsSql } from '../shared/delegation-hotels';
-import { CreateAccommodationDto } from './dto/create-accommodation.dto';
+import {
+  ACCOMMODATION_CONTACT_ROLES,
+  ACCOMMODATION_CONTACT_SHIFTS,
+  AccommodationCoordinatorDto,
+  CreateAccommodationDto,
+} from './dto/create-accommodation.dto';
 import { UpdateAccommodationDto } from './dto/update-accommodation.dto';
 import { Accommodation } from './entities/accommodation.entity';
 
@@ -26,6 +31,9 @@ type AccommodationRow = {
   bed_inventory: Record<string, number> | string | null;
   check_in: string | null;
   check_out: string | null;
+  coordinators: unknown;
+  /** Derivada en findAll desde la planilla de distribución; no es columna. */
+  discipline_ids?: string[] | null;
   created_at: string;
   updated_at: string;
 };
@@ -66,6 +74,55 @@ function parseJsonObject(value: unknown): Record<string, number> {
     if (Number.isFinite(n) && n >= 0) acc[String(key).toUpperCase()] = Math.floor(n);
     return acc;
   }, {});
+}
+
+/**
+ * Deja la lista de contactos del hotel en un estado seguro para guardar.
+ *
+ * La columna es jsonb y en este proyecto no corre ningún ValidationPipe, así
+ * que lo que llegue en el cuerpo entraría tal cual: acá se descartan los
+ * elementos sin nombre, se recortan los textos, se acotan rol y turno al
+ * catálogo y se limita el largo de la lista. Un contacto sin rol es un
+ * coordinador, que es el caso normal.
+ */
+const MAX_CONTACTOS_HOTEL = 20;
+const LARGO_MAX_TEXTO = 120;
+
+function sanitizeCoordinators(value: unknown): AccommodationCoordinatorDto[] {
+  const source =
+    typeof value === 'string'
+      ? (() => {
+          try {
+            return value.trim() ? JSON.parse(value) : [];
+          } catch {
+            return [];
+          }
+        })()
+      : value;
+  if (!Array.isArray(source)) return [];
+
+  const roles = new Set<string>(ACCOMMODATION_CONTACT_ROLES);
+  const shifts = new Set<string>(ACCOMMODATION_CONTACT_SHIFTS);
+  const texto = (raw: unknown) =>
+    typeof raw === 'string' ? raw.trim().slice(0, LARGO_MAX_TEXTO) : '';
+
+  const limpios: AccommodationCoordinatorDto[] = [];
+  for (const item of source.slice(0, MAX_CONTACTOS_HOTEL)) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const row = item as Record<string, unknown>;
+    const name = texto(row.name);
+    if (!name) continue;
+    const role = String(row.role ?? '').toUpperCase();
+    const shift = String(row.shift ?? '').toUpperCase();
+    limpios.push({
+      name,
+      phone: texto(row.phone) || null,
+      role: (roles.has(role) ? role : 'COORDINADOR') as AccommodationCoordinatorDto['role'],
+      // El turno sólo lo anota la planilla en el apoyo; vacío es válido.
+      shift: (shifts.has(shift) ? shift : null) as AccommodationCoordinatorDto['shift'],
+    });
+  }
+  return limpios;
 }
 
 function parseRoomInventoryFromPayload(
@@ -170,6 +227,8 @@ export class AccommodationsService {
       bedInventory: parseJsonObject(row.bed_inventory),
       checkIn: row.check_in ?? null,
       checkOut: row.check_out ?? null,
+      coordinators: sanitizeCoordinators(row.coordinators),
+      disciplineIds: row.discipline_ids ?? [],
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
@@ -226,6 +285,10 @@ export class AccommodationsService {
     if (dto.checkOut !== undefined) {
       set.push(`check_out = $${index++}`);
       params.push(dto.checkOut ?? null);
+    }
+    if (dto.coordinators !== undefined) {
+      set.push(`coordinators = $${index++}::jsonb`);
+      params.push(JSON.stringify(sanitizeCoordinators(dto.coordinators)));
     }
     if (dto.geoLocation !== undefined) {
       if (dto.geoLocation === null) {
@@ -446,6 +509,15 @@ export class AccommodationsService {
       placeholders.push(optionalField('bed_inventory', JSON.stringify(createDto.bedInventory ?? {}), '::jsonb'));
       if (createDto.checkIn !== undefined) placeholders.push(optionalField('check_in', createDto.checkIn ?? null));
       if (createDto.checkOut !== undefined) placeholders.push(optionalField('check_out', createDto.checkOut ?? null));
+      if (createDto.coordinators !== undefined) {
+        placeholders.push(
+          optionalField(
+            'coordinators',
+            JSON.stringify(sanitizeCoordinators(createDto.coordinators)),
+            '::jsonb',
+          ),
+        );
+      }
 
       const rows = (await this.dataSource.query(
         `
@@ -493,12 +565,28 @@ export class AccommodationsService {
 
   async findAll(delegationId?: string | null) {
     try {
+      // Los deportes alojados en cada hotel salen de la planilla de
+      // distribución (logistics.delegation_hotels), que es donde se decide
+      // quién duerme dónde. Viajan con el listado a propósito: el portal los
+      // pinta como fichas, igual que en Sedes, y pedirlos aparte sería otra
+      // ida y vuelta al servidor nada más que para eso.
+      //
+      // Acotados a la delegación cuando la hay: al Jefe de Misión le importan
+      // los deportes de *su* región en ese hotel, no los de las otras que
+      // comparten el edificio.
       const rows = (await this.dataSource.query(
         `
-        select *
-        from logistics.accommodations
-        where ($1::uuid is null or id in ${delegationHotelsSql('$1')})
-        order by created_at desc
+        select h.*,
+               coalesce(d.ids, '{}'::uuid[]) as discipline_ids
+        from logistics.accommodations h
+        left join lateral (
+          select array_agg(distinct dh.discipline_id) as ids
+          from logistics.delegation_hotels dh
+          where dh.accommodation_id = h.id
+            and ($1::uuid is null or dh.delegation_id = $1)
+        ) d on true
+        where ($1::uuid is null or h.id in ${delegationHotelsSql('$1')})
+        order by h.created_at desc
       `,
         [delegationId ?? null],
       )) as AccommodationRow[];

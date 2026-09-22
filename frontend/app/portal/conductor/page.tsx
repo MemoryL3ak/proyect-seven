@@ -34,6 +34,7 @@ import { trailKm, type TrailPoint } from "@/lib/google-maps";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { clientTypeLabel } from "@/lib/clientTypes";
+import { contactosDeHotel, type CoordinadorHotel } from "@/lib/hotel-coordinadores";
 import { legTypeLabel, tripTypeLabel } from "@/lib/tripTypes";
 import { useI18n } from "@/lib/i18n";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
@@ -71,7 +72,7 @@ const TripMap = dynamic(() => import("@/components/TripMap"), {
 const VenueMap = dynamic(() => import("@/components/VenueMap"), { ssr: false });
 
 type VenueSite = { id: string; eventId?: string | null; name?: string | null; address?: string | null; commune?: string | null; region?: string | null; photoUrl?: string | null };
-type AccommodationSite = { id: string; name?: string | null; address?: string | null; city?: string | null; country?: string | null; contactPhone?: string | null; photoUrl?: string | null };
+type AccommodationSite = { id: string; name?: string | null; address?: string | null; city?: string | null; country?: string | null; photoUrl?: string | null; coordinators?: CoordinadorHotel[] | null };
 type FlightItem = { id: string; flightNumber: string; airline: string; arrivalTime: string | null; origin?: string | null; terminal?: string | null };
 
 type FlightTrack = {
@@ -3033,7 +3034,14 @@ export default function DriverPortalPage() {
                             <img src={h.photoUrl} alt={h.name || "Hotel"} style={{ width:"100%",height:140,objectFit:"cover",borderRadius:10 }} />
                           )}
                           {addr && <p style={{ fontSize:12,color:SURFACE.textStrong,margin:0 }}>{addr}</p>}
-                          {h.contactPhone && <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>Teléfono: {h.contactPhone}</p>}
+                          {/* A quién buscar al llegar. Esto leía un
+                              `contactPhone` que la API nunca entregó, así que
+                              el hotel se veía siempre sin teléfono. */}
+                          {contactosDeHotel(h.coordinators).map((c, i) => (
+                            <p key={`${c.nombre ?? ""}-${i}`} style={{ fontSize:11,color:SURFACE.textMuted,margin:0 }}>
+                              {[c.rotulo, c.nombre, c.telefono].filter(Boolean).join(" · ")}
+                            </p>
+                          ))}
                           {addr && <VenueMap title={h.name || "Hotel"} query={addr} />}
                         </div>
                       )}

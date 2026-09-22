@@ -66,6 +66,7 @@ import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
 import SofiaWidget from "@/components/SofiaWidget";
 import BannerCoordinador from "@/components/portal/BannerCoordinador";
+import { contactosDeHotel, type CoordinadorHotel } from "@/lib/hotel-coordinadores";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionTrips from "@/components/portal/MissionTrips";
 import MissionLiveTrips from "@/components/portal/MissionLiveTrips";
@@ -174,7 +175,10 @@ type DelegacionEvento = {
   disciplineNames?: string[] | null;
 };
 type Venue = { id: string; eventId?: string | null; name?: string | null; address?: string | null; region?: string | null; commune?: string | null; photoUrl?: string | null; coordinatorName?: string | null; coordinatorPhone?: string | null; venueType?: string | null; disciplineIds?: string[] | null };
-type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; contactPhone?: string | null; photoUrl?: string | null };
+// disciplineIds: los deportes que la planilla de distribución aloja en el
+// hotel. Los calcula GET /accommodations, no son una columna del alojamiento.
+// coordinators: quién responde por el hotel, con su teléfono.
+type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; photoUrl?: string | null; disciplineIds?: string[] | null; coordinators?: CoordinadorHotel[] | null };
 type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
 type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null; clientTypes?: string[] | null; locationDetail?: string | null };
 type PremAwarder = {
@@ -425,14 +429,15 @@ export default function UserPortalPage() {
   // producía opciones y filas duplicadas en el calendario.
   const discLabelMap = useMemo(() => buildDisciplineLabelMap(disciplineParents), [disciplineParents]);
   /**
-   * Disciplinas de una sede: las que el módulo Sede tiene asignadas al recinto.
-   * Antes se deducían recorriendo las pruebas y calzando su `venue_name` con el
-   * nombre de la sede; era un calce por texto que se perdía al renombrarla y
-   * que nunca mostraba nada en una sede sin pruebas cargadas.
+   * Fichas de deporte de un recinto. En la sede son las que el módulo Sede
+   * tiene asignadas —antes se deducían calzando `venue_name` con el nombre de
+   * la sede, un calce por texto que se perdía al renombrarla—; en el hotel son
+   * las que la planilla de distribución aloja ahí. Los dos listados las pintan
+   * igual, así que la vuelta es una sola.
    */
-  const etiquetasDeSede = useCallback(
-    (v: Venue) => {
-      const ids = v.disciplineIds ?? [];
+  const etiquetasDeDisciplinas = useCallback(
+    (lugar: { disciplineIds?: string[] | null }) => {
+      const ids = lugar.disciplineIds ?? [];
       if (ids.length === 0) return [] as string[];
       return ids
         .map((id) => discLabelMap.get(id) ?? disciplinasTodas.find((d) => d.id === id)?.name ?? "")
@@ -2111,18 +2116,23 @@ export default function UserPortalPage() {
           </div>
         )}
 
-        {/* ─── Actividades tab (chief only) ─── */}
+        {/* ─── Actividades: la pantalla de inicio de todos los roles ─── */}
         {activeTab === "actividades" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
-            {/* ═══ Contacto con el Coordinador General (Jefe de Delegación) ═══
+            {/* ═══ Contacto con el Coordinador General ═══
                 Ocupa el lugar del banner de "bus en ruta": el estado de los
                 buses ya lo cuenta "Ahora mismo" aquí abajo, con su propio
                 mapa, así que arriba va lo que de verdad necesita a mano. El
-                contacto es por WhatsApp, igual que en Sedes. */}
-            {isChief && (
+                contacto es por WhatsApp, igual que en Sedes.
+
+                Lo ven el Jefe de Misión y el Coordinador de Comité: los dos
+                coordinan, y al comité le faltaba el mismo atajo que el jefe ya
+                tenía. La diferencia es el saludo: el comité no escribe desde
+                una región, así que el mensaje no la nombra. */}
+            {(isChief || isComite) && (
               <BannerCoordinador
                 delegacion={delegationName}
-                nombreJefe={athlete.fullName}
+                nombreRemitente={athlete.fullName}
                 onSinWhatsapp={() => { setAssistCategoria("COORDINATOR_CONTACT"); setAssistOpen(true); }}
               />
             )}
@@ -3747,7 +3757,7 @@ export default function UserPortalPage() {
                       lugar={[v.commune, v.region].filter(Boolean).join(", ") || null}
                       foto={v.photoUrl}
                       tipo={(v.venueType ?? "SEDE") === "COMEDOR" ? "comedor" : "sede"}
-                      etiquetas={etiquetasDeSede(v)}
+                      etiquetas={etiquetasDeDisciplinas(v)}
                       // El coordinador de sede es el contacto operativo del
                       // recinto, como el del hotel: lo ve cualquiera que llegue
                       // ahí, no sólo el jefe de misión.
@@ -3781,7 +3791,14 @@ export default function UserPortalPage() {
                 lugar={[h.city, h.country].filter(Boolean).join(", ") || null}
                 foto={h.photoUrl}
                 tipo="hotel"
-                coordinador={h.contactPhone ? { telefono: h.contactPhone, rotulo: t("Contacto del hotel") } : null}
+                // Los deportes que duermen acá, como las disciplinas de una
+                // sede: saber qué hotel es el del vóleibol se preguntaba a
+                // mano y la tarjeta ya tenía dónde decirlo.
+                etiquetas={etiquetasDeDisciplinas(h)}
+                // Los coordinadores del hotel, con llamada y WhatsApp. Antes
+                // esto leía un `contactPhone` que la API nunca entregó, así
+                // que el bloque no se dibujaba nunca.
+                contactos={contactosDeHotel(h.coordinators, t)}
                 datos={[
                   ...(h.checkIn ? [{ etiqueta: "Check-in", valor: new Date(h.checkIn).toLocaleDateString("es-CL") }] : []),
                   ...(h.checkOut ? [{ etiqueta: "Check-out", valor: new Date(h.checkOut).toLocaleDateString("es-CL") }] : []),

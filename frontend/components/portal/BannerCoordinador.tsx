@@ -11,9 +11,9 @@ type Coordinator = { name: string; phone: string };
 
 /**
  * Banner de contacto con el Coordinador General, arriba de Actividades para el
- * Jefe de Delegación. Ocupa el lugar que tenía el banner de "bus en ruta": el
- * estado de los buses ya lo cuenta "Ahora mismo" justo debajo, así que arriba
- * va lo que el jefe no tenía a mano.
+ * Jefe de Delegación y para el Coordinador de Comité. Ocupa el lugar que tenía
+ * el banner de "bus en ruta": el estado de los buses ya lo cuenta "Ahora
+ * mismo" justo debajo, así que arriba va lo que no se tenía a mano.
  *
  * El contacto es por WhatsApp, igual que la tarjeta de Sedes y por la misma
  * decisión de producto que hay en el backend (findGeneralCoordinator): no se
@@ -28,12 +28,16 @@ type Coordinator = { name: string; phone: string };
  */
 export default function BannerCoordinador({
   delegacion,
-  nombreJefe,
+  nombreRemitente,
   onSinWhatsapp,
 }: {
-  /** Región del jefe, para el mensaje ya escrito. */
+  /**
+   * Región de quien escribe, para el mensaje ya redactado. El Coordinador de
+   * Comité no tiene ninguna —coordina el evento entero—: en ese caso el
+   * saludo dice "desde el portal" y no se inventa una delegación.
+   */
   delegacion?: string | null;
-  nombreJefe?: string | null;
+  nombreRemitente?: string | null;
   /** Qué hacer si no hay coordinador con teléfono. */
   onSinWhatsapp?: () => void;
 }) {
@@ -60,7 +64,7 @@ export default function BannerCoordinador({
 
   const saludo = [
     `Hola${coordinador?.name ? ` ${coordinador.name.split(" ")[0]}` : ""},`,
-    nombreJefe ? `soy ${nombreJefe}` : "te escribo",
+    nombreRemitente ? `soy ${nombreRemitente}` : "te escribo",
     delegacion ? `de la delegación ${delegacion}.` : "desde el portal.",
   ].join(" ");
 

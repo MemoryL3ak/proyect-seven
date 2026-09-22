@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
+import { contactosDeHotel, type CoordinadorHotel } from "@/lib/hotel-coordinadores";
 import { nombreRegionCorto, type Delegacion } from "@/components/portal/FiltrosComite";
 
 /**
@@ -21,8 +22,8 @@ type Hotel = {
   eventId?: string | null;
   name?: string | null;
   address?: string | null;
-  contactPhone?: string | null;
   photoUrl?: string | null;
+  coordinators?: CoordinadorHotel[] | null;
 };
 type Celda = {
   delegationId: string;
@@ -194,7 +195,7 @@ export default function HotelesComite({
             // En la fila, una ficha por región con su cantidad; el detalle
             // completo queda para la ficha abierta.
             etiquetas={regiones.map(([region, items]) => `${region} (${items.length})`)}
-            coordinador={h.contactPhone ? { telefono: h.contactPhone, rotulo: t("Contacto del hotel") } : null}
+            contactos={contactosDeHotel(h.coordinators, t)}
             datos={[
               ...(selecciones.length > 0
                 ? [{ etiqueta: t("Alojados"), valor: resumen, ancho: true }]

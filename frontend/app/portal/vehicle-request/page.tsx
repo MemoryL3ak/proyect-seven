@@ -43,6 +43,7 @@ import { buildDisciplineLabelMap, categoryLabel, genderLabel, normalizeCategory,
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { normalizeClientType } from "@/lib/clientTypes";
+import { contactosDeHotel, type CoordinadorHotel } from "@/lib/hotel-coordinadores";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
 import AssistanceChat from "@/components/AssistanceChat";
@@ -152,8 +153,8 @@ type Accommodation = {
   checkIn?: string | null;
   checkOut?: string | null;
   roomType?: string | null;
-  contactPhone?: string | null;
   photoUrl?: string | null;
+  coordinators?: CoordinadorHotel[] | null;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -3112,12 +3113,14 @@ export default function VehicleRequestPortalPage() {
                                 <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{acc.roomType}</p>
                               </div>
                             )}
-                            {acc.contactPhone && (
-                              <div style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
-                                <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{t("Telefono")}</p>
-                                <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{acc.contactPhone}</p>
+                            {/* Antes esto leía un `contactPhone` que la API
+                                nunca entregó: el recuadro no aparecía nunca. */}
+                            {contactosDeHotel(acc.coordinators, t).map((c, i) => (
+                              <div key={`${c.nombre ?? ""}-${i}`} style={{ padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}` }}>
+                                <p style={{ fontSize:10,fontWeight:700,color:SURFACE.textFaint,margin:0,textTransform:"uppercase",letterSpacing:"0.1em" }}>{c.rotulo}</p>
+                                <p style={{ fontSize:12.5,fontWeight:600,color:SURFACE.text,margin:"3px 0 0" }}>{[c.nombre, c.telefono].filter(Boolean).join(" · ")}</p>
                               </div>
-                            )}
+                            ))}
                           </div>
                           {renderMapEmbed(acc.address, acc.city, acc.name)}
                         </div>

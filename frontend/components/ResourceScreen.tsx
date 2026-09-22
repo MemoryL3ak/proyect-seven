@@ -13,6 +13,11 @@ import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import StyledSelect from "@/components/StyledSelect";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
+import CoordinadoresHotel, {
+  leerContactosHotel,
+  limpiarContactosHotel,
+  type ContactoHotel,
+} from "@/components/CoordinadoresHotel";
 import { delegationLabel } from "@/lib/delegations";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 
@@ -299,6 +304,12 @@ export default function ResourceScreen({
     DELEGATION_COUNTRY_OPTIONS[0]?.value ?? "",
   );
   const [eventPlannerExpectedValue, setEventPlannerExpectedValue] = useState<string>("");
+  /**
+   * Coordinadores del hotel. Van aparte de `form` porque son una lista de
+   * objetos y el estado del formulario sólo guarda texto o listas de texto,
+   * igual que la matriz de cupos de un evento.
+   */
+  const [hotelCoordinadores, setHotelCoordinadores] = useState<ContactoHotel[]>([]);
   const flightLookupTimerRef = useRef<number | null>(null);
   const lastFlightLookupRef = useRef<string>("");
   const plateLookupTimerRef = useRef<number | null>(null);
@@ -1646,6 +1657,12 @@ export default function ResourceScreen({
         // desde una ficha que no tocó habitaciones sólo puede empeorarla.
         delete finalPayload.totalCapacity;
       }
+      if (config.endpoint === "/accommodations") {
+        // Siempre explícita, incluso vacía: es la única forma de borrar al
+        // último coordinador de un hotel, porque el payload de arriba omite
+        // lo que viene vacío.
+        finalPayload.coordinators = limpiarContactosHotel(hotelCoordinadores);
+      }
       if (config.endpoint === "/accommodations" && tocoHabitaciones) {
         const roomInventory: Record<string, number> = {};
 
@@ -1819,6 +1836,7 @@ export default function ResourceScreen({
         setEventPlannerDelegationCode(DELEGATION_COUNTRY_OPTIONS[0]?.value ?? "");
         setEventPlannerExpectedValue("");
       }
+      if (config.endpoint === "/accommodations") setHotelCoordinadores([]);
       setSuccessMsg(wasEditing ? t("Registro actualizado correctamente") : t("Registro creado correctamente"));
       setTimeout(() => setSuccessMsg(null), 4000);
       loadItems();
@@ -2005,6 +2023,7 @@ export default function ResourceScreen({
         next.disciplineGender = String(parsedConfig.raw.disciplineGender ?? "");
       }
     }
+    if (isAccommodation) setHotelCoordinadores(leerContactosHotel(item.coordinators));
     setForm(next);
     setEditingId(item.id ?? null);
     habitacionesAlAbrir.current = isAccommodation
@@ -2649,6 +2668,7 @@ export default function ResourceScreen({
                   setEventCapacityMatrix({});
                   setEventPlannerDisciplineId("");
                 }
+                if (config.endpoint === "/accommodations") setHotelCoordinadores([]);
               }}
             >
               {t("Cancelar edición")}
@@ -3712,6 +3732,13 @@ export default function ResourceScreen({
                   const field = byKey.get(key);
                   return field ? renderField(field) : null;
                 })}
+
+                {/* Antes del inventario: quién responde por el hotel se
+                    pregunta más seguido que cuántas camas tiene. */}
+                <CoordinadoresHotel
+                  contactos={hotelCoordinadores}
+                  onChange={setHotelCoordinadores}
+                />
 
                 <div className="md:col-span-2 pt-2">
                   <p className="section-label">

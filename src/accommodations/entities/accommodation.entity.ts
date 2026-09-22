@@ -5,6 +5,7 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import type { AccommodationCoordinatorDto } from '../dto/create-accommodation.dto';
 
 @Entity({ name: 'accommodations', schema: 'logistics' })
 export class Accommodation {
@@ -52,6 +53,21 @@ export class Accommodation {
 
   @Column({ name: 'check_out', type: 'timestamptz', nullable: true })
   checkOut?: Date | string | null;
+
+  /**
+   * Coordinadores y apoyos del hotel. Es una lista y no un par de columnas
+   * como en las sedes porque la planilla de operaciones tiene hoteles con dos
+   * coordinadores y con gente de apoyo por turno.
+   */
+  @Column({ type: 'jsonb', default: () => "'[]'::jsonb" })
+  coordinators: AccommodationCoordinatorDto[];
+
+  /**
+   * Deportes que se alojan acá. No es una columna: se calcula en el listado
+   * desde la planilla de distribución (logistics.delegation_hotels), igual
+   * que las disciplinas de una sede, que sí son columna propia.
+   */
+  disciplineIds?: string[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

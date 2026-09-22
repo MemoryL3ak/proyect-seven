@@ -26,6 +26,127 @@ export type CoordinadorLugar = {
   rotulo?: string;
 };
 
+/**
+ * Una fila de contacto: quién es y los dos botones para hablarle.
+ *
+ * Está suelta porque el hotel trae varios —dos coordinadores y la gente de
+ * apoyo por turno— mientras que la sede trae uno solo. Antes era un bloque
+ * escrito una vez dentro de la ficha abierta.
+ */
+function FilaContacto({
+  persona,
+  rotuloPorDefecto,
+  separador,
+}: {
+  persona: CoordinadorLugar;
+  rotuloPorDefecto: string;
+  separador: boolean;
+}) {
+  const { t } = useI18n();
+  const telefono = persona.telefono ?? "";
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        padding: "10px 12px",
+        borderTop: separador ? `1px solid ${SURFACE.borderMuted}` : "none",
+      }}
+    >
+      <span
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: "50%",
+          flexShrink: 0,
+          background: "rgba(33,208,179,0.12)",
+          color: BRAND.tealInk,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          fontSize: 12,
+          fontWeight: 800,
+          letterSpacing: "0.02em",
+        }}
+      >
+        {persona.nombre ? iniciales(persona.nombre) : <PhoneIcon size={14} />}
+      </span>
+      <span style={{ flex: 1, minWidth: 0 }}>
+        <span
+          style={{
+            display: "block",
+            fontSize: 9.5,
+            fontWeight: 800,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: SURFACE.textFaint,
+          }}
+        >
+          {persona.rotulo ?? rotuloPorDefecto}
+        </span>
+        <span
+          style={{
+            display: "block",
+            fontSize: 13,
+            fontWeight: 700,
+            color: SURFACE.text,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {persona.nombre || telefono}
+        </span>
+      </span>
+      {telefono && (
+        <span style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+          <button
+            type="button"
+            title={t("Llamar")}
+            aria-label={t("Llamar")}
+            onClick={() => openExternal(`tel:${telefono}`)}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              border: `1px solid ${SURFACE.border}`,
+              background: SURFACE.card,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: SURFACE.textSecondary,
+            }}
+          >
+            <PhoneIcon size={14} />
+          </button>
+          <button
+            type="button"
+            title="WhatsApp"
+            aria-label="WhatsApp"
+            onClick={() => openExternal(whatsappHref(telefono))}
+            style={{
+              width: 34,
+              height: 34,
+              borderRadius: "50%",
+              border: "1px solid rgba(33,208,179,0.35)",
+              background: "rgba(33,208,179,0.10)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: BRAND.tealInk,
+            }}
+          >
+            <MessageIcon size={15} />
+          </button>
+        </span>
+      )}
+    </div>
+  );
+}
+
 /** `ancho` ocupa toda la fila y deja que el valor se reparta en varias líneas. */
 export type DatoLugar = { etiqueta: string; valor: string; ancho?: boolean };
 
@@ -52,6 +173,7 @@ export default function TarjetaLugar({
   foto,
   tipo = "sede",
   coordinador,
+  contactos = [],
   datos = [],
   etiquetas = [],
   abierta,
@@ -66,6 +188,11 @@ export default function TarjetaLugar({
   tipo?: "sede" | "comedor" | "hotel";
   /** Sólo se pasa a quien corresponde verlo. */
   coordinador?: CoordinadorLugar | null;
+  /**
+   * Contactos adicionales, en orden. El hotel trae varios —coordinadores y
+   * apoyos por turno—; la sede se sigue conformando con `coordinador`.
+   */
+  contactos?: CoordinadorLugar[];
   /** Pares sueltos: check-in, tipo de habitación, teléfono… */
   datos?: DatoLugar[];
   /** Fichas en la fila: las disciplinas que se presentan en la sede. */
@@ -75,7 +202,10 @@ export default function TarjetaLugar({
 }) {
   const { t } = useI18n();
   const consulta = [direccion, lugar].filter(Boolean).join(", ");
-  const hayCoordinador = Boolean(coordinador?.nombre || coordinador?.telefono);
+  const personas = [...(coordinador ? [coordinador] : []), ...contactos].filter(
+    (p) => p.nombre || p.telefono,
+  );
+  const hayCoordinador = personas.length > 0;
   const comoLlegar = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(consulta)}&travelmode=driving`;
 
   return (
@@ -188,11 +318,14 @@ export default function TarjetaLugar({
             </span>
           )}
 
-          {/* Con quién hablar en el recinto, sin tener que abrir la ficha. */}
-          {coordinador?.nombre && (
+          {/* Con quién hablar en el recinto, sin tener que abrir la ficha. Si
+              hay más de uno se nombra al primero y se cuentan los demás: la
+              fila no da para listar a cinco personas. */}
+          {personas[0]?.nombre && (
             <span style={{ display: "block", marginTop: 4, fontSize: 11, color: SURFACE.textFaint, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-              {coordinador.rotulo ?? t("Coordinador")}:{" "}
-              <span style={{ color: SURFACE.textSecondary, fontWeight: 700 }}>{coordinador.nombre}</span>
+              {personas[0].rotulo ?? t("Coordinador")}:{" "}
+              <span style={{ color: SURFACE.textSecondary, fontWeight: 700 }}>{personas[0].nombre}</span>
+              {personas.length > 1 && ` +${personas.length - 1}`}
             </span>
           )}
         </span>
@@ -245,107 +378,14 @@ export default function TarjetaLugar({
               </div>
             )}
 
-            {hayCoordinador && (
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  padding: "10px 12px",
-                  borderTop: consulta ? `1px solid ${SURFACE.borderMuted}` : "none",
-                }}
-              >
-                <span
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: "50%",
-                    flexShrink: 0,
-                    background: "rgba(33,208,179,0.12)",
-                    color: BRAND.tealInk,
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: 12,
-                    fontWeight: 800,
-                    letterSpacing: "0.02em",
-                  }}
-                >
-                  {coordinador?.nombre ? iniciales(coordinador.nombre) : <PhoneIcon size={14} />}
-                </span>
-                <span style={{ flex: 1, minWidth: 0 }}>
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: 9.5,
-                      fontWeight: 800,
-                      letterSpacing: "0.14em",
-                      textTransform: "uppercase",
-                      color: SURFACE.textFaint,
-                    }}
-                  >
-                    {coordinador?.rotulo ?? t("Coordinador de sede")}
-                  </span>
-                  <span
-                    style={{
-                      display: "block",
-                      fontSize: 13,
-                      fontWeight: 700,
-                      color: SURFACE.text,
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {coordinador?.nombre || coordinador?.telefono}
-                  </span>
-                </span>
-                {coordinador?.telefono && (
-                  <span style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button
-                      type="button"
-                      title={t("Llamar")}
-                      aria-label={t("Llamar")}
-                      onClick={() => openExternal(`tel:${coordinador.telefono}`)}
-                      style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: "50%",
-                        border: `1px solid ${SURFACE.border}`,
-                        background: SURFACE.card,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        color: SURFACE.textSecondary,
-                      }}
-                    >
-                      <PhoneIcon size={14} />
-                    </button>
-                    <button
-                      type="button"
-                      title="WhatsApp"
-                      aria-label="WhatsApp"
-                      onClick={() => openExternal(whatsappHref(coordinador.telefono as string))}
-                      style={{
-                        width: 34,
-                        height: 34,
-                        borderRadius: "50%",
-                        border: "1px solid rgba(33,208,179,0.35)",
-                        background: "rgba(33,208,179,0.10)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        cursor: "pointer",
-                        color: BRAND.tealInk,
-                      }}
-                    >
-                      <MessageIcon size={15} />
-                    </button>
-                  </span>
-                )}
-              </div>
-            )}
+            {personas.map((persona, indice) => (
+              <FilaContacto
+                key={`${persona.nombre ?? ""}-${persona.telefono ?? ""}-${indice}`}
+                persona={persona}
+                rotuloPorDefecto={t("Coordinador de sede")}
+                separador={indice > 0 || Boolean(consulta)}
+              />
+            ))}
 
             {datos.length > 0 && (
               <div
