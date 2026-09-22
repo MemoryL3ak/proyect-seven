@@ -66,6 +66,7 @@ import BannerCoordinador from "@/components/portal/BannerCoordinador";
 import HorariosComida from "@/components/portal/HorariosComida";
 import MenuDelDia from "@/components/portal/MenuDelDia";
 import { contactosDeHotel, type CoordinadorHotel } from "@/lib/hotel-coordinadores";
+import { prepararFoto } from "@/lib/imagen";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionTrips from "@/components/portal/MissionTrips";
 import MissionLiveTrips from "@/components/portal/MissionLiveTrips";
@@ -1598,42 +1599,54 @@ export default function UserPortalPage() {
    * portal resuelve aparte y perdería la tarjeta de perfil.
    */
   const [subiendoFoto, setSubiendoFoto] = useState(false);
-  const fotoActual = (athlete?.metadata?.photoUrl as string | undefined) ?? null;
+  /**
+   * Lo que se acaba de elegir, para mostrarlo de inmediato mientras sube.
+   * Sin esto la pantalla no cambiaba hasta que la respuesta volvía del
+   * servidor, y parecía que el botón no había hecho nada.
+   */
+  const [fotoPrevia, setFotoPrevia] = useState<string | null>(null);
+  const inputFotoRef = useRef<HTMLInputElement | null>(null);
+  const fotoActual =
+    fotoPrevia ?? ((athlete?.metadata?.photoUrl as string | undefined) ?? null);
 
-  const cambiarFoto = () => {
-    if (!athlete?.id) return;
-    const input = document.createElement("input");
-    input.type = "file";
-    input.accept = "image/*";
-    input.onchange = async () => {
-      const archivo = input.files?.[0];
-      if (!archivo) return;
-      setSubiendoFoto(true);
-      try {
-        const dataUrl = await new Promise<string>((resolve, reject) => {
-          const lector = new FileReader();
-          lector.onload = () => resolve(lector.result as string);
-          lector.onerror = () => reject(new Error("Error leyendo archivo"));
-          lector.readAsDataURL(archivo);
-        });
-        const actualizado = await apiFetch<{ metadata?: Record<string, unknown> }>(
-          `/athletes/${athlete.id}/photo`,
-          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dataUrl }) },
-        );
-        const nueva = actualizado?.metadata?.photoUrl;
+  /**
+   * El <input> vive en el JSX y no se crea al vuelo con createElement: al
+   * abrir la cámara, Android puede descartar la vista web para liberar
+   * memoria y, al volver, un elemento suelto —y su onchange— ya no existen.
+   * Era por qué la segunda foto no subía.
+   */
+  const alElegirFoto = async (evento: React.ChangeEvent<HTMLInputElement>) => {
+    const archivo = evento.target.files?.[0];
+    // Se limpia siempre: si no, volver a elegir el mismo archivo no dispara
+    // el evento y el botón queda mudo.
+    evento.target.value = "";
+    if (!archivo || !athlete?.id) return;
+
+    setSubiendoFoto(true);
+    try {
+      const dataUrl = await prepararFoto(archivo);
+      setFotoPrevia(dataUrl);
+      const actualizado = await apiFetch<{ metadata?: Record<string, unknown> }>(
+        `/athletes/${athlete.id}/photo`,
+        { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dataUrl }) },
+      );
+      const nueva = actualizado?.metadata?.photoUrl;
+      if (typeof nueva === "string" && nueva) {
         setAthlete((previo) =>
-          previo
-            ? { ...previo, metadata: { ...(previo.metadata ?? {}), photoUrl: nueva } }
-            : previo,
+          previo ? { ...previo, metadata: { ...(previo.metadata ?? {}), photoUrl: nueva } } : previo,
         );
-        notify.push("Foto actualizada", "camera");
-      } catch {
-        notify.push("No se pudo subir la foto", "error");
-      } finally {
-        setSubiendoFoto(false);
+        // Recién ahora se suelta la previa: la del servidor ya está puesta y
+        // soltarla antes hacía parpadear las iniciales entre una y otra.
+        setFotoPrevia(null);
       }
-    };
-    input.click();
+      notify.push("Foto actualizada", "camera");
+    } catch {
+      // La previa se descarta: dejarla puesta haría creer que quedó guardada.
+      setFotoPrevia(null);
+      notify.push("No se pudo subir la foto", "error");
+    } finally {
+      setSubiendoFoto(false);
+    }
   };
 
   const checkins = [
@@ -4346,9 +4359,16 @@ export default function UserPortalPage() {
                     : t("Sin foto, tu credencial sale con tus iniciales.")}
                 </p>
               </div>
+              <input
+                ref={inputFotoRef}
+                type="file"
+                accept="image/*"
+                onChange={alElegirFoto}
+                style={{ display:"none" }}
+              />
               <button
                 type="button"
-                onClick={cambiarFoto}
+                onClick={() => inputFotoRef.current?.click()}
                 disabled={subiendoFoto}
                 style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:11,border:`1px solid ${BRAND.teal}`,background:"rgba(33,208,179,0.10)",color:BRAND.tealInk,fontSize:12,fontWeight:700,cursor:subiendoFoto?"default":"pointer",opacity:subiendoFoto?0.6:1 }}
               >
