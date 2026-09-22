@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, type MouseEvent, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import {
@@ -864,6 +864,32 @@ export default function DriverPortalPage() {
       };
     }
     return null;
+  };
+
+  /* ── Abrir la navegacion FUERA del WebView (solo Android) ────────────────
+     Los enlaces de arriba son https, pero dentro del WebView de Android
+     ninguno se puede cargar: waze.com/ul se resuelve por App Links y la
+     pagina de google.com/maps salta a un `intent://...;package=com.google
+     .android.apps.maps`. El WebView de Android no resuelve ninguno de los
+     dos: falla con ERR_UNKNOWN_URL_SCHEME, el shell lo toma como error de
+     carga y tapa el portal con "Sin conexion" — parece caida de red y no lo es.
+
+     Se lo cedemos al sistema con `url.open`, un handler que el shell ya
+     expone desde la 1.0.1 publicada y que acepta https. Android resuelve el
+     App Link y abre Waze o Maps (o el navegador, si no estan instaladas), y
+     el portal ya no se pierde: el traslado sigue detras al volver.
+
+     iOS NO entra aqui a proposito: WKWebView resuelve los enlaces
+     universales por su cuenta y ese camino ya esta aprobado por Apple. */
+  const openNavExternally = (e: MouseEvent<HTMLAnchorElement>, url: string) => {
+    if (!isNativeAvailable()) return;
+    if (typeof navigator === "undefined" || !/android/i.test(navigator.userAgent)) return;
+    e.preventDefault();
+    nativeRequest("url.open", { url }, { timeoutMs: 10_000 }).catch(() => {
+      // Si el puente no responde, queda la navegacion de siempre: no arregla
+      // nada, pero tampoco deja al conductor sin salida.
+      window.location.href = url;
+    });
   };
 
   const uploadJourneyPhoto = async (file: File) => {
@@ -2284,6 +2310,7 @@ export default function DriverPortalPage() {
                                     href={target.waze}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    onClick={(e) => openNavExternally(e, target.waze)}
                                     style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,textDecoration:"none",fontSize:12,fontWeight:700,color:"#33ccff" }}
                                   >
                                     <img src="https://www.waze.com/favicon.ico" alt="Waze" width="20" height="20" style={{ borderRadius:4 }} />
@@ -2293,6 +2320,7 @@ export default function DriverPortalPage() {
                                     href={target.gmaps}
                                     target="_blank"
                                     rel="noopener noreferrer"
+                                    onClick={(e) => openNavExternally(e, target.gmaps)}
                                     style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,textDecoration:"none",fontSize:12,fontWeight:700,color:"#4285F4" }}
                                   >
                                     <img src="https://maps.google.com/favicon.ico" alt="Google Maps" width="20" height="20" style={{ borderRadius:4 }} />
@@ -3259,7 +3287,7 @@ export default function DriverPortalPage() {
                 href={target.waze}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setNavPrompt(null)}
+                onClick={(e) => { openNavExternally(e, target.waze); setNavPrompt(null); }}
                 style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#33ccff,#0f9ed8)",color:SURFACE.card,fontSize:14,fontWeight:800,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
               >
                 <img src="https://www.waze.com/favicon.ico" alt="" width="20" height="20" style={{ borderRadius:4 }} />
@@ -3269,7 +3297,7 @@ export default function DriverPortalPage() {
                 href={target.gmaps}
                 target="_blank"
                 rel="noopener noreferrer"
-                onClick={() => setNavPrompt(null)}
+                onClick={(e) => { openNavExternally(e, target.gmaps); setNavPrompt(null); }}
                 style={{ marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:13,borderRadius:14,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,color:"#4285F4",fontSize:13,fontWeight:700,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
               >
                 <img src="https://maps.google.com/favicon.ico" alt="" width="18" height="18" style={{ borderRadius:4 }} />
