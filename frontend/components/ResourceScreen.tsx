@@ -285,6 +285,16 @@ export default function ResourceScreen({
   const [flightLookup, setFlightLookup] = useState<Record<string, any>>({});
   const [athleteSearch, setAthleteSearch] = useState("");
   const [athleteStatusFilter, setAthleteStatusFilter] = useState<"all" | "validated" | "pending">("all");
+  /**
+   * Envío del código de acceso desde el listado: a quién, cómo va y cómo
+   * terminó. La selección se guarda por id y no por posición porque el
+   * buscador y los filtros cambian la lista bajo los pies.
+   */
+  const [codigosSeleccionados, setCodigosSeleccionados] = useState<Set<string>>(new Set());
+  const [codigosEnviando, setCodigosEnviando] = useState<{ hechos: number; total: number } | null>(null);
+  const [codigosResultado, setCodigosResultado] = useState<
+    { enviados: number; total: number; fallidos: { id: string; fullName: string; motivo: string }[] } | null
+  >(null);
   const [andSearch, setAndSearch] = useState("");
   const [andTripFilter, setAndTripFilter] = useState<"all" | "ARRIVAL" | "DEPARTURE">("all");
   const [phoneDropdownOpen, setPhoneDropdownOpen] = useState(false);
@@ -2148,6 +2158,52 @@ export default function ResourceScreen({
       if (typeof value === "string" && value.trim() === "") return true;
       return false;
     });
+  };
+
+  /**
+   * Manda el código de acceso por correo a los participantes que se le pasen.
+   *
+   * Va de a cien porque el servidor no acepta más por petición —doscientos
+   * correos no entran en un request sin agotarlo— y porque así la barra de
+   * progreso avanza en vez de quedarse quieta hasta el final. Lo que falla no
+   * corta el resto: se junta todo y se muestra al terminar.
+   */
+  const TAMANO_TANDA_CODIGOS = 100;
+
+  const enviarCodigosDeAcceso = async (ids: string[]) => {
+    const limpios = [...new Set(ids.filter(Boolean))];
+    if (limpios.length === 0) return;
+    setError(null);
+    setCodigosResultado(null);
+    setCodigosEnviando({ hechos: 0, total: limpios.length });
+
+    const fallidos: { id: string; fullName: string; motivo: string }[] = [];
+    let enviados = 0;
+    try {
+      for (let i = 0; i < limpios.length; i += TAMANO_TANDA_CODIGOS) {
+        const tanda = limpios.slice(i, i + TAMANO_TANDA_CODIGOS);
+        const respuesta = await apiFetch<{
+          enviados: number;
+          total: number;
+          fallidos: { id: string; fullName: string; motivo: string }[];
+        }>("/athletes/access-codes", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: tanda }),
+        });
+        enviados += respuesta?.enviados ?? 0;
+        if (Array.isArray(respuesta?.fallidos)) fallidos.push(...respuesta.fallidos);
+        setCodigosEnviando({ hechos: Math.min(i + tanda.length, limpios.length), total: limpios.length });
+      }
+      setCodigosResultado({ enviados, total: limpios.length, fallidos });
+      // La selección se limpia sola: dejarla puesta invita a mandar la misma
+      // tanda dos veces de un clic distraído.
+      setCodigosSeleccionados(new Set());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("Error al enviar los códigos"));
+    } finally {
+      setCodigosEnviando(null);
+    }
   };
 
   const handleValidateAthlete = async (item: Record<string, any>) => {
@@ -4034,6 +4090,81 @@ export default function ResourceScreen({
                   </button>
                 ))}
               </div>
+
+              {/* ═══ Envío del código de acceso ═══
+                  Mismo mecanismo para uno, para algunos y para todos: se
+                  marcan participantes y se manda. "Seleccionar todos" opera
+                  sobre lo filtrado, no sobre la base entera, para que el
+                  envío masivo se acote con el buscador y los filtros de
+                  arriba en vez de ser todo o nada. */}
+              {(() => {
+                const conCorreo = filtered.filter((item) => item.id && item.email && !isAccountDeleted(item));
+                const seleccionados = [...codigosSeleccionados];
+                const todosMarcados = conCorreo.length > 0 && conCorreo.every((item) => codigosSeleccionados.has(item.id));
+                const sinCorreo = filtered.length - conCorreo.length;
+                return (
+                  <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", marginBottom: "12px", padding: "10px 12px", borderRadius: "10px", background: "var(--elevated)", border: "1px solid var(--border)" }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: "7px", fontSize: "12px", fontWeight: 600, color: "var(--text)", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={todosMarcados}
+                        disabled={conCorreo.length === 0}
+                        onChange={(e) => {
+                          const siguiente = new Set(codigosSeleccionados);
+                          conCorreo.forEach((item) => (e.target.checked ? siguiente.add(item.id) : siguiente.delete(item.id)));
+                          setCodigosSeleccionados(siguiente);
+                        }}
+                      />
+                      {t("Seleccionar los filtrados")} ({conCorreo.length})
+                    </label>
+                    {seleccionados.length > 0 && (
+                      <button type="button" className="btn btn-ghost" style={{ fontSize: "11px", padding: "4px 10px" }} onClick={() => setCodigosSeleccionados(new Set())}>
+                        {t("Limpiar")}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      style={{ fontSize: "12px", padding: "5px 14px", borderRadius: "8px" }}
+                      disabled={seleccionados.length === 0 || codigosEnviando !== null}
+                      onClick={() => void enviarCodigosDeAcceso(seleccionados)}
+                    >
+                      {codigosEnviando
+                        ? `${t("Enviando")} ${codigosEnviando.hechos}/${codigosEnviando.total}`
+                        : `${t("Enviar código de acceso")}${seleccionados.length > 0 ? ` (${seleccionados.length})` : ""}`}
+                    </button>
+                    {sinCorreo > 0 && (
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                        {sinCorreo} {t("sin correo o dados de baja, no se pueden seleccionar")}
+                      </span>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {codigosResultado && (
+                <div style={{ marginBottom: "12px", padding: "10px 12px", borderRadius: "10px", border: `1px solid ${codigosResultado.fallidos.length > 0 ? "rgba(245,158,11,0.3)" : "rgba(16,185,129,0.25)"}`, background: codigosResultado.fallidos.length > 0 ? "rgba(245,158,11,0.08)" : "rgba(16,185,129,0.06)" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px" }}>
+                    <p style={{ fontSize: "12.5px", fontWeight: 700, color: "var(--text)", margin: 0 }}>
+                      {codigosResultado.enviados} {t("de")} {codigosResultado.total} {t("códigos enviados")}
+                    </p>
+                    <button type="button" className="btn btn-ghost" style={{ fontSize: "11px", padding: "3px 9px" }} onClick={() => setCodigosResultado(null)}>
+                      {t("Cerrar")}
+                    </button>
+                  </div>
+                  {codigosResultado.fallidos.length > 0 && (
+                    <ul style={{ margin: "6px 0 0", paddingLeft: "16px", fontSize: "11.5px", color: "var(--text-muted)" }}>
+                      {codigosResultado.fallidos.slice(0, 12).map((f) => (
+                        <li key={f.id}>{f.fullName} — {t(f.motivo)}</li>
+                      ))}
+                      {codigosResultado.fallidos.length > 12 && (
+                        <li>{t("y")} {codigosResultado.fallidos.length - 12} {t("más")}</li>
+                      )}
+                    </ul>
+                  )}
+                </div>
+              )}
+
               {/* Cards */}
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "65vh", overflowY: "auto" }}>
                 {filtered.length === 0 && (
@@ -4068,6 +4199,22 @@ export default function ResourceScreen({
                       alignItems: "flex-start",
                       gap: "12px",
                     }}>
+                      {/* Marca para el envío del código. Sin correo no hay a
+                          dónde mandarlo, así que la casilla ni aparece. */}
+                      {item.id && item.email && !isDeleted && (
+                        <input
+                          type="checkbox"
+                          title={t("Seleccionar para enviar el código de acceso")}
+                          checked={codigosSeleccionados.has(item.id)}
+                          style={{ marginTop: "13px", flexShrink: 0 }}
+                          onChange={(e) => {
+                            const siguiente = new Set(codigosSeleccionados);
+                            if (e.target.checked) siguiente.add(item.id);
+                            else siguiente.delete(item.id);
+                            setCodigosSeleccionados(siguiente);
+                          }}
+                        />
+                      )}
                       {/* Avatar / Photo */}
                       {(() => {
                         const photoUrl = (item.metadata as any)?.photoUrl || item.photoUrl;
@@ -4182,6 +4329,19 @@ export default function ResourceScreen({
                             onClick={() => handleValidateAthlete(item)}
                           >
                             {t("Validar")}
+                          </button>
+                        )}
+                        {/* Envío suelto: el mismo camino que el masivo, con
+                            este participante solo. Sin correo no se ofrece. */}
+                        {item.id && item.email && !isDeleted && (
+                          <button
+                            className="btn btn-ghost"
+                            style={{ fontSize: "11px", padding: "4px 10px" }}
+                            disabled={codigosEnviando !== null}
+                            title={`${t("Enviar el código de acceso a")} ${item.email}`}
+                            onClick={() => void enviarCodigosDeAcceso([item.id])}
+                          >
+                            {t("Enviar código")}
                           </button>
                         )}
                         <div style={{ display: "flex", gap: "4px" }}>

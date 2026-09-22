@@ -8,8 +8,8 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
-import * as https from 'https';
 import { accessCodeEmailHtml } from '../shared/email-templates';
+import { MAX_CORREOS_POR_LOTE, sendResendBatch, sendResendEmail } from '../shared/resend';
 import { ConfigService } from '@nestjs/config';
 import { DataSource, Repository } from 'typeorm';
 import { StaffScopeService } from '../auth/staff-scope.service';
@@ -19,6 +19,24 @@ import { UpdateAthleteDto } from './dto/update-athlete.dto';
 import { Athlete } from './entities/athlete.entity';
 
 export type RequestHeaders = Record<string, string | string[] | undefined>;
+
+/** Tope por petición: el que admite un lote de Resend, que va en una sola. */
+const MAX_CODIGOS_POR_TANDA = MAX_CORREOS_POR_LOTE;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * El correo del código de acceso, uno solo para los dos caminos: el que pide
+ * el participante desde la pantalla de ingreso y el que manda el panel. El
+ * código son los últimos seis caracteres del id.
+ */
+function correoDeCodigo(fullName: string, athleteId: string) {
+  const accessCode = athleteId.slice(-6);
+  return {
+    subject: 'Tu código de acceso',
+    text: `Hola ${fullName},\n\nTu código de acceso para ingresar al portal es:\n${accessCode}\n\nGuárdalo en un lugar seguro.\n`,
+    html: accessCodeEmailHtml(fullName, accessCode),
+  };
+}
 
 type AthleteRow = {
   id: string;
@@ -532,64 +550,133 @@ export class AthletesService {
       );
     }
 
-    const apiKey = process.env.RESEND_API_KEY;
-    const from = process.env.RESEND_FROM;
-
-    if (!apiKey || !from) {
-      throw new InternalServerErrorException('Email provider not configured');
-    }
-
-    const fullName = data.full_name ?? 'Encargado';
-    const accessCode = data.id.slice(-6);
-    const subject = 'Tu código de acceso';
-    const text = `Hola ${fullName},\n\nTu código de acceso para ingresar al portal es:\n${accessCode}\n\nGuárdalo en un lugar seguro.\n`;
-    const html = accessCodeEmailHtml(fullName, accessCode);
-
-    const payload = JSON.stringify({
-      from,
-      to: [normalizedEmail],
-      subject,
-      text,
-      html,
-    });
-
-    const { status, body } = await new Promise<{ status: number; body: string }>(
-      (resolve, reject) => {
-        const request = https.request(
-          {
-            method: 'POST',
-            hostname: 'api.resend.com',
-            path: '/emails',
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(payload),
-            },
-          },
-          (response) => {
-            let responseBody = '';
-            response.on('data', (chunk) => {
-              responseBody += chunk;
-            });
-            response.on('end', () => {
-              resolve({ status: response.statusCode ?? 0, body: responseBody });
-            });
-          },
-        );
-
-        request.on('error', (err) => reject(err));
-        request.write(payload);
-        request.end();
-      },
-    );
-
-    if (status < 200 || status >= 300) {
+    try {
+      await sendResendEmail({
+        to: normalizedEmail,
+        ...correoDeCodigo(data.full_name ?? 'Encargado', data.id),
+      });
+    } catch (error) {
       throw new InternalServerErrorException(
-        `No se pudo enviar el correo: ${body}`,
+        error instanceof Error ? error.message : 'No se pudo enviar el correo',
       );
     }
 
     return { message: 'Código enviado al correo' };
+  }
+
+  /**
+   * Envío del código de acceso desde el panel, a uno o a muchos.
+   *
+   * El participante entra al portal con los últimos seis caracteres de su id,
+   * y hasta ahora la única forma de que lo recibiera era que él mismo lo
+   * pidiera desde la pantalla de ingreso: quien inscribía tenía que dictarlo
+   * por teléfono o copiarlo a mano en un correo.
+   *
+   * Devuelve el detalle de lo que no salió en vez de cortar en el primer
+   * error: en una tanda de doscientos, que a tres les falte el correo no es
+   * motivo para no mandarle a los otros ciento noventa y siete.
+   */
+  async sendAccessCodes(ids: string[]) {
+    const unicos = [
+      ...new Set((ids ?? []).map((id) => String(id ?? '').trim()).filter(Boolean)),
+    ];
+    if (unicos.length === 0) {
+      throw new BadRequestException('No hay participantes seleccionados');
+    }
+    if (unicos.length > MAX_CODIGOS_POR_TANDA) {
+      throw new BadRequestException(
+        `Son demasiados de una vez: hasta ${MAX_CODIGOS_POR_TANDA} por envío`,
+      );
+    }
+
+    const fallidos: Array<{ id: string; fullName: string; motivo: string }> = [];
+
+    // Un id que no es uuid haría fallar la consulta entera; se aparta antes.
+    const uuids = unicos.filter((id) => UUID_RE.test(id));
+    unicos
+      .filter((id) => !UUID_RE.test(id))
+      .forEach((id) => fallidos.push({ id, fullName: '—', motivo: 'Id inválido' }));
+
+    const filas = uuids.length
+      ? ((await this.dataSource.query(
+          `select id, full_name, email, status
+             from core.athletes
+            where id = any($1::uuid[])`,
+          [uuids],
+        )) as Array<{
+          id: string;
+          full_name: string | null;
+          email: string | null;
+          status: string | null;
+        }>)
+      : [];
+
+    const porId = new Map(filas.map((fila) => [fila.id, fila]));
+    const destinatarios: Array<{ id: string; fullName: string; email: string }> = [];
+
+    for (const id of uuids) {
+      const fila = porId.get(id);
+      if (!fila) {
+        fallidos.push({ id, fullName: '—', motivo: 'No existe' });
+        continue;
+      }
+      const fullName = fila.full_name ?? 'Participante';
+      if (String(fila.status ?? '').toUpperCase() === 'DELETED') {
+        fallidos.push({ id, fullName, motivo: 'Cuenta dada de baja' });
+        continue;
+      }
+      const email = String(fila.email ?? '').trim().toLowerCase();
+      if (!email) {
+        fallidos.push({ id, fullName, motivo: 'Sin correo registrado' });
+        continue;
+      }
+      destinatarios.push({ id, fullName, email });
+    }
+
+    // En un solo lote: Resend limita las peticiones por segundo, no los
+    // correos, así que cien de a uno se comen el límite y cien juntos no.
+    let enviados = 0;
+    if (destinatarios.length > 0) {
+      const mensajes = destinatarios.map((destinatario) => ({
+        to: destinatario.email,
+        ...correoDeCodigo(destinatario.fullName, destinatario.id),
+      }));
+      try {
+        const aceptados = await sendResendBatch(mensajes);
+        enviados = Math.min(aceptados, destinatarios.length);
+        // Si volvieron menos ids que mensajes no se sabe cuáles quedaron
+        // afuera —la respuesta es posicional— así que se dice cuántos.
+        if (enviados < destinatarios.length) {
+          fallidos.push({
+            id: '',
+            fullName: `${destinatarios.length - enviados} participante(s)`,
+            motivo: 'El proveedor no confirmó el envío',
+          });
+        }
+      } catch (errorLote) {
+        // El lote entero se cayó. Se reintenta de a uno para saber a quién le
+        // llegó y a quién no, en vez de dar cien por perdidos.
+        const motivoLote =
+          errorLote instanceof Error ? errorLote.message : 'Error de envío';
+        for (const destinatario of destinatarios) {
+          try {
+            await sendResendEmail({
+              to: destinatario.email,
+              ...correoDeCodigo(destinatario.fullName, destinatario.id),
+            });
+            enviados += 1;
+          } catch {
+            fallidos.push({
+              id: destinatario.id,
+              fullName: destinatario.fullName,
+              motivo: motivoLote,
+            });
+          }
+        }
+      }
+    }
+
+    return { enviados, fallidos, total: unicos.length };
   }
 
   async uploadHealthDocument(id: string, dataUrl: string) {

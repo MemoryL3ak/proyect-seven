@@ -6,6 +6,8 @@ import { AthletesService } from './athletes.service';
 import { StaffScopeService } from '../auth/staff-scope.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { RequestAthleteAccessDto } from './dto/request-athlete-access.dto';
+import { SendAccessCodesDto } from './dto/send-access-codes.dto';
+import { StaffOnly } from '../auth/staff-only.decorator';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
 import { UploadHealthDocumentDto } from './dto/upload-health-document.dto';
 
@@ -26,6 +28,19 @@ export class AthletesController {
   @Post('request-access')
   requestAccess(@Body() requestAthleteAccessDto: RequestAthleteAccessDto) {
     return this.athletesService.requestAccess(requestAthleteAccessDto.email);
+  }
+
+  /**
+   * Envío del código de acceso desde el panel, a uno o a varios.
+   *
+   * Sólo el panel: el de arriba es la recuperación que pide el propio
+   * participante con su correo, y acá se manda por id a quien sea. Con esta
+   * ruta abierta, cualquiera podría disparar correos a toda la nómina.
+   */
+  @StaffOnly()
+  @Post('access-codes')
+  sendAccessCodes(@Body() dto: SendAccessCodesDto) {
+    return this.athletesService.sendAccessCodes(dto?.ids ?? []);
   }
 
   /**
