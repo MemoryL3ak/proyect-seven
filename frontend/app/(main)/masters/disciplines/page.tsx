@@ -3,9 +3,16 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
-import { STATE, SURFACE } from "@/lib/design";
+import { BRAND, STATE, SURFACE } from "@/lib/design";
 import StyledSelect from "@/components/StyledSelect";
-import { ChevronRightIcon, PencilIcon, TrashIcon } from "@/components/ui/Icons";
+import {
+  AccessibilityIcon,
+  ChevronRightIcon,
+  DumbbellIcon,
+  PencilIcon,
+  TrashIcon,
+  TrophyIcon,
+} from "@/components/ui/Icons";
 
 type Discipline = {
   id: string;
@@ -155,9 +162,46 @@ export default function DisciplinesPage() {
       return next;
     });
 
-  const badge = (d: Discipline) =>
-    [CATEGORY_LABELS[d.category ?? ""] ?? d.category, GENDER_LABELS[d.gender ?? ""] ?? d.gender]
-      .filter(Boolean).map(s => t(s as string)).join(" · ");
+  /**
+   * Categoría y rama como pastillas y no como un texto gris corrido.
+   *
+   * La categoría se pinta sólo cuando aporta algo: en la fila de una prueba se
+   * omite si es la misma del deporte que la contiene, que es el caso normal
+   * —repetir "Paralímpica" en cada una de las cuatro filas de un deporte
+   * paralímpico es ruido—. Se muestra cuando difiere, que es justo el dato que
+   * conviene que salte a la vista.
+   *
+   * La rama va en pastilla neutra a propósito: colorearla por género sería
+   * decorar un dato con un estereotipo.
+   */
+  const chips = (d: Discipline, categoriaDelPadre?: string | null) => {
+    const categoria = CATEGORY_LABELS[d.category ?? ""] ?? d.category;
+    const rama = GENDER_LABELS[d.gender ?? ""] ?? d.gender;
+    const mostrarCategoria = categoria && d.category !== categoriaDelPadre;
+    return (
+      <span className="flex items-center gap-1.5 flex-shrink-0">
+        {mostrarCategoria && (
+          <span className={`badge ${d.category === "PARALYMPIC" ? "badge-blue" : "badge-slate"}`}>
+            {t(categoria as string)}
+          </span>
+        )}
+        {rama && <span className="badge badge-slate">{t(rama as string)}</span>}
+      </span>
+    );
+  };
+
+  /** El deporte se distingue de un vistazo: paralímpico lleva su propio icono. */
+  const iconoDeporte = (d: Discipline) => {
+    const Icono = d.category === "PARALYMPIC" ? AccessibilityIcon : DumbbellIcon;
+    return (
+      <span
+        className="flex items-center justify-center flex-shrink-0"
+        style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(33,208,179,0.10)", color: BRAND.tealInk }}
+      >
+        <Icono size={17} strokeWidth={2} />
+      </span>
+    );
+  };
 
   /** Los botones de editar y borrar, iguales en el deporte y en la prueba. */
   const accionesFila = (d: Discipline, size: number) => (
@@ -212,8 +256,9 @@ export default function DisciplinesPage() {
       {/* Sport cards */}
       <div className="space-y-3">
         {sports.length === 0 && (
-          <div className="surface rounded-2xl p-8 text-center text-sm" style={{ color: SURFACE.textFaint }}>
-            {t("No hay deportes registrados. Agrega uno para comenzar.")}
+          <div className="surface rounded-2xl p-10 text-center" style={{ color: SURFACE.textFaint }}>
+            <TrophyIcon size={28} strokeWidth={1.6} style={{ margin: "0 auto 10px", display: "block" }} />
+            <p className="text-sm">{t("No hay deportes registrados. Agrega uno para comenzar.")}</p>
           </div>
         )}
 
@@ -233,12 +278,13 @@ export default function DisciplinesPage() {
                   >
                     <ChevronRightIcon size={16} strokeWidth={2} />
                   </span>
-                  <span className="font-semibold truncate" style={{ color: SURFACE.text }}>{sport.name}</span>
-                  {badge(sport) && (
-                    <span className="text-xs flex-shrink-0" style={{ color: SURFACE.textFaint }}>{badge(sport)}</span>
-                  )}
-                  <span className="ml-auto text-xs flex-shrink-0 pr-2" style={{ color: SURFACE.textFaint }}>
-                    {subs.length} {subs.length === 1 ? t("prueba") : t("pruebas")}
+                  {iconoDeporte(sport)}
+                  <span className="font-semibold truncate" style={{ fontSize: 15, color: SURFACE.text }}>{sport.name}</span>
+                  {chips(sport)}
+                  <span className="ml-auto flex-shrink-0 pr-2">
+                    <span className={`badge ${subs.length > 0 ? "badge-gold" : "badge-slate"}`}>
+                      {subs.length} {subs.length === 1 ? t("prueba") : t("pruebas")}
+                    </span>
                   </span>
                 </button>
                 <div className="flex items-center gap-1">
@@ -263,13 +309,19 @@ export default function DisciplinesPage() {
                       {subs.map((sub, i) => (
                         <div
                           key={sub.id}
-                          className="flex items-center gap-3 px-14 py-2.5"
+                          className="flex items-center gap-3 px-14 py-2.5 transition-colors"
                           style={i > 0 ? { borderTop: `1px solid ${SURFACE.borderMuted}` } : undefined}
+                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = SURFACE.bg; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}
                         >
-                          <span className="text-sm flex-1" style={{ color: SURFACE.textSecondary }}>{sub.name}</span>
-                          {badge(sub) && (
-                            <span className="text-xs" style={{ color: SURFACE.textFaint }}>{badge(sub)}</span>
-                          )}
+                          <span
+                            className="flex-shrink-0"
+                            style={{ width: 5, height: 5, borderRadius: "50%", background: SURFACE.borderStrong }}
+                          />
+                          <span className="text-sm flex-1 truncate" style={{ color: SURFACE.textStrong, fontWeight: 500 }}>
+                            {sub.name}
+                          </span>
+                          {chips(sub, sport.category)}
                           {accionesFila(sub, 14)}
                         </div>
                       ))}
@@ -291,8 +343,8 @@ export default function DisciplinesPage() {
                   className="flex items-center gap-3 px-2 py-2.5"
                   style={i > 0 ? { borderTop: `1px solid ${SURFACE.borderMuted}` } : undefined}
                 >
-                  <span className="text-sm flex-1" style={{ color: SURFACE.textSecondary }}>{d.name}</span>
-                  {badge(d) && <span className="text-xs" style={{ color: SURFACE.textFaint }}>{badge(d)}</span>}
+                  <span className="text-sm flex-1 truncate" style={{ color: SURFACE.textStrong, fontWeight: 500 }}>{d.name}</span>
+                  {chips(d)}
                   {accionesFila(d, 14)}
                 </div>
               ))}
