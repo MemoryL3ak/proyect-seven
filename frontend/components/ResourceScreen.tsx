@@ -1585,6 +1585,7 @@ export default function ResourceScreen({
         // valores viejos se quedaban guardados y lo acotaban en el portal.
         finalPayload.delegationId = null;
         finalPayload.disciplineId = null;
+        finalPayload.region = null;
         finalPayload.isDelegationLead = false;
       }
       if (config.endpoint === "/trips") {
@@ -2087,13 +2088,17 @@ export default function ResourceScreen({
   };
 
   const missingAthleteValidationFields = (item: Record<string, any>) => {
+    // Los coordinadores de evento —Comité y Transporte— no tienen deporte: el
+    // formulario ni se lo pide. Exigírselo para validar dejaba la ficha
+    // trabada en un campo que nadie podía llenar.
+    const esCoordinadorDeEvento = isEventCoordinator(item.userType as string);
     const required = [
       { key: "eventId", label: "Evento" },
       { key: "fullName", label: "Nombre completo" },
       { key: "countryCode", label: "País" },
       { key: "dateOfBirth", label: "Fecha nacimiento" },
       { key: "userType", label: "Tipo de cliente" },
-      { key: "disciplineId", label: "Disciplina" },
+      ...(esCoordinadorDeEvento ? [] : [{ key: "disciplineId", label: "Disciplina" }]),
       { key: "passportNumber", label: "Pasaporte" },
     ];
 
@@ -3433,6 +3438,9 @@ export default function ResourceScreen({
                 "disciplineGender",
                 "disciplineId",
                 "isDelegationLead",
+                // La región es lo mismo que la delegación dicho de otra forma:
+                // faltaba en esta lista y el formulario se la seguía pidiendo.
+                "region",
               ]);
               const personalKeys = new Set([
                 "eventId",
