@@ -8,7 +8,7 @@ import { nombrePropio } from "@/lib/nombres";
 import { AlertIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon, DownloadIcon } from "@/components/ui/Icons";
 import { downloadCSV, slugify } from "@/lib/export";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
-import { isEventCoordinator } from "@/lib/clientTypes";
+import { isEventCoordinator, isMissionHead } from "@/lib/clientTypes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import StyledSelect from "@/components/StyledSelect";
@@ -1579,6 +1579,17 @@ export default function ResourceScreen({
           CLAVES_HABITACION.some(
             (k) => String(form[k] ?? "") !== (habitacionesAlAbrir.current?.[k] ?? ""),
           ));
+      if (config.endpoint === "/athletes") {
+        // Explícitos: el reduce de arriba omite los campos vacíos, así que al
+        // cambiarle el rol a alguien el deporte del rol anterior se quedaba
+        // guardado. El Jefe de Misión lleva la lista y ningún deporte suelto;
+        // el resto, al revés.
+        const esJefeDeMision = isMissionHead(form.userType as string);
+        finalPayload.disciplineIds = esJefeDeMision
+          ? ((form.disciplineIds as string[]) || [])
+          : [];
+        if (esJefeDeMision) finalPayload.disciplineId = null;
+      }
       if (config.endpoint === "/athletes" && isEventCoordinator(form.userType as string)) {
         // Explícitos en null: el payload omite los campos vacíos, así que al
         // cambiarle el tipo a alguien que ya tenía región o deporte, los
@@ -2092,18 +2103,28 @@ export default function ResourceScreen({
     // formulario ni se lo pide. Exigírselo para validar dejaba la ficha
     // trabada en un campo que nadie podía llenar.
     const esCoordinadorDeEvento = isEventCoordinator(item.userType as string);
+    // Al Jefe de Misión se le piden las disciplinas que cubre, no una sola.
+    const esJefeDeMision = isMissionHead(item.userType as string);
+    const deporte = esCoordinadorDeEvento
+      ? []
+      : esJefeDeMision
+        ? [{ key: "disciplineIds", label: "Disciplinas" }]
+        : [{ key: "disciplineId", label: "Disciplina" }];
     const required = [
       { key: "eventId", label: "Evento" },
       { key: "fullName", label: "Nombre completo" },
       { key: "countryCode", label: "País" },
       { key: "dateOfBirth", label: "Fecha nacimiento" },
       { key: "userType", label: "Tipo de cliente" },
-      ...(esCoordinadorDeEvento ? [] : [{ key: "disciplineId", label: "Disciplina" }]),
+      ...deporte,
       { key: "passportNumber", label: "Pasaporte" },
     ];
 
     return required.filter((field) => {
       const value = item[field.key];
+      // Una lista vacía es un campo sin llenar; sin esto, la ficha del Jefe de
+      // Misión se validaba sin ninguna disciplina asignada.
+      if (Array.isArray(value)) return value.length === 0;
       if (value === null || value === undefined) return true;
       if (typeof value === "string" && value.trim() === "") return true;
       return false;
@@ -2189,13 +2210,22 @@ export default function ResourceScreen({
         }
         return disciplineOptions;
       }
-      const category = normalizeCategory(form.disciplineCategory);
-      const gender = normalizeGender(form.disciplineGender);
+      // El Jefe de Misión elige varias categorías y varios géneros: el filtro
+      // deja pasar la disciplina que calce con *alguno* de los elegidos. Para
+      // el resto de las fichas sigue siendo un valor y uno solo.
+      const esListaJefeDeMision =
+        config.endpoint === "/athletes" && field.key === "disciplineIds";
+      const categorias = esListaJefeDeMision
+        ? ((form.disciplineCategories as string[]) || []).map(normalizeCategory).filter(Boolean)
+        : [normalizeCategory(form.disciplineCategory)].filter(Boolean);
+      const generos = esListaJefeDeMision
+        ? ((form.disciplineGenders as string[]) || []).map(normalizeGender).filter(Boolean)
+        : [normalizeGender(form.disciplineGender)].filter(Boolean);
       const base = (disciplineOptions as any[]).filter((option) => {
         const optionCategory = normalizeCategory(option.category);
         const optionGender = normalizeGender(option.gender);
-        if (category && optionCategory !== category) return false;
-        if (gender && optionGender !== gender) return false;
+        if (categorias.length > 0 && !categorias.includes(optionCategory)) return false;
+        if (generos.length > 0 && !generos.includes(optionGender)) return false;
         return true;
       });
       if (field.key === "disciplineIds") {
@@ -2730,6 +2760,26 @@ export default function ResourceScreen({
                       onChange={(event) => {
                         const nextValue = event.target.value;
                         if (config.endpoint === "/athletes") {
+                          if (field.key === "userType") {
+                            // Los campos de a uno y los de a varios no
+                            // conviven. Al cambiar el rol se vacía el juego
+                            // que deja de verse: si no, el selector de
+                            // disciplinas seguía filtrado por una categoría
+                            // que ya nadie podía ver ni corregir, y la ficha
+                            // se guardaba con el deporte del rol anterior.
+                            const esJefeDeMision = nextValue === "JEFE_MISION";
+                            setForm({
+                              ...form,
+                              userType: nextValue,
+                              disciplineCategory: esJefeDeMision ? "" : form.disciplineCategory,
+                              disciplineGender: esJefeDeMision ? "" : form.disciplineGender,
+                              disciplineId: esJefeDeMision ? "" : form.disciplineId,
+                              disciplineCategories: esJefeDeMision ? form.disciplineCategories : [],
+                              disciplineGenders: esJefeDeMision ? form.disciplineGenders : [],
+                              disciplineIds: esJefeDeMision ? form.disciplineIds : []
+                            });
+                            return;
+                          }
                           if (field.key === "hotelAccommodationId") {
                             setForm({
                               ...form,
@@ -2912,7 +2962,10 @@ export default function ResourceScreen({
                     </StyledSelect>
                   ) : field.type === "multiselect" ? (
                     <div className="input min-h-[120px] max-h-[220px] flex flex-col gap-2 overflow-y-auto">
-                      {config.endpoint === "/trips" && field.key === "athleteIds" && (
+                      {((config.endpoint === "/trips" && field.key === "athleteIds") ||
+                        // Al Jefe de Misión se le asignan todas las
+                        // disciplinas más veces que unas pocas sueltas.
+                        (config.endpoint === "/athletes" && field.key === "disciplineIds")) && (
                         <div className="flex gap-2">
                           <button
                             type="button"
@@ -3435,8 +3488,11 @@ export default function ResourceScreen({
               const noAplicaAlComite = new Set([
                 "delegationId",
                 "disciplineCategory",
+                "disciplineCategories",
                 "disciplineGender",
+                "disciplineGenders",
                 "disciplineId",
+                "disciplineIds",
                 "isDelegationLead",
                 // La región es lo mismo que la delegación dicho de otra forma:
                 // faltaba en esta lista y el formulario se la seguía pidiendo.
@@ -3446,8 +3502,11 @@ export default function ResourceScreen({
                 "eventId",
                 "delegationId",
                 "disciplineCategory",
+                "disciplineCategories",
                 "disciplineGender",
+                "disciplineGenders",
                 "disciplineId",
+                "disciplineIds",
                 "isDelegationLead",
                 "fullName",
                 "email",
@@ -3960,7 +4019,15 @@ export default function ResourceScreen({
                   const initials = (item.fullName ?? "?").split(" ").slice(0, 2).map((w: string) => w[0] ?? "").join("").toUpperCase();
                   const delegLabel = delegationOptions.find((o) => o.value === item.delegationId)?.label ?? item.delegationId ?? null;
                   const eventLabel = eventOptions.find((o) => o.value === item.eventId)?.label ?? null;
-                  const disciplineLabel = disciplineOptions.find((o: any) => o.value === item.disciplineId)?.label ?? null;
+                  // El Jefe de Misión cubre varias: se listan todas en vez de
+                  // dejar la tarjeta sin deporte.
+                  const disciplineIds: string[] = Array.isArray(item.disciplineIds) ? item.disciplineIds : [];
+                  const disciplineLabel = disciplineIds.length > 0
+                    ? disciplineIds
+                        .map((id) => disciplineOptions.find((o: any) => o.value === id)?.label ?? null)
+                        .filter(Boolean)
+                        .join(" · ") || null
+                    : disciplineOptions.find((o: any) => o.value === item.disciplineId)?.label ?? null;
                   const userTypeLabel = USER_TYPE_LABELS[item.userType ?? ""] ?? item.userType ?? null;
                   const dob = item.dateOfBirth ? new Date(item.dateOfBirth).toLocaleDateString("es-ES", { day: "2-digit", month: "2-digit", year: "numeric" }) : null;
                   return (

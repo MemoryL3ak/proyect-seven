@@ -1,4 +1,5 @@
 ﻿import {
+  IsArray,
   IsISO8601,
   IsBoolean,
   IsNotEmpty,
@@ -20,6 +21,12 @@ export class CreateAthleteDto {
   @IsString()
   @IsOptional()
   disciplineId?: string;
+
+  /** Varias disciplinas: el Jefe de Misión cubre las de toda su delegación. */
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  disciplineIds?: string[];
 
   @IsString()
   @IsNotEmpty()

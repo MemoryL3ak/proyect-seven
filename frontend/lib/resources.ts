@@ -11,6 +11,19 @@ import { TRIP_TYPE_OPTIONS } from "./tripTypes";
  */
 const OPCIONES_TIPO_CLIENTE = CLIENT_TYPE_OPTIONS.map((o) => ({ label: o.label, value: o.value }));
 
+/** El único tipo de cliente que cubre varias disciplinas a la vez. */
+const JEFE_DE_MISION = "JEFE_MISION";
+
+const OPCIONES_CATEGORIA_DISCIPLINA = [
+  { label: "Convencional", value: "CONVENTIONAL" },
+  { label: "Paralímpica", value: "PARALYMPIC" }
+];
+
+const OPCIONES_GENERO_DISCIPLINA = [
+  { label: "Masculino", value: "MALE" },
+  { label: "Femenino", value: "FEMALE" }
+];
+
 export type FieldType =
   | "text"
   | "number"
@@ -666,7 +679,11 @@ export const resources: Record<string, ResourceConfig> = {
     endpoint: "/athletes",
     tableHiddenKeys: [
       "id",
-      "metadata"
+      "metadata",
+      // Filtros del formulario, no datos de la ficha: como columna salen
+      // siempre vacíos y se arrastran a la exportación.
+      "disciplineCategories",
+      "disciplineGenders"
     ],
     tableOrder: [
       "fullName",
@@ -685,27 +702,58 @@ export const resources: Record<string, ResourceConfig> = {
     fields: [
       { key: "eventId", label: "Evento", type: "select", required: true, optionsSource: "events" },
       { key: "delegationId", label: "Delegación", type: "select", optionsSource: "delegations" },
+      /**
+       * Categoría, género y disciplina van de a uno para casi todos, y de a
+       * varios para el Jefe de Misión: no compite en un deporte, responde por
+       * todos los de su delegación. Son dos juegos de campos que se alternan
+       * según el tipo de cliente — nunca se ven los dos a la vez.
+       */
       {
         key: "disciplineCategory",
         label: "Categoría",
         type: "select",
         transient: true,
-        options: [
-          { label: "Convencional", value: "CONVENTIONAL" },
-          { label: "Paralímpica", value: "PARALYMPIC" }
-        ]
+        hideWhen: { field: "userType", value: JEFE_DE_MISION },
+        options: OPCIONES_CATEGORIA_DISCIPLINA
+      },
+      {
+        key: "disciplineCategories",
+        label: "Categorías",
+        type: "multiselect",
+        transient: true,
+        showWhen: { field: "userType", value: JEFE_DE_MISION },
+        options: OPCIONES_CATEGORIA_DISCIPLINA
       },
       {
         key: "disciplineGender",
         label: "Género",
         type: "select",
         transient: true,
-        options: [
-          { label: "Masculino", value: "MALE" },
-          { label: "Femenino", value: "FEMALE" }
-        ]
+        hideWhen: { field: "userType", value: JEFE_DE_MISION },
+        options: OPCIONES_GENERO_DISCIPLINA
       },
-      { key: "disciplineId", label: "Disciplina", type: "select", optionsSource: "disciplines" },
+      {
+        key: "disciplineGenders",
+        label: "Géneros",
+        type: "multiselect",
+        transient: true,
+        showWhen: { field: "userType", value: JEFE_DE_MISION },
+        options: OPCIONES_GENERO_DISCIPLINA
+      },
+      {
+        key: "disciplineId",
+        label: "Disciplina",
+        type: "select",
+        optionsSource: "disciplines",
+        hideWhen: { field: "userType", value: JEFE_DE_MISION }
+      },
+      {
+        key: "disciplineIds",
+        label: "Disciplinas",
+        type: "multiselect",
+        optionsSource: "disciplines",
+        showWhen: { field: "userType", value: JEFE_DE_MISION }
+      },
       { key: "fullName", label: "Nombre completo", type: "text", required: true },
       { key: "photoDataUrl", label: "Foto del participante", type: "file", transient: true },
       {

@@ -52,6 +52,16 @@ export function isEventCoordinator(value?: string | null) {
 }
 
 /**
+ * Jefe de Misión: el encargado de una delegación (región). A diferencia del
+ * resto de los participantes no compite en un deporte, responde por todos los
+ * de su región, así que en su ficha la categoría, el género y la disciplina se
+ * eligen de a varios.
+ */
+export function isMissionHead(value?: string | null) {
+  return normalizeClientType(value) === "JEFE_MISION";
+}
+
+/**
  * Quién puede escribirle directo al chofer. Para el resto del portal el
  * contacto es el Coordinador General —decisión de producto: al conductor no
  * lo llama cualquiera—, y el Coordinador Transporte es la excepción, porque

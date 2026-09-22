@@ -20,6 +20,18 @@ export class Athlete {
   @Column({ name: 'discipline_id', type: 'uuid', nullable: true })
   disciplineId?: string | null;
 
+  /**
+   * Disciplinas de quien cubre más de una —el Jefe de Misión responde por
+   * toda su delegación—. Vacío para el resto: ahí manda disciplineId.
+   */
+  @Column({
+    name: 'discipline_ids',
+    type: 'uuid',
+    array: true,
+    default: () => "'{}'::uuid[]",
+  })
+  disciplineIds: string[];
+
   @Column({ name: 'full_name' })
   fullName: string;
 

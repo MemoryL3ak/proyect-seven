@@ -25,6 +25,7 @@ type AthleteRow = {
   event_id: string;
   delegation_id: string | null;
   discipline_id: string | null;
+  discipline_ids: string[] | null;
   full_name: string;
   email: string | null;
   phone: string | null;
@@ -112,6 +113,7 @@ export class AthletesService {
     if (dto.eventId !== undefined) row.event_id = dto.eventId;
     if (dto.delegationId !== undefined) row.delegation_id = dto.delegationId ?? null;
     if (dto.disciplineId !== undefined) row.discipline_id = dto.disciplineId ?? null;
+    if (dto.disciplineIds !== undefined) row.discipline_ids = dto.disciplineIds ?? [];
     if (dto.fullName !== undefined) row.full_name = dto.fullName;
     if (dto.email !== undefined) row.email = dto.email ?? null;
     if (dto.phone !== undefined) row.phone = dto.phone ?? null;
@@ -187,6 +189,7 @@ export class AthletesService {
       eventId: row.event_id,
       delegationId: row.delegation_id,
       disciplineId: row.discipline_id,
+      disciplineIds: row.discipline_ids ?? [],
       fullName: row.full_name,
       email: row.email,
       phone: row.phone,
