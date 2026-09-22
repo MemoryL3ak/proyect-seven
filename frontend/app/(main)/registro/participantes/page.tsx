@@ -25,6 +25,9 @@ type Delegation = {
   countryCode?: string | null;
 };
 
+/** Los dos estados de acreditación que cuentan como participante validado. */
+const VALIDATED_ACCREDITATION_STATUSES = new Set(["APPROVED", "CREDENTIAL_ISSUED"]);
+
 function KpiCard({ label, value, color }: { label: string; value: number | string; color?: string }) {
   return (
     <div
@@ -61,8 +64,13 @@ export default function RegistroParticipantesPage() {
   }, [refreshKey]);
 
   const total = athletes.length;
-  const validated = athletes.filter(
-    (a) => a.accreditationStatus && a.accreditationStatus !== "PENDING"
+  // "Validado" significa acá lo mismo que en Acreditaciones y en Control de
+  // Acceso: la acreditación aprobada, o ya con la credencial emitida. Contar
+  // "cualquier estado que no sea PENDING" metía en Validados a los que están
+  // en revisión, a los rechazados y a cualquier valor suelto que traiga la
+  // ficha — gente que justamente todavía está pendiente.
+  const validated = athletes.filter((a) =>
+    VALIDATED_ACCREDITATION_STATUSES.has(String(a.accreditationStatus || "").toUpperCase())
   ).length;
   const pending = total - validated;
   const totalDelegations = delegations.length;
