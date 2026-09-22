@@ -5,7 +5,7 @@ import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { nombrePropio } from "@/lib/nombres";
-import { AlertIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon, DownloadIcon } from "@/components/ui/Icons";
+import { AlertIcon, BedIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon, DownloadIcon } from "@/components/ui/Icons";
 import { downloadCSV, slugify } from "@/lib/export";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import { isEventCoordinator, isMissionHead } from "@/lib/clientTypes";
@@ -284,6 +284,7 @@ export default function ResourceScreen({
   const [vehicleLookupByPlate, setVehicleLookupByPlate] = useState<Record<string, any>>({});
   const [flightLookup, setFlightLookup] = useState<Record<string, any>>({});
   const [athleteSearch, setAthleteSearch] = useState("");
+  const [accommodationSearch, setAccommodationSearch] = useState("");
   const [athleteStatusFilter, setAthleteStatusFilter] = useState<"all" | "validated" | "pending">("all");
   /**
    * Envío del código de acceso desde el listado: a quién, cómo va y cómo
@@ -403,8 +404,13 @@ export default function ResourceScreen({
     [config.fields]
   );
   const needsDisciplines = useMemo(
-    () => config.fields.some((field) => field.optionsSource === "disciplines"),
-    [config.fields]
+    () =>
+      config.fields.some((field) => field.optionsSource === "disciplines") ||
+      // Hoteles: la ficha no pide disciplinas (las asigna la planilla de
+      // distribución), pero el listado muestra qué deportes se alojan ahí y
+      // necesita sus nombres.
+      config.endpoint === "/accommodations",
+    [config.fields, config.endpoint]
   );
   const needsDelegations = useMemo(
     () =>
@@ -4381,6 +4387,161 @@ export default function ResourceScreen({
                             </button>
                           )}
                         </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })() : config.endpoint === "/accommodations" ? (() => {
+          /* ═══ Hoteles en fichas, no en tabla ═══
+             La tabla genérica les daba ocho columnas —cuatro tipos de
+             habitación, check-in y check-out— que en la mayoría de los
+             hoteles vienen en cero y en guión, y empujaba el nombre fuera de
+             la pantalla con el scroll horizontal: había que desplazarse de
+             lado para leer ceros. La ficha pone adelante lo que identifica al
+             hotel (foto, nombre, dirección) y deja el inventario como un
+             renglón, sin una columna por tipo. */
+          const buscado = accommodationSearch.trim().toLowerCase();
+          const filtrados = items.filter((item) => {
+            if (!buscado) return true;
+            return [item.name, item.address, item.tower]
+              .some((campo) => String(campo ?? "").toLowerCase().includes(buscado));
+          });
+          const fecha = (valor: unknown) => {
+            if (!valor) return null;
+            const parsed = new Date(String(valor));
+            return Number.isNaN(parsed.getTime())
+              ? null
+              : parsed.toLocaleDateString("es-CL", { day: "2-digit", month: "short" }).replace(".", "");
+          };
+          const ROTULO_HABITACION: Record<string, string> = {
+            SINGLE: "single", DOUBLE: "double", TRIPLE: "triple", SUITE: "suite",
+          };
+          return (
+            <div>
+              <div style={{ display: "flex", gap: "8px", marginBottom: "14px", flexWrap: "wrap", alignItems: "center" }}>
+                <input
+                  type="text"
+                  placeholder={t("Buscar por nombre o dirección...")}
+                  value={accommodationSearch}
+                  onChange={(e) => setAccommodationSearch(e.target.value)}
+                  style={{ flex: 1, minWidth: "180px", maxWidth: "320px", border: "1px solid var(--border)", borderRadius: "8px", padding: "6px 12px", fontSize: "13px", background: "var(--surface)", color: "var(--text)", outline: "none" }}
+                />
+                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  {filtrados.length} {filtrados.length === 1 ? t("hotel") : t("hoteles")}
+                </span>
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "65vh", overflowY: "auto" }}>
+                {filtrados.length === 0 && (
+                  <div style={{ color: "var(--text-muted)", fontSize: "13px", padding: "16px 0" }}>{t("Sin resultados.")}</div>
+                )}
+                {filtrados.map((item) => {
+                  const inventario = (typeof item.roomInventory === "string"
+                    ? JSON.parse(item.roomInventory || "{}")
+                    : item.roomInventory ?? {}) as Record<string, number>;
+                  const habitaciones = Object.entries(inventario)
+                    .filter(([, cantidad]) => Number(cantidad) > 0)
+                    .map(([tipo, cantidad]) => `${cantidad} ${t(ROTULO_HABITACION[tipo] ?? tipo.toLowerCase())}`);
+                  const contactos = leerContactosHotel(item.coordinators);
+                  const deportes = (Array.isArray(item.disciplineIds) ? item.disciplineIds : [])
+                    .map((id: string) => disciplineOptions.find((o) => o.value === id)?.label)
+                    .filter(Boolean) as string[];
+                  const esVilla = String(item.accommodationType ?? "").toUpperCase() === "VILLA";
+                  const entrada = fecha(item.checkIn);
+                  const salida = fecha(item.checkOut);
+                  return (
+                    <div key={item.id ?? item.name} style={{
+                      borderRadius: "12px",
+                      border: "1px solid var(--border)",
+                      borderLeft: `4px solid ${esVilla ? ACCENT.violetLight : BRAND.teal}`,
+                      background: "var(--elevated)",
+                      padding: "12px 14px",
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: "12px",
+                    }}>
+                      {item.photoUrl && String(item.photoUrl).startsWith("http") ? (
+                        <img src={item.photoUrl} alt="" loading="lazy" style={{ width: "56px", height: "56px", borderRadius: "10px", objectFit: "cover", flexShrink: 0, background: "var(--surface)" }} />
+                      ) : (
+                        <div style={{ width: "56px", height: "56px", borderRadius: "10px", flexShrink: 0, background: "rgba(33,208,179,0.12)", display: "flex", alignItems: "center", justifyContent: "center", color: BRAND.tealInk }}>
+                          <BedIcon size={22} />
+                        </div>
+                      )}
+
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", marginBottom: "3px" }}>
+                          <span style={{ fontWeight: 700, fontSize: "14px", color: "var(--text)" }}>{item.name ?? "-"}</span>
+                          {esVilla && (
+                            <span style={{ fontSize: "10px", fontWeight: 700, padding: "1px 7px", borderRadius: "4px", background: "rgba(167,139,250,0.12)", color: ACCENT.violet, border: "1px solid rgba(167,139,250,0.25)" }}>
+                              {t("Villa")}{item.tower ? ` · ${item.tower}` : ""}
+                            </span>
+                          )}
+                        </div>
+                        {item.address && (
+                          <p style={{ fontSize: "11.5px", color: "var(--text-muted)", margin: "0 0 6px" }}>{item.address}</p>
+                        )}
+
+                        {deportes.length > 0 && (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginBottom: "6px" }}>
+                            {deportes.slice(0, 4).map((deporte) => (
+                              <span key={deporte} style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "999px", background: "rgba(33,208,179,0.10)", color: BRAND.tealInk }}>
+                                {deporte}
+                              </span>
+                            ))}
+                            {deportes.length > 4 && (
+                              <span style={{ fontSize: "10px", fontWeight: 700, color: "var(--text-faint)" }}>+{deportes.length - 4}</span>
+                            )}
+                          </div>
+                        )}
+
+                        <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", alignItems: "center", fontSize: "11px", color: "var(--text-muted)" }}>
+                          {/* El inventario, en un renglón: la tabla le daba una
+                              columna a cada tipo y casi siempre mostraba cuatro ceros. */}
+                          <span>
+                            <span style={{ fontWeight: 600 }}>{t("Habitaciones")}: </span>
+                            {habitaciones.length > 0
+                              ? `${habitaciones.join(" · ")}${item.totalCapacity ? ` — ${item.totalCapacity} ${t("plazas")}` : ""}`
+                              : t("sin cargar")}
+                          </span>
+                          {(entrada || salida) && (
+                            <span>
+                              <span style={{ fontWeight: 600 }}>{t("Estadía")}: </span>
+                              {entrada ?? "—"} → {salida ?? "—"}
+                            </span>
+                          )}
+                          {contactos.length > 0 && (
+                            <span>
+                              <span style={{ fontWeight: 600 }}>{contactos.length === 1 ? t("Coordinador") : t("Coordinadores")}: </span>
+                              {contactos.slice(0, 2).map((c) => c.name).join(", ")}
+                              {contactos.length > 2 ? ` +${contactos.length - 2}` : ""}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div style={{ display: "flex", gap: "4px", flexShrink: 0 }}>
+                        <button
+                          className="btn btn-ghost"
+                          style={{ fontSize: "11px", padding: "4px 10px" }}
+                          onClick={() => {
+                            handleEdit(item);
+                            if (item.id) onEditRequested?.(item.id);
+                          }}
+                        >
+                          {t("Editar")}
+                        </button>
+                        {item.id && (
+                          <button
+                            className="btn btn-ghost"
+                            style={{ fontSize: "11px", padding: "4px 10px", color: STATE.danger }}
+                            onClick={() => handleDelete(item.id)}
+                          >
+                            {t("Eliminar")}
+                          </button>
+                        )}
                       </div>
                     </div>
                   );
