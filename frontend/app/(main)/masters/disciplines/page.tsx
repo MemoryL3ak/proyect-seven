@@ -3,6 +3,9 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { STATE, SURFACE } from "@/lib/design";
+import StyledSelect from "@/components/StyledSelect";
+import { ChevronRightIcon, PencilIcon, TrashIcon } from "@/components/ui/Icons";
 
 type Discipline = {
   id: string;
@@ -35,6 +38,9 @@ const EMPTY_FORM = {
   gender: "",
   parentId: ""
 };
+
+/** Rótulo de campo del formulario: el mismo en los cinco. */
+const etiquetaCampo = "flex flex-col gap-1 text-xs uppercase tracking-widest";
 
 export default function DisciplinesPage() {
   const { t } = useI18n();
@@ -153,9 +159,35 @@ export default function DisciplinesPage() {
     [CATEGORY_LABELS[d.category ?? ""] ?? d.category, GENDER_LABELS[d.gender ?? ""] ?? d.gender]
       .filter(Boolean).map(s => t(s as string)).join(" · ");
 
+  /** Los botones de editar y borrar, iguales en el deporte y en la prueba. */
+  const accionesFila = (d: Discipline, size: number) => (
+    <>
+      <button
+        onClick={() => openEdit(d)}
+        className="p-1.5 transition-colors"
+        style={{ color: SURFACE.textFaint }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = SURFACE.text; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = SURFACE.textFaint; }}
+        title={t("Editar")}
+      >
+        <PencilIcon size={size} strokeWidth={2} />
+      </button>
+      <button
+        onClick={() => remove(d)}
+        className="p-1.5 transition-colors"
+        style={{ color: SURFACE.textFaint }}
+        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = STATE.danger; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = SURFACE.textFaint; }}
+        title={t("Eliminar")}
+      >
+        <TrashIcon size={size} strokeWidth={2} />
+      </button>
+    </>
+  );
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-40 text-white/40 text-sm">
+      <div className="flex items-center justify-center h-40 text-sm" style={{ color: SURFACE.textFaint }}>
         {t("Cargando disciplinas…")}
       </div>
     );
@@ -166,9 +198,9 @@ export default function DisciplinesPage() {
       {/* Header */}
       <section className="glass rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.3em] text-white/40">Masters</p>
-          <h1 className="font-sans font-bold text-3xl text-white">{t("Disciplinas")}</h1>
-          <p className="text-sm text-white/50 mt-1">
+          <p className="text-xs uppercase tracking-[0.3em]" style={{ color: SURFACE.textFaint }}>Masters</p>
+          <h1 className="font-sans font-bold text-3xl" style={{ color: SURFACE.text }}>{t("Disciplinas")}</h1>
+          <p className="text-sm mt-1" style={{ color: SURFACE.textMuted }}>
             {t("Organiza deportes y sus pruebas (ej: Atletismo → 100m planos, 4×100…)")}
           </p>
         </div>
@@ -180,7 +212,7 @@ export default function DisciplinesPage() {
       {/* Sport cards */}
       <div className="space-y-3">
         {sports.length === 0 && (
-          <div className="surface rounded-2xl p-8 text-center text-white/40 text-sm">
+          <div className="surface rounded-2xl p-8 text-center text-sm" style={{ color: SURFACE.textFaint }}>
             {t("No hay deportes registrados. Agrega uno para comenzar.")}
           </div>
         )}
@@ -195,17 +227,17 @@ export default function DisciplinesPage() {
                   onClick={() => toggle(sport.id)}
                   className="flex items-center gap-3 flex-1 text-left min-w-0"
                 >
-                  <svg
-                    className={`h-4 w-4 flex-shrink-0 text-white/40 transition-transform ${open ? "rotate-90" : ""}`}
-                    fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+                  <span
+                    className="flex-shrink-0 transition-transform"
+                    style={{ color: SURFACE.textFaint, transform: open ? "rotate(90deg)" : "none", display: "inline-flex" }}
                   >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-                  </svg>
-                  <span className="font-semibold text-white truncate">{sport.name}</span>
+                    <ChevronRightIcon size={16} strokeWidth={2} />
+                  </span>
+                  <span className="font-semibold truncate" style={{ color: SURFACE.text }}>{sport.name}</span>
                   {badge(sport) && (
-                    <span className="text-xs text-white/35 flex-shrink-0">{badge(sport)}</span>
+                    <span className="text-xs flex-shrink-0" style={{ color: SURFACE.textFaint }}>{badge(sport)}</span>
                   )}
-                  <span className="ml-auto text-xs text-white/40 flex-shrink-0 pr-2">
+                  <span className="ml-auto text-xs flex-shrink-0 pr-2" style={{ color: SURFACE.textFaint }}>
                     {subs.length} {subs.length === 1 ? t("prueba") : t("pruebas")}
                   </span>
                 </button>
@@ -216,43 +248,29 @@ export default function DisciplinesPage() {
                   >
                     {t("+ Prueba")}
                   </button>
-                  <button onClick={() => openEdit(sport)} className="text-white/30 hover:text-white/70 transition-colors p-1.5" title="Editar">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                  <button onClick={() => remove(sport)} className="text-white/30 hover:text-rose-400 transition-colors p-1.5" title="Eliminar">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+                  {accionesFila(sport, 16)}
                 </div>
               </div>
 
               {open && (
-                <div className="border-t border-white/5">
+                <div style={{ borderTop: `1px solid ${SURFACE.borderMuted}` }}>
                   {subs.length === 0 ? (
-                    <p className="px-14 py-3 text-xs text-white/40 italic">
+                    <p className="px-14 py-3 text-xs italic" style={{ color: SURFACE.textFaint }}>
                       {t("Sin pruebas. Haz clic en \"+ Prueba\" para agregar.")}
                     </p>
                   ) : (
-                    <div className="divide-y divide-white/5">
-                      {subs.map(sub => (
-                        <div key={sub.id} className="flex items-center gap-3 px-14 py-2.5">
-                          <span className="text-sm text-white/80 flex-1">{sub.name}</span>
+                    <div>
+                      {subs.map((sub, i) => (
+                        <div
+                          key={sub.id}
+                          className="flex items-center gap-3 px-14 py-2.5"
+                          style={i > 0 ? { borderTop: `1px solid ${SURFACE.borderMuted}` } : undefined}
+                        >
+                          <span className="text-sm flex-1" style={{ color: SURFACE.textSecondary }}>{sub.name}</span>
                           {badge(sub) && (
-                            <span className="text-xs text-white/40">{badge(sub)}</span>
+                            <span className="text-xs" style={{ color: SURFACE.textFaint }}>{badge(sub)}</span>
                           )}
-                          <button onClick={() => openEdit(sub)} className="text-white/30 hover:text-white/60 transition-colors p-1">
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                          </button>
-                          <button onClick={() => remove(sub)} className="text-white/30 hover:text-rose-400 transition-colors p-1">
-                            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                          </button>
+                          {accionesFila(sub, 14)}
                         </div>
                       ))}
                     </div>
@@ -265,21 +283,17 @@ export default function DisciplinesPage() {
 
         {orphans.length > 0 && (
           <div className="surface rounded-2xl p-4">
-            <p className="text-xs uppercase tracking-widest text-amber-400/70 mb-3">{t("Sin deporte asignado")}</p>
-            <div className="divide-y divide-white/5">
-              {orphans.map(d => (
-                <div key={d.id} className="flex items-center gap-3 py-2">
-                  <span className="text-sm text-white/60 flex-1">{d.name}</span>
-                  <button onClick={() => openEdit(d)} className="text-white/30 hover:text-white/70 p-1">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                    </svg>
-                  </button>
-                  <button onClick={() => remove(d)} className="text-white/30 hover:text-rose-400 p-1">
-                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                    </svg>
-                  </button>
+            <p className="text-xs uppercase tracking-widest mb-3" style={{ color: STATE.warning }}>{t("Sin deporte asignado")}</p>
+            <div>
+              {orphans.map((d, i) => (
+                <div
+                  key={d.id}
+                  className="flex items-center gap-3 px-2 py-2.5"
+                  style={i > 0 ? { borderTop: `1px solid ${SURFACE.borderMuted}` } : undefined}
+                >
+                  <span className="text-sm flex-1" style={{ color: SURFACE.textSecondary }}>{d.name}</span>
+                  {badge(d) && <span className="text-xs" style={{ color: SURFACE.textFaint }}>{badge(d)}</span>}
+                  {accionesFila(d, 14)}
                 </div>
               ))}
             </div>
@@ -291,13 +305,13 @@ export default function DisciplinesPage() {
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="surface rounded-3xl p-6 w-full max-w-md space-y-4">
-            <h2 className="font-bold text-xl text-white">
+            <h2 className="font-bold text-xl" style={{ color: SURFACE.text }}>
               {modal.editing
                 ? t(modal.mode === "sport" ? "Editar deporte" : "Editar prueba")
                 : t(modal.mode === "sport" ? "Nuevo deporte" : "Nueva prueba")}
             </h2>
 
-            <label className="flex flex-col gap-1 text-xs uppercase tracking-widest text-white/40">
+            <label className={etiquetaCampo} style={{ color: SURFACE.textFaint }}>
               {t("Nombre *")}
               <input
                 className="input"
@@ -309,10 +323,9 @@ export default function DisciplinesPage() {
             </label>
 
             {(modal.mode === "sub" || (modal.editing && form.parentId !== undefined)) && (
-              <label className="flex flex-col gap-1 text-xs uppercase tracking-widest text-white/40">
+              <label className={etiquetaCampo} style={{ color: SURFACE.textFaint }}>
                 {t("Deporte padre")}
-                <select
-                  className="input"
+                <StyledSelect
                   value={form.parentId}
                   onChange={e => setForm(f => ({ ...f, parentId: e.target.value }))}
                 >
@@ -322,27 +335,25 @@ export default function DisciplinesPage() {
                     .map(s => (
                       <option key={s.id} value={s.id}>{s.name}</option>
                     ))}
-                </select>
+                </StyledSelect>
               </label>
             )}
 
             <div className="grid grid-cols-2 gap-3">
-              <label className="flex flex-col gap-1 text-xs uppercase tracking-widest text-white/40">
+              <label className={etiquetaCampo} style={{ color: SURFACE.textFaint }}>
                 {t("Categoría")}
-                <select
-                  className="input"
+                <StyledSelect
                   value={form.category}
                   onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                 >
                   <option value="">—</option>
                   <option value="CONVENTIONAL">{t("Convencional")}</option>
                   <option value="PARALYMPIC">{t("Paralímpica")}</option>
-                </select>
+                </StyledSelect>
               </label>
-              <label className="flex flex-col gap-1 text-xs uppercase tracking-widest text-white/40">
+              <label className={etiquetaCampo} style={{ color: SURFACE.textFaint }}>
                 {t("Género")}
-                <select
-                  className="input"
+                <StyledSelect
                   value={form.gender}
                   onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}
                 >
@@ -350,14 +361,13 @@ export default function DisciplinesPage() {
                   <option value="MALE">{t("Masculino")}</option>
                   <option value="FEMALE">{t("Femenino")}</option>
                   <option value="MIXED">{t("Mixto")}</option>
-                </select>
+                </StyledSelect>
               </label>
             </div>
 
-            <label className="flex flex-col gap-1 text-xs uppercase tracking-widest text-white/40">
+            <label className={etiquetaCampo} style={{ color: SURFACE.textFaint }}>
               {t("Evento")}
-              <select
-                className="input"
+              <StyledSelect
                 value={form.eventId}
                 onChange={e => setForm(f => ({ ...f, eventId: e.target.value }))}
               >
@@ -365,10 +375,10 @@ export default function DisciplinesPage() {
                 {events.map(ev => (
                   <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>
                 ))}
-              </select>
+              </StyledSelect>
             </label>
 
-            {error && <p className="text-sm text-rose-400">{error}</p>}
+            {error && <p className="text-sm" style={{ color: STATE.danger }}>{error}</p>}
 
             <div className="flex justify-end gap-3 pt-2">
               <button className="btn btn-ghost" onClick={() => setModal(null)} disabled={saving}>
