@@ -260,6 +260,106 @@ export class TripsScheduleService {
     return VALID_CLIENT_TYPES.includes(v) ? v : v;
   }
 
+  /**
+   * Clave de comparación de una región: minúsculas, sin tildes y sin el
+   * prefijo "Región de/del/de los", para que "ÑUBLE", "Region de Ñuble" y
+   * "Región de Ñuble" sean lo mismo.
+   */
+  private claveRegion(raw: string | undefined | null): string {
+    return String(raw ?? '')
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .replace(/^region\s+(del\s+|de\s+)?/, '')
+      .trim();
+  }
+
+  /** Delegaciones del evento, para reconocerlas cuando vienen mal ubicadas. */
+  private async fetchDelegaciones(
+    eventId: string,
+  ): Promise<Array<{ id: string; clave: string; codigo: string }>> {
+    const { data } = await this.supabase
+      .schema('core')
+      .from('delegations')
+      .select('id, country_code, metadata')
+      .eq('event_id', eventId);
+    return ((data as Array<Record<string, unknown>>) ?? []).map((d) => ({
+      id: String(d.id),
+      clave: this.claveRegion(
+        (d.metadata as Record<string, unknown> | null)?.name as string | undefined,
+      ),
+      codigo: String(d.country_code ?? '').toLowerCase(),
+    }));
+  }
+
+  /**
+   * Delegación del viaje. La planilla de operatividad no tiene columna de
+   * región: en las cargas de los Juegos Escolares la escribieron en "Tipo de
+   * Cliente" —la columna descriptiva, que llega como `clientName` y que hasta
+   * ahora nadie leía— mientras el código del cliente viajaba en "Acrónimo".
+   * Así que la región entraba en cada fila y se descartaba, y el viaje quedaba
+   * sin delegación: de ahí el "Región —" del detalle.
+   *
+   * Se miran las dos columnas, por si la región aparece en cualquiera de ellas.
+   */
+  private resolverDelegacion(
+    clientName: string | undefined,
+    clientTypeRaw: string | undefined,
+    delegaciones: Array<{ id: string; clave: string; codigo: string }>,
+  ): string | null {
+    for (const valor of [clientName, clientTypeRaw]) {
+      const id = this.buscarDelegacion(valor, delegaciones);
+      if (id) return id;
+    }
+    return null;
+  }
+
+  /** La única delegación que nombra este texto, o null si son cero o varias. */
+  private buscarDelegacion(
+    raw: string | undefined,
+    delegaciones: Array<{ id: string; clave: string; codigo: string }>,
+  ): string | null {
+    const valor = String(raw || '').trim();
+    if (!valor) return null;
+    // Un tipo de cliente de verdad nunca es una región.
+    if (VALID_CLIENT_TYPES.includes(valor.toUpperCase())) return null;
+
+    const clave = this.claveRegion(valor);
+    const codigo = valor.toLowerCase();
+    const candidatas = delegaciones.filter(
+      (d) =>
+        (d.clave && d.clave === clave) ||
+        (d.codigo && d.codigo === codigo) ||
+        (clave.length >= 4 && d.clave.startsWith(clave)) ||
+        (d.clave.length >= 4 && clave.startsWith(d.clave)) ||
+        (clave.length >= 5 && d.clave.includes(clave)) ||
+        (d.clave.length >= 5 && clave.includes(d.clave)),
+    );
+    // Ante dos delegaciones posibles no se adivina.
+    return candidatas.length === 1 ? candidatas[0].id : null;
+  }
+
+  private resolverTipoCliente(
+    raw: string | undefined,
+    delegaciones: Array<{ id: string; clave: string; codigo: string }>,
+  ): { clientType: string | null; delegationId: string | null } {
+    const valor = String(raw || '').trim();
+    if (!valor) return { clientType: null, delegationId: null };
+
+    const enMayusculas = valor.toUpperCase();
+    if (VALID_CLIENT_TYPES.includes(enMayusculas)) {
+      return { clientType: enMayusculas, delegationId: null };
+    }
+
+    // El acrónimo tampoco es un tipo válido: si nombra una región, va a la
+    // delegación en vez de quedar como un tipo de cliente inventado.
+    const delegationId = this.buscarDelegacion(valor, delegaciones);
+    if (delegationId) return { clientType: null, delegationId };
+
+    return { clientType: enMayusculas, delegationId: null };
+  }
+
   private isReturnLeg(legType?: string): boolean {
     const v = String(legType || '').trim().toUpperCase();
     return v === 'RETURN' || v === 'RETORNO' || v === 'REGRESO' || v === 'VUELTA';
@@ -479,6 +579,7 @@ export class TripsScheduleService {
     // motivos por los que una fila no pudo emparejarse se agrupan para no
     // repetir la misma advertencia en cada tramo del mismo bus.
     const scheduleDrivers = await this.fetchScheduleDrivers(dto.eventId);
+    const delegaciones = await this.fetchDelegaciones(dto.eventId);
     const driverIssues = new Map<string, number[]>();
     let driverAssignedCount = 0;
     // Columnas que la base desplegada no tiene (desfase de esquema). Se detectan
@@ -543,7 +644,11 @@ export class TripsScheduleService {
 
         const presentationAt = this.withLead(scheduledAt);
 
-        const clientType = this.normalizeClientType(row.clientType);
+        const { clientType, delegationId: delegacionDelAcronimo } =
+          this.resolverTipoCliente(row.clientType, delegaciones);
+        const delegationId =
+          delegacionDelAcronimo ??
+          this.resolverDelegacion(row.clientName, row.clientType, delegaciones);
         const fleetAcronym = String(row.fleetAcronym || '').trim().toUpperCase() || null;
         const legType = this.isReturnLeg(row.legType) ? 'RETURN' : 'OUTBOUND';
         const isRoundTrip = !!returnAt && legType === 'OUTBOUND';
@@ -571,6 +676,7 @@ export class TripsScheduleService {
           destination: row.destinationName || row.destinationAddress || null,
           trip_type: row.activity || null,
           client_type: clientType,
+          delegation_id: delegationId,
           passenger_count: row.passengerCount ?? null,
           wheelchair_count: row.wheelchairCount ?? 0,
           notes: row.notes || row.observation || null,
