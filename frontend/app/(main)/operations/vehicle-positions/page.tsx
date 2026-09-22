@@ -19,6 +19,7 @@ import {
   MaximizeIcon,
   ArrowLeftIcon,
 } from "@/components/ui/Icons";
+import StyledSelect from "@/components/StyledSelect";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { getSupabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
@@ -89,17 +90,12 @@ type VenueItem = { id: string; name?: string | null; address?: string | null; co
 
 type HotelItem = { id: string; name?: string | null };
 
-/** Los cuatro selectores de la barra de filtros comparten forma. */
-const selectFiltro: React.CSSProperties = {
-  padding: "9px 12px",
-  fontSize: 13,
-  borderRadius: 10,
-  border: `1px solid ${SURFACE.border}`,
-  background: SURFACE.bg,
-  color: SURFACE.text,
-  cursor: "pointer",
-  maxWidth: 240,
-};
+/**
+ * Ancho de los desplegables de filtro. StyledSelect ocupa el 100% de su
+ * envoltorio, así que el ancho se fija acá y no en el disparador; el nombre
+ * largo de un hotel se corta con puntos suspensivos en vez de estirar la fila.
+ */
+const anchoFiltro = (ancho: number): React.CSSProperties => ({ width: ancho, flexShrink: 0 });
 
 /**
  * Nombre de lugar en forma comparable: sin mayúsculas, sin acentos y sin
@@ -1208,22 +1204,22 @@ export default function VehiclePositionsPage() {
               Filtrar
             </span>
             {tableDriverOptions.length > 0 && (
-              <select value={tableDriver} onChange={(e) => setTableDriver(e.target.value)} style={selectFiltro}>
+              <StyledSelect value={tableDriver} onChange={(e) => setTableDriver(e.target.value)} wrapperStyle={anchoFiltro(230)}>
                 <option value="">Todos los conductores</option>
-                {tableDriverOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
-              </select>
+                {tableDriverOptions.map((o) => <option key={o.id} value={o.id}>{`${o.label} (${o.count})`}</option>)}
+              </StyledSelect>
             )}
             {tableVenueOptions.length > 0 && (
-              <select value={tableVenue} onChange={(e) => setTableVenue(e.target.value)} style={selectFiltro}>
+              <StyledSelect value={tableVenue} onChange={(e) => setTableVenue(e.target.value)} wrapperStyle={anchoFiltro(240)}>
                 <option value="">Todas las sedes</option>
-                {tableVenueOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
-              </select>
+                {tableVenueOptions.map((o) => <option key={o.id} value={o.id}>{`${o.label} (${o.count})`}</option>)}
+              </StyledSelect>
             )}
             {tableHotelOptions.length > 0 && (
-              <select value={tableHotel} onChange={(e) => setTableHotel(e.target.value)} style={selectFiltro}>
+              <StyledSelect value={tableHotel} onChange={(e) => setTableHotel(e.target.value)} wrapperStyle={anchoFiltro(240)}>
                 <option value="">Todos los hoteles</option>
-                {tableHotelOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
-              </select>
+                {tableHotelOptions.map((o) => <option key={o.id} value={o.id}>{`${o.label} (${o.count})`}</option>)}
+              </StyledSelect>
             )}
             {hayFiltrosDeVista && (
               <>
@@ -1479,11 +1475,10 @@ export default function VehiclePositionsPage() {
                 <input value={tableSearch} onChange={(e) => setTableSearch(e.target.value)} placeholder="Buscar origen, destino, conductor, patente…"
                   style={{ width: "100%", padding: "9px 12px 9px 34px", fontSize: 13, borderRadius: 10, border: `1px solid ${SURFACE.border}`, outline: "none", background: SURFACE.bg, color: SURFACE.text, boxSizing: "border-box" }} />
               </div>
-              <select value={tableClient} onChange={(e) => setTableClient(e.target.value)}
-                style={selectFiltro}>
+              <StyledSelect value={tableClient} onChange={(e) => setTableClient(e.target.value)} wrapperStyle={anchoFiltro(190)}>
                 <option value="">Todos los clientes</option>
                 {tableClientOptions.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              </StyledSelect>
               {(tableSearch || tableStatus || tableClient) && (
                 <button type="button" onClick={() => { setTableSearch(""); setTableStatus(""); setTableClient(""); }}
                   style={{ padding: "9px 14px", fontSize: 12.5, fontWeight: 600, borderRadius: 10, border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: STATE.danger, cursor: "pointer" }}>
