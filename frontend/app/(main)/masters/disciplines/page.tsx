@@ -8,11 +8,11 @@ import StyledSelect from "@/components/StyledSelect";
 import {
   AccessibilityIcon,
   ChevronRightIcon,
-  DumbbellIcon,
   PencilIcon,
   TrashIcon,
   TrophyIcon,
 } from "@/components/ui/Icons";
+import { iconoDeDisciplina } from "@/lib/disciplina-icono";
 
 type Discipline = {
   id: string;
@@ -190,15 +190,35 @@ export default function DisciplinesPage() {
     );
   };
 
-  /** El deporte se distingue de un vistazo: paralímpico lleva su propio icono. */
+  /**
+   * El icono dice qué deporte es —caballo de ajedrez, zapatilla, balón—, no si
+   * es convencional o paralímpico: eso ya lo dice la pastilla de al lado, y
+   * gastar el icono en repetirlo dejaba a Ajedrez con una pesa.
+   *
+   * En los paralímpicos se marca la esquina con el símbolo de accesibilidad,
+   * que suma sin tapar el deporte.
+   */
   const iconoDeporte = (d: Discipline) => {
-    const Icono = d.category === "PARALYMPIC" ? AccessibilityIcon : DumbbellIcon;
+    const Icono = iconoDeDisciplina(d.name);
+    const esPara = d.category === "PARALYMPIC";
     return (
       <span
         className="flex items-center justify-center flex-shrink-0"
-        style={{ width: 34, height: 34, borderRadius: 10, background: "rgba(33,208,179,0.10)", color: BRAND.tealInk }}
+        style={{ position: "relative", width: 34, height: 34, borderRadius: 10, background: "rgba(33,208,179,0.10)", color: BRAND.tealInk }}
+        title={d.name}
       >
         <Icono size={17} strokeWidth={2} />
+        {esPara && (
+          <span
+            className="flex items-center justify-center"
+            style={{
+              position: "absolute", right: -4, bottom: -4, width: 15, height: 15, borderRadius: "50%",
+              background: SURFACE.card, border: `1px solid ${STATE.infoBorder}`, color: STATE.infoText,
+            }}
+          >
+            <AccessibilityIcon size={9} strokeWidth={2.4} />
+          </span>
+        )}
       </span>
     );
   };

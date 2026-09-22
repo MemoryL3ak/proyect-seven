@@ -108,6 +108,16 @@ import {
   Vegan,
   WheatOff,
   X,
+  // ── Deportes ──
+  Bike,
+  ChessKnight,
+  Gavel,
+  Goal,
+  Hand,
+  Shirt,
+  SportShoe,
+  Volleyball,
+  WavesLadder,
 } from "lucide-react";
 
 export type IconProps = {
@@ -317,6 +327,49 @@ export const RefreshIcon = (p: IconProps) =>
     p,
   );
 
+/**
+ * Deportes que ninguna librería dibuja. Van a mano, con la misma cuadrícula de
+ * 24 y el mismo trazo que el resto del kit.
+ */
+
+/** Básquetbol: balón con sus costuras. */
+export const BasketballIcon = (p: IconProps) =>
+  svg(
+    <>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3v18" />
+      <path d="M3 12h18" />
+      <path d="M5.6 5.6c3.5 3.5 3.5 9.3 0 12.8" />
+      <path d="M18.4 5.6c-3.5 3.5-3.5 9.3 0 12.8" />
+    </>,
+    p,
+  );
+
+/** Tenis de mesa: paleta y pelota. */
+export const TableTennisIcon = (p: IconProps) =>
+  svg(
+    <>
+      <circle cx="9.5" cy="8.5" r="5.5" />
+      <path d="M7.8 13.6 6 19.4" />
+      <circle cx="18.5" cy="16.5" r="2" />
+    </>,
+    p,
+  );
+
+/**
+ * Lanzamiento de martillo: la bola, el cable y el agarre. El martillo de
+ * carpintero que trae lucide es la herramienta, no la prueba atlética.
+ */
+export const HammerThrowIcon = (p: IconProps) =>
+  svg(
+    <>
+      <circle cx="7.5" cy="16.5" r="4" />
+      <path d="M10.4 13.7 17 7" />
+      <path d="M16 4.8 19.2 8" />
+    </>,
+    p,
+  );
+
 export const TrophyIcon = (p: IconProps) =>
   svg(
     <>
@@ -470,6 +523,25 @@ export const BriefcaseIcon = fromLucide(Briefcase);
 export const HeartPulseIcon = fromLucide(HeartPulse);
 export const HandshakeIcon = fromLucide(Handshake);
 export const MedalIcon = fromLucide(Medal);
+/* ── Deportes ── */
+/** Ajedrez. */
+export const ChessKnightIcon = fromLucide(ChessKnight);
+/** Atletismo. */
+export const SportShoeIcon = fromLucide(SportShoe);
+/** Ciclismo. */
+export const BikeIcon = fromLucide(Bike);
+/** Futsal: el arco. */
+export const GoalIcon = fromLucide(Goal);
+/** Vóleibol. */
+export const VolleyballIcon = fromLucide(Volleyball);
+/** Natación: la escalera de la piscina. */
+export const PoolIcon = fromLucide(WavesLadder);
+/** Balonmano. */
+export const HandIcon = fromLucide(Hand);
+/** Judo: el judogi. */
+export const ShirtIcon = fromLucide(Shirt);
+/** Jueces. */
+export const GavelIcon = fromLucide(Gavel);
 export const MapPinnedIcon = fromLucide(MapPinned);
 export const CalendarDaysIcon = fromLucide(CalendarDays);
 export const IdCardIcon = fromLucide(IdCard);
