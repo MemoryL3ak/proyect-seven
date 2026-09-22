@@ -132,6 +132,71 @@ export function haversineMeters(a: LatLng, b: LatLng): number {
   return 2 * R * Math.asin(Math.sqrt(h));
 }
 
+// ---- Trails -------------------------------------------------------------
+
+// One GPS breadcrumb. `ts` is the server clock (epoch ms) — never the device
+// clock, which can be skewed (a field test had a phone 32 min behind) and
+// would fake impossible speeds.
+export type TrailPoint = LatLng & { ts: number };
+
+// A sequence of fixes is only a real path while the fixes are consecutive.
+// When one lands somewhere the car could not have reached, or the phone goes
+// quiet long enough that it could have gone anywhere, we don't know the road
+// taken in between: joining them draws (and measures) a trip that never
+// happened — a straight line across Santiago, from a stale fix in San
+// Bernardo to the first live one downtown.
+//
+// Below this, never cut: parked or barely moved, and a short straight line at
+// worst cuts a corner. Keeps a car waiting at a light from fragmenting.
+export const TRAIL_GAP_MIN_METERS = 300;
+// Above this the jump is physically impossible: a bad fix, or the same driver
+// open on two phones. Matches VehiclePositionsService.MAX_SPEED_KMH on the
+// server — one definition of "impossible" for the whole system.
+export const TRAIL_MAX_SPEED_KMH = 200;
+// A silence this long can hide any route, so we stop guessing.
+export const TRAIL_MAX_GAP_MS = 5 * 60 * 1000;
+
+// True when two consecutive fixes cannot be joined by a straight line.
+export function isTrailBreak(prev: TrailPoint, cur: TrailPoint): boolean {
+  const meters = haversineMeters(prev, cur);
+  if (meters <= TRAIL_GAP_MIN_METERS) return false;
+  const dtMs = cur.ts - prev.ts;
+  // Out-of-order or same-instant fixes: no usable speed, so distance decides.
+  const speedKmh = dtMs > 0 ? (meters / (dtMs / 1000)) * 3.6 : Infinity;
+  return dtMs > TRAIL_MAX_GAP_MS || speedKmh > TRAIL_MAX_SPEED_KMH;
+}
+
+// Splits raw breadcrumbs into the segments we can actually vouch for.
+// Single-point segments are kept; callers drop them when they need a line.
+export function splitTrail<T extends TrailPoint>(points: T[]): T[][] {
+  if (points.length === 0) return [];
+  const segments: T[][] = [[points[0]]];
+  for (let i = 1; i < points.length; i++) {
+    if (isTrailBreak(points[i - 1], points[i])) segments.push([points[i]]);
+    else segments[segments.length - 1].push(points[i]);
+  }
+  return segments;
+}
+
+// Distance actually travelled, in km. Only hops within a segment count, so a
+// teleport adds nothing instead of adding its own length.
+export function trailKm(points: TrailPoint[]): number {
+  let meters = 0;
+  for (const segment of splitTrail(points)) {
+    for (let i = 1; i < segment.length; i++) {
+      meters += haversineMeters(segment[i - 1], segment[i]);
+    }
+  }
+  return meters / 1000;
+}
+
+// Stable id for a segment, used to key its snapped version. Anchored on the
+// first fix's timestamp so it survives points being appended; if the head is
+// trimmed the id changes and the segment simply re-snaps.
+export function segmentKey(ownerId: string, segment: TrailPoint[]): string {
+  return `${ownerId}@${segment[0]?.ts ?? 0}`;
+}
+
 // ---- Snap to Roads ------------------------------------------------------
 
 // Snaps a sequence of GPS fixes onto the nearest road network. Used to
