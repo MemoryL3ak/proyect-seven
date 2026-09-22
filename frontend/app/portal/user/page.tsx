@@ -1606,8 +1606,16 @@ export default function UserPortalPage() {
    */
   const [fotoPrevia, setFotoPrevia] = useState<string | null>(null);
   const inputFotoRef = useRef<HTMLInputElement | null>(null);
-  const fotoActual =
-    fotoPrevia ?? ((athlete?.metadata?.photoUrl as string | undefined) ?? null);
+  /**
+   * Sirve tanto la del servidor (https) como la recién elegida, que es un
+   * data: URL. Mirar sólo "http" dejaba la vista previa sin dibujar y había
+   * que recargar la app para ver la foto nueva.
+   */
+  const fotoMostrable = (valor: unknown): string | null => {
+    const url = typeof valor === "string" ? valor.trim() : "";
+    return url.startsWith("http") || url.startsWith("data:image") ? url : null;
+  };
+  const fotoActual = fotoPrevia ?? fotoMostrable(athlete?.metadata?.photoUrl);
 
   /**
    * El <input> vive en el JSX y no se crea al vuelo con createElement: al
@@ -1635,10 +1643,10 @@ export default function UserPortalPage() {
         setAthlete((previo) =>
           previo ? { ...previo, metadata: { ...(previo.metadata ?? {}), photoUrl: nueva } } : previo,
         );
-        // Recién ahora se suelta la previa: la del servidor ya está puesta y
-        // soltarla antes hacía parpadear las iniciales entre una y otra.
-        setFotoPrevia(null);
       }
+      // La previa se queda puesta: es la misma foto y ya está en pantalla.
+      // Cambiarla por la del servidor obligaría a descargarla de nuevo y la
+      // imagen parpadearía por nada. Se suelta sola al recargar la ficha.
       notify.push("Foto actualizada", "camera");
     } catch {
       // La previa se descarta: dejarla puesta haría creer que quedó guardada.
@@ -1952,8 +1960,11 @@ export default function UserPortalPage() {
           <div style={{ position:"absolute",top:0,right:0,width:"200px",height:"200px",borderRadius:"50%",background:"radial-gradient(ellipse,rgba(33,208,179,0.05) 0%,transparent 65%)",transform:"translate(60px,-60px)",pointerEvents:"none" }} />
           <div className="db-profile-body">
             <div style={{ position:"relative",flexShrink:0 }}>
-              {(athlete?.metadata?.photoUrl as string)?.startsWith("http") ? (
-                <img src={athlete.metadata!.photoUrl as string} alt={athlete.fullName} className="db-avatar" style={{ objectFit:"cover" }} />
+              {/* La misma foto que la tarjeta de Cuenta, vista previa
+                  incluida: el avatar de arriba está visible en todas las
+                  pestañas y era raro que cambiara en una y en la otra no. */}
+              {fotoActual ? (
+                <img src={fotoActual} alt={athlete.fullName} className="db-avatar" style={{ objectFit:"cover" }} />
               ) : (
                 <div className="db-avatar">{initials}</div>
               )}
@@ -4344,8 +4355,8 @@ export default function UserPortalPage() {
             {/* Foto. Va primero y dice para qué sirve: es la que sale en la
                 credencial, y esa es la razón por la que alguien la cambia. */}
             <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"14px 16px",display:"flex",alignItems:"center",gap:14 }}>
-              {fotoActual?.startsWith("http") ? (
-                <img src={fotoActual} alt={athlete.fullName} style={{ width:58,height:58,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:`2px solid ${BRAND.teal}` }} />
+              {fotoActual ? (
+                <img src={fotoActual} alt={athlete.fullName} style={{ width:58,height:58,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:`2px solid ${BRAND.teal}`,opacity:subiendoFoto?0.6:1,transition:"opacity .15s" }} />
               ) : (
                 <div style={{ width:58,height:58,borderRadius:"50%",flexShrink:0,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:BRAND.tealInk }}>
                   {initials}
