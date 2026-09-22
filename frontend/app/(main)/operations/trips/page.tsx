@@ -371,6 +371,18 @@ const normalizarLugar = (valor?: string | null) =>
     .replace(/\s+/g, " ")
     .trim();
 
+/**
+ * Deja visible la opción ya elegida aunque el recorte de los otros filtros la
+ * haya dejado sin viajes —pasa al recargar datos, cuando el viaje que la
+ * sostenía se cerró—. Si se cayera del desplegable, el selector mostraría
+ * "Todas" mientras el filtro sigue puesto y la lista seguiría recortada sin
+ * que nada en pantalla lo explique.
+ */
+function conElegida<T>(opciones: T[], elegida: string, claveDe: (opcion: T) => string, vacia: () => T): T[] {
+  if (!elegida || opciones.some((opcion) => claveDe(opcion) === elegida)) return opciones;
+  return [...opciones, vacia()];
+}
+
 /** Día local de un instante: agrupar por UTC corría los viajes de la noche. */
 const isoDayKeyLocal = (value: string) => {
   const d = new Date(value);
@@ -874,31 +886,6 @@ export default function TripsPage() {
   );
 
   /**
-   * Días con carga, para el selector. Antes la lista venía partida por
-   * encabezados de jornada: con una semana entera eso obliga a bajar a ciegas
-   * hasta encontrar el día que se busca.
-   */
-  const ongoingDays = useMemo(() => {
-    const porDia = new Map<string, number>();
-    for (const trip of ongoingTrips) {
-      const clave = trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha";
-      porDia.set(clave, (porDia.get(clave) ?? 0) + 1);
-    }
-    return [...porDia.entries()]
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([key, count]) => ({ key, count, label: key === "sin-fecha" ? t("Sin fecha") : formatDayLabel(key) }));
-  }, [ongoingTrips, t]);
-
-  /** Deportes presentes en la operación viva, para el filtro. */
-  const ongoingDisciplines = useMemo(
-    () =>
-      [...new Set(ongoingTrips.map((t2) => t2.discipline).filter((d): d is string => Boolean(d)))].sort(
-        (a, b) => a.localeCompare(b, "es"),
-      ),
-    [ongoingTrips],
-  );
-
-  /**
    * Los dos lugares de un viaje, tal como los muestra su fila: origen y
    * destino. Si el destino no trae texto se usa el nombre de la sede.
    */
@@ -916,6 +903,89 @@ export default function TripsPage() {
   };
 
   /**
+   * Las cinco condiciones de la vista, cada una por su lado.
+   *
+   * Sueltas porque los desplegables no se arman con toda la operación viva
+   * sino con los viajes que pasan *los otros* filtros: al elegir una jornada,
+   * disciplina, hotel, sede y conductor quedan mostrando sólo lo que ese día
+   * tiene, y con las cuentas de ese día. Antes ofrecían los 220 viajes
+   * completos, así que se podía elegir un hotel sin nada ese martes y la lista
+   * quedaba vacía sin explicar cuál de los cinco filtros sobraba.
+   *
+   * Cada filtro se excluye a sí mismo del recorte: si no, elegir un hotel
+   * dejaría ese hotel como única opción y no habría forma de cambiarse a otro.
+   */
+  const condicionesEnCurso = {
+    jornada: (trip: Trip) =>
+      !ongoingDay || (trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha") === ongoingDay,
+    disciplina: (trip: Trip) => !ongoingDiscipline || trip.discipline === ongoingDiscipline,
+    hotel: (trip: Trip) => !ongoingHotel || tocaLugar(trip, ongoingHotel),
+    sede: (trip: Trip) => !ongoingVenue || tocaLugar(trip, ongoingVenue),
+    conductor: (trip: Trip) =>
+      !ongoingDriver ||
+      (ongoingDriver === ONGOING_SIN_CONDUCTOR ? !trip.driverId : trip.driverId === ongoingDriver),
+  };
+  type FiltroEnCurso = keyof typeof condicionesEnCurso;
+
+  /** Viajes en curso que pasan todas las condiciones menos la indicada. */
+  const viajesEnCursoSalvo = (excepto: FiltroEnCurso | null) =>
+    ongoingTrips.filter((trip) =>
+      (Object.keys(condicionesEnCurso) as FiltroEnCurso[]).every(
+        (clave) => clave === excepto || condicionesEnCurso[clave](trip),
+      ),
+    );
+
+  // Los seis recortes dependen de lo mismo, así que comparten dependencias.
+  // Que cada uno ignore su propio filtro no hace daño: recalcular doscientos
+  // viajes no se nota y la lista queda dicha entera.
+  const dependenciasEnCurso = [
+    ongoingTrips, ongoingDay, ongoingDiscipline, ongoingHotel, ongoingVenue, ongoingDriver, venues,
+  ];
+
+  /* eslint-disable react-hooks/exhaustive-deps */
+  const baseSinJornada = useMemo(() => viajesEnCursoSalvo("jornada"), dependenciasEnCurso);
+  const baseSinDisciplina = useMemo(() => viajesEnCursoSalvo("disciplina"), dependenciasEnCurso);
+  const baseSinHotel = useMemo(() => viajesEnCursoSalvo("hotel"), dependenciasEnCurso);
+  const baseSinSede = useMemo(() => viajesEnCursoSalvo("sede"), dependenciasEnCurso);
+  const baseSinConductor = useMemo(() => viajesEnCursoSalvo("conductor"), dependenciasEnCurso);
+  const ongoingFiltered = useMemo(() => viajesEnCursoSalvo(null), dependenciasEnCurso);
+  /* eslint-enable react-hooks/exhaustive-deps */
+
+  /**
+   * Días con carga, para el selector. Antes la lista venía partida por
+   * encabezados de jornada: con una semana entera eso obliga a bajar a ciegas
+   * hasta encontrar el día que se busca.
+   */
+  const ongoingDays = useMemo(() => {
+    const porDia = new Map<string, number>();
+    for (const trip of baseSinJornada) {
+      const clave = trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha";
+      porDia.set(clave, (porDia.get(clave) ?? 0) + 1);
+    }
+    const dias = [...porDia.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([key, count]) => ({ key, count, label: key === "sin-fecha" ? t("Sin fecha") : formatDayLabel(key) }));
+    return conElegida(dias, ongoingDay, (d) => d.key, () => ({
+      key: ongoingDay,
+      count: 0,
+      label: ongoingDay === "sin-fecha" ? t("Sin fecha") : formatDayLabel(ongoingDay),
+    }));
+  }, [baseSinJornada, ongoingDay, t]);
+
+  /** Deportes presentes en lo que dejan ver los otros filtros. */
+  const ongoingDisciplines = useMemo(() => {
+    const porDisciplina = new Map<string, number>();
+    for (const trip of baseSinDisciplina) {
+      if (!trip.discipline) continue;
+      porDisciplina.set(trip.discipline, (porDisciplina.get(trip.discipline) ?? 0) + 1);
+    }
+    const lista = [...porDisciplina.entries()]
+      .map(([texto, total]) => ({ texto, total }))
+      .sort((a, b) => a.texto.localeCompare(b.texto, "es"));
+    return conElegida(lista, ongoingDiscipline, (d) => d.texto, () => ({ texto: ongoingDiscipline, total: 0 }));
+  }, [baseSinDisciplina, ongoingDiscipline]);
+
+  /**
    * Hoteles y sedes de los filtros. Salen de los propios viajes y no de los
    * maestros: la planilla escribe "Hotel Hippocampus" y el maestro lo tiene
    * como "Hippocampus Concón Resort & Club", así que al cruzarlos por nombre
@@ -926,14 +996,14 @@ export default function TripsPage() {
    * La separación hotel/sede se decide por el maestro de Hoteles y, si el
    * lugar no está ahí, por cómo se llama.
    */
-  const { ongoingHoteles, ongoingSedes } = useMemo(() => {
+  const lugaresDe = (viajes: Trip[]) => {
     const nombresDeHotel = new Set(
       hoteles.map((h) => normalizarLugar(h.name)).filter((valor) => valor.length > 0),
     );
-    const suenaAHotel = /(hotel|hostal|apart|aparthotel|resort|cabana|cabanas|hosteria|residencial)/;
+    const suenaAHotel = /(hotel|hostal|apart|aparthotel|resort|cabana|cabanas|hosteria|residencial)/;
 
     const porLugar = new Map<string, { texto: string; esHotel: boolean; total: number }>();
-    for (const trip of ongoingTrips) {
+    for (const trip of viajes) {
       // Un viaje que sale y llega al mismo lugar cuenta una sola vez.
       const clavesDelViaje = new Set<string>();
       for (const texto of lugaresDeViaje(trip)) {
@@ -952,27 +1022,43 @@ export default function TripsPage() {
         });
       }
     }
+    return [...porLugar.values()].sort((a, b) => a.texto.localeCompare(b.texto, "es"));
+  };
 
-    const ordenados = [...porLugar.values()].sort((a, b) => a.texto.localeCompare(b.texto, "es"));
-    return {
-      ongoingHoteles: ordenados.filter((lugar) => lugar.esHotel),
-      ongoingSedes: ordenados.filter((lugar) => !lugar.esHotel),
-    };
+  const ongoingHoteles = useMemo(
+    () => conElegida(
+      lugaresDe(baseSinHotel).filter((lugar) => lugar.esHotel),
+      ongoingHotel,
+      (h) => h.texto,
+      () => ({ texto: ongoingHotel, esHotel: true, total: 0 }),
+    ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hoteles, ongoingTrips, venues]);
+    [baseSinHotel, ongoingHotel, hoteles, venues],
+  );
+
+  const ongoingSedes = useMemo(
+    () => conElegida(
+      lugaresDe(baseSinSede).filter((lugar) => !lugar.esHotel),
+      ongoingVenue,
+      (v) => v.texto,
+      () => ({ texto: ongoingVenue, esHotel: false, total: 0 }),
+    ),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [baseSinSede, ongoingVenue, hoteles, venues],
+  );
 
   /**
-   * Conductores con carga en la operación viva. Igual que hoteles y sedes, las
-   * opciones salen de los viajes y no del maestro de /drivers: el desplegable
-   * sólo ofrece a quien efectivamente tiene algo asignado, y no una lista de
-   * cientos de nombres donde la mayoría no maneja hoy. Los viajes todavía sin
-   * conductor van a una opción aparte, que es la misma pregunta que responde
-   * el indicador "Sin conductor" de arriba.
+   * Conductores con carga. Igual que hoteles y sedes, las opciones salen de los
+   * viajes y no del maestro de /drivers: el desplegable sólo ofrece a quien
+   * efectivamente tiene algo asignado, y no una lista de cientos de nombres
+   * donde la mayoría no maneja hoy. Los viajes todavía sin conductor van a una
+   * opción aparte, que es la misma pregunta que responde el indicador "Sin
+   * conductor" de arriba.
    */
   const ongoingConductores = useMemo(() => {
     let sinConductor = 0;
     const porConductor = new Map<string, { id: string; texto: string; total: number }>();
-    for (const trip of ongoingTrips) {
+    for (const trip of baseSinConductor) {
       if (!trip.driverId) {
         sinConductor += 1;
         continue;
@@ -988,30 +1074,17 @@ export default function TripsPage() {
         total: 1,
       });
     }
+    const lista = [...porConductor.values()].sort((a, b) => a.texto.localeCompare(b.texto, "es"));
+    const elegido = ongoingDriver === ONGOING_SIN_CONDUCTOR ? "" : ongoingDriver;
     return {
-      lista: [...porConductor.values()].sort((a, b) => a.texto.localeCompare(b.texto, "es")),
+      lista: conElegida(lista, elegido, (c) => c.id, () => ({
+        id: elegido,
+        texto: drivers[elegido]?.fullName || t("Asignado"),
+        total: 0,
+      })),
       sinConductor,
     };
-  }, [drivers, ongoingTrips, t]);
-
-  const ongoingFiltered = useMemo(
-    () =>
-      ongoingTrips
-        .filter(
-          (trip) =>
-            !ongoingDay ||
-            (trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha") === ongoingDay,
-        )
-        .filter((trip) => !ongoingDiscipline || trip.discipline === ongoingDiscipline)
-        .filter((trip) => !ongoingHotel || tocaLugar(trip, ongoingHotel))
-        .filter((trip) => !ongoingVenue || tocaLugar(trip, ongoingVenue))
-        .filter((trip) =>
-          !ongoingDriver ||
-          (ongoingDriver === ONGOING_SIN_CONDUCTOR ? !trip.driverId : trip.driverId === ongoingDriver),
-        ),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ongoingTrips, ongoingDay, ongoingDiscipline, ongoingHotel, ongoingVenue, ongoingDriver, venues],
-  );
+  }, [baseSinConductor, drivers, ongoingDriver, t]);
 
   const ongoingTotalPages = Math.max(1, Math.ceil(ongoingFiltered.length / ONGOING_PAGE_SIZE));
   const ongoingVisible = useMemo(
@@ -1916,7 +1989,7 @@ export default function TripsPage() {
                   value={ongoingDay}
                   onChange={(e) => { setOngoingDay(e.target.value); setOngoingPage(0); }}
                 >
-                  <option value="">{`${t("Todas las jornadas")} (${ongoingTrips.length})`}</option>
+                  <option value="">{`${t("Todas las jornadas")} (${baseSinJornada.length})`}</option>
                   {ongoingDays.map((d) => (
                     <option key={d.key} value={d.key}>{`${d.label} (${d.count})`}</option>
                   ))}
@@ -1929,9 +2002,9 @@ export default function TripsPage() {
                   value={ongoingDiscipline}
                   onChange={(e) => { setOngoingDiscipline(e.target.value); setOngoingPage(0); }}
                 >
-                  <option value="">{t("Todas")}</option>
+                  <option value="">{`${t("Todas")} (${baseSinDisciplina.length})`}</option>
                   {ongoingDisciplines.map((d) => (
-                    <option key={d} value={d}>{d}</option>
+                    <option key={d.texto} value={d.texto}>{`${d.texto} (${d.total})`}</option>
                   ))}
                 </StyledSelect>
               </label>
@@ -1942,7 +2015,7 @@ export default function TripsPage() {
                   value={ongoingHotel}
                   onChange={(e) => { setOngoingHotel(e.target.value); setOngoingPage(0); }}
                 >
-                  <option value="">{t("Todos")}</option>
+                  <option value="">{`${t("Todos")} (${baseSinHotel.length})`}</option>
                   {ongoingHoteles.map((h) => (
                     <option key={h.texto} value={h.texto}>{`${h.texto} (${h.total})`}</option>
                   ))}
@@ -1955,7 +2028,7 @@ export default function TripsPage() {
                   value={ongoingVenue}
                   onChange={(e) => { setOngoingVenue(e.target.value); setOngoingPage(0); }}
                 >
-                  <option value="">{t("Todas")}</option>
+                  <option value="">{`${t("Todas")} (${baseSinSede.length})`}</option>
                   {ongoingSedes.map((v) => (
                     <option key={v.texto} value={v.texto}>{`${v.texto} (${v.total})`}</option>
                   ))}
@@ -1968,8 +2041,10 @@ export default function TripsPage() {
                   value={ongoingDriver}
                   onChange={(e) => { setOngoingDriver(e.target.value); setOngoingPage(0); }}
                 >
-                  <option value="">{t("Todos")}</option>
-                  {ongoingConductores.sinConductor > 0 && (
+                  <option value="">{`${t("Todos")} (${baseSinConductor.length})`}</option>
+                  {/* Se muestra tambien cuando esta elegida aunque quede en cero: si
+                      desapareciera, el selector diria "Todos" con el filtro puesto. */}
+                  {(ongoingConductores.sinConductor > 0 || ongoingDriver === ONGOING_SIN_CONDUCTOR) && (
                     <option value={ONGOING_SIN_CONDUCTOR}>
                       {`${t("Sin conductor")} (${ongoingConductores.sinConductor})`}
                     </option>
