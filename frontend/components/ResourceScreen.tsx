@@ -3854,13 +3854,11 @@ export default function ResourceScreen({
 
       {viewMode !== "form" ? (
       <section className="surface p-6" style={{ borderTop: `2px solid ${BRAND.blue}` }}>
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.blue, marginBottom: "3px" }}>
-              {t("Base de datos")}
-            </p>
-            <h4 style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em" }}>{t("Registros")}</h4>
-          </div>
+        {/* Sin encabezado propio: decía "Base de datos / Registros" en todos
+            los módulos —dos palabras del lado del desarrollador que no decían
+            de qué es la lista— y arriba ya está el título de la pantalla con
+            el nombre del recurso. Queda la barra de acciones. */}
+        <div className="flex items-center justify-end gap-2 mb-5">
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
           <button
             className="btn btn-ghost"
