@@ -14,6 +14,7 @@ type I18nContextValue = {
 const translations: Record<Locale, Record<string, string>> = {
   es: {},
   en: {
+    "Eliminar viaje": "Delete trip",
     // Descarga de listados (maestros y Sedes).
     "Descargar": "Download",
     "Descargar el listado como CSV": "Download the list as CSV",
@@ -2654,6 +2655,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "Los viajes de esta delegación se asignan a una de estas disciplinas.": "This delegation's trips are assigned to one of these disciplines.",
   },
   pt: {
+    "Eliminar viaje": "Excluir viagem",
     // Descarga de listados (maestros y Sedes).
     "Descargar": "Baixar",
     "Descargar el listado como CSV": "Baixar a lista em CSV",
