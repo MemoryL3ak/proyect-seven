@@ -269,6 +269,8 @@ export class TripsScheduleService {
     return String(raw ?? '')
       .trim()
       .toLowerCase()
+      // "O Higgins" y "O'Higgins" son el mismo lugar escrito por dos personas.
+      .replace(/['’´`]/g, '')
       .normalize('NFD')
       .replace(/[̀-ͯ]/g, '')
       .replace(/^region\s+(del\s+|de\s+)?/, '')
@@ -278,19 +280,23 @@ export class TripsScheduleService {
   /** Delegaciones del evento, para reconocerlas cuando vienen mal ubicadas. */
   private async fetchDelegaciones(
     eventId: string,
-  ): Promise<Array<{ id: string; clave: string; codigo: string }>> {
+  ): Promise<Array<{ id: string; clave: string; compacta: string; codigo: string }>> {
     const { data } = await this.supabase
       .schema('core')
       .from('delegations')
       .select('id, country_code, metadata')
       .eq('event_id', eventId);
-    return ((data as Array<Record<string, unknown>>) ?? []).map((d) => ({
-      id: String(d.id),
-      clave: this.claveRegion(
+    return ((data as Array<Record<string, unknown>>) ?? []).map((d) => {
+      const clave = this.claveRegion(
         (d.metadata as Record<string, unknown> | null)?.name as string | undefined,
-      ),
-      codigo: String(d.country_code ?? '').toLowerCase(),
-    }));
+      );
+      return {
+        id: String(d.id),
+        clave,
+        compacta: clave.replace(/[^a-z0-9]/g, ''),
+        codigo: String(d.country_code ?? '').toLowerCase(),
+      };
+    });
   }
 
   /**
@@ -306,7 +312,7 @@ export class TripsScheduleService {
     delegacion: string | undefined,
     clientName: string | undefined,
     clientTypeRaw: string | undefined,
-    delegaciones: Array<{ id: string; clave: string; codigo: string }>,
+    delegaciones: Array<{ id: string; clave: string; compacta: string; codigo: string }>,
   ): string | null {
     // La columna "Delegación" manda. Las otras dos son el rescate para las
     // planillas viejas, que no la tenían y escribían la región donde podían.
@@ -320,7 +326,7 @@ export class TripsScheduleService {
   /** La única delegación que nombra este texto, o null si son cero o varias. */
   private buscarDelegacion(
     raw: string | undefined,
-    delegaciones: Array<{ id: string; clave: string; codigo: string }>,
+    delegaciones: Array<{ id: string; clave: string; compacta: string; codigo: string }>,
   ): string | null {
     const valor = String(raw || '').trim();
     if (!valor) return null;
@@ -329,14 +335,23 @@ export class TripsScheduleService {
 
     const clave = this.claveRegion(valor);
     const codigo = valor.toLowerCase();
+    // Sin espacios ni puntuación: "O Higgins" y "O'Higgins" quedan iguales
+    // recién acá, porque sacar el apóstrofo deja "ohiggins" de un lado y
+    // "o higgins" del otro.
+    const compacta = clave.replace(/[^a-z0-9]/g, '');
     const candidatas = delegaciones.filter(
       (d) =>
         (d.clave && d.clave === clave) ||
         (d.codigo && d.codigo === codigo) ||
+        // La sigla sola: "RM" contra "CL-RM". Tiene que ser la celda entera,
+        // no un pedazo, para que dos letras sueltas no arrastren cualquier cosa.
+        (d.codigo.includes('-') && d.codigo.split('-')[1] === codigo) ||
         (clave.length >= 4 && d.clave.startsWith(clave)) ||
         (d.clave.length >= 4 && clave.startsWith(d.clave)) ||
         (clave.length >= 5 && d.clave.includes(clave)) ||
-        (d.clave.length >= 5 && clave.includes(d.clave)),
+        (d.clave.length >= 5 && clave.includes(d.clave)) ||
+        (compacta.length >= 5 && d.compacta.includes(compacta)) ||
+        (d.compacta.length >= 5 && compacta.includes(d.compacta)),
     );
     // Ante dos delegaciones posibles no se adivina.
     return candidatas.length === 1 ? candidatas[0].id : null;
@@ -344,7 +359,7 @@ export class TripsScheduleService {
 
   private resolverTipoCliente(
     raw: string | undefined,
-    delegaciones: Array<{ id: string; clave: string; codigo: string }>,
+    delegaciones: Array<{ id: string; clave: string; compacta: string; codigo: string }>,
   ): { clientType: string | null; delegationId: string | null } {
     const valor = String(raw || '').trim();
     if (!valor) return { clientType: null, delegationId: null };
