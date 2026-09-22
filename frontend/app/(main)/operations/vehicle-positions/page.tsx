@@ -53,7 +53,13 @@ type Trip = {
   requesterAthleteId?: string | null;
   origin?: string | null;
   destination?: string | null;
+  // Los cuatro lugares del viaje. Vienen vacíos en la mayoría de los viajes
+  // cargados: ahí el lugar está sólo como texto en origin/destination, y por
+  // eso los filtros de sede y hotel miran también el nombre.
+  originVenueId?: string | null;
+  originHotelId?: string | null;
   destinationVenueId?: string | null;
+  destinationHotelId?: string | null;
   tripType?: string | null;
   clientType?: string | null;
   status?: string | null;
@@ -80,6 +86,61 @@ type AthleteItem = { id: string; fullName?: string | null; delegationId?: string
 type DelegationItem = { id: string; countryCode?: string | null };
 
 type VenueItem = { id: string; name?: string | null; address?: string | null; commune?: string | null };
+
+type HotelItem = { id: string; name?: string | null };
+
+/** Los cuatro selectores de la barra de filtros comparten forma. */
+const selectFiltro: React.CSSProperties = {
+  padding: "9px 12px",
+  fontSize: 13,
+  borderRadius: 10,
+  border: `1px solid ${SURFACE.border}`,
+  background: SURFACE.bg,
+  color: SURFACE.text,
+  cursor: "pointer",
+  maxWidth: 240,
+};
+
+/**
+ * Nombre de lugar en forma comparable: sin mayúsculas, sin acentos y sin
+ * puntuación. "Hotel LRH § Convention Center" y "hotel lrh convention center"
+ * quedan iguales.
+ */
+const claveLugar = (texto: unknown) =>
+  String(texto ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+
+/**
+ * Opciones de un selector: las claves que aparecen en algún viaje, con cuántos
+ * viajes tiene cada una, ordenadas por nombre.
+ */
+const opcionesDeFiltro = (
+  trips: Trip[],
+  clavesDelViaje: (trip: Trip) => Iterable<string>,
+  etiquetar: (clave: string) => string,
+) => {
+  const cuenta = new Map<string, number>();
+  trips.forEach((trip) => {
+    for (const clave of clavesDelViaje(trip)) {
+      if (clave) cuenta.set(clave, (cuenta.get(clave) ?? 0) + 1);
+    }
+  });
+  return Array.from(cuenta.entries())
+    .map(([id, count]) => ({ id, label: etiquetar(id), count }))
+    .sort((a, b) => a.label.localeCompare(b.label, "es"));
+};
+
+/**
+ * El mismo conductor entra a los viajes a veces con su id de chofer y a veces
+ * con su id de usuario —el mapa de conductores está indexado por los dos—, y
+ * sin reducirlo saldría repetido en el selector.
+ */
+const claveConductor = (drivers: Record<string, DriverItem>, driverId?: string | null) =>
+  driverId ? drivers[driverId]?.id || driverId : "";
 
 // Acentos de estado derivados del catálogo canónico (TRIP_STATUS_META en
 // lib/design): accent = color y chipBg = bg. `chipBorder` es una extensión
@@ -178,6 +239,7 @@ export default function VehiclePositionsPage() {
   const [athletes, setAthletes] = useState<Record<string, AthleteItem>>({});
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
   const [venues, setVenues] = useState<Record<string, VenueItem>>({});
+  const [hotels, setHotels] = useState<Record<string, HotelItem>>({});
   const [positions, setPositions] = useState<Record<string, StoredPosition>>({});
   // Per-driver breadcrumb trail of where they've actually been since the
   // admin opened the page. Capped per driver so a long session doesn't
@@ -212,6 +274,9 @@ export default function VehiclePositionsPage() {
   const [tableSearch, setTableSearch] = useState("");
   const [tableStatus, setTableStatus] = useState("");
   const [tableClient, setTableClient] = useState("");
+  const [tableDriver, setTableDriver] = useState("");
+  const [tableVenue, setTableVenue] = useState("");
+  const [tableHotel, setTableHotel] = useState("");
   const [loading, setLoading] = useState(false);
   // Only the very first load should blank the KPIs to "—". Subsequent
   // refreshes keep the previous values on screen to avoid flicker.
@@ -229,7 +294,7 @@ export default function VehiclePositionsPage() {
     setLoading(true);
     setError(null);
     try {
-      const [tripData, eventData, driverData, vehicleData, athleteData, delegationData, positionData, venueData] =
+      const [tripData, eventData, driverData, vehicleData, athleteData, delegationData, positionData, venueData, hotelData] =
         await Promise.all([
           apiFetch<Trip[]>("/trips"),
           apiFetch<EventItem[]>("/events"),
@@ -239,6 +304,7 @@ export default function VehiclePositionsPage() {
           apiFetch<DelegationItem[]>("/delegations"),
           apiFetch<PositionItem[]>("/vehicle-positions"),
           apiFetch<VenueItem[]>("/venues"),
+          apiFetch<HotelItem[]>("/accommodations"),
         ]);
 
       const nextTrips = tripData || [];
@@ -274,6 +340,10 @@ export default function VehiclePositionsPage() {
 
       setVenues(
         (venueData || []).reduce<Record<string, VenueItem>>((acc, v) => { acc[v.id] = v; return acc; }, {})
+      );
+
+      setHotels(
+        (hotelData || []).reduce<Record<string, HotelItem>>((acc, h) => { acc[h.id] = h; return acc; }, {})
       );
 
       setTrips(nextTrips);
@@ -631,6 +701,55 @@ export default function VehiclePositionsPage() {
     return [...trips].sort((a, b) => tripWhen(b) - tripWhen(a));
   }, [trips]);
 
+  // ── Qué sede y qué hotel toca cada viaje ──
+  // El viaje tiene cuatro columnas de id para los lugares (sede y hotel, de
+  // origen y de destino), pero casi ningún viaje cargado las trae: el lugar
+  // viene escrito a mano en Origen/Destino, con el mismo nombre que está en el
+  // catálogo ("Polideportivo Viña del Mar", "Hotel Ankara"). Un filtro que
+  // mirara sólo los ids devolvería una lista vacía y parecería roto, así que
+  // se resuelve por id y, si no hay, por nombre.
+  //
+  // Lo que queda fuera —comedores, direcciones sueltas como "1 Norte 221"— no
+  // es una sede ni un hotel del catálogo y no debería aparecer bajo ninguno.
+  const lugaresPorViaje = useMemo(() => {
+    const indexar = (catalogo: Record<string, { id: string; name?: string | null }>) => {
+      const porNombre = new Map<string, string>();
+      Object.values(catalogo).forEach((item) => {
+        const clave = claveLugar(item.name);
+        if (clave) porNombre.set(clave, item.id);
+      });
+      return porNombre;
+    };
+    const sedesPorNombre = indexar(venues);
+    const hotelesPorNombre = indexar(hotels);
+
+    const resolver = (
+      idOrigen: string | null | undefined,
+      idDestino: string | null | undefined,
+      porNombre: Map<string, string>,
+      textos: Array<string | null | undefined>,
+    ) => {
+      const ids = new Set<string>();
+      if (idOrigen) ids.add(idOrigen);
+      if (idDestino) ids.add(idDestino);
+      textos.forEach((texto) => {
+        const id = porNombre.get(claveLugar(texto));
+        if (id) ids.add(id);
+      });
+      return ids;
+    };
+
+    const mapa = new Map<string, { sedes: Set<string>; hoteles: Set<string> }>();
+    trips.forEach((trip) => {
+      const textos = [trip.origin, trip.destination];
+      mapa.set(trip.id, {
+        sedes: resolver(trip.originVenueId, trip.destinationVenueId, sedesPorNombre, textos),
+        hoteles: resolver(trip.originHotelId, trip.destinationHotelId, hotelesPorNombre, textos),
+      });
+    });
+    return mapa;
+  }, [trips, venues, hotels]);
+
   // ── Filtros de la tabla "Todos los viajes" ──
   const statusCounts = useMemo(() => {
     const m: Record<string, number> = {};
@@ -642,11 +761,54 @@ export default function VehiclePositionsPage() {
     trips.forEach((t) => { if (t.clientType) set.add(t.clientType); });
     return Array.from(set).sort();
   }, [trips]);
+  // Los selectores listan sólo conductores, sedes y hoteles que aparecen en
+  // algún viaje: un desplegable con los 14 hoteles del evento cuando sólo
+  // once tienen viajes obliga a probarlos uno por uno para dar con los vacíos.
+  const tableDriverOptions = useMemo(
+    () => opcionesDeFiltro(
+      trips,
+      (trip) => [claveConductor(drivers, trip.driverId)],
+      (id) => drivers[id]?.fullName || "Conductor sin nombre",
+    ),
+    [trips, drivers],
+  );
+  const tableVenueOptions = useMemo(
+    () => opcionesDeFiltro(
+      trips,
+      (trip) => lugaresPorViaje.get(trip.id)?.sedes ?? [],
+      (id) => venues[id]?.name || "Sede",
+    ),
+    [trips, lugaresPorViaje, venues],
+  );
+  const tableHotelOptions = useMemo(
+    () => opcionesDeFiltro(
+      trips,
+      (trip) => lugaresPorViaje.get(trip.id)?.hoteles ?? [],
+      (id) => hotels[id]?.name || "Hotel",
+    ),
+    [trips, lugaresPorViaje, hotels],
+  );
+
+  const hayFiltros = Boolean(tableSearch || tableStatus || tableClient || tableDriver || tableVenue || tableHotel);
+  const limpiarFiltros = () => {
+    setTableSearch("");
+    setTableStatus("");
+    setTableClient("");
+    setTableDriver("");
+    setTableVenue("");
+    setTableHotel("");
+  };
+
   const visibleTrips = useMemo(() => {
     const q = tableSearch.trim().toLowerCase();
     return orderedTrips.filter((t) => {
       if (tableStatus && (t.status || "SCHEDULED") !== tableStatus) return false;
       if (tableClient && (t.clientType || "") !== tableClient) return false;
+      if (tableDriver && claveConductor(drivers, t.driverId) !== tableDriver) return false;
+      // Sede y hotel miran los dos extremos del viaje: ir al Fortín Prat y
+      // volver del Fortín Prat son los dos viajes del Fortín Prat.
+      if (tableVenue && !lugaresPorViaje.get(t.id)?.sedes.has(tableVenue)) return false;
+      if (tableHotel && !lugaresPorViaje.get(t.id)?.hoteles.has(tableHotel)) return false;
       if (q) {
         const driver = drivers[t.driverId]?.fullName || "";
         const vehicle = t.vehicleId ? (vehicles[t.vehicleId]?.plate || "") : "";
@@ -656,7 +818,7 @@ export default function VehiclePositionsPage() {
       }
       return true;
     });
-  }, [orderedTrips, tableSearch, tableStatus, tableClient, drivers, vehicles]);
+  }, [orderedTrips, tableSearch, tableStatus, tableClient, tableDriver, tableVenue, tableHotel, lugaresPorViaje, drivers, vehicles]);
 
   const activeTrips = useMemo(
     () => trips.filter((t) => ["EN_ROUTE", "PICKED_UP"].includes(t.status ?? "")),
@@ -1235,12 +1397,30 @@ export default function VehiclePositionsPage() {
                   style={{ width: "100%", padding: "9px 12px 9px 34px", fontSize: 13, borderRadius: 10, border: `1px solid ${SURFACE.border}`, outline: "none", background: SURFACE.bg, color: SURFACE.text, boxSizing: "border-box" }} />
               </div>
               <select value={tableClient} onChange={(e) => setTableClient(e.target.value)}
-                style={{ padding: "9px 12px", fontSize: 13, borderRadius: 10, border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.text, cursor: "pointer" }}>
+                style={selectFiltro}>
                 <option value="">Todos los clientes</option>
                 {tableClientOptions.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              {(tableSearch || tableStatus || tableClient) && (
-                <button type="button" onClick={() => { setTableSearch(""); setTableStatus(""); setTableClient(""); }}
+              {tableDriverOptions.length > 0 && (
+                <select value={tableDriver} onChange={(e) => setTableDriver(e.target.value)} style={selectFiltro}>
+                  <option value="">Todos los conductores</option>
+                  {tableDriverOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
+                </select>
+              )}
+              {tableVenueOptions.length > 0 && (
+                <select value={tableVenue} onChange={(e) => setTableVenue(e.target.value)} style={selectFiltro}>
+                  <option value="">Todas las sedes</option>
+                  {tableVenueOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
+                </select>
+              )}
+              {tableHotelOptions.length > 0 && (
+                <select value={tableHotel} onChange={(e) => setTableHotel(e.target.value)} style={selectFiltro}>
+                  <option value="">Todos los hoteles</option>
+                  {tableHotelOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
+                </select>
+              )}
+              {hayFiltros && (
+                <button type="button" onClick={limpiarFiltros}
                   style={{ padding: "9px 14px", fontSize: 12.5, fontWeight: 600, borderRadius: 10, border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: STATE.danger, cursor: "pointer" }}>
                   Limpiar
                 </button>
