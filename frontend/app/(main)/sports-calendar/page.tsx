@@ -83,6 +83,13 @@ const SCHEDULE_TYPE_OPTIONS: Array<{ value: ScheduleType; label: string }> = [
   { value: "COMPETITION", label: "Fechas de pruebas" },
   { value: "DEPARTURE", label: "Fecha de retiro" },
 ];
+/**
+ * Lo que este calendario muestra: los hitos que obligan a mover un vehículo.
+ * Todo lo demás —pruebas, premiaciones, ceremonias— es del Calendario
+ * Deportivo, y lo que llega sin tipo no se dibuja acá por defecto.
+ */
+const TIPOS_OPERATIVOS = new Set<ScheduleType>(["ARRIVAL", "TRAINING", "DEPARTURE"]);
+
 const MANUAL_SCHEDULE_TYPE_OPTIONS: Array<{ value: ScheduleType; label: string }> = SCHEDULE_TYPE_OPTIONS.filter(
   (option) => option.value === "TRAINING" || option.value === "COMPETITION",
 );
@@ -733,11 +740,14 @@ export default function SportsCalendarPage() {
     const term = quickSearch.trim().toLowerCase();
     return [...entries, ...derivedAndCalendarEntries]
       .filter((entry) => {
-        // Las pruebas viven en el Calendario Deportivo, no acá: este
-        // calendario es de operación —llegadas, entrenamientos, retiros y los
-        // traslados que generan— y la agenda del día quedaba tapada por
-        // cincuenta pruebas de atletismo con las que transporte no hace nada.
-        if (getMetaString(entry.metadata, "scheduleType") === "COMPETITION") return false;
+        // Acá sólo entra lo que mueve vehículos. Se declara qué pasa, no qué
+        // se descarta: excluyendo COMPETITION igual se colaban las
+        // premiaciones, que llegan sin scheduleType, y con ellas cualquier
+        // cosa que se cargue mañana sin tipo. Pruebas, premiaciones y
+        // ceremonias van al Calendario Deportivo.
+        if (!TIPOS_OPERATIVOS.has(getMetaString(entry.metadata, "scheduleType") as ScheduleType)) {
+          return false;
+        }
         // Filtro tipo actividad
         if (scheduleTypeFilter) {
           const tipo = getMetaString(entry.metadata, "scheduleType");
