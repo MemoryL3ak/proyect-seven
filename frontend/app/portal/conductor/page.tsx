@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import {
@@ -30,8 +30,11 @@ import {
   UserIcon,
   DownloadIcon,
 } from "@/components/ui/Icons";
+import { trailKm, type TrailPoint } from "@/lib/google-maps";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { clientTypeLabel } from "@/lib/clientTypes";
+import { legTypeLabel, tripTypeLabel } from "@/lib/tripTypes";
 import { useI18n } from "@/lib/i18n";
 import NotificationBell, { useNotifications } from "@/components/NotificationBell";
 import TripChat from "@/components/TripChat";
@@ -130,6 +133,22 @@ type Trip = {
   passengerLat?: number | null;
   passengerLng?: number | null;
   notes?: string | null;
+  /**
+   * Viaje de delegación: en los Juegos Escolares el traslado se asigna al
+   * grupo (región + disciplina) y no a un participante suelto.
+   */
+  delegationId?: string | null;
+  /** Deporte de la planilla de operatividad. */
+  discipline?: string | null;
+  /** Prueba o actividad concreta dentro de la disciplina. */
+  activity?: string | null;
+  /** Sigla de la flota que cubre el servicio, según la planilla. */
+  fleetAcronym?: string | null;
+  wheelchairCount?: number | null;
+  travelTimeMinutes?: number | null;
+  passengerCount?: number | null;
+  isRoundTrip?: boolean;
+  legType?: string | null;
   /** Tramos de vuelta que /trips anida dentro de su viaje de ida. */
   childTrips?: Trip[];
 };
@@ -173,7 +192,7 @@ type EventItem = { id: string; name?: string | null };
 
 type VehicleItem = { id: string; plate?: string | null; type?: string | null; brand?: string | null; model?: string | null };
 
-type DelegationItem = { id: string; countryCode?: string | null };
+type DelegationItem = { id: string; countryCode?: string | null; name?: string | null };
 
 /** Jefe de delegación: marcado en Delegaciones o con tipo de cliente Jefe de Misión. */
 const esJefeDelegacion = (a: { isDelegationLead?: boolean | null; userType?: string | null }) =>
@@ -323,6 +342,18 @@ const horaPresentacion = (trip: { presentationAt?: string | null; scheduledAt?: 
   if (!trip.scheduledAt) return null;
   return new Date(new Date(trip.scheduledAt).getTime() - PRESENTACION_MINUTOS * 60_000).toISOString();
 };
+/** Encabezado de una jornada: "Hoy", "Mañana" o "lun 23 sep". */
+const etiquetaDia = (clave: string, hoy: string) => {
+  if (!clave || clave === "sin-fecha") return "Sin fecha";
+  if (clave === hoy) return "Hoy";
+  const [a, m, d] = clave.split("-").map(Number);
+  const fecha = new Date(a, (m || 1) - 1, d || 1);
+  const manana = new Date();
+  manana.setDate(manana.getDate() + 1);
+  if (clave === chileDay(manana.toISOString())) return "Mañana";
+  return fecha.toLocaleDateString("es-CL", { weekday: "short", day: "numeric", month: "short" });
+};
+
 const soloHora = (value?: string | null) =>
   value ? new Date(value).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }) : "—";
 
@@ -388,9 +419,11 @@ export default function DriverPortalPage() {
   /** Estado del rastreo del shell nativo. null fuera de la app o antes de saberlo. */
   const [shellTracking, setShellTracking] = useState<ShellTrackingState | null>(null);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
+  /** Jornadas que el conductor abrió o cerró a mano, por clave YYYY-MM-DD. */
+  const [diasAlternados, setDiasAlternados] = useState<Record<string, boolean>>({});
   const [assistOpen, setAssistOpen] = useState(false);
   const [historyTrip, setHistoryTrip] = useState<Trip | null>(null);
-  const [historyPositions, setHistoryPositions] = useState<{ lat: number; lng: number }[]>([]);
+  const [historyPositions, setHistoryPositions] = useState<TrailPoint[]>([]);
   const [historyRouteLoading, setHistoryRouteLoading] = useState(false);
   const [seenTripIds, setSeenTripIds] = useState<Set<string>>(() => {
     try { const saved = localStorage.getItem("conductor_seen_trips"); return saved ? new Set(JSON.parse(saved)) : new Set(); } catch { return new Set(); }
@@ -1387,6 +1420,20 @@ export default function DriverPortalPage() {
     return labels.join(", ");
   };
 
+  /**
+   * Región (delegación) del viaje. En los Juegos Escolares el traslado se
+   * asigna a la delegación completa, así que manda la del viaje; si no viene
+   * cargada se deduce de los pasajeros, como se hacía hasta ahora.
+   */
+  const resolveRegion = (trip: Trip) => {
+    const propia = trip.delegationId ? delegations[trip.delegationId] : null;
+    const nombre = propia?.name?.trim();
+    if (nombre) return nombre;
+    if (propia?.countryCode) return countryLabels[propia.countryCode] ?? propia.countryCode;
+    const porPasajeros = resolveDelegations(trip);
+    return porPasajeros === "-" ? "" : porPasajeros;
+  };
+
   const resolveDelegationLeads = (trip: Trip) => {
     const allIds = getTripAthleteIds(trip);
     const ids = allIds
@@ -1449,6 +1496,29 @@ export default function DriverPortalPage() {
       : Infinity;
     return timeOf(a) - timeOf(b);
   });
+
+  /** Jornada por la que se agrupa un viaje en la lista. */
+  const diaDelViaje = (trip: Trip) => chileDay(trip.scheduledAt || trip.startedAt) || "sin-fecha";
+
+  // Sólo "Programados" se pliega por jornada: es la pestaña que acumula la
+  // semana entera y se vuelve un scroll sin fondo. "En curso" y "Hoy" son de
+  // un día por definición.
+  const agrupaPorDia = statusFilter === "todos";
+
+  // Para la vista agrupada los viajes se reordenan por jornada ascendente
+  // manteniendo el orden dentro del día (sort estable): así cada día queda
+  // contiguo y su encabezado sale una sola vez. Sin esto, el viaje en curso
+  // —que va primero pase lo que pase— partía su jornada en dos.
+  const viajesEnLista = agrupaPorDia
+    ? [...filteredTrips].sort((a, b) => diaDelViaje(a).localeCompare(diaDelViaje(b)))
+    : filteredTrips;
+
+  // La jornada más cercana queda abierta y el resto plegado; lo que el
+  // conductor toque manda por encima de ese criterio.
+  const primeraJornada = viajesEnLista.length > 0 ? diaDelViaje(viajesEnLista[0]) : "";
+  const diaAbierto = (clave: string, esPrimera: boolean) => diasAlternados[clave] ?? esPrimera;
+  const alternarDia = (clave: string, abiertoAhora: boolean) =>
+    setDiasAlternados((prev) => ({ ...prev, [clave]: !abiertoAhora }));
 
   /**
    * Reemplaza al botón de iniciar cuando ya hay un viaje en curso. Nombra cuál
@@ -1529,20 +1599,9 @@ export default function DriverPortalPage() {
   };
 
   // ── Historial: distancia real recorrida y duración ──
-  const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
-    const R = 6371;
-    const dLat = ((b.lat - a.lat) * Math.PI) / 180;
-    const dLng = ((b.lng - a.lng) * Math.PI) / 180;
-    const s =
-      Math.sin(dLat / 2) ** 2 +
-      Math.cos((a.lat * Math.PI) / 180) * Math.cos((b.lat * Math.PI) / 180) * Math.sin(dLng / 2) ** 2;
-    return 2 * R * Math.asin(Math.min(1, Math.sqrt(s)));
-  };
-  const routeKm = (pts: { lat: number; lng: number }[]) => {
-    let total = 0;
-    for (let i = 1; i < pts.length; i++) total += haversineKm(pts[i - 1], pts[i]);
-    return total;
-  };
+  // `trailKm` no suma los saltos que el auto no pudo haber hecho: un fijo
+  // perdido no le agrega kilómetros al viaje del chofer.
+  const routeKm = (pts: TrailPoint[]) => trailKm(pts);
   const formatDuration = (startIso?: string | null, endIso?: string | null) => {
     if (!startIso || !endIso) return "—";
     const ms = new Date(endIso).getTime() - new Date(startIso).getTime();
@@ -1557,15 +1616,29 @@ export default function DriverPortalPage() {
     setHistoryPositions([]);
     setHistoryRouteLoading(true);
     try {
-      const rows = await apiFetch<Array<{ location?: { coordinates?: number[] } | null }>>(
-        `/vehicle-positions/by-trip/${trip.id}`,
-      );
+      const rows = await apiFetch<
+        Array<{
+          location?: { coordinates?: number[] } | null;
+          createdAt?: string;
+          timestamp?: string;
+        }>
+      >(`/vehicle-positions/by-trip/${trip.id}`);
+      // Las filas vienen ordenadas por tiempo. `prevTs` arrastra el último
+      // reloj utilizable para que una fila sin marca se juzgue por distancia
+      // y no parezca un salto instantáneo.
+      let prevTs = 0;
       const pts = (rows || [])
         .map((r) => {
           const c = r.location?.coordinates;
-          return Array.isArray(c) && c.length >= 2 ? { lat: Number(c[1]), lng: Number(c[0]) } : null;
+          if (!Array.isArray(c) || c.length < 2) return null;
+          // Reloj del servidor primero: `timestamp` es el del teléfono, y uno
+          // corrido haría ver un viaje honesto como un teleporte.
+          const parsed = new Date(r.createdAt ?? r.timestamp ?? "").getTime();
+          const ts = Number.isNaN(parsed) ? prevTs : parsed;
+          prevTs = ts;
+          return { lat: Number(c[1]), lng: Number(c[0]), ts };
         })
-        .filter((p): p is { lat: number; lng: number } => !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng));
+        .filter((p): p is TrailPoint => !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng));
       setHistoryPositions(pts);
     } catch {
       setHistoryPositions([]);
@@ -2078,7 +2151,10 @@ export default function DriverPortalPage() {
                 </div>
               ) : (
                 <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                  {filteredTrips.map((trip) => {
+                  {viajesEnLista.map((trip, indice) => {
+                    const claveDia = diaDelViaje(trip);
+                    const primeraDelDia = indice === 0 || diaDelViaje(viajesEnLista[indice - 1]) !== claveDia;
+                    const abierta = !agrupaPorDia || diaAbierto(claveDia, claveDia === primeraJornada);
                     const status = trip.status || "SCHEDULED";
                     const isSelected = selectedTripId === trip.id;
                     const isActive = status === "EN_ROUTE" || status === "PICKED_UP";
@@ -2089,7 +2165,40 @@ export default function DriverPortalPage() {
                     const passengerCount = getTripAthleteIds(trip).length;
 
                     return (
-                      <div key={trip.id} style={{
+                      <Fragment key={trip.id}>
+                      {agrupaPorDia && primeraDelDia && (() => {
+                        const delDia = viajesEnLista.filter((v) => diaDelViaje(v) === claveDia);
+                        const nuevosDelDia = delDia.filter((v) => v.status === "SCHEDULED" && !seenTripIds.has(v.id)).length;
+                        const horas = delDia
+                          .map((v) => horaPresentacion(v))
+                          .filter((h): h is string => Boolean(h))
+                          .sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+                        const rango = horas.length === 0 ? ""
+                          : horas.length === 1 ? soloHora(horas[0])
+                          : `${soloHora(horas[0])}–${soloHora(horas[horas.length - 1])}`;
+                        return (
+                          <button type="button" onClick={() => alternarDia(claveDia, abierta)}
+                            style={{ width:"100%",display:"flex",alignItems:"center",gap:8,textAlign:"left",cursor:"pointer",
+                              padding:"9px 12px",marginTop: indice === 0 ? 0 : 8,borderRadius:10,
+                              border:`1px solid ${abierta ? SURFACE.border : SURFACE.borderMuted}`,background:SURFACE.bg }}>
+                            <span style={{ fontSize:12.5,fontWeight:800,color:SURFACE.text,textTransform:"capitalize",flexShrink:0 }}>
+                              {t(etiquetaDia(claveDia, todayKey))}
+                            </span>
+                            <span style={{ fontSize:11,color:SURFACE.textFaint,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                              {delDia.length} {delDia.length === 1 ? t("viaje") : t("viajes")}{rango ? ` · ${rango}` : ""}
+                            </span>
+                            {nuevosDelDia > 0 && (
+                              <span style={{ fontSize:10,fontWeight:800,padding:"1px 6px",borderRadius:"99px",background:STATE.info,color:SURFACE.card,flexShrink:0 }}>
+                                {nuevosDelDia}
+                              </span>
+                            )}
+                            <ChevronDownIcon size={14} color={SURFACE.textFaint} strokeWidth={2}
+                              style={{ marginLeft:"auto",flexShrink:0,transition:"transform .2s",transform: abierta ? "rotate(180deg)" : "rotate(0)" }} />
+                          </button>
+                        );
+                      })()}
+                      {abierta && (
+                      <div style={{
                         borderRadius:14,
                         border: isSelected ? "1px solid rgba(33,208,179,0.4)" : isNew ? "1px solid rgba(59,130,246,0.3)" : `1px solid ${SURFACE.borderMuted}`,
                         background: isNew ? "rgba(59,130,246,0.03)" : SURFACE.card,
@@ -2213,7 +2322,41 @@ export default function DriverPortalPage() {
                               </>
                             )}
 
-                            {/* Info chips */}
+                            {/* Detalle del servicio: de qué región y disciplina
+                                es el grupo que se sube, y qué traslado es. Antes
+                                sólo se veía una sigla de delegación suelta y el
+                                conductor tenía que preguntarlo por radio. */}
+                            {(() => {
+                              const region = resolveRegion(trip);
+                              const disciplina = trip.discipline?.trim() || "";
+                              const tipoViaje = tripTypeLabel(trip.tripType);
+                              const tramo = legTypeLabel(trip.legType);
+                              const detalles: { label: string; value: string }[] = [
+                                ...(region ? [{ label: "Región", value: region }] : []),
+                                ...(disciplina ? [{ label: "Disciplina", value: disciplina }] : []),
+                                ...(tipoViaje ? [{ label: "Tipo de viaje", value: tipoViaje }] : []),
+                                ...(tramo ? [{ label: "Tramo", value: tramo }] : []),
+                                ...(trip.clientType ? [{ label: "Tipo de cliente", value: t(clientTypeLabel(trip.clientType)) }] : []),
+                                ...(passengerCount > 0 ? [{ label: "Pasajeros", value: String(passengerCount) }] : []),
+                                ...(trip.activity?.trim() ? [{ label: "Actividad", value: trip.activity.trim() }] : []),
+                                ...(trip.travelTimeMinutes ? [{ label: "Duración estimada", value: `${trip.travelTimeMinutes} min` }] : []),
+                                ...(trip.wheelchairCount ? [{ label: "Sillas de ruedas", value: String(trip.wheelchairCount) }] : []),
+                                ...(trip.fleetAcronym?.trim() ? [{ label: "Flota", value: trip.fleetAcronym.trim() }] : []),
+                              ];
+                              if (detalles.length === 0) return null;
+                              return (
+                                <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:6,marginBottom:10 }}>
+                                  {detalles.map((d) => (
+                                    <div key={d.label} style={{ padding:"7px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.border}` }}>
+                                      <p style={{ fontSize:9,fontWeight:800,letterSpacing:"0.12em",textTransform:"uppercase",color:SURFACE.textFaint,margin:0 }}>{t(d.label)}</p>
+                                      <p style={{ fontSize:12.5,fontWeight:700,color:SURFACE.text,margin:"2px 0 0",lineHeight:1.3 }}>{d.value}</p>
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
+
+                            {/* Patente y valor: datos del vehículo, no del grupo */}
                             <div style={{ display:"flex",flexWrap:"wrap",gap:4,marginBottom:10 }}>
                               {tripVehicle?.plate && (
                                 <span style={{ fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6,background:SURFACE.bg,border:`1px solid ${SURFACE.border}`,color:SURFACE.textStrong }}>
@@ -2223,11 +2366,6 @@ export default function DriverPortalPage() {
                               {trip.tripCost != null && (
                                 <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,background:"#f0fdfb",border:"1px solid rgba(33,208,179,0.2)",color:BRAND.tealInk }}>
                                   {formatCurrencyCLP(trip.tripCost)}
-                                </span>
-                              )}
-                              {resolveDelegations(trip) !== "-" && (
-                                <span style={{ fontSize:10,fontWeight:600,padding:"3px 8px",borderRadius:6,background:SURFACE.bg,border:`1px solid ${SURFACE.border}`,color:SURFACE.textStrong }}>
-                                  {resolveDelegations(trip)}
                                 </span>
                               )}
                             </div>
@@ -2300,6 +2438,8 @@ export default function DriverPortalPage() {
                           </div>
                         )}
                       </div>
+                      )}
+                      </Fragment>
                     );
                   })}
                 </div>

@@ -1,5 +1,6 @@
 ﻿import { CLIENT_TYPE_OPTIONS } from "./clientTypes";
 import { CHILE_REGIONS } from "./delegations";
+import { TRIP_TYPE_OPTIONS } from "./tripTypes";
 
 /**
  * Tipos de cliente para los <select> de estas fichas.
@@ -1034,18 +1035,8 @@ export const resources: Record<string, ResourceConfig> = {
         key: "tripType",
         label: "Tipo de servicio",
         type: "select",
-        options: [
-          { label: "Transfer In Out", value: "TRANSFER_IN_OUT" },
-          { label: "Transfer In (llegada)", value: "TRANSFER_IN" },
-          { label: "Transfer Out (salida)", value: "TRANSFER_OUT" },
-          { label: "Disposición 12 horas", value: "DISPOSICION_12H" },
-          { label: "Viaje de ida", value: "VIAJE_IDA" },
-          { label: "Viaje de regreso", value: "VIAJE_REGRESO" },
-          { label: "Viaje de ida y regreso", value: "VIAJE_IDA_REGRESO" },
-          // Traslado de la delegación al comedor (ida o vuelta del almuerzo).
-          { label: "Comedor", value: "COMEDOR" },
-          { label: "Solicitud portal", value: "PORTAL_REQUEST" },
-        ]
+        // Misma lista que usan el detalle del viaje y el Portal Conductor.
+        options: TRIP_TYPE_OPTIONS
       },
       {
         key: "flightNumber",

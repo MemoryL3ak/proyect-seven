@@ -116,22 +116,9 @@ type LivePosition = {
 const LIVE_WINDOW_MS = 60 * 1000;
 // Keep showing a driver's marker until their last fix is this stale.
 const SHOW_WINDOW_MS = 10 * 60 * 1000;
-// Con 60+ conductores la tabla completa se lee como un scroll sin fin: se
-// muestran de a 25 y el pie dice cuántos quedan.
-const DRIVERS_PAGE_SIZE = 25;
-
-/** Botón "Anterior"/"Siguiente" del pie de la tabla. */
-const paginaBtnStyle = (deshabilitado: boolean) => ({
-  borderRadius: "7px",
-  border: `1px solid ${SURFACE.border}`,
-  background: SURFACE.card,
-  color: deshabilitado ? SURFACE.textFaint : SURFACE.textSecondary,
-  padding: "5px 12px",
-  fontSize: "12px",
-  fontWeight: 500,
-  cursor: deshabilitado ? "default" : "pointer",
-  opacity: deshabilitado ? 0.55 : 1,
-});
+// Con 60+ conductores la lista entera empuja la página hacia abajo sin fin:
+// vive dentro de su propia caja con scroll, alta pero acotada.
+const LIST_MAX_HEIGHT = "min(68vh, 620px)";
 
 function pickCoords(pos: PositionItem): { lat: number; lng: number } | null {
   const loc = pos.location as any;
@@ -196,14 +183,6 @@ export default function DriverMonitoringPage() {
   const [disciplineFilter, setDisciplineFilter] = useState<string>("");
   const [regionFilter, setRegionFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
-  const [page, setPage] = useState(0);
-  // Al cambiar de página la fila 1 queda arriba del scroll: se vuelve al
-  // encabezado de la tabla en vez de dejar al usuario mirando el pie.
-  const tableCardRef = useRef<HTMLDivElement | null>(null);
-  const goToPage = useCallback((next: number) => {
-    setPage(next);
-    tableCardRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   const isToday = selectedDate === today;
 
@@ -358,24 +337,6 @@ export default function DriverMonitoringPage() {
       return true;
     });
   }, [drivers, clientTypeFilter, disciplineFilter, regionFilter, occupancyFilter, searchQuery]);
-
-  // La tabla y las tarjetas muestran sólo la página actual; el mapa, el CSV y
-  // los contadores siguen viendo todos los conductores filtrados.
-  const totalPages = Math.max(1, Math.ceil(visibleDrivers.length / DRIVERS_PAGE_SIZE));
-  const pagedDrivers = useMemo(
-    () => visibleDrivers.slice(page * DRIVERS_PAGE_SIZE, (page + 1) * DRIVERS_PAGE_SIZE),
-    [visibleDrivers, page],
-  );
-  // Tocar un filtro devuelve al principio: quedarse en la página 3 de un
-  // resultado nuevo se ve como una tabla vacía.
-  useEffect(() => {
-    setPage(0);
-  }, [clientTypeFilter, disciplineFilter, regionFilter, occupancyFilter, searchQuery, selectedDate]);
-  // Y si la lista se achica por otro lado (llega un snapshot con menos gente),
-  // la vista no puede quedar en una página que ya no existe.
-  useEffect(() => {
-    if (page > 0 && page >= totalPages) setPage(0);
-  }, [page, totalPages]);
 
   // Edad del último punto GPS de un conductor, con la MISMA fuente que usa el
   // marcador del mapa: primero la capa en vivo (Realtime + poll), si no la del
@@ -728,7 +689,6 @@ export default function DriverMonitoringPage() {
         </section>
       ) : (
         <div
-          ref={tableCardRef}
           className="rounded-2xl overflow-hidden"
           style={{
             background: SURFACE.card,
@@ -755,8 +715,13 @@ export default function DriverMonitoringPage() {
           {isMobile ? (
             /* ── Vista móvil: una tarjeta por conductor (la tabla de 9
                columnas obligaba a scrollear horizontal en el teléfono) ── */
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 12 }}>
-              {pagedDrivers.map((d) => {
+            <div
+              style={{
+                display: "flex", flexDirection: "column", gap: 10, padding: 12,
+                maxHeight: LIST_MAX_HEIGHT, overflowY: "auto", overscrollBehavior: "contain",
+              }}
+            >
+              {visibleDrivers.map((d) => {
                 const gpsActive = gpsAgeMs(d) < LIVE_WINDOW_MS;
                 const isBusy = d.activeTrips > 0;
                 const tripText = tripLabel(d.activeTripStatus, d.activeTrips);
@@ -835,15 +800,13 @@ export default function DriverMonitoringPage() {
               })}
             </div>
           ) : (
-          <div className="overflow-x-auto">
+          <div
+            className="overflow-x-auto"
+            style={{ maxHeight: LIST_MAX_HEIGHT, overflowY: "auto", overscrollBehavior: "contain" }}
+          >
             <table className="w-full" style={{ fontSize: 12.5, borderCollapse: "separate", borderSpacing: 0 }}>
               <thead>
-                <tr
-                  style={{
-                    background: `linear-gradient(135deg,${SURFACE.bg} 0%,${SURFACE.borderMuted} 100%)`,
-                    borderBottom: `2px solid ${SURFACE.border}`,
-                  }}
-                >
+                <tr>
                   {[
                     "Conductor",
                     "Región",
@@ -866,6 +829,11 @@ export default function DriverMonitoringPage() {
                         textTransform: "uppercase",
                         color: SURFACE.textMuted,
                         whiteSpace: "nowrap",
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 1,
+                        background: `linear-gradient(135deg,${SURFACE.bg} 0%,${SURFACE.borderMuted} 100%)`,
+                        boxShadow: `inset 0 -2px 0 ${SURFACE.border}`,
                       }}
                     >
                       {t(h)}
@@ -874,7 +842,7 @@ export default function DriverMonitoringPage() {
                 </tr>
               </thead>
               <tbody>
-                {pagedDrivers.map((d, i) => {
+                {visibleDrivers.map((d, i) => {
                   const gpsActive = gpsAgeMs(d) < LIVE_WINDOW_MS;
                   const isBusy = d.activeTrips > 0;
                   const tripText = tripLabel(d.activeTripStatus, d.activeTrips);
@@ -882,7 +850,7 @@ export default function DriverMonitoringPage() {
                     <tr
                       key={d.driverId}
                       style={{
-                        borderBottom: i === pagedDrivers.length - 1 ? "none" : `1px solid ${SURFACE.borderMuted}`,
+                        borderBottom: i === visibleDrivers.length - 1 ? "none" : `1px solid ${SURFACE.borderMuted}`,
                         background: i % 2 === 0 ? SURFACE.card : SURFACE.bg,
                         transition: "background 0.15s",
                       }}
@@ -1057,49 +1025,6 @@ export default function DriverMonitoringPage() {
               </tbody>
             </table>
           </div>
-          )}
-
-          {/* Pie: sin esto, 61 conductores son un scroll sin fondo. */}
-          {totalPages > 1 && (
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                gap: 12,
-                flexWrap: "wrap",
-                padding: "10px 16px",
-                borderTop: `1px solid ${SURFACE.borderMuted}`,
-                background: SURFACE.bg,
-              }}
-            >
-              <span style={{ fontSize: 11.5, color: SURFACE.textMuted, fontVariantNumeric: "tabular-nums" }}>
-                {page * DRIVERS_PAGE_SIZE + 1}–{Math.min((page + 1) * DRIVERS_PAGE_SIZE, visibleDrivers.length)}{" "}
-                {t("de")} {visibleDrivers.length}{" "}
-                {visibleDrivers.length === 1 ? t("conductor") : t("conductores")}
-              </span>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => goToPage(Math.max(0, page - 1))}
-                  disabled={page === 0}
-                  style={paginaBtnStyle(page === 0)}
-                >
-                  {t("Anterior")}
-                </button>
-                <span style={{ fontSize: 11.5, color: SURFACE.textFaint, fontVariantNumeric: "tabular-nums" }}>
-                  {page + 1}/{totalPages}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => goToPage(Math.min(totalPages - 1, page + 1))}
-                  disabled={page + 1 >= totalPages}
-                  style={paginaBtnStyle(page + 1 >= totalPages)}
-                >
-                  {t("Siguiente")}
-                </button>
-              </span>
-            </div>
           )}
         </div>
       )}

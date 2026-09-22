@@ -14,6 +14,8 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
+import { delegationLabel } from "@/lib/delegations";
+import { legTypeLabel, tripTypeLabel } from "@/lib/tripTypes";
 import {
   CrownIcon,
   FileSpreadsheetIcon,
@@ -136,6 +138,24 @@ type Trip = {
   legType?: string | null;
   /** Deporte de la planilla de operatividad, para identificar el servicio. */
   discipline?: string | null;
+  /**
+   * Viaje de delegación: en los Juegos Escolares el traslado se asigna al
+   * grupo (región + disciplina), no a un participante.
+   */
+  delegationId?: string | null;
+  disciplineId?: string | null;
+  /** Prueba o actividad concreta dentro de la disciplina. */
+  activity?: string | null;
+  /** Sigla de la flota que cubre el servicio, según la planilla. */
+  fleetAcronym?: string | null;
+  wheelchairCount?: number | null;
+  travelTimeMinutes?: number | null;
+  /** Hora de presentación del conductor, antes de la hora del pasajero. */
+  presentationAt?: string | null;
+  returnAt?: string | null;
+  flightNumber?: string | null;
+  tripCost?: number | null;
+  committeeValidated?: boolean;
   childTrips?: Trip[];
   metadata?: Record<string, unknown> | null;
 };
@@ -382,6 +402,15 @@ const formatClock = (value?: string | null) =>
         minute: "2-digit"
       })
     : "-";
+
+const formatCLP = (value?: number | null) =>
+  value == null
+    ? "-"
+    : new Intl.NumberFormat("es-CL", {
+        style: "currency",
+        currency: "CLP",
+        maximumFractionDigits: 0
+      }).format(value);
 
 const safeText = (value?: string | null, fallback = "-") => {
   const text = value?.trim();
@@ -875,9 +904,14 @@ export default function TripsPage() {
     const objetivo = normalizarLugar(nombre);
     if (!objetivo) return false;
     const destinoSede = trip.destinationVenueId ? venues[trip.destinationVenueId]?.name : null;
-    return [trip.origin, trip.destination, destinoSede].some(
-      (valor) => normalizarLugar(valor).includes(objetivo) || objetivo.includes(normalizarLugar(valor)),
-    );
+    // Los vacíos se descartan ANTES de comparar. Un viaje de planilla no trae
+    // sede destino, así que su nombre normalizado quedaba en "" — y como
+    // `"lo que sea".includes("")` es true, todo viaje calzaba con todo hotel
+    // y con toda sede: los dos filtros no filtraban nada.
+    return [trip.origin, trip.destination, destinoSede]
+      .map((valor) => normalizarLugar(valor))
+      .filter((valor) => valor.length > 0)
+      .some((valor) => valor.includes(objetivo) || objetivo.includes(valor));
   };
 
   const ongoingHoteles = useMemo(
@@ -2467,26 +2501,81 @@ export default function TripsPage() {
         const isc = STATUS_COLORS[infoTrip.status ?? ""] ?? STATUS_COLORS.SCHEDULED;
         const itone = statusTone(infoTrip.status);
         const ivenue = infoTrip.destinationVenueId ? venues[infoTrip.destinationVenueId] : null;
-        const fields: { label: string; value: string }[] = [
-          { label: "Programación", value: formatDateTime(infoTrip.scheduledAt) },
+        const idestino = ivenue ? buildVenueAddress(ivenue) : safeText(infoTrip.destination, "Destino pendiente");
+        // Región y disciplina salen del viaje mismo: en los Juegos Escolares el
+        // traslado se asigna a la delegación (región) + deporte y no a una
+        // persona. Si el viaje no las trae cargadas, se deducen de los
+        // pasajeros, que es como se resolvían hasta ahora.
+        const iporPasajeros = resolveDelegation(infoTrip);
+        const iregion =
+          delegationLabel(infoTrip.delegationId ? delegations[infoTrip.delegationId] : null) ||
+          (iporPasajeros === "-" ? "" : iporPasajeros);
+        const idisciplina = safeText(infoTrip.discipline, "");
+        const itipoViaje = tripTypeLabel(infoTrip.tripType);
+        const itramo = legTypeLabel(infoTrip.legType);
+        const iparticipantes = infoTrip.athleteNames?.length ? infoTrip.athleteNames.join(", ") : "";
+
+        // Chips de clasificación: de un vistazo, de quién es el viaje y de qué
+        // tipo. Los que el viaje no tiene cargados no se dibujan.
+        const iclases: { texto: string; bg: string; color: string; border: string }[] = [
+          ...(iregion ? [{ texto: iregion, bg: "rgba(33,208,179,0.1)", color: BRAND.tealInk, border: "rgba(33,208,179,0.3)" }] : []),
+          ...(idisciplina ? [{ texto: idisciplina, bg: STATE.infoSoft, color: STATE.infoText, border: STATE.infoBorder }] : []),
+          ...(itipoViaje ? [{ texto: itipoViaje, bg: ACCENT.violetSoft, color: ACCENT.violet, border: "rgba(124,58,237,0.25)" }] : []),
+          ...(infoTrip.clientType ? [{ texto: t(clientTypeLabel(infoTrip.clientType)), bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border }] : []),
+          ...(itramo ? [{ texto: itramo, bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border }] : []),
+          ...(infoTrip.isRoundTrip ? [{ texto: t("Ida y vuelta"), bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border }] : []),
+          ...(infoTrip.committeeValidated ? [{ texto: t("Validado por comité"), bg: STATE.successSoft, color: STATE.successText, border: STATE.successBorder }] : []),
+        ];
+
+        // "Más info": sólo lo que este viaje trae cargado. Una grilla llena de
+        // guiones ocupa pantalla y no informa nada.
+        const imasInfo: { label: string; value: string }[] = [
+          ...(infoTrip.requestedAt ? [{ label: "Solicitado", value: formatDateTime(infoTrip.requestedAt) }] : []),
           ...(infoTrip.startedAt ? [{ label: "Inicio real", value: formatDateTime(infoTrip.startedAt) }] : []),
           ...(infoTrip.completedAt ? [{ label: "Término", value: formatDateTime(infoTrip.completedAt) }] : []),
-          { label: "Origen", value: safeText(infoTrip.origin, "Origen pendiente") },
-          { label: "Destino", value: ivenue ? buildVenueAddress(ivenue) : safeText(infoTrip.destination, "Destino pendiente") },
-          { label: "Conductor", value: infoTrip.driverId ? (drivers[infoTrip.driverId]?.fullName || "Asignado") : "Por asignar" },
-          { label: "Vehículo", value: infoTrip.vehicleId || infoTrip.vehiclePlate ? resolveVehicle(infoTrip) : "Por asignar" },
-          ...(infoTrip.passengerCount ? [{ label: "Pasajeros", value: String(infoTrip.passengerCount) }] : []),
-          ...(infoTrip.clientType ? [{ label: "Tipo de cliente", value: infoTrip.clientType }] : []),
-          ...(infoTrip.athleteNames?.length ? [{ label: "Participantes", value: infoTrip.athleteNames.join(", ") }] : []),
+          ...(infoTrip.travelTimeMinutes ? [{ label: "Duración estimada", value: `${infoTrip.travelTimeMinutes} min` }] : []),
+          ...(infoTrip.returnAt ? [{ label: "Regreso", value: formatDateTime(infoTrip.returnAt) }] : []),
+          ...(infoTrip.activity?.trim() ? [{ label: "Actividad", value: infoTrip.activity.trim() }] : []),
+          ...(infoTrip.fleetAcronym?.trim() ? [{ label: "Flota", value: infoTrip.fleetAcronym.trim() }] : []),
+          ...(infoTrip.wheelchairCount ? [{ label: "Sillas de ruedas", value: String(infoTrip.wheelchairCount) }] : []),
+          ...(infoTrip.flightNumber?.trim() ? [{ label: "Vuelo", value: infoTrip.flightNumber.trim() }] : []),
+          ...(infoTrip.requestedVehicleType
+            ? [{ label: "Vehículo pedido", value: VEHICLE_TYPE_LABELS[infoTrip.requestedVehicleType] || infoTrip.requestedVehicleType }]
+            : []),
+          ...(infoTrip.tripCost != null ? [{ label: "Valor", value: formatCLP(infoTrip.tripCost) }] : []),
         ];
+
+        const microEtiqueta = { fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase" as const, color: SURFACE.textFaint, margin: "0 0 3px" };
+        const valorTexto = { fontSize: "13px", fontWeight: 600, color: SURFACE.text, margin: 0, lineHeight: 1.35 };
+        const cajaDato = { background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: "9px 12px" };
+        const tituloSeccion = { fontSize: "9px", fontWeight: 800, letterSpacing: "0.2em", textTransform: "uppercase" as const, color: SURFACE.textFaint, margin: "14px 0 8px" };
+        const dato = (label: string, value: string, ancho?: boolean) => (
+          <div key={label} style={{ ...cajaDato, gridColumn: ancho ? "1 / -1" : undefined }}>
+            <p style={microEtiqueta}>{t(label)}</p>
+            <p style={valorTexto}>{value}</p>
+          </div>
+        );
+
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setInfoTrip(null)}>
             <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "520px", maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
               {/* Header */}
               <div style={{ padding: "20px 24px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
-                <div>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>Detalle del viaje</p>
+                <div style={{ minWidth: 0 }}>
+                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>{t("Detalle del viaje")}</p>
                   <p style={{ fontSize: "15px", fontWeight: 700, color: SURFACE.text, margin: 0 }}>{resolveRequester(infoTrip)}</p>
+                  {iclases.length > 0 && (
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "8px" }}>
+                      {iclases.map((c) => (
+                        <span
+                          key={c.texto}
+                          style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", padding: "3px 9px", borderRadius: "7px", background: c.bg, color: c.color, border: `1px solid ${c.border}` }}
+                        >
+                          {c.texto}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <span style={{ flexShrink: 0, fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: isc.accent, background: isc.chipBg, border: `1px solid ${isc.chipBorder}`, borderRadius: "99px", padding: "5px 12px" }}>
                   {t(itone.label)}
@@ -2496,8 +2585,7 @@ export default function TripsPage() {
               <div style={{ padding: "16px 24px", overflowY: "auto" }}>
                 {/* La ruta primero: es lo que se viene a ver al abrir un viaje. */}
                 {(() => {
-                  const destinoTexto = ivenue ? buildVenueAddress(ivenue) : infoTrip.destination;
-                  const embed = buildDirectionsEmbed(infoTrip.origin, destinoTexto);
+                  const embed = buildDirectionsEmbed(infoTrip.origin, ivenue ? buildVenueAddress(ivenue) : infoTrip.destination);
                   if (!embed) return null;
                   return (
                     <div style={{ marginBottom: 14, borderRadius: 14, overflow: "hidden", border: `1px solid ${SURFACE.border}` }}>
@@ -2511,17 +2599,65 @@ export default function TripsPage() {
                     </div>
                   );
                 })()}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-                  {fields.map((f) => (
-                    <div key={f.label} style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: "9px 12px", gridColumn: f.label === "Destino" || f.label === "Origen" || f.label === "Participantes" ? "1 / -1" : undefined }}>
-                      <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint, margin: "0 0 3px" }}>{f.label}</p>
-                      <p style={{ fontSize: "13px", fontWeight: 600, color: SURFACE.text, margin: 0 }}>{f.value}</p>
+
+                {/* Cuándo: la hora del pasajero y, si la hay, la de
+                    presentación del conductor, que es la que él tiene que
+                    cumplir y no es la misma. */}
+                <div style={{ display: "grid", gridTemplateColumns: infoTrip.presentationAt ? "1fr 1fr" : "1fr", gap: "10px" }}>
+                  <div style={{ background: "rgba(33,208,179,0.07)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "12px", padding: "9px 12px" }}>
+                    <p style={{ ...microEtiqueta, color: BRAND.tealInk }}>{t("Programación")}</p>
+                    <p style={valorTexto}>{formatDateTime(infoTrip.scheduledAt)}</p>
+                  </div>
+                  {infoTrip.presentationAt && (
+                    <div style={cajaDato}>
+                      <p style={microEtiqueta}>{t("Presentación conductor")}</p>
+                      <p style={valorTexto}>{formatDateTime(infoTrip.presentationAt)}</p>
                     </div>
-                  ))}
+                  )}
                 </div>
+
+                {/* Ruta en línea de tiempo: origen arriba, destino abajo. En
+                    dos cajas sueltas no se leía cuál era cuál. */}
+                <p style={tituloSeccion}>{t("Ruta")}</p>
+                <div style={{ display: "flex", gap: "12px", ...cajaDato }}>
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", paddingTop: "4px" }}>
+                    <span style={{ width: 9, height: 9, borderRadius: "50%", border: `2px solid ${BRAND.teal}`, background: SURFACE.card, flexShrink: 0 }} />
+                    <span style={{ width: 2, flex: 1, minHeight: 20, margin: "3px 0", borderRadius: 1, background: `linear-gradient(180deg, ${BRAND.teal}, ${STATE.danger})`, opacity: 0.35 }} />
+                    <span style={{ width: 9, height: 9, borderRadius: "50%", background: STATE.danger, flexShrink: 0 }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div>
+                      <p style={microEtiqueta}>{t("Origen")}</p>
+                      <p style={valorTexto}>{safeText(infoTrip.origin, "Origen pendiente")}</p>
+                    </div>
+                    <div>
+                      <p style={microEtiqueta}>{t("Destino")}</p>
+                      <p style={valorTexto}>{idestino}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Quién lo hace */}
+                <p style={tituloSeccion}>{t("Asignación")}</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                  {dato("Conductor", infoTrip.driverId ? (drivers[infoTrip.driverId]?.fullName || t("Asignado")) : t("Por asignar"))}
+                  {dato("Vehículo", infoTrip.vehicleId || infoTrip.vehiclePlate ? resolveVehicle(infoTrip) : t("Por asignar"))}
+                  {infoTrip.passengerCount ? dato("Pasajeros", String(infoTrip.passengerCount)) : null}
+                  {iparticipantes ? dato("Participantes", iparticipantes, !infoTrip.passengerCount) : null}
+                </div>
+
+                {imasInfo.length > 0 && (
+                  <>
+                    <p style={tituloSeccion}>{t("Más info")}</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                      {imasInfo.map((f) => dato(f.label, f.value))}
+                    </div>
+                  </>
+                )}
+
                 {infoTrip.notes && (
                   <p style={{ marginTop: "12px", fontSize: "12.5px", color: STATE.warningText, background: STATE.warningSoft, border: `1px solid ${STATE.warningBorder}`, borderLeft: `4px solid ${STATE.warning}`, borderRadius: 10, padding: "8px 12px", fontWeight: 600 }}>
-                    <span style={{ fontWeight: 800, color: STATE.warningText }}><AlertIcon size={12} className="inline mr-1" />Observación:</span>{" "}
+                    <span style={{ fontWeight: 800, color: STATE.warningText }}><AlertIcon size={12} className="inline mr-1" />{t("Observación")}:</span>{" "}
                     {safeText(infoTrip.notes.replace(/^\[Portal\]\s*/, ""))}
                   </p>
                 )}
