@@ -38,6 +38,7 @@ import { HotelExtrasModule } from './hotel-extras/hotel-extras.module';
 import { HotelExtraReservationsModule } from './hotel-extra-reservations/hotel-extra-reservations.module';
 import { FoodLocationsModule } from './food-locations/food-locations.module';
 import { FoodMenusModule } from './food-menus/food-menus.module';
+import { MealTimeBlocksModule } from './meal-time-blocks/meal-time-blocks.module';
 import { ProviderParticipantsModule } from './provider-participants/provider-participants.module';
 import { MobileAuthModule } from './mobile-auth/mobile-auth.module';
 import { AccessControlModule } from './access-control/access-control.module';
@@ -101,6 +102,7 @@ import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
     HotelExtraReservationsModule,
     FoodLocationsModule,
     FoodMenusModule,
+    MealTimeBlocksModule,
     ProviderParticipantsModule,
     SportsCalendarModule,
     AccreditationsModule,

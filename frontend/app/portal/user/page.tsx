@@ -66,6 +66,7 @@ import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
 import SofiaWidget from "@/components/SofiaWidget";
 import BannerCoordinador from "@/components/portal/BannerCoordinador";
+import HorariosComida from "@/components/portal/HorariosComida";
 import { contactosDeHotel, type CoordinadorHotel } from "@/lib/hotel-coordinadores";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionTrips from "@/components/portal/MissionTrips";
@@ -3844,6 +3845,10 @@ export default function UserPortalPage() {
                 {t("Alimentación de tu delegación: lugares y menús de sus hoteles, más los puntos generales.")}
               </p>
             )}
+
+            {/* Arriba de todo: hasta qué hora se puede ir a comer es lo que se
+                pregunta con el comedor cerrando, antes que qué hay de postre. */}
+            <HorariosComida eventId={athlete.eventId} />
 
             {/* Credencial QR para validar en el comedor */}
             {mealQrDataUrl && (
