@@ -19,6 +19,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "Descargar": "Download",
     "Descargar el listado como CSV": "Download the list as CSV",
     // Detalle del viaje (panel de Viajes y Portal Conductor).
+    "Hora salida": "Departure time",
     "Presentación conductor": "Driver check-in",
     "Más info": "More info",
     "Validado por comité": "Committee validated",
@@ -2660,6 +2661,7 @@ const translations: Record<Locale, Record<string, string>> = {
     "Descargar": "Baixar",
     "Descargar el listado como CSV": "Baixar a lista em CSV",
     // Detalle del viaje (panel de Viajes y Portal Conductor).
+    "Hora salida": "Horário de saída",
     "Presentación conductor": "Apresentação do motorista",
     "Más info": "Mais informações",
     "Validado por comité": "Validado pelo comitê",

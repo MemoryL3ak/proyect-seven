@@ -2718,7 +2718,7 @@ export default function TripsPage() {
                     cumplir y no es la misma. */}
                 <div style={{ display: "grid", gridTemplateColumns: infoTrip.presentationAt ? "1fr 1fr" : "1fr", gap: "10px" }}>
                   <div style={{ background: "rgba(33,208,179,0.07)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "12px", padding: "9px 12px" }}>
-                    <p style={{ ...microEtiqueta, color: BRAND.tealInk }}>{t("Programación")}</p>
+                    <p style={{ ...microEtiqueta, color: BRAND.tealInk }}>{t("Hora salida")}</p>
                     <p style={valorTexto}>{formatDateTime(infoTrip.scheduledAt)}</p>
                   </div>
                   {infoTrip.presentationAt && (
