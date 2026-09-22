@@ -896,41 +896,67 @@ export default function TripsPage() {
   );
 
   /**
-   * Hoteles y sedes que aparecen en la operación. Los viajes de planilla traen
-   * origen y destino como texto, no como id de recinto, así que el calce es por
-   * nombre normalizado: es lo que hay hasta que la planilla los referencie.
+   * Los dos lugares de un viaje, tal como los muestra su fila: origen y
+   * destino. Si el destino no trae texto se usa el nombre de la sede.
    */
+  const lugaresDeViaje = (trip: Trip) => {
+    const destino =
+      (trip.destination || "").trim() ||
+      (trip.destinationVenueId ? (venues[trip.destinationVenueId]?.name || "").trim() : "");
+    return [(trip.origin || "").trim(), destino].filter((valor) => valor.length > 0);
+  };
+
   const tocaLugar = (trip: Trip, nombre: string) => {
     const objetivo = normalizarLugar(nombre);
     if (!objetivo) return false;
-    const destinoSede = trip.destinationVenueId ? venues[trip.destinationVenueId]?.name : null;
-    // Los vacíos se descartan ANTES de comparar. Un viaje de planilla no trae
-    // sede destino, así que su nombre normalizado quedaba en "" — y como
-    // `"lo que sea".includes("")` es true, todo viaje calzaba con todo hotel
-    // y con toda sede: los dos filtros no filtraban nada.
-    return [trip.origin, trip.destination, destinoSede]
-      .map((valor) => normalizarLugar(valor))
-      .filter((valor) => valor.length > 0)
-      .some((valor) => valor.includes(objetivo) || objetivo.includes(valor));
+    return lugaresDeViaje(trip).some((texto) => normalizarLugar(texto) === objetivo);
   };
 
-  const ongoingHoteles = useMemo(
-    () =>
-      hoteles
-        .filter((h) => h.name && ongoingTrips.some((t2) => tocaLugar(t2, h.name as string)))
-        .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "es")),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [hoteles, ongoingTrips, venues],
-  );
+  /**
+   * Hoteles y sedes de los filtros. Salen de los propios viajes y no de los
+   * maestros: la planilla escribe "Hotel Hippocampus" y el maestro lo tiene
+   * como "Hippocampus Concón Resort & Club", así que al cruzarlos por nombre
+   * el hotel no aparecía en el filtro aunque estuviera en decenas de viajes.
+   * Con esto, cada opción existe porque algún viaje la nombra, y el filtro
+   * calza exacto contra ese mismo texto.
+   *
+   * La separación hotel/sede se decide por el maestro de Hoteles y, si el
+   * lugar no está ahí, por cómo se llama.
+   */
+  const { ongoingHoteles, ongoingSedes } = useMemo(() => {
+    const nombresDeHotel = new Set(
+      hoteles.map((h) => normalizarLugar(h.name)).filter((valor) => valor.length > 0),
+    );
+    const suenaAHotel = /(hotel|hostal|apart|aparthotel|resort|cabana|cabanas|hosteria|residencial)/;
 
-  const ongoingSedes = useMemo(
-    () =>
-      Object.values(venues)
-        .filter((v) => v.name && ongoingTrips.some((t2) => tocaLugar(t2, v.name as string)))
-        .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "", "es")),
+    const porLugar = new Map<string, { texto: string; esHotel: boolean; total: number }>();
+    for (const trip of ongoingTrips) {
+      // Un viaje que sale y llega al mismo lugar cuenta una sola vez.
+      const clavesDelViaje = new Set<string>();
+      for (const texto of lugaresDeViaje(trip)) {
+        const clave = normalizarLugar(texto);
+        if (!clave || clavesDelViaje.has(clave)) continue;
+        clavesDelViaje.add(clave);
+        const actual = porLugar.get(clave);
+        if (actual) {
+          actual.total += 1;
+          continue;
+        }
+        porLugar.set(clave, {
+          texto,
+          esHotel: nombresDeHotel.has(clave) || suenaAHotel.test(clave),
+          total: 1,
+        });
+      }
+    }
+
+    const ordenados = [...porLugar.values()].sort((a, b) => a.texto.localeCompare(b.texto, "es"));
+    return {
+      ongoingHoteles: ordenados.filter((lugar) => lugar.esHotel),
+      ongoingSedes: ordenados.filter((lugar) => !lugar.esHotel),
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [venues, ongoingTrips],
-  );
+  }, [hoteles, ongoingTrips, venues]);
 
   const ongoingFiltered = useMemo(
     () =>
@@ -1878,7 +1904,7 @@ export default function TripsPage() {
                 >
                   <option value="">{t("Todos")}</option>
                   {ongoingHoteles.map((h) => (
-                    <option key={h.id} value={h.name ?? ""}>{h.name}</option>
+                    <option key={h.texto} value={h.texto}>{`${h.texto} (${h.total})`}</option>
                   ))}
                 </StyledSelect>
               </label>
@@ -1891,7 +1917,7 @@ export default function TripsPage() {
                 >
                   <option value="">{t("Todas")}</option>
                   {ongoingSedes.map((v) => (
-                    <option key={v.id} value={v.name ?? ""}>{v.name}</option>
+                    <option key={v.texto} value={v.texto}>{`${v.texto} (${v.total})`}</option>
                   ))}
                 </StyledSelect>
               </label>
@@ -2515,16 +2541,18 @@ export default function TripsPage() {
         const itramo = legTypeLabel(infoTrip.legType);
         const iparticipantes = infoTrip.athleteNames?.length ? infoTrip.athleteNames.join(", ") : "";
 
-        // Chips de clasificación: de un vistazo, de quién es el viaje y de qué
-        // tipo. Los que el viaje no tiene cargados no se dibujan.
-        const iclases: { texto: string; bg: string; color: string; border: string }[] = [
-          ...(iregion ? [{ texto: iregion, bg: "rgba(33,208,179,0.1)", color: BRAND.tealInk, border: "rgba(33,208,179,0.3)" }] : []),
-          ...(idisciplina ? [{ texto: idisciplina, bg: STATE.infoSoft, color: STATE.infoText, border: STATE.infoBorder }] : []),
-          ...(itipoViaje ? [{ texto: itipoViaje, bg: ACCENT.violetSoft, color: ACCENT.violet, border: "rgba(124,58,237,0.25)" }] : []),
-          ...(infoTrip.clientType ? [{ texto: t(clientTypeLabel(infoTrip.clientType)), bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border }] : []),
-          ...(itramo ? [{ texto: itramo, bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border }] : []),
-          ...(infoTrip.isRoundTrip ? [{ texto: t("Ida y vuelta"), bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border }] : []),
-          ...(infoTrip.committeeValidated ? [{ texto: t("Validado por comité"), bg: STATE.successSoft, color: STATE.successText, border: STATE.successBorder }] : []),
+        // Clasificación con etiqueta, no chips sueltos: un "VOLEIBOL" a secas
+        // no dice si es la disciplina o la actividad. Región, disciplina y
+        // tipo de viaje salen siempre —con guión si el viaje no los trae—
+        // porque su ausencia también es información: los traslados que entran
+        // por la planilla de operatividad no traen delegación.
+        const iclases: { label: string; value: string; destacado?: boolean }[] = [
+          { label: "Región", value: iregion || "—", destacado: Boolean(iregion) },
+          { label: "Disciplina", value: idisciplina || "—", destacado: Boolean(idisciplina) },
+          { label: "Tipo de viaje", value: itipoViaje || "—", destacado: Boolean(itipoViaje) },
+          ...(infoTrip.clientType ? [{ label: "Tipo de cliente", value: t(clientTypeLabel(infoTrip.clientType)) }] : []),
+          ...(itramo ? [{ label: "Tramo", value: infoTrip.isRoundTrip ? `${itramo} · ${t("ida y vuelta")}` : itramo }] : []),
+          ...(infoTrip.committeeValidated ? [{ label: "Comité", value: t("Validado") }] : []),
         ];
 
         // "Más info": sólo lo que este viaje trae cargado. Una grilla llena de
@@ -2535,7 +2563,11 @@ export default function TripsPage() {
           ...(infoTrip.completedAt ? [{ label: "Término", value: formatDateTime(infoTrip.completedAt) }] : []),
           ...(infoTrip.travelTimeMinutes ? [{ label: "Duración estimada", value: `${infoTrip.travelTimeMinutes} min` }] : []),
           ...(infoTrip.returnAt ? [{ label: "Regreso", value: formatDateTime(infoTrip.returnAt) }] : []),
-          ...(infoTrip.activity?.trim() ? [{ label: "Actividad", value: infoTrip.activity.trim() }] : []),
+          // La importación de planilla guarda la actividad también en
+          // `trip_type`, así que se omite cuando ya se ve arriba.
+          ...(infoTrip.activity?.trim() && infoTrip.activity.trim() !== itipoViaje
+            ? [{ label: "Actividad", value: infoTrip.activity.trim() }]
+            : []),
           ...(infoTrip.fleetAcronym?.trim() ? [{ label: "Flota", value: infoTrip.fleetAcronym.trim() }] : []),
           ...(infoTrip.wheelchairCount ? [{ label: "Sillas de ruedas", value: String(infoTrip.wheelchairCount) }] : []),
           ...(infoTrip.flightNumber?.trim() ? [{ label: "Vuelo", value: infoTrip.flightNumber.trim() }] : []),
@@ -2564,18 +2596,6 @@ export default function TripsPage() {
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>{t("Detalle del viaje")}</p>
                   <p style={{ fontSize: "15px", fontWeight: 700, color: SURFACE.text, margin: 0 }}>{resolveRequester(infoTrip)}</p>
-                  {iclases.length > 0 && (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: "4px", marginTop: "8px" }}>
-                      {iclases.map((c) => (
-                        <span
-                          key={c.texto}
-                          style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", padding: "3px 9px", borderRadius: "7px", background: c.bg, color: c.color, border: `1px solid ${c.border}` }}
-                        >
-                          {c.texto}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
                 <span style={{ flexShrink: 0, fontSize: "11px", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em", color: isc.accent, background: isc.chipBg, border: `1px solid ${isc.chipBorder}`, borderRadius: "99px", padding: "5px 12px" }}>
                   {t(itone.label)}
@@ -2583,7 +2603,28 @@ export default function TripsPage() {
               </div>
               {/* Datos */}
               <div style={{ padding: "16px 24px", overflowY: "auto" }}>
-                {/* La ruta primero: es lo que se viene a ver al abrir un viaje. */}
+                {/* De quién es el viaje, antes del mapa: al abrir un traslado
+                    lo primero que se pregunta la operación es de qué región y
+                    de qué deporte es el grupo que se sube. */}
+                <p style={{ ...tituloSeccion, marginTop: 0 }}>{t("Clasificación")}</p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "14px" }}>
+                  {iclases.map((c) => (
+                    <div
+                      key={c.label}
+                      style={{
+                        background: c.destacado ? "rgba(33,208,179,0.06)" : SURFACE.bg,
+                        border: `1px solid ${c.destacado ? "rgba(33,208,179,0.22)" : SURFACE.border}`,
+                        borderRadius: "12px",
+                        padding: "8px 11px",
+                      }}
+                    >
+                      <p style={microEtiqueta}>{t(c.label)}</p>
+                      <p style={{ ...valorTexto, color: c.value === "—" ? SURFACE.textFaint : SURFACE.text }}>{c.value}</p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* La ruta: es lo otro que se viene a ver al abrir un viaje. */}
                 {(() => {
                   const embed = buildDirectionsEmbed(infoTrip.origin, ivenue ? buildVenueAddress(ivenue) : infoTrip.destination);
                   if (!embed) return null;

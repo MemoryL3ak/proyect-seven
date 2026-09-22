@@ -733,6 +733,11 @@ export default function SportsCalendarPage() {
     const term = quickSearch.trim().toLowerCase();
     return [...entries, ...derivedAndCalendarEntries]
       .filter((entry) => {
+        // Las pruebas viven en el Calendario Deportivo, no acá: este
+        // calendario es de operación —llegadas, entrenamientos, retiros y los
+        // traslados que generan— y la agenda del día quedaba tapada por
+        // cincuenta pruebas de atletismo con las que transporte no hace nada.
+        if (getMetaString(entry.metadata, "scheduleType") === "COMPETITION") return false;
         // Filtro tipo actividad
         if (scheduleTypeFilter) {
           const tipo = getMetaString(entry.metadata, "scheduleType");
@@ -1010,7 +1015,6 @@ export default function SportsCalendarPage() {
     { value: "", label: "Todos", color: BRAND.teal, bg: "rgba(33,208,179,0.10)" },
     { value: "ARRIVAL", label: "Llegadas", color: BRAND.blue, bg: "rgba(31,205,255,0.10)" },
     { value: "TRAINING", label: "Entrenamientos", color: STATE.warningText, bg: "rgba(245,158,11,0.12)" },
-    { value: "COMPETITION", label: "Pruebas", color: STATE.successText, bg: "rgba(16,185,129,0.12)" },
     { value: "DEPARTURE", label: "Retiros", color: STATE.dangerText, bg: "rgba(220,38,38,0.10)" },
   ];
 
@@ -1018,7 +1022,7 @@ export default function SportsCalendarPage() {
     <div className="space-y-5 min-w-0 overflow-x-hidden">
       <PageHeader
         title={t("Calendario Operacional")}
-        description={t("Programación de llegadas, entrenamientos, pruebas y retiros. Filtra por tipo, sede, delegación o disciplina.")}
+        description={t("Programación de llegadas, entrenamientos y retiros, con los traslados de cada día. Las pruebas van en el Calendario Deportivo.")}
         icon={<CalendarIcon size={26} />}
         iconBg={`linear-gradient(135deg, ${BRAND.blue} 0%, #1f4e8c 100%)`}
         accentStrip="teal"

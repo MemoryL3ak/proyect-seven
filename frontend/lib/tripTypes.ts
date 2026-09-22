@@ -21,14 +21,20 @@ const LEGACY_TRIP_TYPES: Record<string, string> = {
   IDA_VUELTA: "Viaje de ida y regreso",
 };
 
-/** Nombre visible del tipo de servicio; el código crudo si no se conoce. */
+/**
+ * Nombre visible del tipo de servicio. Si el código no está en el catálogo se
+ * devuelve tal cual vino, sin pasarlo a mayúsculas: la importación de la
+ * planilla guarda la actividad en `trip_type`, y "Entrenamiento" leído como
+ * código salía en pantalla como "ENTRENAMIENTO".
+ */
 export function tripTypeLabel(value?: string | null): string {
-  const code = String(value || "").trim().toUpperCase();
-  if (!code) return "";
+  const texto = String(value || "").trim();
+  if (!texto) return "";
+  const code = texto.toUpperCase();
   return (
     TRIP_TYPE_OPTIONS.find((option) => option.value === code)?.label ||
     LEGACY_TRIP_TYPES[code] ||
-    code
+    texto
   );
 }
 
