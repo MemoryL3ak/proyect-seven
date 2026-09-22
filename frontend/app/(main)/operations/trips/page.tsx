@@ -301,6 +301,8 @@ const COLUMN_PREVIEW = 3;
 const CLOSED_STATUSES = new Set(["DROPPED_OFF", "COMPLETED", "CANCELLED"]);
 /** Rejilla de la lista "En curso": casilla, hora, estado, servicio, ruta, conductor, acciones. */
 const ONGOING_PAGE_SIZE = 25;
+/** Valor del filtro de conductor que pide los viajes que todavía no tienen uno. */
+const ONGOING_SIN_CONDUCTOR = "sin-conductor";
 const ongoingPaginaStyle = (deshabilitado: boolean) => ({
   borderRadius: "7px",
   border: `1px solid ${SURFACE.border}`,
@@ -556,6 +558,7 @@ export default function TripsPage() {
   const [ongoingDiscipline, setOngoingDiscipline] = useState("");
   const [ongoingHotel, setOngoingHotel] = useState("");
   const [ongoingVenue, setOngoingVenue] = useState("");
+  const [ongoingDriver, setOngoingDriver] = useState("");
   const [ongoingPage, setOngoingPage] = useState(0);
   // Selección múltiple para borrado en lote.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -958,6 +961,39 @@ export default function TripsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hoteles, ongoingTrips, venues]);
 
+  /**
+   * Conductores con carga en la operación viva. Igual que hoteles y sedes, las
+   * opciones salen de los viajes y no del maestro de /drivers: el desplegable
+   * sólo ofrece a quien efectivamente tiene algo asignado, y no una lista de
+   * cientos de nombres donde la mayoría no maneja hoy. Los viajes todavía sin
+   * conductor van a una opción aparte, que es la misma pregunta que responde
+   * el indicador "Sin conductor" de arriba.
+   */
+  const ongoingConductores = useMemo(() => {
+    let sinConductor = 0;
+    const porConductor = new Map<string, { id: string; texto: string; total: number }>();
+    for (const trip of ongoingTrips) {
+      if (!trip.driverId) {
+        sinConductor += 1;
+        continue;
+      }
+      const actual = porConductor.get(trip.driverId);
+      if (actual) {
+        actual.total += 1;
+        continue;
+      }
+      porConductor.set(trip.driverId, {
+        id: trip.driverId,
+        texto: drivers[trip.driverId]?.fullName || t("Asignado"),
+        total: 1,
+      });
+    }
+    return {
+      lista: [...porConductor.values()].sort((a, b) => a.texto.localeCompare(b.texto, "es")),
+      sinConductor,
+    };
+  }, [drivers, ongoingTrips, t]);
+
   const ongoingFiltered = useMemo(
     () =>
       ongoingTrips
@@ -968,9 +1004,13 @@ export default function TripsPage() {
         )
         .filter((trip) => !ongoingDiscipline || trip.discipline === ongoingDiscipline)
         .filter((trip) => !ongoingHotel || tocaLugar(trip, ongoingHotel))
-        .filter((trip) => !ongoingVenue || tocaLugar(trip, ongoingVenue)),
+        .filter((trip) => !ongoingVenue || tocaLugar(trip, ongoingVenue))
+        .filter((trip) =>
+          !ongoingDriver ||
+          (ongoingDriver === ONGOING_SIN_CONDUCTOR ? !trip.driverId : trip.driverId === ongoingDriver),
+        ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ongoingTrips, ongoingDay, ongoingDiscipline, ongoingHotel, ongoingVenue, venues],
+    [ongoingTrips, ongoingDay, ongoingDiscipline, ongoingHotel, ongoingVenue, ongoingDriver, venues],
   );
 
   const ongoingTotalPages = Math.max(1, Math.ceil(ongoingFiltered.length / ONGOING_PAGE_SIZE));
@@ -1922,7 +1962,25 @@ export default function TripsPage() {
                 </StyledSelect>
               </label>
 
-              {(ongoingDay || ongoingDiscipline || ongoingHotel || ongoingVenue) && (
+              <label className="text-sm block" style={{ minWidth: 220 }}>
+                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Conductor")}</span>
+                <StyledSelect
+                  value={ongoingDriver}
+                  onChange={(e) => { setOngoingDriver(e.target.value); setOngoingPage(0); }}
+                >
+                  <option value="">{t("Todos")}</option>
+                  {ongoingConductores.sinConductor > 0 && (
+                    <option value={ONGOING_SIN_CONDUCTOR}>
+                      {`${t("Sin conductor")} (${ongoingConductores.sinConductor})`}
+                    </option>
+                  )}
+                  {ongoingConductores.lista.map((c) => (
+                    <option key={c.id} value={c.id}>{`${c.texto} (${c.total})`}</option>
+                  ))}
+                </StyledSelect>
+              </label>
+
+              {(ongoingDay || ongoingDiscipline || ongoingHotel || ongoingVenue || ongoingDriver) && (
                 <button
                   type="button"
                   onClick={() => {
@@ -1930,6 +1988,7 @@ export default function TripsPage() {
                     setOngoingDiscipline("");
                     setOngoingHotel("");
                     setOngoingVenue("");
+                    setOngoingDriver("");
                     setOngoingPage(0);
                   }}
                   style={{
@@ -2342,6 +2401,19 @@ export default function TripsPage() {
                             style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.textSecondary, fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}>
                             <FileTextIcon size={12} strokeWidth={2} />
                             Ver bitácora
+                          </button>
+                          {/* Un viaje cerrado por error —duplicado de la
+                              planilla, o cerrado sobre el viaje equivocado—
+                              sólo se podía borrar desde la operación viva, y
+                              ahí ya no aparece. */}
+                          <button
+                            type="button"
+                            onClick={() => setPendingAction({ trip, kind: "delete" })}
+                            title={t("Eliminar viaje")}
+                            style={{ display: "inline-flex", alignItems: "center", gap: "4px", padding: "5px 12px", borderRadius: "8px", border: `1px solid ${STATE.dangerBorder}`, background: SURFACE.bg, color: STATE.dangerText, fontSize: "11px", fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap" }}
+                          >
+                            <TrashIcon size={12} strokeWidth={2} />
+                            {t("Eliminar")}
                           </button>
                         </span>
                       </div>
