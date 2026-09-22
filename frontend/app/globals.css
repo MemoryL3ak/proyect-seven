@@ -732,6 +732,11 @@ label > *:first-child {
 .border-white\/5  { border-color: var(--border-muted) !important; }
 .border-white\/8  { border-color: var(--border-muted) !important; }
 
+/* Separadores de lista (divide-y): sin esto la linea entre filas queda
+   blanca sobre blanco, como pasaba entre las pruebas de cada deporte. */
+.divide-white\/5  > :not([hidden]) ~ :not([hidden]) { border-color: var(--border-muted) !important; }
+.divide-white\/10 > :not([hidden]) ~ :not([hidden]) { border-color: var(--border) !important; }
+
 /* Dark background sections used in old pages */
 .bg-\[\#0b1628\], .bg-\[\#0f1e35\], .bg-\[\#0d1117\], .bg-\[\#161b22\] {
   background: var(--surface) !important;
