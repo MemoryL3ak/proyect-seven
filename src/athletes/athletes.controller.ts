@@ -1,7 +1,18 @@
 import { isSelfCaller, isStaffCaller } from '../auth/api-auth.guard';
 import type { ApiRequest } from '../auth/api-auth.guard';
 import { Public } from '../auth/public.decorator';
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  ForbiddenException,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Req,
+  Query,
+} from '@nestjs/common';
 import { AthletesService } from './athletes.service';
 import { StaffScopeService } from '../auth/staff-scope.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
@@ -111,11 +122,24 @@ export class AthletesController {
     return this.athletesService.getHealthDocumentUrl(id, req.headers);
   }
 
+  /**
+   * Foto del participante: la carga el panel, o el propio titular desde su
+   * portal.
+   *
+   * El dueño se verifica acá. La ruta estaba protegida —pedía sesión— pero no
+   * miraba de quién era la ficha: mientras sólo la usaba el panel daba igual,
+   * y al abrirla al portal cualquier participante con sesión podría haberle
+   * cambiado la foto de la credencial a cualquier otro.
+   */
   @Post(':id/photo')
   uploadPhoto(
+    @Req() req: ApiRequest,
     @Param('id') id: string,
     @Body() payload: { dataUrl: string },
   ) {
+    if (!isStaffCaller(req.apiCaller) && !isSelfCaller(req.apiCaller, id)) {
+      throw new ForbiddenException('Sólo puedes cambiar tu propia foto');
+    }
     return this.athletesService.uploadPhoto(id, payload.dataUrl);
   }
 

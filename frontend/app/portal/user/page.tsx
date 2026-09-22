@@ -13,6 +13,7 @@ import {
   ClockIcon,
   UserIcon,
   XIcon,
+  CameraIcon,
   CheckIcon,
   StarIcon,
   TrophyIcon,
@@ -1583,6 +1584,57 @@ export default function UserPortalPage() {
   const initials = athlete?.fullName
     ? athlete.fullName.split(" ").slice(0, 2).map((w) => w[0] ?? "").join("").toUpperCase()
     : "?";
+
+  /**
+   * Foto del participante, desde su propio portal.
+   *
+   * Hasta ahora sólo la cargaba el staff desde el panel —de a una en la ficha
+   * o en masa calzando el nombre del archivo—, así que quien no aparecía en
+   * esa carga se quedaba sin foto y sacaba su credencial con iniciales. El
+   * conductor ya podía subirla desde su portal; el participante no.
+   *
+   * Se actualiza sólo `metadata.photoUrl` y no la ficha entera: la respuesta
+   * del endpoint no trae el nombre del evento ni el de la delegación, que el
+   * portal resuelve aparte y perdería la tarjeta de perfil.
+   */
+  const [subiendoFoto, setSubiendoFoto] = useState(false);
+  const fotoActual = (athlete?.metadata?.photoUrl as string | undefined) ?? null;
+
+  const cambiarFoto = () => {
+    if (!athlete?.id) return;
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = async () => {
+      const archivo = input.files?.[0];
+      if (!archivo) return;
+      setSubiendoFoto(true);
+      try {
+        const dataUrl = await new Promise<string>((resolve, reject) => {
+          const lector = new FileReader();
+          lector.onload = () => resolve(lector.result as string);
+          lector.onerror = () => reject(new Error("Error leyendo archivo"));
+          lector.readAsDataURL(archivo);
+        });
+        const actualizado = await apiFetch<{ metadata?: Record<string, unknown> }>(
+          `/athletes/${athlete.id}/photo`,
+          { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dataUrl }) },
+        );
+        const nueva = actualizado?.metadata?.photoUrl;
+        setAthlete((previo) =>
+          previo
+            ? { ...previo, metadata: { ...(previo.metadata ?? {}), photoUrl: nueva } }
+            : previo,
+        );
+        notify.push("Foto actualizada", "camera");
+      } catch {
+        notify.push("No se pudo subir la foto", "error");
+      } finally {
+        setSubiendoFoto(false);
+      }
+    };
+    input.click();
+  };
 
   const checkins = [
     { key: "airportCheckinAt" as const, label: t("Aeropuerto"), ts: athlete?.airportCheckinAt },
@@ -4276,6 +4328,35 @@ export default function UserPortalPage() {
         {/* ─── Cuenta tab ─── */}
         {activeTab === "cuenta" && (
           <div style={{ display:"flex",flexDirection:"column",gap:10 }}>
+            {/* Foto. Va primero y dice para qué sirve: es la que sale en la
+                credencial, y esa es la razón por la que alguien la cambia. */}
+            <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,padding:"14px 16px",display:"flex",alignItems:"center",gap:14 }}>
+              {fotoActual?.startsWith("http") ? (
+                <img src={fotoActual} alt={athlete.fullName} style={{ width:58,height:58,borderRadius:"50%",objectFit:"cover",flexShrink:0,border:`2px solid ${BRAND.teal}` }} />
+              ) : (
+                <div style={{ width:58,height:58,borderRadius:"50%",flexShrink:0,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:800,color:BRAND.tealInk }}>
+                  {initials}
+                </div>
+              )}
+              <div style={{ flex:1,minWidth:0 }}>
+                <p style={{ fontSize:13.5,fontWeight:700,color:SURFACE.text,margin:0 }}>{t("Tu foto")}</p>
+                <p style={{ fontSize:11.5,color:SURFACE.textMuted,margin:"2px 0 0",lineHeight:1.35 }}>
+                  {fotoActual
+                    ? t("Es la que aparece en tu credencial.")
+                    : t("Sin foto, tu credencial sale con tus iniciales.")}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={cambiarFoto}
+                disabled={subiendoFoto}
+                style={{ flexShrink:0,display:"inline-flex",alignItems:"center",gap:6,padding:"9px 14px",borderRadius:11,border:`1px solid ${BRAND.teal}`,background:"rgba(33,208,179,0.10)",color:BRAND.tealInk,fontSize:12,fontWeight:700,cursor:subiendoFoto?"default":"pointer",opacity:subiendoFoto?0.6:1 }}
+              >
+                <CameraIcon size={14} strokeWidth={2.2} />
+                {subiendoFoto ? t("Subiendo…") : fotoActual ? t("Cambiar") : t("Subir")}
+              </button>
+            </div>
+
             {/* Info rows */}
             <div style={{ background:SURFACE.card,borderRadius:14,border:`1px solid ${SURFACE.border}`,overflow:"hidden" }}>
               {([
