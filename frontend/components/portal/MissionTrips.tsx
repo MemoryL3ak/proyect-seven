@@ -55,6 +55,30 @@ const norm = (v?: string | null) => String(v ?? "").trim().toUpperCase();
 
 const fechaCorta = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }).replace(".", "") : "—";
+
+/**
+ * Día de un traslado, en hora local y no en UTC: con el desfase, los viajes
+ * de la noche caían en el día siguiente y el filtro los escondía del día que
+ * la gente tiene en la cabeza. Vacío = traslado sin hora cargada.
+ */
+const claveDia = (iso?: string | null) => {
+  if (!iso) return "";
+  const fecha = new Date(iso);
+  if (Number.isNaN(fecha.getTime())) return "";
+  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+  const dia = String(fecha.getDate()).padStart(2, "0");
+  return `${fecha.getFullYear()}-${mes}-${dia}`;
+};
+
+/** "Hoy", o "mié 24 sep". Sólo se distingue hoy: el resto se lee por fecha. */
+const etiquetaDia = (clave: string) => {
+  const [anio, mes, dia] = clave.split("-").map(Number);
+  const fecha = new Date(anio, mes - 1, dia);
+  if (clave === claveDia(new Date().toISOString())) return "Hoy";
+  return fecha
+    .toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" })
+    .replace(/\./g, "");
+};
 const hora = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false }) : "--:--";
 
@@ -124,6 +148,12 @@ export default function MissionTrips({
 }) {
   const { t } = useI18n();
   const [disciplinaFiltro, setDisciplinaFiltro] = useState("");
+  /**
+   * Día del traslado. Arranca en "todas" a propósito: el jefe abre Actividades
+   * para ver qué tiene por delante, no sólo lo de hoy, y "Hoy" queda a un
+   * toque. "SIN_FECHA" junta los traslados que todavía no tienen hora.
+   */
+  const [diaFiltro, setDiaFiltro] = useState("");
   const [estadoInterno, setEstadoInterno] = useState("ACTIVOS");
   // Si quien usa la lista lleva el filtro, manda él; si no, el de aquí.
   const estadoFiltro = estado ?? estadoInterno;
@@ -184,12 +214,37 @@ export default function MissionTrips({
     return [...vistas.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label));
   }, [propios, labels]);
 
+  /**
+   * Los días que de verdad tienen traslados, con cuántos hay en cada uno. Un
+   * calendario completo obligaría a tantear fechas vacías; así el filtro
+   * muestra la jornada del evento tal como quedó armada.
+   */
+  const opcionesDia = useMemo(() => {
+    const vistos = new Map<string, number>();
+    for (const tr of propios) {
+      const clave = claveDia(tr.scheduledAt) || "SIN_FECHA";
+      vistos.set(clave, (vistos.get(clave) ?? 0) + 1);
+    }
+    return [...vistos.entries()]
+      // Los que no tienen hora van al final, como en la lista.
+      .sort((a, b) => (a[0] === "SIN_FECHA" ? 1 : b[0] === "SIN_FECHA" ? -1 : a[0].localeCompare(b[0])))
+      .map(([clave, total]) => ({
+        value: clave,
+        label: clave === "SIN_FECHA" ? t("Sin fecha") : t(etiquetaDia(clave)),
+        count: total,
+      }));
+  }, [propios, t]);
+
   const visibles = useMemo(() => {
     const list = propios.filter((tr) => {
       if (disciplinaExterna && tr.disciplineId !== disciplinaExterna) return false;
       if (disciplinaFiltro) {
         const clave = tr.disciplineId ?? disciplinaDe(tr) ?? "";
         if (clave !== disciplinaFiltro) return false;
+      }
+      if (diaFiltro) {
+        const suDia = claveDia(tr.scheduledAt) || "SIN_FECHA";
+        if (suDia !== diaFiltro) return false;
       }
       const suEstado = norm(tr.status);
       if (estadoFiltro === "EN_CURSO") return EN_CURSO.has(suEstado);
@@ -204,7 +259,16 @@ export default function MissionTrips({
       const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Infinity;
       return ta - tb;
     });
-  }, [propios, disciplinaFiltro, disciplinaExterna, estadoFiltro, labels]);
+  }, [propios, disciplinaFiltro, disciplinaExterna, diaFiltro, estadoFiltro, labels]);
+
+  // Si el día elegido deja de existir —cambió la región, el hotel o llegaron
+  // otros viajes—, el filtro se suelta solo en vez de dejar la lista vacía
+  // con un chip marcado que ya no está.
+  useEffect(() => {
+    if (diaFiltro && !opcionesDia.some((opcion) => opcion.value === diaFiltro)) {
+      setDiaFiltro("");
+    }
+  }, [opcionesDia, diaFiltro]);
 
   // Los conductores se piden una sola vez, y sólo si hay viajes con chofer.
   useEffect(() => {
@@ -244,6 +308,9 @@ export default function MissionTrips({
           {visibles.length} {visibles.length === 1 ? t("traslado") : t("traslados")}
           {estadoFiltro === "ACTIVOS" ? ` · ${t("por realizar")}` : ""}
           {estadoFiltro === "EN_CURSO" ? ` · ${t("en curso")}` : ""}
+          {/* El día también en el resumen: con la lista desplazada, el chip
+              marcado queda fuera de pantalla y el recuento parecía el total. */}
+          {diaFiltro ? ` · ${opcionesDia.find((o) => o.value === diaFiltro)?.label ?? ""}` : ""}
         </p>
         <SegmentedFilter
           style={{ marginTop: 10 }}
@@ -258,6 +325,19 @@ export default function MissionTrips({
             { value: "TODOS", label: t("Todos") },
           ]}
         />
+        {/* Día del traslado. Va antes que la disciplina porque la jornada es
+            lo primero que se acota: "qué tengo mañana" se pregunta más que
+            "qué tiene el vóleibol". Sólo aparece si hay más de un día: con
+            uno solo, el filtro no filtra nada. */}
+        {opcionesDia.length > 1 && (
+          <ChipFilter
+            style={{ marginTop: 8 }}
+            value={diaFiltro}
+            onChange={setDiaFiltro}
+            allLabel={t("Todos los días")}
+            options={opcionesDia}
+          />
+        )}
         {/* Disciplina: fichas desplazables. Con `todas` manda el panel de
             filtros del Coordinador de Comité, y dos controles para lo mismo
             sólo confunden. */}
