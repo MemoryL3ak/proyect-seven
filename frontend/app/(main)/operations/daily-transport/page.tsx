@@ -283,6 +283,42 @@ const TIME_FIELDS = new Set([
   "returnTime",
 ]);
 
+/**
+ * El evento ocurre en Chile, así que la hora que se muestra es siempre la de
+ * Chile — no la del reloj del computador que abre el panel, ni la del servidor.
+ *
+ * Antes esta vista sacaba la hora recortando el texto del ISO (`slice(11, 16)`),
+ * y ese texto viene en UTC: la planilla decía 07:45 y la Vista del día mostraba
+ * 10:45, tres horas adelantada, mientras la pestaña Viajes — que sí convierte
+ * con `Date` — mostraba la hora correcta.
+ */
+const EVENT_TIME_ZONE = "America/Santiago";
+
+const formatEventClock = (value?: string | null) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("es-CL", {
+    timeZone: EVENT_TIME_ZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d);
+};
+
+/** "YYYY-MM-DD" del día del evento, para comparar contra el selector de fecha. */
+const eventDayKey = (value?: string | null) => {
+  if (!value) return "";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: EVENT_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(d);
+};
+
 // Excel entrega las celdas de fecha/hora como números (serial de fecha o
 // fracción de día) apenas el archivo se abre/edita/guarda en Excel. El backend
 // espera texto "YYYY-MM-DD" y "HH:MM"; sin esta conversión todas las filas se
@@ -596,7 +632,7 @@ export default function DailyTransportPage() {
       const rows = await apiFetch<Trip[]>(`/trips`);
       const safe = Array.isArray(rows) ? rows : [];
       const filtered = safe.filter((t) => {
-        const d = t.tripDate || t.trip_date || (t.scheduledAt || t.scheduled_at || "").slice(0, 10);
+        const d = t.tripDate || t.trip_date || eventDayKey(t.scheduledAt || t.scheduled_at);
         return d === viewDate;
       });
       setViewTrips(filtered);
@@ -1199,7 +1235,7 @@ export default function DailyTransportPage() {
                     .sort((a, b) => String(a.scheduledAt || a.scheduled_at || "").localeCompare(String(b.scheduledAt || b.scheduled_at || "")))
                     .map((trip, idx) => {
                       const driverId = trip.driverId || trip.driver_id;
-                      const time = String(trip.scheduledAt || trip.scheduled_at || "").slice(11, 16);
+                      const time = formatEventClock(trip.scheduledAt || trip.scheduled_at);
                       return (
                         <tr key={trip.id}
                           style={{ borderTop: "1px solid var(--border-muted)", background: idx % 2 === 0 ? "var(--surface)" : "var(--elevated)" }}>
