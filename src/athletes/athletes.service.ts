@@ -30,6 +30,7 @@ type AthleteRow = {
   phone: string | null;
   country_code: string | null;
   passport_number: string | null;
+  rut: string | null;
   date_of_birth: string | null;
   dietary_needs: string | null;
   luggage_type: string | null;
@@ -116,6 +117,7 @@ export class AthletesService {
     if (dto.phone !== undefined) row.phone = dto.phone ?? null;
     if (dto.countryCode !== undefined) row.country_code = dto.countryCode ?? null;
     if (dto.passportNumber !== undefined) row.passport_number = dto.passportNumber ?? null;
+    if (dto.rut !== undefined) row.rut = dto.rut?.trim() || null;
     if (dto.dateOfBirth !== undefined) row.date_of_birth = dto.dateOfBirth ?? null;
     if (dto.dietaryNeeds !== undefined) row.dietary_needs = dto.dietaryNeeds ?? null;
     if (dto.luggageType !== undefined) row.luggage_type = dto.luggageType ?? null;
@@ -190,6 +192,7 @@ export class AthletesService {
       phone: row.phone,
       countryCode: row.country_code,
       passportNumber: row.passport_number,
+      rut: row.rut ?? null,
       dateOfBirth: row.date_of_birth ? new Date(row.date_of_birth) : null,
       dietaryNeeds: row.dietary_needs,
       luggageType: row.luggage_type,

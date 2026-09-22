@@ -42,6 +42,11 @@ export class CreateAthleteDto {
   @IsOptional()
   passportNumber?: string;
 
+  /** RUT del participante. El formulario lo pedía y la API lo descartaba. */
+  @IsString()
+  @IsOptional()
+  rut?: string;
+
   @IsISO8601()
   @IsOptional()
   dateOfBirth?: string;

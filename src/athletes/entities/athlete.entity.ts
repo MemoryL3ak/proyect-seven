@@ -35,6 +35,9 @@ export class Athlete {
   @Column({ name: 'passport_number', type: 'text', nullable: true })
   passportNumber?: string | null;
 
+  @Column({ name: 'rut', type: 'text', nullable: true })
+  rut?: string | null;
+
   @Column({ name: 'date_of_birth', type: 'date', nullable: true })
   dateOfBirth?: Date | null;
 
