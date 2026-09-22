@@ -3,6 +3,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
+import { CLIENT_TYPE_OPTIONS, isEventCoordinator } from "@/lib/clientTypes";
 import { BRAND } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 
@@ -73,15 +74,80 @@ const athleteHeaders = [
 const athleteRegistrationHeaders = [
   "event_name",
   "country_code",
+  // Delegación a la que pertenece. En los Juegos Escolares es la región, y no
+  // se deduce del país: sin esta columna todo el mundo caía en "CHL".
+  "delegation",
   "full_name",
+  "rut",
   "passport_number",
   "email",
   "phone",
   "date_of_birth",
+  "gender",
   "user_type",
   "discipline_name",
+  "is_delegation_lead",
   "visa_required"
 ] as const;
+
+/**
+ * Filas de ejemplo de la plantilla de inscripción. Una plantilla con solo
+ * encabezados no dice qué escribir en "user_type" ni que un Coordinador
+ * Comité va sin delegación ni disciplina, y esas dos cosas eran justamente
+ * las que llegaban mal.
+ */
+const athleteRegistrationExamples: Array<Record<string, string>> = [
+  {
+    event_name: "Final Nacional Sub 14 Juegos Deportivos Escolares 2026",
+    country_code: "CHL",
+    delegation: "Región de Ñuble",
+    full_name: "María Fernanda Soto Reyes",
+    rut: "21.345.678-9",
+    passport_number: "",
+    email: "maria.soto@ejemplo.cl",
+    phone: "+56912345678",
+    date_of_birth: "2012-05-14",
+    gender: "Femenino",
+    user_type: "TA",
+    discipline_name: "Atletismo",
+    is_delegation_lead: "NO",
+    visa_required: "NO",
+  },
+  {
+    event_name: "Final Nacional Sub 14 Juegos Deportivos Escolares 2026",
+    country_code: "CHL",
+    delegation: "Región de Ñuble",
+    full_name: "Rodrigo Pérez Lagos",
+    rut: "13.456.789-0",
+    passport_number: "",
+    email: "rodrigo.perez@ejemplo.cl",
+    phone: "+56987654321",
+    date_of_birth: "1978-03-02",
+    gender: "Masculino",
+    user_type: "JEFE_MISION",
+    discipline_name: "",
+    is_delegation_lead: "SI",
+    visa_required: "NO",
+  },
+  {
+    // El coordinador de evento no pertenece a una región ni a un deporte:
+    // delegación y disciplina van vacías a propósito.
+    event_name: "Final Nacional Sub 14 Juegos Deportivos Escolares 2026",
+    country_code: "CHL",
+    delegation: "",
+    full_name: "Camila Castillo Véliz",
+    rut: "12.620.486-8",
+    passport_number: "",
+    email: "camila.castillo@ejemplo.cl",
+    phone: "+56911223344",
+    date_of_birth: "1974-11-04",
+    gender: "Femenino",
+    user_type: "COORDINADOR_COMITE",
+    discipline_name: "",
+    is_delegation_lead: "NO",
+    visa_required: "NO",
+  },
+];
 
 const hospitalityHeaders = [
   "event_id",
@@ -356,11 +422,32 @@ const toNumber = (value: unknown) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+/** Tipos de cliente válidos, sacados del catálogo y no de una copia a mano. */
+const CLIENT_TYPE_REFERENCE: string[][] = CLIENT_TYPE_OPTIONS.map((o) => [
+  o.value,
+  o.label,
+]);
+
 const normalizeCountryCode = (value: unknown) => {
   const text = String(value ?? "").trim().toUpperCase();
   if (text.length === 3) return text;
   return countryCodeByName[normalizeText(value)] ?? "";
 };
+
+/**
+ * Clave de comparación de una delegación: minúsculas, sin tildes ni apóstrofos
+ * y sin el prefijo "Región de/del", para que "ÑUBLE", "Region Ñuble" y
+ * "Región de Ñuble" sean lo mismo. Igual criterio que el importador de viajes.
+ */
+const claveDelegacion = (value: unknown) =>
+  String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/['’´`]/g, "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/^region\s+(del\s+|de\s+)?/, "")
+    .trim();
 
 const normalizeDisciplineName = (value: unknown) =>
   normalizeText(value).replace(/\s+/g, " ");
@@ -387,11 +474,48 @@ const resolveEventId = (
   return selectedEventId;
 };
 
-const downloadTemplate = (headers: readonly string[], fileName: string) => {
-  const worksheet = XLSX.utils.aoa_to_sheet([Array.from(headers)]);
+const downloadTemplate = (
+  headers: readonly string[],
+  fileName: string,
+  examples: Array<Record<string, string>> = [],
+  reference?: { sheetName: string; rows: string[][] },
+) => {
+  const filas = [
+    Array.from(headers),
+    ...examples.map((ejemplo) => headers.map((h) => ejemplo[h] ?? "")),
+  ];
+  const worksheet = XLSX.utils.aoa_to_sheet(filas);
+  worksheet["!cols"] = headers.map((h) => ({ wch: Math.max(14, h.length + 2) }));
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
+  // Los valores válidos van en su propia hoja: pegarlos como comentario en la
+  // cabecera no sobrevive a un "guardar como CSV".
+  if (reference) {
+    const hoja = XLSX.utils.aoa_to_sheet(reference.rows);
+    hoja["!cols"] = [{ wch: 26 }, { wch: 46 }];
+    XLSX.utils.book_append_sheet(workbook, hoja, reference.sheetName);
+  }
   XLSX.writeFile(workbook, fileName);
+};
+
+/** Hoja "Valores" de la plantilla de inscripción. */
+const REFERENCIA_INSCRIPCION: { sheetName: string; rows: string[][] } = {
+  sheetName: "Valores",
+  rows: [
+    ["Columna", "Qué escribir"],
+    ["event_name", "Nombre exacto del evento, o dejarlo vacío y elegir el evento arriba"],
+    ["country_code", "Código de 3 letras del país: CHL, ARG, BRA…"],
+    ["delegation", "Delegación o región: \"Región de Ñuble\", \"ÑUBLE\", \"CL-NB\". Vacío para los coordinadores de evento"],
+    ["rut", "RUT con o sin puntos, con guion y dígito verificador"],
+    ["date_of_birth", "AAAA-MM-DD"],
+    ["gender", "Masculino / Femenino"],
+    ["is_delegation_lead", "SI / NO — marca al Jefe de Misión de esa delegación"],
+    ["visa_required", "SI / NO"],
+    ["discipline_name", "Nombre del deporte tal como está en el maestro de Disciplinas. Vacío si no compite"],
+    ["", ""],
+    ["user_type — valores válidos", ""],
+    ...CLIENT_TYPE_REFERENCE,
+  ],
 };
 
 const isAndWorkbook = (rows: unknown[][]) => {
@@ -696,6 +820,44 @@ export default function BulkImportPanel({
       const delegationCache = new Map(
         (delegations || []).map((item) => [`${item.eventId}::${String(item.countryCode).toUpperCase()}`, item])
       );
+      // Índice por nombre para la columna "delegation": en los Juegos
+      // Escolares la delegación es la región y no se deduce del país.
+      const delegationPorNombre = new Map<string, Record<string, any>>();
+      (delegations || []).forEach((item) => {
+        const nombre = claveDelegacion(
+          (item?.metadata as Record<string, unknown> | null)?.name ?? item?.name,
+        );
+        if (nombre) delegationPorNombre.set(`${item.eventId}::${nombre}`, item);
+        const codigo = String(item.countryCode ?? "").trim().toLowerCase();
+        if (codigo) {
+          delegationPorNombre.set(`${item.eventId}::${codigo}`, item);
+          const sufijo = codigo.includes("-") ? codigo.split("-")[1] : "";
+          if (sufijo) delegationPorNombre.set(`${item.eventId}::${sufijo}`, item);
+        }
+      });
+      const buscarDelegacion = (valor: string, eventoId: string) => {
+        const clave = claveDelegacion(valor);
+        const crudo = String(valor).trim().toLowerCase();
+        const directa =
+          delegationPorNombre.get(`${eventoId}::${clave}`) ??
+          delegationPorNombre.get(`${eventoId}::${crudo}`);
+        if (directa) return directa;
+        // Nombre parcial: "ÑUBLE" contra "Región de Ñuble".
+        const candidatas = (delegations || []).filter((item) => {
+          if (item.eventId !== eventoId) return false;
+          const otra = claveDelegacion(
+            (item?.metadata as Record<string, unknown> | null)?.name ?? item?.name,
+          );
+          if (!otra || !clave) return false;
+          return (
+            (clave.length >= 4 && otra.startsWith(clave)) ||
+            (otra.length >= 4 && clave.startsWith(otra)) ||
+            (clave.length >= 5 && otra.includes(clave)) ||
+            (otra.length >= 5 && clave.includes(otra))
+          );
+        });
+        return candidatas.length === 1 ? candidatas[0] : undefined;
+      };
 
       let created = 0;
       let updated = 0;
@@ -712,22 +874,43 @@ export default function BulkImportPanel({
           continue;
         }
 
-        let delegation = delegationCache.get(`${eventId}::${countryCode}`);
-        if (!delegation) {
-          try {
-            delegation = await apiFetch<Record<string, any>>("/delegations", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ eventId, countryCode })
-            });
-            delegationCache.set(`${eventId}::${countryCode}`, delegation);
-          } catch (error) {
+        // Los coordinadores de evento —Comité y Transporte— coordinan el
+        // evento entero: no pertenecen a una delegación ni a un deporte, igual
+        // que en la ficha a mano.
+        const esCoordinadorDeEvento = isEventCoordinator(row.user_type);
+
+        let delegation: Record<string, any> | undefined;
+        if (row.delegation) {
+          // La columna manda. No se crea la delegación al vuelo: una región
+          // mal escrita crearía una delegación fantasma y los participantes
+          // quedarían repartidos entre las dos.
+          delegation = buscarDelegacion(row.delegation, eventId);
+          if (!delegation) {
             rowErrors.push({
               row: rowNumber,
-              field: "country_code",
-              message: error instanceof Error ? error.message : "No se pudo crear la delegacion"
+              field: "delegation",
+              message: `No existe la delegación "${row.delegation}" en este evento. Créala en Registro → Delegaciones.`
             });
             continue;
+          }
+        } else if (!esCoordinadorDeEvento) {
+          delegation = delegationCache.get(`${eventId}::${countryCode}`);
+          if (!delegation) {
+            try {
+              delegation = await apiFetch<Record<string, any>>("/delegations", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ eventId, countryCode })
+              });
+              delegationCache.set(`${eventId}::${countryCode}`, delegation);
+            } catch (error) {
+              rowErrors.push({
+                row: rowNumber,
+                field: "country_code",
+                message: error instanceof Error ? error.message : "No se pudo crear la delegacion"
+              });
+              continue;
+            }
           }
         }
 
@@ -783,9 +966,10 @@ export default function BulkImportPanel({
 
         const payload: Record<string, any> = {
           eventId,
-          delegationId: delegation.id,
-          disciplineId,
+          delegationId: delegation?.id ?? null,
+          disciplineId: esCoordinadorDeEvento ? null : disciplineId,
           fullName: row.full_name || undefined,
+          rut: row.rut || undefined,
           email: row.email || undefined,
           phone: row.phone || undefined,
           countryCode,
@@ -1112,7 +1296,13 @@ export default function BulkImportPanel({
                   : "template-and-vacio.xlsx"
                 : type === "drivers"
                   ? "template-conductores.xlsx"
-                  : "template-hoteleria.xlsx"
+                  : "template-hoteleria.xlsx",
+              type === "athletes" && athleteMode === "registration"
+                ? athleteRegistrationExamples
+                : [],
+              type === "athletes" && athleteMode === "registration"
+                ? REFERENCIA_INSCRIPCION
+                : undefined,
             )
           }
         >
