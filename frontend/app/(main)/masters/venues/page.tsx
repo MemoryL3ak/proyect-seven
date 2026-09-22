@@ -10,6 +10,8 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 import { useI18n } from "@/lib/i18n";
+import { downloadCSV } from "@/lib/export";
+import { DownloadIcon } from "@/components/ui/Icons";
 
 type EventItem = {
   id: string;
@@ -165,6 +167,25 @@ export default function VenuesMasterPage() {
   }, [disciplines]);
   const disciplineLabel = (id: string) =>
     disciplineLabels.get(id) ?? disciplines.find((d) => d.id === id)?.name ?? id;
+
+  /**
+   * Listado de sedes a CSV, con los mismos nombres que muestran las tarjetas:
+   * el evento y los deportes salen resueltos, no como id.
+   */
+  const descargarSedes = () => {
+    if (venues.length === 0) return;
+    const filas = venues.map((venue) => ({
+      Sede: venue.name,
+      Evento: events.find((ev) => ev.id === venue.eventId)?.name || venue.eventId,
+      Dirección: venue.address || "",
+      Región: venue.region || "",
+      Comuna: venue.commune || "",
+      Deportes: (venue.disciplineIds || []).map((id) => disciplineLabel(id)).join(" · "),
+      "Coordinador de sede": venue.coordinatorName || "",
+      Teléfono: venue.coordinatorPhone || "",
+    }));
+    downloadCSV(`sedes-${new Date().toISOString().slice(0, 10)}`, filas);
+  };
 
   const [coordinadores, setCoordinadores] = useState<Coordinador[]>([]);
 
@@ -330,9 +351,22 @@ export default function VenuesMasterPage() {
         title={t("Sedes")}
         description={t("Registro maestro de sedes operativas con dirección, foto y mapa.")}
         action={
-          <button className="btn btn-ghost" type="button" onClick={loadData} disabled={loading}>
-            {loading ? t("Actualizando...") : t("Refrescar")}
-          </button>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+            <button
+              className="btn btn-ghost"
+              type="button"
+              onClick={descargarSedes}
+              disabled={venues.length === 0}
+              title={t("Descargar el listado como CSV")}
+              style={{ display: "inline-flex", alignItems: "center", gap: "6px", opacity: venues.length === 0 ? 0.5 : 1 }}
+            >
+              <DownloadIcon size={13} style={{ opacity: 0.7 }} />
+              {t("Descargar")}
+            </button>
+            <button className="btn btn-ghost" type="button" onClick={loadData} disabled={loading}>
+              {loading ? t("Actualizando...") : t("Refrescar")}
+            </button>
+          </div>
         }
       />
 

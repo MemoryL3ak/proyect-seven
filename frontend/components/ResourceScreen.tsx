@@ -5,7 +5,8 @@ import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { nombrePropio } from "@/lib/nombres";
-import { AlertIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon } from "@/components/ui/Icons";
+import { AlertIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon, DownloadIcon } from "@/components/ui/Icons";
+import { downloadCSV, slugify } from "@/lib/export";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import { isEventCoordinator } from "@/lib/clientTypes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
@@ -2470,6 +2471,43 @@ export default function ResourceScreen({
   const statusTone = (raw: string) =>
     STATUS_BADGE[raw.toUpperCase()] ?? { bg: "rgba(148,163,184,0.14)", color: SURFACE.textSecondary };
 
+  /**
+   * Descarga la tabla tal como se ve: mismas columnas, mismo orden y el mismo
+   * formato de cada celda, para que el archivo diga "Jefe de Misión" donde la
+   * pantalla dice "Jefe de Misión" y no "JEFE_MISION". Sacar el listado a
+   * Excel era copiarlo a mano desde el navegador.
+   */
+  const descargarListado = () => {
+    if (items.length === 0) return;
+    // Dos campos pueden compartir etiqueta; con el mismo encabezado una
+    // columna pisaría a la otra al armar la fila.
+    const usados = new Set<string>();
+    const encabezados = columns.map((col) => {
+      const base = t(col.label);
+      if (!usados.has(base)) {
+        usados.add(base);
+        return { key: col.key, header: base };
+      }
+      const unico = `${base} (${col.key})`;
+      usados.add(unico);
+      return { key: col.key, header: unico };
+    });
+    const filas = items.map((item) => {
+      const fila: Record<string, string> = {};
+      encabezados.forEach(({ key, header }) => {
+        const valor = resolveDisplayValue(key, item);
+        fila[header] = valor == null ? "" : String(valor);
+      });
+      return fila;
+    });
+    const fecha = new Date().toISOString().slice(0, 10);
+    downloadCSV(
+      `${slugify(config.name)}-${fecha}`,
+      filas,
+      encabezados.map((e) => e.header),
+    );
+  };
+
   const resolveDisplayValue = (fieldKey: string, item: Record<string, any>) => {
     const value = item[fieldKey];
     const field = config.fields.find((item) => item.key === fieldKey);
@@ -3651,6 +3689,17 @@ export default function ResourceScreen({
             </p>
             <h4 style={{ fontSize: "1.15rem", fontWeight: 700, color: "var(--text)", letterSpacing: "-0.01em" }}>{t("Registros")}</h4>
           </div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
+          <button
+            className="btn btn-ghost"
+            onClick={descargarListado}
+            disabled={items.length === 0}
+            title={t("Descargar el listado como CSV")}
+            style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", opacity: items.length === 0 ? 0.5 : 1 }}
+          >
+            <DownloadIcon size={13} style={{ opacity: 0.7 }} />
+            {t("Descargar")}
+          </button>
           <button
             className="btn btn-ghost"
             onClick={loadItems}
@@ -3663,6 +3712,7 @@ export default function ResourceScreen({
             </svg>
             {loading ? t("Actualizando...") : t("Refrescar")}
           </button>
+          </div>
         </div>
         {items.length === 0 ? (
           <div className="text-sm" style={{color:"var(--text-muted)"}}>{t("Sin registros aún.")}</div>
