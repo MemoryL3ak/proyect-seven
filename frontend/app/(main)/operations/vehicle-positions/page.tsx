@@ -638,9 +638,82 @@ export default function VehiclePositionsPage() {
     };
   }, [trails]);
 
+  // ── Qué sede y qué hotel toca cada viaje ──
+  // El viaje tiene cuatro columnas de id para los lugares (sede y hotel, de
+  // origen y de destino), pero casi ningún viaje cargado las trae: el lugar
+  // viene escrito a mano en Origen/Destino, con el mismo nombre que está en el
+  // catálogo ("Polideportivo Viña del Mar", "Hotel Ankara"). Un filtro que
+  // mirara sólo los ids devolvería una lista vacía y parecería roto, así que
+  // se resuelve por id y, si no hay, por nombre.
+  //
+  // Lo que queda fuera —comedores, direcciones sueltas como "1 Norte 221"— no
+  // es una sede ni un hotel del catálogo y no debería aparecer bajo ninguno.
+  const lugaresPorViaje = useMemo(() => {
+    const indexar = (catalogo: Record<string, { id: string; name?: string | null }>) => {
+      const porNombre = new Map<string, string>();
+      Object.values(catalogo).forEach((item) => {
+        const clave = claveLugar(item.name);
+        if (clave) porNombre.set(clave, item.id);
+      });
+      return porNombre;
+    };
+    const sedesPorNombre = indexar(venues);
+    const hotelesPorNombre = indexar(hotels);
+
+    const resolver = (
+      idOrigen: string | null | undefined,
+      idDestino: string | null | undefined,
+      porNombre: Map<string, string>,
+      textos: Array<string | null | undefined>,
+    ) => {
+      const ids = new Set<string>();
+      if (idOrigen) ids.add(idOrigen);
+      if (idDestino) ids.add(idDestino);
+      textos.forEach((texto) => {
+        const id = porNombre.get(claveLugar(texto));
+        if (id) ids.add(id);
+      });
+      return ids;
+    };
+
+    const mapa = new Map<string, { sedes: Set<string>; hoteles: Set<string> }>();
+    trips.forEach((trip) => {
+      const textos = [trip.origin, trip.destination];
+      mapa.set(trip.id, {
+        sedes: resolver(trip.originVenueId, trip.destinationVenueId, sedesPorNombre, textos),
+        hoteles: resolver(trip.originHotelId, trip.destinationHotelId, hotelesPorNombre, textos),
+      });
+    });
+    return mapa;
+  }, [trips, venues, hotels]);
+
+  /**
+   * Los viajes que quedan tras los filtros de conductor, sede y hotel.
+   *
+   * Recortan la pantalla entera y no sólo la tabla: el mapa, la lista de
+   * conductores, los indicadores de arriba y los viajes de abajo salen todos de
+   * aquí. Un filtro que cambiara la tabla y dejara el mapa mostrando los 221
+   * viajes estaría contando dos historias distintas al mismo tiempo.
+   *
+   * Los de buscar, cliente y estado no entran acá: ésos afinan sólo la lista de
+   * "Todos los viajes" y se aplican después.
+   */
+  const tripsFiltrados = useMemo(
+    () =>
+      trips.filter((trip) => {
+        if (tableDriver && claveConductor(drivers, trip.driverId) !== tableDriver) return false;
+        // Sede y hotel miran los dos extremos del viaje: ir al Fortín Prat y
+        // volver del Fortín Prat son los dos viajes del Fortín Prat.
+        if (tableVenue && !lugaresPorViaje.get(trip.id)?.sedes.has(tableVenue)) return false;
+        if (tableHotel && !lugaresPorViaje.get(trip.id)?.hoteles.has(tableHotel)) return false;
+        return true;
+      }),
+    [trips, tableDriver, tableVenue, tableHotel, lugaresPorViaje, drivers],
+  );
+
   const activeTripsForRoutes = useMemo(
-    () => trips.filter((t) => ["EN_ROUTE", "PICKED_UP"].includes(t.status ?? "")),
-    [trips],
+    () => tripsFiltrados.filter((t) => ["EN_ROUTE", "PICKED_UP"].includes(t.status ?? "")),
+    [tripsFiltrados],
   );
 
   // Geocode destination venues lazily as active trips appear. Cached in
@@ -698,64 +771,15 @@ export default function VehiclePositionsPage() {
     return d ? new Date(d).getTime() : 0;
   };
   const orderedTrips = useMemo(() => {
-    return [...trips].sort((a, b) => tripWhen(b) - tripWhen(a));
-  }, [trips]);
-
-  // ── Qué sede y qué hotel toca cada viaje ──
-  // El viaje tiene cuatro columnas de id para los lugares (sede y hotel, de
-  // origen y de destino), pero casi ningún viaje cargado las trae: el lugar
-  // viene escrito a mano en Origen/Destino, con el mismo nombre que está en el
-  // catálogo ("Polideportivo Viña del Mar", "Hotel Ankara"). Un filtro que
-  // mirara sólo los ids devolvería una lista vacía y parecería roto, así que
-  // se resuelve por id y, si no hay, por nombre.
-  //
-  // Lo que queda fuera —comedores, direcciones sueltas como "1 Norte 221"— no
-  // es una sede ni un hotel del catálogo y no debería aparecer bajo ninguno.
-  const lugaresPorViaje = useMemo(() => {
-    const indexar = (catalogo: Record<string, { id: string; name?: string | null }>) => {
-      const porNombre = new Map<string, string>();
-      Object.values(catalogo).forEach((item) => {
-        const clave = claveLugar(item.name);
-        if (clave) porNombre.set(clave, item.id);
-      });
-      return porNombre;
-    };
-    const sedesPorNombre = indexar(venues);
-    const hotelesPorNombre = indexar(hotels);
-
-    const resolver = (
-      idOrigen: string | null | undefined,
-      idDestino: string | null | undefined,
-      porNombre: Map<string, string>,
-      textos: Array<string | null | undefined>,
-    ) => {
-      const ids = new Set<string>();
-      if (idOrigen) ids.add(idOrigen);
-      if (idDestino) ids.add(idDestino);
-      textos.forEach((texto) => {
-        const id = porNombre.get(claveLugar(texto));
-        if (id) ids.add(id);
-      });
-      return ids;
-    };
-
-    const mapa = new Map<string, { sedes: Set<string>; hoteles: Set<string> }>();
-    trips.forEach((trip) => {
-      const textos = [trip.origin, trip.destination];
-      mapa.set(trip.id, {
-        sedes: resolver(trip.originVenueId, trip.destinationVenueId, sedesPorNombre, textos),
-        hoteles: resolver(trip.originHotelId, trip.destinationHotelId, hotelesPorNombre, textos),
-      });
-    });
-    return mapa;
-  }, [trips, venues, hotels]);
+    return [...tripsFiltrados].sort((a, b) => tripWhen(b) - tripWhen(a));
+  }, [tripsFiltrados]);
 
   // ── Filtros de la tabla "Todos los viajes" ──
   const statusCounts = useMemo(() => {
     const m: Record<string, number> = {};
-    trips.forEach((t) => { const s = t.status || "SCHEDULED"; m[s] = (m[s] || 0) + 1; });
+    tripsFiltrados.forEach((t) => { const s = t.status || "SCHEDULED"; m[s] = (m[s] || 0) + 1; });
     return m;
-  }, [trips]);
+  }, [tripsFiltrados]);
   const tableClientOptions = useMemo(() => {
     const set = new Set<string>();
     trips.forEach((t) => { if (t.clientType) set.add(t.clientType); });
@@ -789,26 +813,16 @@ export default function VehiclePositionsPage() {
     [trips, lugaresPorViaje, hotels],
   );
 
-  const hayFiltros = Boolean(tableSearch || tableStatus || tableClient || tableDriver || tableVenue || tableHotel);
-  const limpiarFiltros = () => {
-    setTableSearch("");
-    setTableStatus("");
-    setTableClient("");
-    setTableDriver("");
-    setTableVenue("");
-    setTableHotel("");
-  };
+  /** Los tres que recortan la pantalla entera, no sólo la lista de abajo. */
+  const hayFiltrosDeVista = Boolean(tableDriver || tableVenue || tableHotel);
 
   const visibleTrips = useMemo(() => {
     const q = tableSearch.trim().toLowerCase();
     return orderedTrips.filter((t) => {
       if (tableStatus && (t.status || "SCHEDULED") !== tableStatus) return false;
       if (tableClient && (t.clientType || "") !== tableClient) return false;
-      if (tableDriver && claveConductor(drivers, t.driverId) !== tableDriver) return false;
-      // Sede y hotel miran los dos extremos del viaje: ir al Fortín Prat y
-      // volver del Fortín Prat son los dos viajes del Fortín Prat.
-      if (tableVenue && !lugaresPorViaje.get(t.id)?.sedes.has(tableVenue)) return false;
-      if (tableHotel && !lugaresPorViaje.get(t.id)?.hoteles.has(tableHotel)) return false;
+      // Conductor, sede y hotel ya vienen aplicados: orderedTrips sale de
+      // tripsFiltrados. Acá sólo se afina lo propio de esta lista.
       if (q) {
         const driver = drivers[t.driverId]?.fullName || "";
         const vehicle = t.vehicleId ? (vehicles[t.vehicleId]?.plate || "") : "";
@@ -818,11 +832,11 @@ export default function VehiclePositionsPage() {
       }
       return true;
     });
-  }, [orderedTrips, tableSearch, tableStatus, tableClient, tableDriver, tableVenue, tableHotel, lugaresPorViaje, drivers, vehicles]);
+  }, [orderedTrips, tableSearch, tableStatus, tableClient, drivers, vehicles]);
 
   const activeTrips = useMemo(
-    () => trips.filter((t) => ["EN_ROUTE", "PICKED_UP"].includes(t.status ?? "")),
-    [trips]
+    () => tripsFiltrados.filter((t) => ["EN_ROUTE", "PICKED_UP"].includes(t.status ?? "")),
+    [tripsFiltrados]
   );
 
   // Unified live data: every driver with a fresh GPS fix, augmented with
@@ -885,17 +899,37 @@ export default function VehiclePositionsPage() {
       .sort((a, b) => (Number(b.online) - Number(a.online)) || a.ageMs - b.ageMs);
   }, [positions, drivers, nowTick]);
 
+  /**
+   * El mapa sigue a los conductores, no a los viajes, así que los filtros se
+   * traducen: con un conductor elegido queda ése; con una sede o un hotel
+   * elegidos quedan los que van en un viaje que toca ese lugar. Un conductor
+   * conectado pero sin viaje no aparece bajo un filtro de lugar: no hay nada
+   * que lo relacione con él.
+   */
+  const trackedDriversVisibles = useMemo(() => {
+    if (!tableDriver && !tableVenue && !tableHotel) return trackedDrivers;
+    return trackedDrivers.filter(({ driver }) => {
+      if (tableDriver && claveConductor(drivers, driver.id) !== tableDriver) return false;
+      // Con sede u hotel elegidos no basta con ser el conductor: tiene que ir
+      // en un viaje que toque ese lugar. activeTrips ya viene recortado.
+      if (tableVenue || tableHotel) {
+        return activeTrips.some((trip) => claveConductor(drivers, trip.driverId) === driver.id);
+      }
+      return true;
+    });
+  }, [trackedDrivers, tableDriver, tableVenue, tableHotel, activeTrips, drivers]);
+
   // Only the online slice — used for "Con GPS" KPI and the live count chip.
   const connectedDrivers = useMemo(
-    () => trackedDrivers.filter((d) => d.online),
-    [trackedDrivers],
+    () => trackedDriversVisibles.filter((d) => d.online),
+    [trackedDriversVisibles],
   );
 
   // Build the per-driver breadcrumb trails to render under the markers.
   // We use the active trip id when there is one (so the polyline keys
   // match the markers), otherwise the synthetic `driver-${id}` key.
   const liveTrails = useMemo<TrailPath[]>(() => {
-    return trackedDrivers.flatMap(({ driver, online }) => {
+    return trackedDriversVisibles.flatMap(({ driver, online }) => {
       const raw = trails[driver.id];
       if (!raw || raw.length < 2) return [];
       const trip = activeTrips.find((t) => t.driverId === driver.id);
@@ -918,10 +952,10 @@ export default function VehiclePositionsPage() {
         })
         .filter((t): t is TrailPath => t !== null);
     });
-  }, [trackedDrivers, trails, snappedTrails, activeTrips]);
+  }, [trackedDriversVisibles, trails, snappedTrails, activeTrips]);
 
   const trackedMarkers = useMemo<TrackingMarker[]>(() => {
-    return trackedDrivers.map(({ driver, position, online }) => {
+    return trackedDriversVisibles.map(({ driver, position, online }) => {
       const trip = activeTrips.find((t) => t.driverId === driver.id);
       // Connection status drives the marker color: green when actively
       // receiving GPS, red when we haven't heard from the driver in >15s.
@@ -947,12 +981,12 @@ export default function VehiclePositionsPage() {
         gpsTime: new Date(position.timestamp).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit" }),
       } satisfies TrackingMarker;
     });
-  }, [trackedDrivers, activeTrips, vehicles, venues]);
+  }, [trackedDriversVisibles, activeTrips, vehicles, venues]);
 
   const tripStats = useMemo(() => {
-    const active = trips.filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? "")).length;
-    const scheduled = trips.filter((tr) => tr.status === "SCHEDULED").length;
-    const completed = trips.filter((tr) => ["COMPLETED", "DROPPED_OFF"].includes(tr.status ?? "")).length;
+    const active = tripsFiltrados.filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? "")).length;
+    const scheduled = tripsFiltrados.filter((tr) => tr.status === "SCHEDULED").length;
+    const completed = tripsFiltrados.filter((tr) => ["COMPLETED", "DROPPED_OFF"].includes(tr.status ?? "")).length;
     // Only count drivers with a FRESH GPS fix (last 30 s) — historical rows
     // in vehicle_positions would otherwise mark every old driver as "Con GPS",
     // and a driver who disabled GPS mid-trip would still show as live.
@@ -960,8 +994,8 @@ export default function VehiclePositionsPage() {
     // window, regardless of trip state. A driver can be transmitting
     // before/after a trip and still deserves to be counted.
     const withPosition = connectedDrivers.length;
-    return { active, scheduled, completed, withPosition, total: trips.length };
-  }, [trips, connectedDrivers]);
+    return { active, scheduled, completed, withPosition, total: tripsFiltrados.length };
+  }, [tripsFiltrados, connectedDrivers]);
 
   const resolveDelegations = (trip: Trip) => {
     const ids = (trip.athleteIds || [])
@@ -1163,11 +1197,54 @@ export default function VehiclePositionsPage() {
         {error && <p className="mt-3 text-sm" style={{ color: STATE.danger }}>{error}</p>}
       </section>
 
+      {/* ── Filtros de la pantalla.
+          Van sobre las pestañas y no dentro de una de ellas: recortan tanto el
+          mapa en vivo como la lista de abajo, y puestos dentro de "Todos los
+          viajes" no se veían desde el mapa, que es donde más se preguntan. */}
+      {(tableDriverOptions.length > 0 || tableVenueOptions.length > 0 || tableHotelOptions.length > 0) && (
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "14px 18px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textFaint, marginRight: 2 }}>
+              Filtrar
+            </span>
+            {tableDriverOptions.length > 0 && (
+              <select value={tableDriver} onChange={(e) => setTableDriver(e.target.value)} style={selectFiltro}>
+                <option value="">Todos los conductores</option>
+                {tableDriverOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
+              </select>
+            )}
+            {tableVenueOptions.length > 0 && (
+              <select value={tableVenue} onChange={(e) => setTableVenue(e.target.value)} style={selectFiltro}>
+                <option value="">Todas las sedes</option>
+                {tableVenueOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
+              </select>
+            )}
+            {tableHotelOptions.length > 0 && (
+              <select value={tableHotel} onChange={(e) => setTableHotel(e.target.value)} style={selectFiltro}>
+                <option value="">Todos los hoteles</option>
+                {tableHotelOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
+              </select>
+            )}
+            {hayFiltrosDeVista && (
+              <>
+                <span style={{ fontSize: 12, fontWeight: 600, color: SURFACE.textMuted, fontVariantNumeric: "tabular-nums" }}>
+                  {tripsFiltrados.length} de {trips.length} viajes
+                </span>
+                <button type="button" onClick={() => { setTableDriver(""); setTableVenue(""); setTableHotel(""); }}
+                  style={{ padding: "9px 14px", fontSize: 12.5, fontWeight: 600, borderRadius: 10, border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: STATE.danger, cursor: "pointer" }}>
+                  Limpiar
+                </button>
+              </>
+            )}
+          </div>
+        </section>
+      )}
+
       {/* ── View tabs */}
       <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "6px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-2 grid-cols-2">
           {([
-            { key: "live" as const, label: "Tracking en vivo", count: trackedDrivers.length },
+            { key: "live" as const, label: "Tracking en vivo", count: trackedDriversVisibles.length },
             { key: "table" as const, label: "Todos los viajes", count: orderedTrips.length },
           ]).map((tab) => {
             const selected = activeView === tab.key;
@@ -1256,11 +1333,11 @@ export default function VehiclePositionsPage() {
                 }}>
                   <span style={{ width: "7px", height: "7px", borderRadius: "50%", background: connectedDrivers.length > 0 ? STATE.success : SURFACE.textFaint, animation: "pulse 1.5s infinite", display: "inline-block" }} />
                   <span style={{ fontSize: "11px", fontWeight: 700, color: SURFACE.card, letterSpacing: "0.1em" }}>
-                    {connectedDrivers.length} en línea · {trackedDrivers.length - connectedDrivers.length} sin señal · {liveRoutes.length} con ruta
+                    {connectedDrivers.length} en línea · {trackedDriversVisibles.length - connectedDrivers.length} sin señal · {liveRoutes.length} con ruta
                   </span>
                 </span>
               </div>
-              {trackedDrivers.length === 0 && (
+              {trackedDriversVisibles.length === 0 && (
                 <div style={{
                   position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
                   zIndex: 999, background: "rgba(255,255,255,0.94)",
@@ -1268,9 +1345,13 @@ export default function VehiclePositionsPage() {
                   padding: "18px 22px", textAlign: "center" as const, maxWidth: "320px",
                   boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
                 }}>
-                  <p style={{ fontWeight: 800, fontSize: "14px", color: SURFACE.text }}>Sin conductores enviando GPS ahora</p>
+                  <p style={{ fontWeight: 800, fontSize: "14px", color: SURFACE.text }}>
+                    {hayFiltrosDeVista ? "Ningún conductor coincide con los filtros" : "Sin conductores enviando GPS ahora"}
+                  </p>
                   <p style={{ fontSize: "12px", marginTop: "4px", color: SURFACE.textMuted, lineHeight: 1.5 }}>
-                    Cuando un conductor entre y prenda el GPS, va a aparecer en el mapa.
+                    {hayFiltrosDeVista
+                      ? "Hay conductores transmitiendo, pero ninguno va en un viaje que calce con lo filtrado."
+                      : "Cuando un conductor entre y prenda el GPS, va a aparecer en el mapa."}
                   </p>
                 </div>
               )}
@@ -1287,16 +1368,18 @@ export default function VehiclePositionsPage() {
 
             {/* Sidebar — one card per tracked driver (online + offline). */}
             <div style={{ display: "flex", flexDirection: "column", gap: "10px", ...(isMobile ? {} : { maxHeight: "780px", overflowY: "auto" as const }), paddingRight: "2px" }}>
-              {trackedDrivers.length === 0 && (
+              {trackedDriversVisibles.length === 0 && (
                 <div style={{
                   borderRadius: "14px", border: `1px dashed ${SURFACE.borderStrong}`, background: SURFACE.card,
                   padding: "20px 16px", textAlign: "center" as const,
                   fontSize: "12px", color: SURFACE.textMuted, lineHeight: 1.5,
                 }}>
-                  Esperando conductores. Al activar el GPS desde la app aparecerán aquí.
+                  {hayFiltrosDeVista
+                    ? "Ningún conductor coincide con los filtros."
+                    : "Esperando conductores. Al activar el GPS desde la app aparecerán aquí."}
                 </div>
               )}
-              {trackedDrivers.map(({ driver, position, ageMs, online }) => {
+              {trackedDriversVisibles.map(({ driver, position, ageMs, online }) => {
                 const trip = activeTripsForRoutes.find((t) => t.driverId === driver.id);
                 const accent = online ? STATE.success : STATE.danger;
                 const chipBg = online ? "rgba(16,185,129,0.14)" : "rgba(239,68,68,0.12)";
@@ -1384,7 +1467,7 @@ export default function VehiclePositionsPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
             <h2 style={{ fontSize: "18px", fontWeight: 700, color: SURFACE.text, margin: 0 }}>{t("Todos los viajes")}</h2>
             <span style={{ fontSize: 12, fontWeight: 600, color: SURFACE.textMuted, fontVariantNumeric: "tabular-nums" }}>
-              {visibleTrips.length === trips.length ? `${trips.length} viajes` : `${visibleTrips.length} de ${trips.length}`}
+              {visibleTrips.length === tripsFiltrados.length ? `${visibleTrips.length} viajes` : `${visibleTrips.length} de ${tripsFiltrados.length}`}
             </span>
           </div>
 
@@ -1401,33 +1484,15 @@ export default function VehiclePositionsPage() {
                 <option value="">Todos los clientes</option>
                 {tableClientOptions.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
-              {tableDriverOptions.length > 0 && (
-                <select value={tableDriver} onChange={(e) => setTableDriver(e.target.value)} style={selectFiltro}>
-                  <option value="">Todos los conductores</option>
-                  {tableDriverOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
-                </select>
-              )}
-              {tableVenueOptions.length > 0 && (
-                <select value={tableVenue} onChange={(e) => setTableVenue(e.target.value)} style={selectFiltro}>
-                  <option value="">Todas las sedes</option>
-                  {tableVenueOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
-                </select>
-              )}
-              {tableHotelOptions.length > 0 && (
-                <select value={tableHotel} onChange={(e) => setTableHotel(e.target.value)} style={selectFiltro}>
-                  <option value="">Todos los hoteles</option>
-                  {tableHotelOptions.map((o) => <option key={o.id} value={o.id}>{o.label} ({o.count})</option>)}
-                </select>
-              )}
-              {hayFiltros && (
-                <button type="button" onClick={limpiarFiltros}
+              {(tableSearch || tableStatus || tableClient) && (
+                <button type="button" onClick={() => { setTableSearch(""); setTableStatus(""); setTableClient(""); }}
                   style={{ padding: "9px 14px", fontSize: 12.5, fontWeight: 600, borderRadius: 10, border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: STATE.danger, cursor: "pointer" }}>
                   Limpiar
                 </button>
               )}
             </div>
             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-              {[{ key: "", label: "Todos", accent: BRAND.teal, count: trips.length }].concat(
+              {[{ key: "", label: "Todos", accent: BRAND.teal, count: tripsFiltrados.length }].concat(
                 Object.keys(statusCounts).map((s) => ({ key: s, label: STATUS_LABEL[s] || s, accent: (STATUS_COLORS[s] ?? STATUS_COLORS.SCHEDULED).accent, count: statusCounts[s] }))
               ).map((chip) => {
                 const active = tableStatus === chip.key;
@@ -1444,6 +1509,8 @@ export default function VehiclePositionsPage() {
             </div>
           </div>
 
+          {/* "Sin viajes" sólo cuando de verdad no hay ninguno: si la lista quedó
+              vacía por un filtro, cae al mensaje de abajo, que sí lo explica. */}
           {trips.length === 0 ? (
             <p style={{ fontSize: "14px", color: SURFACE.textMuted }}>{t("Sin viajes registrados.")}</p>
           ) : visibleTrips.length === 0 ? (
