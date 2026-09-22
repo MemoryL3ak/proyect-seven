@@ -17,10 +17,6 @@ import {
   StarIcon,
   TrophyIcon,
   ArrowRightIcon,
-  SunIcon,
-  MoonIcon,
-  UtensilsIcon,
-  UtensilsCrossedIcon,
   DumbbellIcon,
   MedalIcon,
   HeartPulseIcon,
@@ -67,6 +63,7 @@ import { deletePortalAccount } from "@/lib/account-deletion";
 import SofiaWidget from "@/components/SofiaWidget";
 import BannerCoordinador from "@/components/portal/BannerCoordinador";
 import HorariosComida from "@/components/portal/HorariosComida";
+import MenuDelDia from "@/components/portal/MenuDelDia";
 import { contactosDeHotel, type CoordinadorHotel } from "@/lib/hotel-coordinadores";
 import MissionFleet from "@/components/portal/MissionFleet";
 import MissionTrips from "@/components/portal/MissionTrips";
@@ -3881,112 +3878,45 @@ export default function UserPortalPage() {
               />
             )}
 
-            {/* Today's menu */}
+            {/* Menú de hoy y de mañana.
+                Cada fila de food_menus es una categoría, así que un día
+                cargado son doce: MenuDelDia las agrupa por comida en vez de
+                apilarlas con la insignia repetida. Los dos bloques eran el
+                mismo código escrito dos veces. */}
             {(() => {
-              const today = new Date().toISOString().slice(0, 10);
-              const myType = normalizeClientType(athlete.userType);
-              const todayMenus = foodMenus.filter((fm) => fm.date === today).filter((fm) => {
-                const types = (fm.clientTypes || []).map((t2) => normalizeClientType(t2));
-                return types.length === 0 || types.includes(myType);
-              });
-              const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
-              const sorted = todayMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
-              const mealStyle = (type: string) => {
-                if (type === "DESAYUNO") return { bg: STATE.warningSoft, color: STATE.warningText, border: STATE.warningBorder, icon: SunIcon, label: "Desayuno" };
-                if (type === "ALMUERZO") return { bg: STATE.infoSoft, color: STATE.infoText, border: STATE.infoBorder, icon: UtensilsIcon, label: "Almuerzo" };
-                if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: MoonIcon, label: "Cena" };
-                return { bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border, icon: UtensilsCrossedIcon, label: type };
-              };
+              const miTipo = normalizeClientType(athlete.userType);
+              const delDia = (clave: string) =>
+                foodMenus
+                  .filter((fm) => fm.date === clave)
+                  .filter((fm) => {
+                    const tipos = (fm.clientTypes || []).map((valor) => normalizeClientType(valor));
+                    return tipos.length === 0 || tipos.includes(miTipo);
+                  });
+              // En hora local: en UTC, de noche en Chile "hoy" ya es mañana y
+              // el menú saltaba de día antes de tiempo.
+              const claveDe = (fecha: Date) =>
+                `${fecha.getFullYear()}-${String(fecha.getMonth() + 1).padStart(2, "0")}-${String(fecha.getDate()).padStart(2, "0")}`;
+              const hoy = new Date();
+              const manana = new Date();
+              manana.setDate(manana.getDate() + 1);
+              const comoFecha = (fecha: Date) =>
+                fecha.toLocaleDateString("es-CL", { weekday: "long", day: "numeric", month: "long" });
               return (
-                <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)" }}>
-                  <div style={{ padding:"14px 16px",background:"linear-gradient(135deg,rgba(33,208,179,0.08),rgba(33,208,179,0.02))",borderBottom:`1px solid ${SURFACE.border}`,display:"flex",alignItems:"center",justifyContent:"space-between" }}>
-                    <div style={{ display:"flex",alignItems:"center",gap:8 }}>
-                      <div style={{ width:32,height:32,borderRadius:10,background:"rgba(33,208,179,0.12)",display:"flex",alignItems:"center",justifyContent:"center" }}>
-                        <CoffeeIcon size={16} color={BRAND.teal} strokeWidth={2} />
-                      </div>
-                      <div>
-                        <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:0 }}>Menú de hoy</p>
-                        <p style={{ fontSize:11,color:SURFACE.textMuted,margin:0,textTransform:"capitalize" }}>{new Date().toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
-                      </div>
-                    </div>
-                  </div>
-                  {sorted.length > 0 ? sorted.map((fm, i) => {
-                    const m = mealStyle(fm.mealType);
-                    return (
-                      <div key={fm.id} style={{ padding:"14px 16px",borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none",display:"flex",gap:12,alignItems:"flex-start" }}>
-                        <div style={{ width:40,height:40,borderRadius:10,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,flexShrink:0 }}>
-                          <m.icon size={16} />
-                        </div>
-                        <div style={{ flex:1,minWidth:0 }}>
-                          <div style={{ display:"flex",alignItems:"center",gap:6,flexWrap:"wrap" }}>
-                            <span style={{ fontSize:10,fontWeight:800,padding:"2px 8px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
-                            {fm.dietaryType && fm.dietaryType !== "ESTANDAR" && (
-                              <span style={{ fontSize:10,fontWeight:700,padding:"2px 7px",borderRadius:6,background:STATE.successSoft,color:STATE.successText,border:`1px solid ${STATE.successBorder}` }}>{fm.dietaryType}</span>
-                            )}
-                          </div>
-                          <p style={{ fontSize:15,fontWeight:700,color:SURFACE.text,margin:"5px 0 0" }}>{fm.title}</p>
-                          {fm.description && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"3px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
-                          {fm.locationDetail && <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"3px 0 0" }}><PinIcon size={11} className="inline mr-1" />{fm.locationDetail}</p>}
-                        </div>
-                      </div>
-                    );
-                  }) : (
-                    <div style={{ padding:20,textAlign:"center" }}>
-                      <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>No hay menú programado para hoy</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })()}
-
-            {/* Tomorrow's menu */}
-            {(() => {
-              const tomorrow = new Date();
-              tomorrow.setDate(tomorrow.getDate() + 1);
-              const tomorrowKey = tomorrow.toISOString().slice(0, 10);
-              const myType = normalizeClientType(athlete.userType);
-              const tomorrowMenus = foodMenus.filter((fm) => fm.date === tomorrowKey).filter((fm) => {
-                const types = (fm.clientTypes || []).map((t2) => normalizeClientType(t2));
-                return types.length === 0 || types.includes(myType);
-              });
-              const mealOrder = ["DESAYUNO", "ALMUERZO", "CENA", "ONCE"];
-              const sorted = tomorrowMenus.sort((a, b) => mealOrder.indexOf(a.mealType) - mealOrder.indexOf(b.mealType));
-              const mealStyle = (type: string) => {
-                if (type === "DESAYUNO") return { bg: STATE.warningSoft, color: STATE.warningText, border: STATE.warningBorder, icon: SunIcon, label: "Desayuno" };
-                if (type === "ALMUERZO") return { bg: STATE.infoSoft, color: STATE.infoText, border: STATE.infoBorder, icon: UtensilsIcon, label: "Almuerzo" };
-                if (type === "CENA") return { bg: "#E0E7FF", color: "#3730A3", border: "#C7D2FE", icon: MoonIcon, label: "Cena" };
-                return { bg: SURFACE.borderMuted, color: SURFACE.textSecondary, border: SURFACE.border, icon: UtensilsCrossedIcon, label: type };
-              };
-              return (
-                <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,overflow:"hidden",boxShadow:"0 1px 4px rgba(15,23,42,0.04)",opacity:0.85 }}>
-                  <div style={{ padding:"12px 16px",background:SURFACE.bg,borderBottom:`1px solid ${SURFACE.border}`,display:"flex",alignItems:"center",gap:8 }}>
-                    <CalendarIcon size={14} color={SURFACE.textMuted} strokeWidth={2} />
-                    <div>
-                      <p style={{ fontSize:13,fontWeight:700,color:SURFACE.text,margin:0 }}>Menú de mañana</p>
-                      <p style={{ fontSize:11,color:SURFACE.textFaint,margin:0,textTransform:"capitalize" }}>{tomorrow.toLocaleDateString("es-CL",{weekday:"long",day:"numeric",month:"long"})}</p>
-                    </div>
-                  </div>
-                  {sorted.length > 0 ? sorted.map((fm, i) => {
-                    const m = mealStyle(fm.mealType);
-                    return (
-                      <div key={fm.id} style={{ padding:"12px 16px",borderTop:i>0?`1px solid ${SURFACE.borderMuted}`:"none",display:"flex",gap:12,alignItems:"flex-start" }}>
-                        <div style={{ width:36,height:36,borderRadius:8,background:m.bg,border:`1px solid ${m.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,flexShrink:0 }}>
-                          <m.icon size={16} />
-                        </div>
-                        <div style={{ flex:1,minWidth:0 }}>
-                          <span style={{ fontSize:10,fontWeight:800,padding:"2px 7px",borderRadius:6,textTransform:"uppercase",letterSpacing:"0.05em",background:m.bg,color:m.color }}>{m.label}</span>
-                          <p style={{ fontSize:14,fontWeight:700,color:SURFACE.text,margin:"4px 0 0" }}>{fm.title}</p>
-                          {fm.description && <p style={{ fontSize:12,color:SURFACE.textMuted,margin:"2px 0 0",lineHeight:1.4 }}>{fm.description}</p>}
-                          {fm.locationDetail && <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"2px 0 0" }}><PinIcon size={11} className="inline mr-1" />{fm.locationDetail}</p>}
-                        </div>
-                      </div>
-                    );
-                  }) : (
-                    <div style={{ padding:16,textAlign:"center" }}>
-                      <p style={{ fontSize:13,color:SURFACE.textFaint,margin:0 }}>Menú pendiente de programar</p>
-                    </div>
-                  )}
-                </div>
+                <>
+                  <MenuDelDia
+                    menus={delDia(claveDe(hoy))}
+                    titulo={t("Menú de hoy")}
+                    fecha={comoFecha(hoy)}
+                    vacio={t("No hay menú programado para hoy")}
+                  />
+                  <MenuDelDia
+                    atenuado
+                    menus={delDia(claveDe(manana))}
+                    titulo={t("Menú de mañana")}
+                    fecha={comoFecha(manana)}
+                    vacio={t("Menú pendiente de programar")}
+                  />
+                </>
               );
             })()}
 
