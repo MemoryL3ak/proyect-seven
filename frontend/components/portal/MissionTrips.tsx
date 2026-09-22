@@ -7,6 +7,7 @@ import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
 import TripMap from "@/components/TripMap";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
+import SelectorFiltro from "@/components/portal/SelectorFiltro";
 import { mapaDeLugares } from "@/lib/lugares";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import { useI18n } from "@/lib/i18n";
@@ -219,6 +220,8 @@ export default function MissionTrips({
    * calendario completo obligaría a tantear fechas vacías; así el filtro
    * muestra la jornada del evento tal como quedó armada.
    */
+  const claveHoy = useMemo(() => claveDia(new Date().toISOString()), []);
+
   const opcionesDia = useMemo(() => {
     const vistos = new Map<string, number>();
     for (const tr of propios) {
@@ -230,10 +233,16 @@ export default function MissionTrips({
       .sort((a, b) => (a[0] === "SIN_FECHA" ? 1 : b[0] === "SIN_FECHA" ? -1 : a[0].localeCompare(b[0])))
       .map(([clave, total]) => ({
         value: clave,
-        label: clave === "SIN_FECHA" ? t("Sin fecha") : t(etiquetaDia(clave)),
-        count: total,
+        // La cuenta va en la etiqueta: el selector muestra una sola línea y
+        // saber cuántos traslados tiene el día es la mitad de la decisión.
+        label: `${clave === "SIN_FECHA" ? t("Sin fecha") : t(etiquetaDia(clave))} · ${total}`,
       }));
   }, [propios, t]);
+
+  const hayHoy = useMemo(
+    () => opcionesDia.some((opcion) => opcion.value === claveHoy),
+    [opcionesDia, claveHoy],
+  );
 
   const visibles = useMemo(() => {
     const list = propios.filter((tr) => {
@@ -310,7 +319,11 @@ export default function MissionTrips({
           {estadoFiltro === "EN_CURSO" ? ` · ${t("en curso")}` : ""}
           {/* El día también en el resumen: con la lista desplazada, el chip
               marcado queda fuera de pantalla y el recuento parecía el total. */}
-          {diaFiltro ? ` · ${opcionesDia.find((o) => o.value === diaFiltro)?.label ?? ""}` : ""}
+          {/* Sin la cuenta: el recuento ya está al principio de este mismo
+              renglón, y repetirlo daba "207 traslados · … · mié 23 sept · 207". */}
+          {diaFiltro
+            ? ` · ${diaFiltro === "SIN_FECHA" ? t("Sin fecha") : t(etiquetaDia(diaFiltro))}`
+            : ""}
         </p>
         <SegmentedFilter
           style={{ marginTop: 10 }}
@@ -328,15 +341,44 @@ export default function MissionTrips({
         {/* Día del traslado. Va antes que la disciplina porque la jornada es
             lo primero que se acota: "qué tengo mañana" se pregunta más que
             "qué tiene el vóleibol". Sólo aparece si hay más de un día: con
-            uno solo, el filtro no filtra nada. */}
+            uno solo, el filtro no filtra nada.
+
+            En selector y no en fichas: el evento dura trece días, y trece
+            fichas en una tira que se desplaza de lado obligan a arrastrar a
+            ciegas para encontrar una fecha. El selector ocupa una fila
+            cualquiera sea el largo del evento, dice qué día se está mirando
+            y abre la lista completa —con buscador— en una hoja. "Hoy" queda
+            al lado porque es el filtro que más se usa y así es un toque. */}
         {opcionesDia.length > 1 && (
-          <ChipFilter
-            style={{ marginTop: 8 }}
-            value={diaFiltro}
-            onChange={setDiaFiltro}
-            allLabel={t("Todos los días")}
-            options={opcionesDia}
-          />
+          <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+            <SelectorFiltro
+              rotulo={t("Día")}
+              titulo={t("Día del traslado")}
+              opciones={opcionesDia}
+              etiquetaTodos={t("Todos los días")}
+              valor={diaFiltro}
+              onChange={setDiaFiltro}
+            />
+            {hayHoy && (
+              <button
+                type="button"
+                onClick={() => setDiaFiltro(diaFiltro === claveHoy ? "" : claveHoy)}
+                style={{
+                  flexShrink: 0,
+                  padding: "8px 14px",
+                  borderRadius: 12,
+                  cursor: "pointer",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  background: diaFiltro === claveHoy ? "rgba(33,208,179,0.10)" : SURFACE.card,
+                  border: `1px solid ${diaFiltro === claveHoy ? "rgba(33,208,179,0.45)" : SURFACE.border}`,
+                  color: diaFiltro === claveHoy ? BRAND.tealInk : SURFACE.textMuted,
+                }}
+              >
+                {t("Hoy")}
+              </button>
+            )}
+          </div>
         )}
         {/* Disciplina: fichas desplazables. Con `todas` manda el panel de
             filtros del Coordinador de Comité, y dos controles para lo mismo
