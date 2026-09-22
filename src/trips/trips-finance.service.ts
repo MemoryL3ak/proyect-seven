@@ -218,9 +218,34 @@ export class TripsFinanceService {
                     ) as km
              from con_conductor c
              left join lateral (
-               select st_length(st_makeline(vp.location order by vp."timestamp")::geography) / 1000.0 as km_gps
-               from telemetry.vehicle_positions vp
-               where vp.trip_id = c.id
+               -- Km recorridos sumando tramo a tramo, no st_makeline: esa
+               -- unía todos los fijos con rectas, así que un salto que el auto
+               -- no pudo haber hecho (dos teléfonos abiertos, o un fijo viejo
+               -- pegado al primero del viaje) sumaba su propio largo a los km
+               -- facturados. Un tramo se descarta con el mismo criterio que
+               -- usa el mapa en lib/google-maps.ts: más de 300 m y, además,
+               -- más de 5 min de silencio o más de 200 km/h implícitos.
+               select coalesce(
+                        sum(s.step_m) filter (
+                          where s.step_m <= 300
+                             or (s.dt_s > 0 and s.dt_s <= 300
+                                 and (s.step_m / s.dt_s) * 3.6 <= 200)
+                        ), 0) / 1000.0 as km_gps
+               from (
+                 select st_distance(
+                          vp.location::geography,
+                          (lag(vp.location) over w)::geography
+                        ) as step_m,
+                        extract(epoch from (
+                          coalesce(vp.created_at, vp."timestamp")
+                          - (lag(coalesce(vp.created_at, vp."timestamp")) over w)
+                        )) as dt_s
+                 from telemetry.vehicle_positions vp
+                 where vp.trip_id = c.id
+                 -- Reloj del servidor para ordenar y medir: el del teléfono
+                 -- puede venir corrido y desordenar el recorrido.
+                 window w as (order by coalesce(vp.created_at, vp."timestamp"))
+               ) s
              ) g on true
              where c.status <> 'CANCELLED'
            ) t`,

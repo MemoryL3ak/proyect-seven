@@ -56,8 +56,11 @@ export class VehiclePositionsService {
    */
   /** Velocidad por sobre la cual el fix no puede ser real (km/h). */
   private static readonly MAX_SPEED_KMH = 200;
-  /** Ventana en la que la velocidad implícita tiene sentido (s). */
-  private static readonly SPEED_WINDOW_S = 120;
+  /**
+   * Distancia por debajo de la cual no se juzga velocidad: a pocos metros el
+   * ruido del GPS puede dar cualquier número y no hay nada que inventar.
+   */
+  private static readonly SPEED_MIN_MOVE_M = 300;
   /** Intervalo mínimo entre fijos guardados de un mismo chofer en marcha (s). */
   private static readonly MIN_INTERVAL_S = 8;
   /** Desplazamiento mínimo para considerar que se movió (m). */
@@ -65,8 +68,20 @@ export class VehiclePositionsService {
   /** Detenido: se guarda un fijo cada tanto para no parecer desconectado (s). */
   private static readonly IDLE_KEEPALIVE_S = 60;
 
-  /** Último fijo aceptado por chofer (en memoria; se reconstruye solo). */
-  private readonly lastFix = new Map<string, { lat: number; lng: number; at: number }>();
+  /**
+   * Último fijo aceptado por chofer. Guarda los dos relojes: `at` es el del
+   * teléfono (ordena el recorrido) y `recvAt` el del servidor (mide el tiempo
+   * transcurrido de verdad). Si el mismo chofer está abierto en dos teléfonos
+   * con relojes distintos, sólo el del servidor dice cuánto pasó.
+   *
+   * Vive en memoria, así que tras un reinicio está vacío: `primeLastFix` lo
+   * rellena desde la base la primera vez que llega un fijo de ese chofer, para
+   * que el primero después de un deploy no entre sin control.
+   */
+  private readonly lastFix = new Map<
+    string,
+    { lat: number; lng: number; at: number; recvAt: number }
+  >();
 
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
@@ -175,25 +190,81 @@ export class VehiclePositionsService {
    * ¿Se guarda este fijo? Devuelve el motivo del descarte o null si es válido.
    * Lo que se descarta no es un error del cliente: el shell sigue enviando.
    */
-  private rejectReason(driverId: string, lat: number, lng: number, at: number): string | null {
+  private rejectReason(
+    driverId: string,
+    lat: number,
+    lng: number,
+    at: number,
+    recvAt: number,
+  ): string | null {
     const prev = this.lastFix.get(driverId);
     if (!prev) return null;
     const seconds = (at - prev.at) / 1000;
     if (seconds < 0) return null; // fijo antiguo que llega tarde: se guarda igual
     const meters = VehiclePositionsService.metersBetween(prev.lat, prev.lng, lat, lng);
 
-    if (
-      seconds > 0 &&
-      seconds <= VehiclePositionsService.SPEED_WINDOW_S &&
-      (meters / seconds) * 3.6 > VehiclePositionsService.MAX_SPEED_KMH
-    ) {
-      return `salto imposible: ${Math.round(meters)} m en ${seconds.toFixed(1)} s`;
+    // La velocidad se mide con el reloj del servidor. El del teléfono sirve
+    // para ordenar, pero si hay dos equipos abiertos con la hora distinta dice
+    // que pasaron minutos entre dos fijos que llegaron con un segundo de
+    // diferencia, y el salto pasa como si fuera un viaje real.
+    //
+    // Esto vale porque el shell manda un POST por fijo, en vivo. El día que se
+    // agregue una carga diferida (fijos guardados sin señal y enviados
+    // después), acá habría que exceptuarla: llegarían todos juntos y su
+    // velocidad implícita se vería imposible.
+    const elapsed = Math.max(0, (recvAt - prev.recvAt) / 1000);
+    if (meters > VehiclePositionsService.SPEED_MIN_MOVE_M) {
+      const speedKmh = elapsed > 0 ? (meters / elapsed) * 3.6 : Infinity;
+      if (speedKmh > VehiclePositionsService.MAX_SPEED_KMH) {
+        return `salto imposible: ${Math.round(meters)} m en ${elapsed.toFixed(1)} s`;
+      }
     }
     if (meters < VehiclePositionsService.MIN_MOVE_M) {
       return seconds < VehiclePositionsService.IDLE_KEEPALIVE_S ? 'detenido' : null;
     }
     if (seconds < VehiclePositionsService.MIN_INTERVAL_S) return 'demasiado seguido';
     return null;
+  }
+
+  /**
+   * Rellena `lastFix` desde la base cuando no está en memoria (proceso recién
+   * levantado, o el chofer cayó del mapa). Sin esto, el primer fijo después de
+   * cada deploy entra sin comparar contra nada — que es justo cuando aparece
+   * un salto, porque el fijo anterior quedó guardado horas antes.
+   */
+  private async primeLastFix(driverId: string): Promise<void> {
+    if (this.lastFix.has(driverId)) return;
+    try {
+      const rows = (await this.vehiclePositionRepository.query(
+        `SELECT lat, lng, "timestamp", created_at
+           FROM telemetry.vehicle_positions
+          WHERE driver_id = $1
+          ORDER BY "timestamp" DESC
+          LIMIT 1`,
+        [driverId],
+      )) as Array<{
+        lat: number | null;
+        lng: number | null;
+        timestamp: string;
+        created_at: string;
+      }>;
+      const row = rows?.[0];
+      if (!row || row.lat === null || row.lng === null) return;
+      const at = new Date(row.timestamp).getTime();
+      const recvAt = new Date(row.created_at).getTime();
+      if (!Number.isFinite(at) || !Number.isFinite(recvAt)) return;
+      // `has` otra vez: entre el await y acá pudo llegar otro fijo, y el de
+      // memoria es más nuevo que el de la base.
+      if (this.lastFix.has(driverId)) return;
+      this.lastFix.set(driverId, {
+        lat: Number(row.lat),
+        lng: Number(row.lng),
+        at,
+        recvAt,
+      });
+    } catch {
+      // Sin dato previo se sigue igual: nunca bloquear la ingesta.
+    }
   }
 
   async create(createVehiclePositionDto: CreateVehiclePositionDto) {
@@ -208,11 +279,14 @@ export class VehiclePositionsService {
         ? new Date(row.timestamp).getTime()
         : Date.now();
     if (driverId && lat !== null && lng !== null && Number.isFinite(at)) {
-      const reason = this.rejectReason(driverId, lat, lng, at);
+      // Reloj del servidor: el momento en que llegó este fijo.
+      const recvAt = Date.now();
+      await this.primeLastFix(driverId);
+      const reason = this.rejectReason(driverId, lat, lng, at, recvAt);
       if (reason) {
         return { skipped: true as const, reason };
       }
-      this.lastFix.set(driverId, { lat, lng, at });
+      this.lastFix.set(driverId, { lat, lng, at, recvAt });
     }
     // Tag the fix with the driver's active trip unless the caller already did.
     // Done here (server-side) so the mobile app doesn't need to track trips.

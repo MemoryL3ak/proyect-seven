@@ -30,7 +30,16 @@ import type {
   TrackingMarker,
   TrailPath,
 } from "@/components/LiveTrackingMap";
-import { geocodeAddress, getDirections, haversineMeters, snapToRoads, type LatLng } from "@/lib/google-maps";
+import {
+  geocodeAddress,
+  getDirections,
+  segmentKey,
+  snapToRoads,
+  splitTrail,
+  trailKm,
+  type LatLng,
+  type TrailPoint,
+} from "@/lib/google-maps";
 
 const LiveTrackingMap = dynamic(() => import("@/components/LiveTrackingMap"), { ssr: false });
 const TripRouteMap = dynamic(() => import("@/components/TripRouteMap"), { ssr: false });
@@ -174,10 +183,12 @@ export default function VehiclePositionsPage() {
   // admin opened the page. Capped per driver so a long session doesn't
   // bloat memory; drivers that drop off the map get their trail cleared
   // alongside their position entry.
-  const [trails, setTrails] = useState<Record<string, { lat: number; lng: number }[]>>({});
+  const [trails, setTrails] = useState<Record<string, TrailPoint[]>>({});
   // Same path but rewritten by Google's Roads API so the line follows
-  // streets instead of jumping between houses from GPS jitter. Falls
-  // back to the raw trail when the snap call fails or the key isn't set.
+  // streets instead of jumping between houses from GPS jitter. Keyed by
+  // segment (see `segmentKey`), not by driver, so a trail that got cut
+  // snaps each of its pieces on its own. Falls back to the raw points
+  // when the snap call fails or the key isn't set.
   const [snappedTrails, setSnappedTrails] = useState<Record<string, LatLng[]>>({});
   const TRAIL_LIMIT = 200;
   // Minimum movement (in degrees, ~3m at the equator) to append a new
@@ -195,7 +206,7 @@ export default function VehiclePositionsPage() {
   const [tripRouteMeta, setTripRouteMeta] = useState<Record<string, { distanceKm: number; durationMin: number }>>({});
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [detailTrip, setDetailTrip] = useState<Trip | null>(null);
-  const [detailPositions, setDetailPositions] = useState<LatLng[]>([]);
+  const [detailPositions, setDetailPositions] = useState<TrailPoint[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [routeExpanded, setRouteExpanded] = useState(false);
   const [tableSearch, setTableSearch] = useState("");
@@ -468,7 +479,7 @@ export default function VehiclePositionsPage() {
   useEffect(() => {
     setTrails((prev) => {
       let changed = false;
-      const next: Record<string, { lat: number; lng: number }[]> = {};
+      const next: Record<string, TrailPoint[]> = {};
       for (const [driverId, pos] of Object.entries(positions)) {
         const existing = prev[driverId] ?? [];
         const last = existing[existing.length - 1];
@@ -477,7 +488,11 @@ export default function VehiclePositionsPage() {
           Math.abs(last.lat - pos.lat) > TRAIL_MIN_DELTA ||
           Math.abs(last.lng - pos.lng) > TRAIL_MIN_DELTA;
         if (moved) {
-          const appended = [...existing, { lat: pos.lat, lng: pos.lng }];
+          // Server clock, same source the online/offline state uses — a
+          // skewed device clock would otherwise fake an impossible speed
+          // and cut the trail on every fix.
+          const ts = new Date(pos.receivedAt).getTime();
+          const appended = [...existing, { lat: pos.lat, lng: pos.lng, ts: Number.isNaN(ts) ? Date.now() : ts }];
           next[driverId] = appended.length > TRAIL_LIMIT
             ? appended.slice(appended.length - TRAIL_LIMIT)
             : appended;
@@ -508,22 +523,42 @@ export default function VehiclePositionsPage() {
   useEffect(() => {
     let cancelled = false;
     const snap = async () => {
+      const liveKeys = new Set<string>();
       for (const [driverId, raw] of Object.entries(trails)) {
-        if (cancelled) return;
-        if (raw.length < 2) continue;
-        const prevLen = lastSnappedLengthRef.current[driverId] ?? 0;
-        if (raw.length === prevLen) continue;
-        // Send the last 80 points (under the API's 100 cap) so we keep
-        // the historical part stable but still extend the snapped line
-        // as new fixes come in.
-        const window = raw.slice(-80);
-        const snapped = await snapToRoads(window);
-        if (cancelled) return;
-        if (snapped && snapped.length > 0) {
-          setSnappedTrails((prev) => ({ ...prev, [driverId]: snapped }));
-          lastSnappedLengthRef.current[driverId] = raw.length;
+        // Snap each segment on its own: a window straddling a cut would
+        // ask the Roads API to fill in a gap we deliberately left open.
+        for (const segment of splitTrail(raw)) {
+          if (cancelled) return;
+          if (segment.length < 2) continue;
+          const key = segmentKey(driverId, segment);
+          liveKeys.add(key);
+          const prevLen = lastSnappedLengthRef.current[key] ?? 0;
+          if (segment.length === prevLen) continue;
+          // Send the last 80 points (under the API's 100 cap) so we keep
+          // the historical part stable but still extend the snapped line
+          // as new fixes come in.
+          const window = segment.slice(-80);
+          const snapped = await snapToRoads(window);
+          if (cancelled) return;
+          if (snapped && snapped.length > 0) {
+            setSnappedTrails((prev) => ({ ...prev, [key]: snapped }));
+            lastSnappedLengthRef.current[key] = segment.length;
+          }
         }
       }
+      if (cancelled) return;
+      // Forget segments that no longer exist (driver went stale, or the
+      // trail head was trimmed) so neither map grows without bound.
+      Object.keys(lastSnappedLengthRef.current).forEach((k) => {
+        if (!liveKeys.has(k)) delete lastSnappedLengthRef.current[k];
+      });
+      setSnappedTrails((prev) => {
+        const stale = Object.keys(prev).filter((k) => !liveKeys.has(k));
+        if (stale.length === 0) return prev;
+        const next = { ...prev };
+        stale.forEach((k) => delete next[k]);
+        return next;
+      });
     };
     void snap();
     const timer = setInterval(snap, 8000);
@@ -698,23 +733,29 @@ export default function VehiclePositionsPage() {
   // We use the active trip id when there is one (so the polyline keys
   // match the markers), otherwise the synthetic `driver-${id}` key.
   const liveTrails = useMemo<TrailPath[]>(() => {
-    return trackedDrivers
-      .map(({ driver, online }) => {
-        // Prefer the snapped version when we have one — it follows the
-        // actual streets. Fall back to the raw trail until Roads API
-        // catches up on the first cycle.
-        const snapped = snappedTrails[driver.id];
-        const raw = trails[driver.id];
-        const path = snapped && snapped.length >= 2 ? snapped : raw;
-        if (!path || path.length < 2) return null;
-        const trip = activeTrips.find((t) => t.driverId === driver.id);
-        const tripId = trip?.id ?? `driver-${driver.id}`;
-        // Trail color follows the marker so the visual story stays
-        // consistent: green while connected, red while in the no-signal state.
-        const accent = online ? STATE.success : STATE.danger;
-        return { tripId, path, accent } satisfies TrailPath;
-      })
-      .filter((t): t is TrailPath => t !== null);
+    return trackedDrivers.flatMap(({ driver, online }) => {
+      const raw = trails[driver.id];
+      if (!raw || raw.length < 2) return [];
+      const trip = activeTrips.find((t) => t.driverId === driver.id);
+      const baseId = trip?.id ?? `driver-${driver.id}`;
+      // Trail color follows the marker so the visual story stays
+      // consistent: green while connected, red while in the no-signal state.
+      const accent = online ? STATE.success : STATE.danger;
+      // One polyline per segment: the pieces we can vouch for are drawn,
+      // and the gaps between them stay empty instead of being bridged by
+      // a straight line the car never drove.
+      return splitTrail(raw)
+        .map((segment, i) => {
+          // Prefer the snapped version when we have one — it follows the
+          // actual streets. Fall back to the raw points until Roads API
+          // catches up on the first cycle.
+          const snapped = snappedTrails[segmentKey(driver.id, segment)];
+          const path: LatLng[] = snapped && snapped.length >= 2 ? snapped : segment;
+          if (path.length < 2) return null;
+          return { tripId: `${baseId}#${i}`, path, accent } satisfies TrailPath;
+        })
+        .filter((t): t is TrailPath => t !== null);
+    });
   }, [trackedDrivers, trails, snappedTrails, activeTrips]);
 
   const trackedMarkers = useMemo<TrackingMarker[]>(() => {
@@ -804,15 +845,32 @@ export default function VehiclePositionsPage() {
     setDetailPositions([]);
     setDetailLoading(true);
     try {
-      const rows = await apiFetch<Array<{ location?: { coordinates?: number[] } | null }>>(
-        `/vehicle-positions/by-trip/${trip.id}`,
-      );
+      const rows = await apiFetch<
+        Array<{
+          location?: { coordinates?: number[] } | null;
+          createdAt?: string;
+          timestamp?: string;
+        }>
+      >(`/vehicle-positions/by-trip/${trip.id}`);
+      // Rows arrive ordered by time. `prevTs` carries the last usable clock
+      // forward so a row with no timestamp is judged by distance alone
+      // instead of looking like an instant jump.
+      let prevTs = 0;
       const pts = (rows || [])
         .map((r) => {
           const c = r.location?.coordinates;
-          return Array.isArray(c) && c.length >= 2 ? { lat: Number(c[1]), lng: Number(c[0]) } : null;
+          if (!Array.isArray(c) || c.length < 2) return null;
+          // Server clock first: `timestamp` is the device's, and a skewed
+          // phone would make honest driving look like a teleport.
+          const parsed = new Date(r.createdAt ?? r.timestamp ?? "").getTime();
+          const ts = Number.isNaN(parsed) ? prevTs : parsed;
+          prevTs = ts;
+          return { lat: Number(c[1]), lng: Number(c[0]), ts };
         })
-        .filter((p): p is LatLng => !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng));
+        .filter(
+          (p): p is TrailPoint =>
+            !!p && Number.isFinite(p.lat) && Number.isFinite(p.lng),
+        );
       setDetailPositions(pts);
     } catch {
       setDetailPositions([]);
@@ -820,11 +878,9 @@ export default function VehiclePositionsPage() {
       setDetailLoading(false);
     }
   };
-  const routeKmFromPts = (pts: LatLng[]) => {
-    let m = 0;
-    for (let i = 1; i < pts.length; i++) m += haversineMeters(pts[i - 1], pts[i]);
-    return m / 1000;
-  };
+  // Travelled km for the trip detail. Uses `trailKm` so an impossible jump
+  // between two fixes doesn't add its own length to the total.
+  const routeKmFromPts = (pts: TrailPoint[]) => trailKm(pts);
   // Fallback: mapa embebido de la ruta planificada origen→destino (siempre disponible con la embed key).
   const buildDirectionsEmbed = (origin?: string | null, destination?: string | null): string | null => {
     const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;

@@ -6,11 +6,11 @@
 // encuadre a la ruta. Permite zoom/arrastre como cualquier mapa real.
 
 import { useEffect, useRef, useState } from "react";
-import { loadGoogleMaps, type LatLng } from "@/lib/google-maps";
+import { loadGoogleMaps, splitTrail, type LatLng, type TrailPoint } from "@/lib/google-maps";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 type Props = {
-  points: LatLng[];
+  points: TrailPoint[];
   height?: number | string;
 };
 
@@ -52,13 +52,20 @@ export default function TripRouteMap({ points, height = 460 }: Props) {
       overlaysRef.current = [];
       if (points.length < 2) return;
 
-      const line = new google.maps.Polyline({
-        path: points,
-        strokeColor: BRAND.teal,
-        strokeOpacity: 0.95,
-        strokeWeight: 5,
-        map,
-      });
+      // Una polilínea por tramo: los saltos que el auto no pudo haber hecho
+      // quedan como un hueco, no como una recta cruzando la ciudad.
+      const lines = splitTrail(points)
+        .filter((segment) => segment.length >= 2)
+        .map(
+          (segment) =>
+            new google.maps.Polyline({
+              path: segment,
+              strokeColor: BRAND.teal,
+              strokeOpacity: 0.95,
+              strokeWeight: 5,
+              map,
+            }),
+        );
       const marker = (position: LatLng, label: string, color: string) =>
         new google.maps.Marker({
           position,
@@ -73,8 +80,10 @@ export default function TripRouteMap({ points, height = 460 }: Props) {
             strokeWeight: 2,
           },
         });
+      // A y B siguen siendo el primer y el último fijo del viaje: el hueco
+      // está en el medio, no en los extremos.
       overlaysRef.current = [
-        line,
+        ...lines,
         marker(points[0], "A", BRAND.teal),
         marker(points[points.length - 1], "B", STATE.danger),
       ];
