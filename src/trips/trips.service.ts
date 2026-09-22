@@ -388,6 +388,54 @@ export class TripsService {
     };
   }
 
+/**
+   * La disciplina de un viaje vive en dos columnas, segun por donde entro:
+   *
+   *   `discipline`    texto libre, lo que escribe la planilla al importar
+   *                   ("ATLETISMO", "Futsal", "Voleibol");
+   *   `discipline_id` referencia al maestro, lo que elige el formulario
+   *                   manual del panel.
+   *
+   * Las pantallas leen el texto, asi que un viaje creado a mano salia sin
+   * disciplina aunque la tuviera guardada. Aca se rellena el texto desde el
+   * maestro cuando falta: una consulta mas, y solo si algun viaje la necesita.
+   *
+   * No se toca el texto cuando ya viene: si las dos columnas se contradicen
+   * manda la planilla, que es el documento de operaciones. Emparejarlas de
+   * verdad es una decision de datos, no de esta funcion.
+   */
+  private async completarDisciplina<
+    T extends { discipline?: string | null; disciplineId?: string | null },
+  >(trips: T[]): Promise<T[]> {
+    const faltantes = Array.from(
+      new Set(
+        trips
+          .filter((trip) => !trip.discipline && trip.disciplineId)
+          .map((trip) => trip.disciplineId as string),
+      ),
+    );
+    if (faltantes.length === 0) return trips;
+
+    const { data } = await this.supabase
+      .schema('core')
+      .from('disciplines')
+      .select('id, name')
+      .in('id', faltantes);
+
+    const nombrePorId = new Map(
+      ((data ?? []) as Array<{ id: string; name: string | null }>).map((fila) => [
+        fila.id,
+        fila.name,
+      ]),
+    );
+    for (const trip of trips) {
+      if (!trip.discipline && trip.disciplineId) {
+        trip.discipline = nombrePorId.get(trip.disciplineId) ?? trip.discipline;
+      }
+    }
+    return trips;
+  }
+
   private async attachAthletes(trips: Trip[]) {
     if (trips.length === 0) return trips;
     const tripIds = trips.map((item) => item.id);
@@ -727,7 +775,9 @@ export class TripsService {
       // Adjunta los pasajeros reales (transport.trip_athletes): sin esto el
       // listado devolvía athleteIds siempre vacío y los portales no podían
       // saber en qué viajes participa un atleta.
-      const withAthletes = await this.attachAthletes(trips);
+      const withAthletes = await this.completarDisciplina(
+        await this.attachAthletes(trips),
+      );
 
       // Group child trips under their parents
       const tripMap = new Map<string, any>();
@@ -779,7 +829,9 @@ export class TripsService {
     }
 
     const trip = this.toEntity(data as TripRow);
-    const [withAthletes] = await this.attachAthletes([trip]);
+    const [withAthletes] = await this.completarDisciplina(
+      await this.attachAthletes([trip]),
+    );
 
     // Attach child trips (return legs)
     const { data: childRows } = await this.supabase
