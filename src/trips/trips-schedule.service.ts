@@ -294,21 +294,23 @@ export class TripsScheduleService {
   }
 
   /**
-   * Delegación del viaje. La planilla de operatividad no tiene columna de
-   * región: en las cargas de los Juegos Escolares la escribieron en "Tipo de
-   * Cliente" —la columna descriptiva, que llega como `clientName` y que hasta
-   * ahora nadie leía— mientras el código del cliente viajaba en "Acrónimo".
-   * Así que la región entraba en cada fila y se descartaba, y el viaje quedaba
-   * sin delegación: de ahí el "Región —" del detalle.
+   * Delegación del viaje. La planilla ahora trae su propia columna
+   * "Delegación", que es la que manda.
    *
-   * Se miran las dos columnas, por si la región aparece en cualquiera de ellas.
+   * Las planillas anteriores no la tenían y la región terminó escrita en
+   * "Tipo de Cliente" —la columna descriptiva, que llega como `clientName` y
+   * que no leía nadie— o en "Acrónimo". Por eso se siguen mirando esas dos:
+   * un archivo viejo se importa igual y el viaje queda con su delegación.
    */
   private resolverDelegacion(
+    delegacion: string | undefined,
     clientName: string | undefined,
     clientTypeRaw: string | undefined,
     delegaciones: Array<{ id: string; clave: string; codigo: string }>,
   ): string | null {
-    for (const valor of [clientName, clientTypeRaw]) {
+    // La columna "Delegación" manda. Las otras dos son el rescate para las
+    // planillas viejas, que no la tenían y escribían la región donde podían.
+    for (const valor of [delegacion, clientName, clientTypeRaw]) {
       const id = this.buscarDelegacion(valor, delegaciones);
       if (id) return id;
     }
@@ -647,8 +649,12 @@ export class TripsScheduleService {
         const { clientType, delegationId: delegacionDelAcronimo } =
           this.resolverTipoCliente(row.clientType, delegaciones);
         const delegationId =
-          delegacionDelAcronimo ??
-          this.resolverDelegacion(row.clientName, row.clientType, delegaciones);
+          this.resolverDelegacion(
+            row.delegation,
+            row.clientName,
+            row.clientType,
+            delegaciones,
+          ) ?? delegacionDelAcronimo;
         const fleetAcronym = String(row.fleetAcronym || '').trim().toUpperCase() || null;
         const legType = this.isReturnLeg(row.legType) ? 'RETURN' : 'OUTBOUND';
         const isRoundTrip = !!returnAt && legType === 'OUTBOUND';

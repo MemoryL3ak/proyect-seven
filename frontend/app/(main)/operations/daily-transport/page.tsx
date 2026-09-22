@@ -72,6 +72,8 @@ type ScheduleRow = {
   legType?: string;
   clientType?: string;
   clientName?: string;
+  /** Delegación (en los Juegos Escolares, la región) a la que sirve el viaje. */
+  delegation?: string;
   date?: string;
   discipline?: string;
   gender?: string;
@@ -105,6 +107,7 @@ const PREVIEW_COLUMNS: Array<{ key: keyof ScheduleRow; label: string }> = [
   { key: "legType", label: "Destino" },
   { key: "clientType", label: "Acrónimo" },
   { key: "clientName", label: "Tipo de Cliente" },
+  { key: "delegation", label: "Delegación" },
   { key: "date", label: "Fecha" },
   { key: "discipline", label: "Disciplina" },
   { key: "gender", label: "Género" },
@@ -213,6 +216,14 @@ const COLUMN_ALIASES: Record<string, string> = {
   "destino": "legType",
   "acronimo": "clientType",
   "tipo de cliente": "clientName",
+  // La delegación es la región en los Juegos Escolares, y las planillas la
+  // escriben de las dos formas.
+  "delegacion": "delegation",
+  "delegación": "delegation",
+  "delegacion/region": "delegation",
+  "delegación/región": "delegation",
+  "region": "delegation",
+  "región": "delegation",
   "fecha": "date",
   "disciplina": "discipline",
   "genero": "gender",
@@ -442,7 +453,7 @@ export default function DailyTransportPage() {
         // Skip the header-banner row (first cell may say "N° BUS")
         const cleaned = raw
           .map((r) => toScheduleRow(r))
-          .filter((r) => r.date || r.clientType || r.discipline);
+          .filter((r) => r.date || r.clientType || r.delegation || r.discipline);
         setRows(cleaned);
         if (cleaned.length === 0) setError(t("No se detectaron filas válidas en el archivo"));
       } catch (err) {
@@ -454,7 +465,7 @@ export default function DailyTransportPage() {
 
   const downloadTemplate = () => {
     const headers = [
-      "N° Bus", "Destino", "Acrónimo", "Tipo de Cliente", "Fecha",
+      "N° Bus", "Destino", "Acrónimo", "Tipo de Cliente", "Delegación", "Fecha",
       "Disciplina", "Género", "Actividad", "Presentación",
       "Lugar Origen", "Dirección", "Hora Llegada Bus", "T° Traslado",
       "Hora Llegada Recinto", "Recinto", "Regresar a las",
@@ -466,7 +477,7 @@ export default function DailyTransportPage() {
     // Conductor, Teléfono y Patente quedan vacíos — los completa el sistema
     // al ejecutar la auto-asignación en la pestaña "Asignar conductores".
     const example1 = [
-      1, "IDA", "ATHLETE", "Atletas Chile", "15-10",
+      1, "IDA", "ATHLETE", "Atletas Chile", "Región de Ñuble", "15-10",
       "Atletismo", "M", "Maratón", "06:00",
       "Villa Panamericana", "Pedro Aguirre Cerda con Departamental", "06:30", 30,
       "07:00", "Parque O'Higgins", "12:00",
@@ -475,7 +486,7 @@ export default function DailyTransportPage() {
       "", "", "Llevar agua", "",
     ];
     const example2 = [
-      2, "VUELTA", "VIP", "Delegación Argentina", "15-10",
+      2, "VUELTA", "VIP", "Delegación Argentina", "Región de Valparaíso", "15-10",
       "Natación", "F", "Final 100m libre", "14:00",
       "Estadio Nacional", "Av. Grecia 2001, Ñuñoa", "14:30", 20,
       "15:00", "Hotel Sheraton", "18:00",

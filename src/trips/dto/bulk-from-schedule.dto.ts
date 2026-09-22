@@ -23,6 +23,11 @@ export class ScheduleRowDto {
   @IsOptional()
   clientName?: string;
 
+  /** Delegación del viaje; en los Juegos Escolares, la región. */
+  @IsString()
+  @IsOptional()
+  delegation?: string;
+
   @IsString()
   @IsOptional()
   date?: string; // "1-nov" or "2026-11-01"
