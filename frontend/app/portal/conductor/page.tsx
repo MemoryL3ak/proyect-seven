@@ -60,6 +60,7 @@ import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { dlog } from "@/lib/native-debug";
+import { gpsWebNecesario, senalDeCorte, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import { ChipFilter } from "@/components/ui/FilterControls";
@@ -1096,6 +1097,9 @@ export default function DriverPortalPage() {
       await apiFetch(`/vehicle-positions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        // Con señal mala un POST sin tope queda colgado minutos y el siguiente
+        // fijo se apila encima; el fijo viejo no sirve, se corta.
+        signal: senalDeCorte(),
         body: JSON.stringify({
           ...(eventId ? { eventId } : {}),
           driverId: resolvedDriverId,
@@ -1279,9 +1283,14 @@ export default function DriverPortalPage() {
   // quedar bien por debajo, con margen para el refresco del panel.
   useEffect(() => {
     if (!driverProfile?.id) return;
-    // ⚠ TRANSITORIO: mientras el shell tenga colgado su tracker (ver
-    // tracking.start arriba), la vía web de GPS corre TAMBIÉN dentro de la
-    // app. Al restaurar el shell, reponer el salto: if (isNativeAvailable()) return;
+    // Dentro de la app, si el shell ya rastrea en segundo plano (build 1.0.2
+    // con "Permitir siempre"), la vía web no duplica: el teléfono mandaba un
+    // fijo cada 3 s por el nativo y otro cada 5 s por acá. Con shell viejo,
+    // sin permiso o con el rastreo apagado, la web sigue cubriendo.
+    if (!gpsWebNecesario(shellTracking, isNativeAvailable())) {
+      dlog("GPS web en pausa: el shell rastrea en segundo plano");
+      return;
+    }
     const trip = getTripById(trackingTripId);
     const periodMs = trip ? 5000 : 20000;
 
@@ -1353,7 +1362,7 @@ export default function DriverPortalPage() {
       if (watchId !== null) navigator.geolocation.clearWatch(watchId);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [trackingTripId, trips, driverProfile?.id]);
+  }, [trackingTripId, trips, driverProfile?.id, shellTracking]);
 
   // Continuously watch driver GPS position for live map marker (Safari-friendly)
   useEffect(() => {
@@ -1401,16 +1410,20 @@ export default function DriverPortalPage() {
   useEffect(() => {
     if (!driverProfile) return;
 
+    // Una ronda a la vez: antes el temporizador disparaba cada 8 s una GET por
+    // cada viaje cerrado del conductor, sin esperar a que terminara la ronda
+    // anterior. Con señal mala las rondas se apilaban y el teléfono quedaba
+    // con decenas de peticiones colgadas.
+    let enCurso = false;
     const checkRatings = async () => {
+      if (enCurso) return;
       const current = tripsRef.current;
       if (current.length === 0) return;
+      enCurso = true;
       try {
-        const completedIds = current
-          .filter((t) => ["COMPLETED", "DROPPED_OFF"].includes(t.status ?? ""))
-          .filter((t) => !ratedTripIds.current.has(t.id))
-          .map((t) => t.id);
+        const completedIds = viajesPorCalificar(current, ratedTripIds.current, Date.now());
         for (const id of completedIds) {
-          const fresh = await apiFetch<Trip>(`/trips/${id}`);
+          const fresh = await apiFetch<Trip>(`/trips/${id}`, { signal: senalDeCorte() });
           if (fresh.driverRating && !ratedTripIds.current.has(id)) {
             ratedTripIds.current.add(id);
             const stars = `${fresh.driverRating} ${fresh.driverRating === 1 ? "estrella" : "estrellas"}`;
@@ -1419,10 +1432,12 @@ export default function DriverPortalPage() {
             setTrips((prev) => prev.map((t) => t.id === id ? fresh : t));
           }
         }
-      } catch { /* non-blocking */ }
+      } catch { /* non-blocking */ } finally {
+        enCurso = false;
+      }
     };
 
-    const interval = setInterval(checkRatings, 8000);
+    const interval = setInterval(checkRatings, SONDEO_CALIFICACIONES_MS);
     return () => clearInterval(interval);
   }, [driverProfile?.id]);
 
@@ -1436,6 +1451,7 @@ export default function DriverPortalPage() {
       apiFetch("/driver-presence/heartbeat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: senalDeCorte(),
         body: JSON.stringify({
           driverId: profile.id,
           eventId: profile.eventId ?? undefined,
