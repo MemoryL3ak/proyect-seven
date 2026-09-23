@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { apiFetch } from "@/lib/api";
+import { iniciosDeJornada } from "@/lib/jornada";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { StarIcon, MedalIcon, RefreshIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
@@ -227,10 +228,9 @@ export default function DriverHeatmapPage() {
 
     const filas: Jornada[] = [];
     porConductor.forEach((viajes, driverId) => {
-      const iniciados = viajes
-        .map((v) => (v.startedAt ? new Date(v.startedAt) : null))
-        .filter((d): d is Date => !!d && !Number.isNaN(d.getTime()))
-        .sort((a, b) => a.getTime() - b.getTime());
+      // Sólo viajes que están o estuvieron en marcha: uno devuelto a
+      // Programado conserva un startedAt viejo que no arranca la jornada.
+      const iniciados = iniciosDeJornada(viajes);
 
       // Sin un viaje iniciado no hay jornada que contar: lo programado no
       // empieza a correr el reloj.

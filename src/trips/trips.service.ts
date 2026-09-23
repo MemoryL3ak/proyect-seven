@@ -15,6 +15,7 @@ import { Trip } from './entities/trip.entity';
 import { TripMessage } from './entities/trip-message.entity';
 import { ProviderRate } from '../providers/entities/provider-rate.entity';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
+import { retrocedeASinIniciar } from './estado-viaje';
 
 type TripRow = {
   id: string;
@@ -969,6 +970,33 @@ export class TripsService {
     const inferredStatus = this.inferStatus(updateTripDto, currentTrip.status);
     if (inferredStatus !== undefined) {
       row.status = inferredStatus;
+    }
+
+    // Devuelto a Programado / Solicitado: ya no empezó, así que inicio y
+    // cierre se borran (salvo que vengan dichos). Si quedaban, el control de
+    // jornada contaba desde un inicio que ya no valía.
+    if (retrocedeASinIniciar(currentTrip.status, row.status as string | undefined)) {
+      if (updateTripDto.startedAt === undefined) row.started_at = null;
+      if (updateTripDto.completedAt === undefined) row.completed_at = null;
+    }
+
+    // Ida y vuelta al editar: la ida guarda la hora de regreso y se marca como
+    // tramo de ida; el tramo hijo se crea o se mueve más abajo, ya guardada
+    // la ida. Un tramo de regreso no tiene regreso propio.
+    const esTramoRegreso =
+      currentTrip.legType === 'RETURN' || Boolean(currentTrip.parentTripId);
+    const quiereRegreso =
+      !esTramoRegreso && (updateTripDto.isRoundTrip ?? currentTrip.isRoundTrip);
+    if (!esTramoRegreso) {
+      if (quiereRegreso) {
+        row.leg_type = 'OUTBOUND';
+        if (updateTripDto.returnScheduledAt !== undefined) {
+          row.return_at = updateTripDto.returnScheduledAt || null;
+        }
+      } else if (updateTripDto.isRoundTrip === false) {
+        row.return_at = null;
+        if (currentTrip.legType === 'OUTBOUND') row.leg_type = null;
+      }
     }
 
     // Re-calculate cost when driver, vehicle type or service type actually
