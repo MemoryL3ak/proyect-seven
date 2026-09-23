@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarIcon, CarIcon, ChevronDownIcon, UsersIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
-import { buildDisciplineLabelMap, coincideDisciplinaPorNombre, deporteDeViaje, type DisciplineLike } from "@/lib/discipline-filters";
+import { buildDisciplineLabelMap, coincideDisciplinaPorNombre, deporteDeViaje, idConcuerdaConTexto, claveSinGenero, type DisciplineLike } from "@/lib/discipline-filters";
 import { claveDiaEvento, etiquetaDiaEvento, fechaCortaEvento, fechaHoraEvento, horaEvento } from "@/lib/hora-evento";
 import TripMap from "@/components/TripMap";
 import TripLiveMap from "@/components/portal/TripLiveMap";
@@ -178,8 +178,14 @@ export default function MissionTrips({
     tr.destination ??
     "—";
 
-  const disciplinaDe = (tr: MissionTrip) =>
-    (tr.disciplineId ? labels.get(tr.disciplineId) : null) ?? tr.discipline ?? null;
+  // Etiqueta de la tarjeta: la del catálogo (con género) si el id concuerda
+  // con el texto del viaje; si no, lo que dice la planilla. Un viaje de
+  // "PARATLETISMO" apuntando a Atletismo no puede decir "Atletismo".
+  const disciplinaDe = (tr: MissionTrip) => {
+    const porId = tr.disciplineId ? disciplines.find((d) => d.id === tr.disciplineId) : undefined;
+    if (porId && idConcuerdaConTexto(tr, porId)) return labels.get(porId.id) ?? porId.name ?? null;
+    return deporteDeViaje(tr, disciplines) ?? tr.discipline ?? null;
+  };
 
   const miembros = useMemo(() => new Set(memberIds), [memberIds]);
   const propios = useMemo(() => {
@@ -267,8 +273,10 @@ export default function MissionTrips({
   );
   const esDelDeporteElegido = (tr: MissionTrip) => {
     if (!disciplinaExterna) return true;
-    if (tr.disciplineId) return tr.disciplineId === disciplinaExterna;
-    return disciplinaElegida ? coincideDisciplinaPorNombre(tr.discipline, disciplinaElegida) : false;
+    // El id vale sólo si concuerda con el texto del viaje (ver disciplinaDe):
+    // un viaje de "PARATLETISMO" apuntando a Atletismo no es de Atletismo.
+    if (tr.disciplineId === disciplinaExterna) return !disciplinaElegida || idConcuerdaConTexto(tr, disciplinaElegida);
+    return disciplinaElegida ? coincideDisciplinaPorNombre(claveSinGenero(tr.discipline), disciplinaElegida) : false;
   };
 
   const visibles = useMemo(() => {

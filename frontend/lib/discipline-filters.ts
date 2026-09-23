@@ -109,6 +109,35 @@ export function coincideDisciplinaPorNombre(
 /** Palabras de género que la planilla a veces pega al deporte: "Voleibol Masculino". */
 const GENERO_AL_FINAL = /\s+(masculin[oa]s?|femenin[oa]s?|damas|varones|mixt[oa]s?|hombres|mujeres)$/;
 
+/** Clave comparable del texto de disciplina de un viaje, sin el género pegado. */
+export const claveSinGenero = (texto?: string | null) => claveDisciplina(texto).replace(GENERO_AL_FINAL, "");
+
+/**
+ * ¿El id de disciplina del viaje concuerda con lo que dice su texto? La carga
+ * a veces deja un viaje de "PARATLETISMO" o "Lanzamiento de Martillo"
+ * apuntando a Atletismo; el texto es lo que la operación escribió y manda.
+ * Sin texto, el id se toma como bueno.
+ */
+export function idConcuerdaConTexto(
+  viaje: { discipline?: string | null },
+  disciplina: DisciplineLike,
+): boolean {
+  const clave = claveSinGenero(viaje.discipline);
+  return !clave || coincideDisciplinaPorNombre(clave, disciplina);
+}
+
+const PALABRAS_MENORES = new Set(["de", "del", "la", "las", "los", "y", "e", "en"]);
+/** "LANZAMIENTO DE MARTILLO" → "Lanzamiento de Martillo"; un texto con minúsculas se respeta. */
+function textoLegible(texto: string): string {
+  const sinGenero = texto.replace(new RegExp(GENERO_AL_FINAL.source, "i"), "").trim();
+  if (sinGenero !== sinGenero.toUpperCase()) return sinGenero;
+  return sinGenero
+    .toLowerCase()
+    .split(/\s+/)
+    .map((p, i) => (i > 0 && PALABRAS_MENORES.has(p) ? p : p.charAt(0).toUpperCase() + p.slice(1)))
+    .join(" ");
+}
+
 /**
  * Deporte de un viaje tal como lo muestra el filtro de Viajes en curso.
  *
@@ -119,7 +148,11 @@ const GENERO_AL_FINAL = /\s+(masculin[oa]s?|femenin[oa]s?|damas|varones|mixt[oa]
  * calzado por nombre con la misma regla del coordinador. El género no separa
  * (la planilla va por hoja de deporte, "Futsal" cubre a damas y varones), la
  * categoría paralímpica sí: "PARATLETISMO" es Atletismo · Paralímpica. Un
- * texto que no calza con nada queda como está escrito.
+ * texto que no calza con nada queda como está escrito, con mayúscula inicial.
+ *
+ * El id sólo manda cuando concuerda con el texto: un viaje de "PARATLETISMO"
+ * o "Lanzamiento de Martillo" que la carga dejó apuntando a Atletismo se
+ * agrupa por lo que dice, no por el id. Son disciplinas distintas.
  */
 export function deporteDeViaje(
   viaje: { discipline?: string | null; disciplineId?: string | null },
@@ -130,10 +163,9 @@ export function deporteDeViaje(
     return normalizeCategory(d.category) === "PARALYMPIC" ? `${nombre} · ${categoryLabel(d.category)}` : nombre;
   };
   const porId = viaje.disciplineId ? catalogo.find((d) => d.id === viaje.disciplineId) : undefined;
-  if (porId) return etiqueta(porId);
+  if (porId && idConcuerdaConTexto(viaje, porId)) return etiqueta(porId);
   const texto = String(viaje.discipline ?? "").trim();
   if (!texto) return null;
-  const sinGenero = claveDisciplina(texto).replace(GENERO_AL_FINAL, "");
-  const porNombre = catalogo.find((d) => coincideDisciplinaPorNombre(sinGenero, d));
-  return porNombre ? etiqueta(porNombre) : texto;
+  const porNombre = catalogo.find((d) => coincideDisciplinaPorNombre(claveSinGenero(texto), d));
+  return porNombre ? etiqueta(porNombre) : textoLegible(texto);
 }

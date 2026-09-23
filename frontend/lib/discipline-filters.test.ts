@@ -34,9 +34,22 @@ describe("deporteDeViaje", () => {
     expect(deporteDeViaje({ disciplineId: "vol-f" }, catalogo)).toBe(deporteDeViaje({ disciplineId: "vol-m" }, catalogo));
   });
 
-  it("deja el texto tal cual cuando no calza con el catálogo, y nada cuando no hay deporte", () => {
+  it("deja el texto cuando no calza con el catálogo, legible, y nada cuando no hay deporte", () => {
     expect(deporteDeViaje({ discipline: "Lanzamiento de Martillo" }, catalogo)).toBe("Lanzamiento de Martillo");
+    expect(deporteDeViaje({ discipline: "LANZAMIENTO DE MARTILLO" }, catalogo)).toBe("Lanzamiento de Martillo");
     expect(deporteDeViaje({ discipline: "  " }, catalogo)).toBeNull();
     expect(deporteDeViaje({}, catalogo)).toBeNull();
+  });
+
+  it("el id no manda cuando el texto dice otra disciplina: Atletismo, Paratletismo y Martillo son tres", () => {
+    // La carga dejó los tres apuntando a Atletismo; el texto de la planilla es lo que vale.
+    expect(deporteDeViaje({ disciplineId: "atl", discipline: "ATLETISMO" }, catalogo)).toBe("Atletismo");
+    expect(deporteDeViaje({ disciplineId: "atl", discipline: "PARATLETISMO" }, catalogo)).toBe("Atletismo · Paralímpica");
+    expect(deporteDeViaje({ disciplineId: "atl", discipline: "Lanzamiento de Martillo" }, catalogo)).toBe("Lanzamiento de Martillo");
+    // Sin entrada paralímpica en el catálogo, el paratletismo queda con su propio nombre.
+    const sinPara = catalogo.filter((d) => d.id !== "atl-para");
+    expect(deporteDeViaje({ disciplineId: "atl", discipline: "PARATLETISMO" }, sinPara)).toBe("Paratletismo");
+    // Con género pegado al texto, el id sigue valiendo.
+    expect(deporteDeViaje({ disciplineId: "vol-m", discipline: "Voleibol Masculino" }, catalogo)).toBe("Vóleibol");
   });
 });
