@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { VENTANA_CONECTADO_MS, useRelojServidor } from "@/lib/presencia";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
@@ -113,7 +114,8 @@ type LivePosition = {
 // pasados de 30 s — se apagaba en pantalla el 22% del tiempo aunque estuviera
 // transmitiendo. Lo que se paga a cambio es que alguien que cierra la app tarda
 // hasta un minuto en ponerse gris; es preferible a parpadear todo el día.
-const LIVE_WINDOW_MS = 60 * 1000;
+// Misma ventana que Tracking de vehículos (lib/presencia).
+const LIVE_WINDOW_MS = VENTANA_CONECTADO_MS;
 // Keep showing a driver's marker until their last fix is this stale.
 const SHOW_WINDOW_MS = 10 * 60 * 1000;
 // Con 60+ conductores la lista entera empuja la página hacia abajo sin fin:
@@ -192,6 +194,8 @@ export default function DriverMonitoringPage() {
   const [livePositions, setLivePositions] = useState<Record<string, LivePosition>>({});
   // Re-evaluates freshness windows every second so a driver who stops sending
   // greys out within ~1s of crossing the threshold.
+  // "Ahora" en el reloj del servidor, el mismo de `receivedAt`.
+  const ahoraServidor = useRelojServidor();
   const [nowTick, setNowTick] = useState(() => Date.now());
 
   // Merges a fresh fix in only when it's newer (by server clock) than what we
@@ -289,7 +293,7 @@ export default function DriverMonitoringPage() {
       }
     }, 2500);
 
-    const tickTimer = setInterval(() => setNowTick(Date.now()), 1000);
+    const tickTimer = setInterval(() => setNowTick(ahoraServidor()), 1000);
 
     return () => {
       supabase.removeChannel(channel);

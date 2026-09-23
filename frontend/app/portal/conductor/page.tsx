@@ -1234,6 +1234,39 @@ export default function DriverPortalPage() {
     };
   }, [trackingTripId]);
 
+  // Pantalla encendida mientras hay viaje activo. Con la pantalla apagada el
+  // sistema congela los temporizadores del portal y dejan de salir posiciones
+  // hasta que el conductor vuelve a tomar el teléfono: en el panel se ve como
+  // "sin conexión" durante minutos. El rastreo de fondo del shell sólo existe
+  // en el build corregido, así que esto cubre a los teléfonos que aún no lo
+  // tienen. Si el navegador no soporta el bloqueo de pantalla, no hace nada.
+  useEffect(() => {
+    if (!getTripById(trackingTripId)) return;
+    if (typeof navigator === "undefined" || !("wakeLock" in navigator)) return;
+    type WakeLockSentinel = { release: () => Promise<void> };
+    const wakeLock = (navigator as Navigator & { wakeLock: { request: (tipo: "screen") => Promise<WakeLockSentinel> } }).wakeLock;
+    let sentinel: WakeLockSentinel | null = null;
+    let vivo = true;
+    const pedir = async () => {
+      try {
+        sentinel = await wakeLock.request("screen");
+      } catch {
+        // sin permiso o batería baja: el sistema decide
+      }
+    };
+    // El bloqueo se suelta solo al pasar a segundo plano; se vuelve a pedir al volver.
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && vivo) void pedir();
+    };
+    void pedir();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      vivo = false;
+      document.removeEventListener("visibilitychange", onVisible);
+      void sentinel?.release();
+    };
+  }, [trackingTripId]);
+
   // GPS tracking: transmite mientras la sesión del conductor esté abierta,
   // tenga o no viaje asignado. El panel de monitoreo marca "activo" a quien
   // reportó un fix en los últimos 100 s (ONLINE_WINDOW en DriverPresenceService);
@@ -1241,8 +1274,9 @@ export default function DriverPortalPage() {
   // abierta y sin viaje figuraba desconectado.
   // Cadencia: 5 s con viaje activo — el seguimiento del viaje y los avisos de
   // proximidad lo necesitan — y 20 s en reposo. Los 20 s no son arbitrarios:
-  // el monitor pinta el marcador en verde solo si el fix tiene menos de 30 s
-  // (LIVE_WINDOW_MS), así que una cadencia de 30 s lo dejaría parpadeando.
+  // el panel pinta el marcador en verde solo si el fix tiene menos de 60 s
+  // (VENTANA_CONECTADO_MS en lib/presencia), así que la cadencia tiene que
+  // quedar bien por debajo, con margen para el refresco del panel.
   useEffect(() => {
     if (!driverProfile?.id) return;
     // ⚠ TRANSITORIO: mientras el shell tenga colgado su tracker (ver

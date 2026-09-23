@@ -106,6 +106,17 @@ export class VehiclePositionsController {
     }
   }
 
+  /**
+   * Hora del servidor. El panel decide "conectado" comparando la hora en que
+   * el servidor recibió cada posición con "ahora": si "ahora" fuera el reloj
+   * del PC del operador, unos segundos de desfase bastan para que todos los
+   * conductores parezcan más viejos y parpadeen.
+   */
+  @Get('server-time')
+  serverTime() {
+    return { now: new Date().toISOString() };
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string, @Req() req: VpRequest) {
     this.access.requireStaff(req.vpCaller);

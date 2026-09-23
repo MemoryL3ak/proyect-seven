@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { VENTANA_CONECTADO_MS, VENTANA_SIN_SENAL_MS, useRelojServidor } from "@/lib/presencia";
 import {
   RefreshIcon,
   ArrowRightIcon,
@@ -256,6 +257,8 @@ export default function VehiclePositionsPage() {
   // Drives recomputation of the recency window (`connectedDrivers`, "Con GPS")
   // even when no fresh positions arrive — otherwise a driver that stops
   // pushing would stay on the live tab forever.
+  // "Ahora" en el reloj del servidor, que es el mismo reloj de `receivedAt`.
+  const ahoraServidor = useRelojServidor();
   const [nowTick, setNowTick] = useState(() => Date.now());
   const [completedAlerts, setCompletedAlerts] = useState<Array<{ tripId: string; driverName: string; destination: string; ts: Date }>>([]);
   const [activeView, setActiveView] = useState<"live" | "table">("live");
@@ -528,7 +531,7 @@ export default function VehiclePositionsPage() {
     // Heartbeat — re-evaluates the 15s recency window every second so a
     // driver who stops pushing flips to red within ~1s of crossing the
     // threshold. Cheap: only re-runs the trackedDrivers memo.
-    const tickTimer = setInterval(() => setNowTick(Date.now()), 1000);
+    const tickTimer = setInterval(() => setNowTick(ahoraServidor()), 1000);
 
     return () => {
       supabase.removeChannel(channel);
@@ -873,8 +876,11 @@ export default function VehiclePositionsPage() {
   // disappear — only the color changes (green ↔ red). Anything older than
   // 5 min is treated as a session that ended and is removed from the map.
   const trackedDrivers = useMemo(() => {
-    const onlineCutoff = nowTick - 15 * 1000;
-    const staleCutoff = nowTick - 5 * 60 * 1000;
+    // Ventana única del panel (lib/presencia): más larga que la cadencia del
+    // conductor (20 s quieto) más el refresco de posiciones (8 s). Con 15 s
+    // cada conductor detenido quedaba verde 15 s y rojo 5, en cada ciclo.
+    const onlineCutoff = nowTick - VENTANA_CONECTADO_MS;
+    const staleCutoff = nowTick - VENTANA_SIN_SENAL_MS;
     return Object.entries(positions)
       .map(([driverId, pos]) => {
         const driver = drivers[driverId];
