@@ -766,6 +766,24 @@ function VenueCard({
               </div>
               <p style={{ fontSize: "13px", color: "#1e293b", fontWeight: 500, margin: 0 }}>{venue.address || "—"}</p>
             </div>
+            {/* Quién responde por la sede. Se elige al editar; acá se ve sin
+                abrir el formulario, que es donde se buscaba y no estaba. */}
+            <div style={{ borderRadius: "14px", background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${BRAND.teal}`, padding: "12px 14px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "6px" }}>
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+                {t("Coordinador de sede")}
+              </div>
+              {venue.coordinatorName || venue.coordinatorPhone ? (
+                <p style={{ fontSize: "13px", color: "#1e293b", fontWeight: 500, margin: 0 }}>
+                  {venue.coordinatorName || "—"}
+                  {venue.coordinatorPhone && <span style={{ color: SURFACE.textMuted, fontWeight: 400 }}>{` · ${venue.coordinatorPhone}`}</span>}
+                </p>
+              ) : (
+                <p style={{ fontSize: "13px", color: SURFACE.textFaint, margin: 0 }}>{t("Sin coordinador asignado")}</p>
+              )}
+            </div>
             <div style={{ borderRadius: "14px", background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${BRAND.teal}`, padding: "12px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "6px" }}>
                 <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -114,6 +114,10 @@ export class VenuesService {
         ? { coordinatorPhone: updateVenueDto.coordinatorPhone?.trim() || null }
         : {}),
     });
+    // Mismo copiado que al crear: la ficha del coordinador (nombre y teléfono)
+    // sale del participante elegido. Sin esto, al editar la sede quedaba el id
+    // pero la tarjeta y el portal, que muestran el nombre, no veían a nadie.
+    await this.copiarFichaCoordinador(venue, updateVenueDto.coordinatorId);
     return this.venuesRepository.save(venue);
   }
 
