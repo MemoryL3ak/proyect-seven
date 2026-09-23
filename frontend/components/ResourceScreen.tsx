@@ -145,6 +145,10 @@ function parseValue(field: FieldDef, value: string | string[]) {
     // y creaba un viaje de regreso duplicado al elegir "Solo ida".
     return normalizedText === "true";
   }
+  if (field.key === "allDelegations") {
+    // Mismo caso: "false" como texto sería verdadero para @IsBoolean.
+    return normalizedText === "true";
+  }
   if (field.key === "tripCost") {
     const digits = normalizedText.replace(/[^\d]/g, "");
     return digits ? Number(digits) : undefined;

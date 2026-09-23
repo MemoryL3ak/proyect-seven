@@ -1066,6 +1066,7 @@ export const resources: Record<string, ResourceConfig> = {
       "startedAt",
       "completedAt",
       "delegationId",
+      "allDelegations",
       "athleteIds",
       "requestedAt",
       "destinationTypeFilter",
@@ -1243,7 +1244,20 @@ export const resources: Record<string, ResourceConfig> = {
       // El viaje se asigna a la delegación y a su disciplina: viaja el equipo
       // completo, sin nominar pasajeros. Los participantes quedan opcionales
       // (VIP y T1 siguen viajando por persona).
-      { key: "delegationId", label: "Delegación", type: "select", optionsSource: "delegations", hideWhen: { field: "clientType", value: "VIP" } },
+      {
+        // Traslados transversales (inauguración, congresillo): de todas las
+        // regiones, sin una delegación en particular. Los ve cualquier Jefe
+        // de Misión y salen con cualquier región del filtro.
+        key: "allDelegations",
+        label: "Alcance",
+        type: "select",
+        options: [
+          { label: "Una región", value: "false" },
+          { label: "Todas las regiones", value: "true" },
+        ],
+        hideWhen: { field: "clientType", value: "VIP" },
+      },
+      { key: "delegationId", label: "Delegación", type: "select", optionsSource: "delegations", hideWhen: { field: "allDelegations", value: "true" } },
       { key: "disciplineId", label: "Disciplina", type: "select", optionsSource: "disciplines", hideWhen: { field: "clientType", value: "VIP" } },
       { key: "athleteIds", label: "Participantes (opcional)", type: "multiselect", optionsSource: "athletes" },
       { key: "tripCost", label: "Costo de viaje", type: "text" }

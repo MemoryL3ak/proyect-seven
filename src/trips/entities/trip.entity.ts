@@ -34,6 +34,15 @@ export class Trip {
   @Column({ name: 'delegation_id', type: 'uuid', nullable: true })
   delegationId?: string | null;
 
+  /**
+   * Traslado de todas las regiones (inauguración, congresillo técnico): no
+   * tiene una delegación en particular. La planilla lo escribe "TODAS LAS
+   * REGIONES"; sin esta marca esos viajes quedaban sin delegación y ningún
+   * Jefe de Misión ni el filtro por región los encontraba.
+   */
+  @Column({ name: 'all_delegations', type: 'boolean', default: false })
+  allDelegations: boolean;
+
   @Column({ name: 'discipline_id', type: 'uuid', nullable: true })
   disciplineId?: string | null;
 

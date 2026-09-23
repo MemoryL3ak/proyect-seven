@@ -442,6 +442,15 @@ export class TripsScheduleService {
   }
 
   /**
+   * "TODAS LAS REGIONES" / "TODAS REGIONES" / "TODAS": traslado transversal
+   * (inauguración, congresillo técnico, martillo). No es una región y tampoco
+   * un error: el viaje se marca como de todas las delegaciones.
+   */
+  private esTodasLasRegiones(valores: Array<string | undefined>): boolean {
+    return valores.some((v) => /^todas( las)?( regiones)?$/.test(this.claveRegion(v)));
+  }
+
+  /**
    * Por qué una fila quedó sin región, para decirlo en el resultado de la
    * carga. En la primera planilla 63 filas quedaron sin delegación sin que
    * nadie lo viera: el Jefe de Misión no las ve y el filtro por región no las
@@ -782,7 +791,8 @@ export class TripsScheduleService {
           ) ?? delegacionDelAcronimo;
         // Sin región no se calla: se anota el motivo y se guarda la celda.
         const celdasRegion = [row.delegation, row.clientName, row.clientType];
-        if (!delegationId) {
+        const todasLasRegiones = !delegationId && this.esTodasLasRegiones(celdasRegion);
+        if (!delegationId && !todasLasRegiones) {
           const motivo = this.motivoSinRegion(celdasRegion, delegaciones);
           const filas = regionIssues.get(motivo) ?? [];
           filas.push(i + 1);
@@ -828,6 +838,7 @@ export class TripsScheduleService {
           trip_type: row.activity || null,
           client_type: clientType,
           delegation_id: delegationId,
+          all_delegations: todasLasRegiones,
           passenger_count: row.passengerCount ?? null,
           wheelchair_count: row.wheelchairCount ?? 0,
           notes: row.notes || row.observation || null,
@@ -852,7 +863,7 @@ export class TripsScheduleService {
             country: null,
             // Lo que decía la planilla cuando la región no se pudo resolver,
             // para poder arreglarla después sin volver al archivo.
-            regionTexto: delegationId
+            regionTexto: delegationId || todasLasRegiones
               ? null
               : celdasRegion.map((v) => String(v || '').trim()).filter(Boolean).join(' | ') || null,
           },

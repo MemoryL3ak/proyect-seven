@@ -176,6 +176,7 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
     type WithRegion = {
       claveRegion: (raw?: string | null) => string;
       motivoSinRegion: (valores: Array<string | undefined>, delegaciones: Delegacion[]) => string;
+      esTodasLasRegiones: (valores: Array<string | undefined>) => boolean;
     };
     const svc = () => service as unknown as WithRegion;
     const region = (nombre: string, codigo: string): Delegacion => {
@@ -196,6 +197,14 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
 
     it('un texto que no es región: lo muestra tal cual, sin los tipos de cliente', () => {
       expect(svc().motivoSinRegion(['Todas', undefined, 'TA'], regiones())).toBe('región no reconocida: "Todas"');
+    });
+
+    it('"TODAS LAS REGIONES" es un traslado transversal, no un error', () => {
+      expect(svc().esTodasLasRegiones([undefined, 'TODAS LAS REGIONES', 'ATHLETE'])).toBe(true);
+      expect(svc().esTodasLasRegiones([undefined, 'Todas regiones', 'Inauguración'])).toBe(true);
+      expect(svc().esTodasLasRegiones(['todas', undefined, undefined])).toBe(true);
+      expect(svc().esTodasLasRegiones([undefined, 'Coquimbo', 'ATHLETE'])).toBe(false);
+      expect(svc().esTodasLasRegiones([undefined, '', undefined])).toBe(false);
     });
 
     it('celdas vacías: lo dice', () => {

@@ -24,6 +24,7 @@ type TripRow = {
   vehicle_plate: string | null;
   requester_athlete_id: string | null;
   delegation_id: string | null;
+  all_delegations: boolean | null;
   discipline_id: string | null;
   origin_venue_id: string | null;
   origin_hotel_id: string | null;
@@ -263,6 +264,9 @@ export class TripsService {
     if (dto.isRoundTrip !== undefined) {
       row.is_round_trip = dto.isRoundTrip ?? false;
     }
+    if (dto.allDelegations !== undefined) {
+      row.all_delegations = dto.allDelegations ?? false;
+    }
     if (dto.parentTripId !== undefined) {
       row.parent_trip_id = dto.parentTripId ?? null;
     }
@@ -380,6 +384,7 @@ export class TripsService {
       returnAt: row.return_at ? new Date(row.return_at) : null,
       travelTimeMinutes: row.travel_time_minutes,
       delegationId: row.delegation_id,
+      allDelegations: row.all_delegations ?? false,
       disciplineId: row.discipline_id,
       originVenueId: row.origin_venue_id,
       originHotelId: row.origin_hotel_id,
@@ -780,7 +785,9 @@ export class TripsService {
    * traslado es suyo mirando también el solicitante y los pasajeros, y se
    * quedaba esperando viajes que el backend nunca le mandaba.
    *
-   * La Flota sigue siendo sólo de su región: ese recorte lo hace la pantalla.
+   * Los traslados de todas las regiones (inauguración, congresillo) entran
+   * para cualquier jefe. La Flota sigue siendo sólo de su región: ese recorte
+   * lo hace la pantalla.
    */
   async findAll(requesterAthleteId?: string, delegationId?: string | null) {
     try {
@@ -795,6 +802,7 @@ export class TripsService {
       if (delegationId) {
         qb.andWhere(
           `(t.delegationId = :delegationId
+            or t.allDelegations = true
             or t.requesterAthleteId in (
               select id from core.athletes
                where delegation_id = :delegationId

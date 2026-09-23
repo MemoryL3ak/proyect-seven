@@ -36,6 +36,8 @@ export type MissionTrip = {
   discipline?: string | null;
   disciplineId?: string | null;
   delegationId?: string | null;
+  /** Traslado de todas las regiones (inauguración, congresillo). */
+  allDelegations?: boolean;
   requesterAthleteId?: string | null;
   athleteIds?: string[];
   athleteNames?: string[];
@@ -183,11 +185,15 @@ export default function MissionTrips({
       ? trips
       : trips.filter(
           (tr) =>
+            tr.allDelegations ||
             (tr.delegationId && tr.delegationId === delegationId) ||
             (tr.requesterAthleteId && miembros.has(tr.requesterAthleteId)) ||
             (tr.athleteIds ?? []).some((id) => miembros.has(id)),
         );
-    const porRegion = delegacionFiltro ? base.filter((tr) => tr.delegationId === delegacionFiltro) : base;
+    // Los de todas las regiones entran con cualquier región elegida.
+    const porRegion = delegacionFiltro
+      ? base.filter((tr) => tr.allDelegations || tr.delegationId === delegacionFiltro)
+      : base;
     // Hotel y sede acotan antes que nada, igual que la región: así los chips
     // de disciplina de abajo cuentan sólo lo que toca ese lugar y no ofrecen
     // deportes que quedaron fuera del filtro.
@@ -464,9 +470,9 @@ export default function MissionTrips({
                 </p>
                 {/* Viendo el evento entero, sin la región no se sabe de quién
                     es cada traslado. */}
-                {todas && nombreDelegacion?.(tr.delegationId) && (
+                {todas && (tr.allDelegations || nombreDelegacion?.(tr.delegationId)) && (
                   <p style={{ fontSize: 11, fontWeight: 700, color: BRAND.tealInk, margin: "2px 0 0" }}>
-                    {nombreDelegacion(tr.delegationId)}
+                    {tr.allDelegations ? t("Todas las regiones") : nombreDelegacion?.(tr.delegationId)}
                   </p>
                 )}
 

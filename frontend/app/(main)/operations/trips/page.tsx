@@ -147,6 +147,8 @@ type Trip = {
    * grupo (región + disciplina), no a un participante.
    */
   delegationId?: string | null;
+  /** Traslado de todas las regiones (inauguración, congresillo). */
+  allDelegations?: boolean;
   disciplineId?: string | null;
   /** Prueba o actividad concreta dentro de la disciplina. */
   activity?: string | null;
@@ -1102,6 +1104,7 @@ export default function TripsPage() {
   };
 
   const resolveDelegation = (trip: Trip) => {
+    if (trip.allDelegations) return t("Todas las regiones");
     const athlete = trip.requesterAthleteId ? athletes[trip.requesterAthleteId] : null;
     if (athlete?.delegationId) {
       const delegation = delegations[athlete.delegationId];
@@ -2634,9 +2637,10 @@ export default function TripsPage() {
         // persona. Si el viaje no las trae cargadas, se deducen de los
         // pasajeros, que es como se resolvían hasta ahora.
         const iporPasajeros = resolveDelegation(infoTrip);
-        const iregion =
-          delegationLabel(infoTrip.delegationId ? delegations[infoTrip.delegationId] : null) ||
-          (iporPasajeros === "-" ? "" : iporPasajeros);
+        const iregion = infoTrip.allDelegations
+          ? t("Todas las regiones")
+          : delegationLabel(infoTrip.delegationId ? delegations[infoTrip.delegationId] : null) ||
+            (iporPasajeros === "-" ? "" : iporPasajeros);
         const idisciplina = safeText(infoTrip.discipline, "");
         const itipoViaje = tripTypeLabel(infoTrip.tripType);
         const itramo = legTypeLabel(infoTrip.legType);

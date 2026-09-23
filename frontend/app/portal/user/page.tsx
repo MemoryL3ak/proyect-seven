@@ -140,7 +140,7 @@ type HotelAssignment = {
 type HotelRoom = { id: string; roomNumber: string; roomType: string };
 type HotelBed = { id: string; bedType: string };
 type Vehicle = { id: string; plate: string; type: string };
-type Trip = { id: string; driverId: string; delegationId?: string | null; disciplineId?: string | null; originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; originFoodLocationId?: string | null; destinationFoodLocationId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null; vehiclePlate?: string | null };
+type Trip = { id: string; driverId: string; delegationId?: string | null; allDelegations?: boolean; disciplineId?: string | null; originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; originFoodLocationId?: string | null; destinationFoodLocationId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null; vehiclePlate?: string | null };
 type Driver = { id: string; fullName: string; userId?: string | null };
 type Event = { id: string; name: string };
 // name: las delegaciones de los Juegos Escolares son regiones con nombre visible.
@@ -4127,7 +4127,7 @@ export default function UserPortalPage() {
             focoTripId={focoViajeId}
             eventId={athlete.eventId}
             delegationName={delegationName}
-            trips={delegationTrips.filter((tr) => tr.delegationId && tr.delegationId === athlete.delegationId)}
+            trips={delegationTrips.filter((tr) => tr.allDelegations || (tr.delegationId && tr.delegationId === athlete.delegationId))}
             venues={venues}
             accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
             comedores={foodLocations}

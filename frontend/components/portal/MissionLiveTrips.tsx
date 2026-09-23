@@ -67,7 +67,8 @@ export default function MissionLiveTrips({
       .filter(
         (tr) =>
           EN_CURSO.has(String(tr.status ?? "").trim().toUpperCase()) &&
-          ((tr.delegationId && tr.delegationId === delegationId) ||
+          (tr.allDelegations ||
+            (tr.delegationId && tr.delegationId === delegationId) ||
             (tr.requesterAthleteId && miembros.has(tr.requesterAthleteId)) ||
             (tr.athleteIds ?? []).some((id) => miembros.has(id))),
       )

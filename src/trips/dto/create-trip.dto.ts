@@ -147,6 +147,11 @@ export class CreateTripDto {
   @IsOptional()
   isRoundTrip?: boolean;
 
+  /** Traslado de todas las regiones, sin una delegación en particular. */
+  @IsBoolean()
+  @IsOptional()
+  allDelegations?: boolean;
+
   @IsString()
   @IsOptional()
   parentTripId?: string;
