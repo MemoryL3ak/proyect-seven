@@ -8,7 +8,7 @@ import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-f
 
 /**
  * Filtros del Coordinador de Comité: delegación, disciplina y —donde aplica—
- * el hotel al que van los traslados.
+ * el hotel y la sede que tocan los traslados.
  *
  * Él ve el evento entero, que son dieciséis regiones por diecisiete deportes.
  * Sin una forma de acotar, cada módulo es una lista interminable. Lo que elige
@@ -44,8 +44,11 @@ export default function FiltrosComite({
   onDelegacion,
   onDisciplina,
   hoteles,
-  hotelId = "",
+  hotel = "",
   onHotel,
+  sedes,
+  sede = "",
+  onSede,
   resumen,
 }: {
   delegaciones: Delegacion[];
@@ -56,13 +59,19 @@ export default function FiltrosComite({
   onDelegacion: (id: string) => void;
   onDisciplina: (id: string) => void;
   /**
-   * Hoteles a los que se dirigen los traslados. Va sólo donde el filtro
-   * significa algo —la lista de traslados—, así que si no se pasan, el botón
-   * no aparece y la barra queda con los dos de siempre.
+   * Hoteles y sedes que algún traslado toca (sale de ahí o llega ahí). Van
+   * sólo donde el filtro significa algo —la lista de traslados—, así que si
+   * no se pasan, los botones no aparecen y la barra queda con los dos de
+   * siempre. Son textos tal como los escribe la planilla, con la cuenta de
+   * viajes en la etiqueta: la misma regla que el tracking del panel (ver
+   * lib/lugares), porque los viajes importados no traen id de lugar.
    */
-  hoteles?: { id: string; name?: string | null }[];
-  hotelId?: string;
-  onHotel?: (id: string) => void;
+  hoteles?: OpcionFiltro[];
+  hotel?: string;
+  onHotel?: (texto: string) => void;
+  sedes?: OpcionFiltro[];
+  sede?: string;
+  onSede?: (texto: string) => void;
   /** Línea corta bajo los filtros: qué se está viendo ahora mismo. */
   resumen?: string;
 }) {
@@ -90,17 +99,11 @@ export default function FiltrosComite({
     [disciplinas, etiquetas],
   );
 
-  const hotelesOpciones = useMemo<OpcionFiltro[]>(
-    () =>
-      [...(hoteles ?? [])]
-        .map((h) => ({ value: h.id, label: h.name ?? h.id }))
-        .sort((a, b) => a.label.localeCompare(b.label)),
-    [hoteles],
-  );
-  const conHotel = hotelesOpciones.length > 0 && Boolean(onHotel);
+  const conHotel = (hoteles?.length ?? 0) > 0 && Boolean(onHotel);
+  const conSede = (sedes?.length ?? 0) > 0 && Boolean(onSede);
 
   // Qué nombre mostrar en cada botón lo resuelve el propio SelectorFiltro.
-  const hayFiltro = Boolean(delegacionId || disciplinaId || (conHotel && hotelId));
+  const hayFiltro = Boolean(delegacionId || disciplinaId || (conHotel && hotel) || (conSede && sede));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -122,22 +125,34 @@ export default function FiltrosComite({
         {hayFiltro && (
           <BotonQuitarFiltros
             titulo={t("Ver todo")}
-            onClick={() => { onDelegacion(""); onDisciplina(""); onHotel?.(""); }}
+            onClick={() => { onDelegacion(""); onDisciplina(""); onHotel?.(""); onSede?.(""); }}
           />
         )}
       </div>
 
-      {/* El hotel va en su propia fila: apretado como tercer botón, un nombre
-          como "Hotel Bordemar Sur" se cortaba a la segunda palabra y el filtro
-          dejaba de decir qué estaba aplicado. */}
+      {/* Hotel y sede van cada uno en su propia fila: apretados junto a otro
+          botón, un nombre como "Hotel LRH § Convention Center (ex Gala)" se
+          cortaba a la segunda palabra y el filtro dejaba de decir qué estaba
+          aplicado. */}
       {conHotel && (
         <div style={{ display: "flex" }}>
           <SelectorFiltro
-            rotulo={t("Hotel de destino")}
-            opciones={hotelesOpciones}
+            rotulo={t("Hotel")}
+            opciones={hoteles ?? []}
             etiquetaTodos={t("Todos los hoteles")}
-            valor={hotelId}
+            valor={hotel}
             onChange={(v) => onHotel?.(v)}
+          />
+        </div>
+      )}
+      {conSede && (
+        <div style={{ display: "flex" }}>
+          <SelectorFiltro
+            rotulo={t("Sede")}
+            opciones={sedes ?? []}
+            etiquetaTodos={t("Todas las sedes")}
+            valor={sede}
+            onChange={(v) => onSede?.(v)}
           />
         </div>
       )}

@@ -48,3 +48,97 @@ export function mapaDeLugares(
   }
   return mapa;
 }
+
+/**
+ * Nombre de lugar comparable: sin tildes, sin mayúsculas, sin dobles espacios.
+ * Los viajes de planilla traen origen y destino escritos a mano, así que
+ * "Comedor LRH (EX GALA)" y "comedor lrh  (ex gala)" tienen que calzar.
+ */
+export const normalizarLugar = (valor?: string | null) =>
+  String(valor ?? "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** Lo que un viaje sabe de sus dos extremos. */
+export type ViajeConLugares = {
+  origin?: string | null;
+  destination?: string | null;
+  originVenueId?: string | null;
+  originHotelId?: string | null;
+  destinationVenueId?: string | null;
+  destinationHotelId?: string | null;
+};
+
+/** Nombre del catálogo para un id de sede u hotel, si se conoce. */
+export type NombreDeLugar = (id: string) => string | null | undefined;
+
+/**
+ * Los dos lugares de un viaje, tal como los muestra su fila: origen y
+ * destino. El texto manda; si un extremo no lo trae, se usa el nombre del
+ * catálogo de la sede o el hotel al que apunta por id.
+ */
+export function lugaresDeViaje(viaje: ViajeConLugares, nombreDe?: NombreDeLugar): string[] {
+  const porId = (id?: string | null) => (id && nombreDe ? String(nombreDe(id) ?? "").trim() : "");
+  const origen = String(viaje.origin ?? "").trim() || porId(viaje.originVenueId) || porId(viaje.originHotelId);
+  const destino =
+    String(viaje.destination ?? "").trim() || porId(viaje.destinationVenueId) || porId(viaje.destinationHotelId);
+  return [origen, destino].filter((valor) => valor.length > 0);
+}
+
+/** Un viaje "toca" un lugar si sale de él o llega a él. */
+export function tocaLugar(viaje: ViajeConLugares, nombre: string, nombreDe?: NombreDeLugar): boolean {
+  const objetivo = normalizarLugar(nombre);
+  if (!objetivo) return false;
+  return lugaresDeViaje(viaje, nombreDe).some((texto) => normalizarLugar(texto) === objetivo);
+}
+
+export type LugarConCarga = { texto: string; esHotel: boolean; total: number };
+
+/** Nombres que delatan un hotel cuando el lugar no está en el maestro. */
+const SUENA_A_HOTEL = /(hotel|hostal|apart|aparthotel|resort|cabana|cabanas|hosteria|residencial)/;
+
+/**
+ * Hoteles y sedes para un filtro, sacados de los propios viajes y no de los
+ * maestros: la planilla escribe "Hotel Hippocampus" y el maestro lo tiene
+ * como "Hippocampus Concón Resort & Club", así que al cruzarlos por nombre el
+ * hotel no aparecía en el filtro aunque estuviera en decenas de viajes. Con
+ * esto cada opción existe porque algún viaje la nombra, y el filtro calza
+ * exacto contra ese mismo texto. Es la regla del tracking del panel; el
+ * portal del coordinador usa la misma para ver lo mismo.
+ *
+ * La separación hotel/sede se decide por el maestro de Hoteles y, si el
+ * lugar no está ahí, por cómo se llama.
+ */
+export function lugaresDeViajes(
+  viajes: ViajeConLugares[],
+  hoteles: LugarHotel[] | null | undefined,
+  nombreDe?: NombreDeLugar,
+): LugarConCarga[] {
+  const nombresDeHotel = new Set(
+    (hoteles ?? []).map((h) => normalizarLugar(h.name)).filter((valor) => valor.length > 0),
+  );
+  const porLugar = new Map<string, LugarConCarga>();
+  for (const viaje of viajes) {
+    // Un viaje que sale y llega al mismo lugar cuenta una sola vez.
+    const clavesDelViaje = new Set<string>();
+    for (const texto of lugaresDeViaje(viaje, nombreDe)) {
+      const clave = normalizarLugar(texto);
+      if (!clave || clavesDelViaje.has(clave)) continue;
+      clavesDelViaje.add(clave);
+      const actual = porLugar.get(clave);
+      if (actual) {
+        actual.total += 1;
+        continue;
+      }
+      porLugar.set(clave, {
+        texto,
+        esHotel: nombresDeHotel.has(clave) || SUENA_A_HOTEL.test(clave),
+        total: 1,
+      });
+    }
+  }
+  return [...porLugar.values()].sort((a, b) => a.texto.localeCompare(b.texto, "es"));
+}

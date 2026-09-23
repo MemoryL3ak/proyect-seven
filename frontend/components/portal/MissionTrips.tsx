@@ -9,7 +9,7 @@ import { claveDiaEvento, etiquetaDiaEvento, fechaCortaEvento, fechaHoraEvento, h
 import TripMap from "@/components/TripMap";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import SelectorFiltro from "@/components/portal/SelectorFiltro";
-import { mapaDeLugares } from "@/lib/lugares";
+import { mapaDeLugares, tocaLugar } from "@/lib/lugares";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import { useI18n } from "@/lib/i18n";
 
@@ -79,6 +79,7 @@ export default function MissionTrips({
   delegacionFiltro = "",
   disciplinaExterna = "",
   hotelFiltro = "",
+  sedeFiltro = "",
   titulo,
   nombreDelegacion,
   contactoChofer = false,
@@ -103,10 +104,13 @@ export default function MissionTrips({
   delegacionFiltro?: string;
   disciplinaExterna?: string;
   /**
-   * Hotel de destino: deja sólo los traslados que van hacia ese hotel, que es
-   * la pregunta del coordinador —hacia dónde se dirigen los conductores—.
+   * Hotel y sede: dejan sólo los traslados que tocan ese lugar (salen de ahí
+   * o llegan ahí). Son textos tal como los escribe la planilla, porque los
+   * viajes importados no traen id de lugar; misma regla que el tracking del
+   * panel (lib/lugares).
    */
   hotelFiltro?: string;
+  sedeFiltro?: string;
   titulo?: string;
   /** Nombre de una región para mostrarlo en cada tarjeta cuando se ven todas. */
   nombreDelegacion?: (delegationId?: string | null) => string | null;
@@ -140,6 +144,13 @@ export default function MissionTrips({
   const labels = useMemo(() => buildDisciplineLabelMap(disciplines), [disciplines]);
   // "Comedor LRH (ex Gala)", "Sede Elías Figueroa", "Hotel Mahía".
   const lugar = useMemo(() => mapaDeLugares(venues, accommodations), [venues, accommodations]);
+  // Nombre pelado del catálogo, para calzar lugares por texto en los filtros.
+  const nombreCrudo = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const v of venues) if (v.id && v.name) m.set(v.id, v.name);
+    for (const h of accommodations) if (h.id && h.name) m.set(h.id, h.name);
+    return m;
+  }, [venues, accommodations]);
 
   // Nombre del recinto cuando el viaje lo tiene asignado; si no, la dirección.
   const puntoOrigen = (tr: MissionTrip) =>
@@ -163,11 +174,13 @@ export default function MissionTrips({
             (tr.athleteIds ?? []).some((id) => miembros.has(id)),
         );
     const porRegion = delegacionFiltro ? base.filter((tr) => tr.delegationId === delegacionFiltro) : base;
-    // El hotel acota antes que nada, igual que la región: así los chips de
-    // disciplina de abajo cuentan sólo lo que va a ese hotel y no ofrecen
+    // Hotel y sede acotan antes que nada, igual que la región: así los chips
+    // de disciplina de abajo cuentan sólo lo que toca ese lugar y no ofrecen
     // deportes que quedaron fuera del filtro.
-    return hotelFiltro ? porRegion.filter((tr) => tr.destinationHotelId === hotelFiltro) : porRegion;
-  }, [trips, delegationId, miembros, todas, delegacionFiltro, hotelFiltro]);
+    const nombreDe = (id: string) => nombreCrudo.get(id);
+    const porHotel = hotelFiltro ? porRegion.filter((tr) => tocaLugar(tr, hotelFiltro, nombreDe)) : porRegion;
+    return sedeFiltro ? porHotel.filter((tr) => tocaLugar(tr, sedeFiltro, nombreDe)) : porHotel;
+  }, [trips, delegationId, miembros, todas, delegacionFiltro, hotelFiltro, sedeFiltro, nombreCrudo]);
 
   const hayEnCurso = useMemo(
     () => propios.some((tr) => EN_CURSO.has(norm(tr.status))),

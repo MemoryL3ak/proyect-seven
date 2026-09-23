@@ -15,6 +15,7 @@ import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { delegationLabel } from "@/lib/delegations";
+import { lugaresDeViajes, tocaLugar } from "@/lib/lugares";
 import { legTypeLabel, tripTypeLabel } from "@/lib/tripTypes";
 import {
   CrownIcon,
@@ -357,19 +358,6 @@ const formatDayLabel = (dayKey: string) => {
 
 // Estados en los que un viaje sigue "vivo" y por tanto puede cancelarse.
 const CANCELLABLE_STATUSES = new Set(["REQUESTED", "SCHEDULED", "ASSIGNED", "EN_ROUTE", "PICKED_UP"]);
-
-/**
- * Nombre de lugar comparable: sin tildes, sin mayúsculas, sin dobles espacios.
- * Los viajes de planilla traen origen y destino escritos a mano, así que
- * "Comedor LRH (EX GALA)" y "comedor lrh  (ex gala)" tienen que calzar.
- */
-const normalizarLugar = (valor?: string | null) =>
-  String(valor ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/\s+/g, " ")
-    .trim();
 
 /**
  * Deja visible la opción ya elegida aunque el recorte de los otros filtros la
@@ -886,21 +874,11 @@ export default function TripsPage() {
   );
 
   /**
-   * Los dos lugares de un viaje, tal como los muestra su fila: origen y
-   * destino. Si el destino no trae texto se usa el nombre de la sede.
+   * Nombre del catálogo para un id de sede u hotel: los viajes manuales los
+   * guardan por id y sin texto. La regla de lugares vive en lib/lugares, la
+   * misma que usa el portal del coordinador.
    */
-  const lugaresDeViaje = (trip: Trip) => {
-    const destino =
-      (trip.destination || "").trim() ||
-      (trip.destinationVenueId ? (venues[trip.destinationVenueId]?.name || "").trim() : "");
-    return [(trip.origin || "").trim(), destino].filter((valor) => valor.length > 0);
-  };
-
-  const tocaLugar = (trip: Trip, nombre: string) => {
-    const objetivo = normalizarLugar(nombre);
-    if (!objetivo) return false;
-    return lugaresDeViaje(trip).some((texto) => normalizarLugar(texto) === objetivo);
-  };
+  const nombreDeLugar = (id: string) => venues[id]?.name ?? hoteles.find((h) => h.id === id)?.name;
 
   /**
    * Las cinco condiciones de la vista, cada una por su lado.
@@ -919,8 +897,8 @@ export default function TripsPage() {
     jornada: (trip: Trip) =>
       !ongoingDay || (trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha") === ongoingDay,
     disciplina: (trip: Trip) => !ongoingDiscipline || trip.discipline === ongoingDiscipline,
-    hotel: (trip: Trip) => !ongoingHotel || tocaLugar(trip, ongoingHotel),
-    sede: (trip: Trip) => !ongoingVenue || tocaLugar(trip, ongoingVenue),
+    hotel: (trip: Trip) => !ongoingHotel || tocaLugar(trip, ongoingHotel, nombreDeLugar),
+    sede: (trip: Trip) => !ongoingVenue || tocaLugar(trip, ongoingVenue, nombreDeLugar),
     conductor: (trip: Trip) =>
       !ongoingDriver ||
       (ongoingDriver === ONGOING_SIN_CONDUCTOR ? !trip.driverId : trip.driverId === ongoingDriver),
@@ -939,7 +917,7 @@ export default function TripsPage() {
   // Que cada uno ignore su propio filtro no hace daño: recalcular doscientos
   // viajes no se nota y la lista queda dicha entera.
   const dependenciasEnCurso = [
-    ongoingTrips, ongoingDay, ongoingDiscipline, ongoingHotel, ongoingVenue, ongoingDriver, venues,
+    ongoingTrips, ongoingDay, ongoingDiscipline, ongoingHotel, ongoingVenue, ongoingDriver, venues, hoteles,
   ];
 
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -985,49 +963,12 @@ export default function TripsPage() {
     return conElegida(lista, ongoingDiscipline, (d) => d.texto, () => ({ texto: ongoingDiscipline, total: 0 }));
   }, [baseSinDisciplina, ongoingDiscipline]);
 
-  /**
-   * Hoteles y sedes de los filtros. Salen de los propios viajes y no de los
-   * maestros: la planilla escribe "Hotel Hippocampus" y el maestro lo tiene
-   * como "Hippocampus Concón Resort & Club", así que al cruzarlos por nombre
-   * el hotel no aparecía en el filtro aunque estuviera en decenas de viajes.
-   * Con esto, cada opción existe porque algún viaje la nombra, y el filtro
-   * calza exacto contra ese mismo texto.
-   *
-   * La separación hotel/sede se decide por el maestro de Hoteles y, si el
-   * lugar no está ahí, por cómo se llama.
-   */
-  const lugaresDe = (viajes: Trip[]) => {
-    const nombresDeHotel = new Set(
-      hoteles.map((h) => normalizarLugar(h.name)).filter((valor) => valor.length > 0),
-    );
-    const suenaAHotel = /(hotel|hostal|apart|aparthotel|resort|cabana|cabanas|hosteria|residencial)/;
-
-    const porLugar = new Map<string, { texto: string; esHotel: boolean; total: number }>();
-    for (const trip of viajes) {
-      // Un viaje que sale y llega al mismo lugar cuenta una sola vez.
-      const clavesDelViaje = new Set<string>();
-      for (const texto of lugaresDeViaje(trip)) {
-        const clave = normalizarLugar(texto);
-        if (!clave || clavesDelViaje.has(clave)) continue;
-        clavesDelViaje.add(clave);
-        const actual = porLugar.get(clave);
-        if (actual) {
-          actual.total += 1;
-          continue;
-        }
-        porLugar.set(clave, {
-          texto,
-          esHotel: nombresDeHotel.has(clave) || suenaAHotel.test(clave),
-          total: 1,
-        });
-      }
-    }
-    return [...porLugar.values()].sort((a, b) => a.texto.localeCompare(b.texto, "es"));
-  };
+  // Hoteles y sedes de los filtros: salen de los propios viajes, con la
+  // regla compartida con el portal del coordinador (lib/lugares).
 
   const ongoingHoteles = useMemo(
     () => conElegida(
-      lugaresDe(baseSinHotel).filter((lugar) => lugar.esHotel),
+      lugaresDeViajes(baseSinHotel, hoteles, nombreDeLugar).filter((lugar) => lugar.esHotel),
       ongoingHotel,
       (h) => h.texto,
       () => ({ texto: ongoingHotel, esHotel: true, total: 0 }),
@@ -1038,7 +979,7 @@ export default function TripsPage() {
 
   const ongoingSedes = useMemo(
     () => conElegida(
-      lugaresDe(baseSinSede).filter((lugar) => !lugar.esHotel),
+      lugaresDeViajes(baseSinSede, hoteles, nombreDeLugar).filter((lugar) => !lugar.esHotel),
       ongoingVenue,
       (v) => v.texto,
       () => ({ texto: ongoingVenue, esHotel: false, total: 0 }),

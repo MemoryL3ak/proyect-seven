@@ -47,7 +47,7 @@ import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { canContactDrivers, isEventCoordinator, normalizeClientType } from "@/lib/clientTypes";
 import { catalogoConCache } from "@/lib/catalog-cache";
-import { mapaDeLugares } from "@/lib/lugares";
+import { mapaDeLugares, lugaresDeViajes, type LugarConCarga } from "@/lib/lugares";
 import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
 import { useI18n } from "@/lib/i18n";
@@ -454,9 +454,11 @@ export default function UserPortalPage() {
   const [delegacionesEvento, setDelegacionesEvento] = useState<DelegacionEvento[]>([]);
   const [comiteDelegacion, setComiteDelegacion] = useState("");
   const [comiteDisciplina, setComiteDisciplina] = useState("");
-  // Hotel de destino: hacia dónde van los conductores. Sólo acota la lista de
-  // traslados, que es la única pestaña donde la pregunta tiene sentido.
+  // Hotel y sede que tocan los traslados (texto de la planilla). Sólo acotan
+  // la lista de traslados, que es la única pestaña donde la pregunta tiene
+  // sentido.
   const [comiteHotel, setComiteHotel] = useState("");
+  const [comiteSede, setComiteSede] = useState("");
   const [foodLocations, setFoodLocations] = useState<FoodLocation[]>([]);
   const [foodMenus, setFoodMenus] = useState<FoodMenu[]>([]);
   // El home del portal es siempre Itinerario; sólo un refresh (F5) restaura
@@ -694,22 +696,23 @@ export default function UserPortalPage() {
     [venues, nombresHoteles, allAccommodations],
   );
   /**
-   * Hoteles que son destino real de algún traslado, para el filtro del
-   * Coordinador de Comité. Se arma desde los viajes y no desde el catálogo
-   * completo: ofrecer los hoteles a los que no va nadie llenaría la hoja de
-   * opciones que nunca devuelven resultados. Sin nombre resoluble se omite,
-   * porque un filtro que no dice a dónde apunta no sirve.
+   * Hoteles y sedes para los filtros del Coordinador, sacados de los propios
+   * viajes: los de la planilla traen origen y destino como texto y sin id, y
+   * cruzar por id dejaba tres hoteles de 330 viajes mientras el tracking del
+   * panel los mostraba todos. Misma regla que el panel (lib/lugares): cada
+   * opción existe porque algún viaje la toca, con su cuenta en la etiqueta.
    */
-  const hotelesDestino = useMemo(() => {
-    const vistos = new Map<string, string>();
-    for (const tr of delegationTrips) {
-      const id = tr.destinationHotelId;
-      if (!id || vistos.has(id)) continue;
-      const nombre = nombreRecinto.get(id);
-      if (nombre) vistos.set(id, nombre);
-    }
-    return [...vistos.entries()].map(([id, name]) => ({ id, name }));
-  }, [delegationTrips, nombreRecinto]);
+  const lugaresComite = useMemo(() => {
+    const crudo = new Map<string, string>();
+    for (const v of venues) if (v.id && v.name) crudo.set(v.id, v.name);
+    for (const h of allAccommodations) if (h.id && h.name) crudo.set(h.id, h.name);
+    const lugares = lugaresDeViajes(delegationTrips, allAccommodations, (id) => crudo.get(id));
+    const opcion = (l: LugarConCarga) => ({ value: l.texto, label: `${l.texto} · ${l.total}` });
+    return {
+      hoteles: lugares.filter((l) => l.esHotel).map(opcion),
+      sedes: lugares.filter((l) => !l.esHotel).map(opcion),
+    };
+  }, [delegationTrips, venues, allAccommodations]);
   const puntoViaje = (
     t: { originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; origin?: string | null; destination?: string | null },
     extremo: "origin" | "destination",
@@ -2211,9 +2214,12 @@ export default function UserPortalPage() {
                 disciplinaId={comiteDisciplina}
                 onDelegacion={setComiteDelegacion}
                 onDisciplina={setComiteDisciplina}
-                hoteles={hotelesDestino}
-                hotelId={comiteHotel}
+                hoteles={lugaresComite.hoteles}
+                hotel={comiteHotel}
                 onHotel={setComiteHotel}
+                sedes={lugaresComite.sedes}
+                sede={comiteSede}
+                onSede={setComiteSede}
               />
             )}
             {isComite && (
@@ -2225,6 +2231,7 @@ export default function UserPortalPage() {
                 delegacionFiltro={comiteDelegacion}
                 disciplinaExterna={comiteDisciplina}
                 hotelFiltro={comiteHotel}
+                sedeFiltro={comiteSede}
                 nombreDelegacion={(id) => {
                   const d = delegacionesEvento.find((x) => x.id === id);
                   return d ? nombreRegionCorto(d) : null;
