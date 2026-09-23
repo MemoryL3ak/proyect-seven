@@ -118,7 +118,11 @@ type Trip = {
   vehicleId?: string | null;
   vehiclePlate?: string | null;
   requesterAthleteId?: string | null;
+  originVenueId?: string | null;
   destinationVenueId?: string | null;
+  /** Hotel de origen/destino (Alojamiento). */
+  originHotelId?: string | null;
+  destinationHotelId?: string | null;
   /** Comedor de origen/destino (Alimentación → Lugares). */
   originFoodLocationId?: string | null;
   destinationFoodLocationId?: string | null;
@@ -214,7 +218,7 @@ type VenueItem = {
   region?: string | null;
 };
 /** Hotel del evento. Un viaje "toca" un hotel si sale o llega a él. */
-type HotelItem = { id: string; name?: string | null; eventId?: string | null };
+type HotelItem = { id: string; name?: string | null; eventId?: string | null; address?: string | null };
 
 type StatusTone = {
   label: string;
@@ -427,6 +431,26 @@ const safeText = (value?: string | null, fallback = "-") => {
 const buildVenueAddress = (venue?: VenueItem | null) => {
   if (!venue) return "-";
   return [venue.address, venue.commune, venue.region].filter(Boolean).join(" · ") || venue.name || "-";
+};
+
+/**
+ * Lo que se le manda a Google como origen o destino de la ruta. Con el nombre
+ * pelado del viaje ("Hotel Diego de Almagro") el mapa no sabía a cuál de los
+ * hoteles de la cadena apuntar y caía al mapa del mundo; con el lugar
+ * vinculado se manda la dirección, y el texto libre queda sólo de respaldo.
+ */
+const direccionParaMapa = (
+  ids: { venueId?: string | null; hotelId?: string | null; foodLocationId?: string | null },
+  texto: string | null | undefined,
+  catalogos: { venues: Record<string, VenueItem>; hoteles: HotelItem[]; comedores: HotelItem[] },
+): string | null => {
+  const sede = ids.venueId ? catalogos.venues[ids.venueId] : null;
+  if (sede) return buildVenueAddress(sede);
+  const hotel = ids.hotelId ? catalogos.hoteles.find((h) => h.id === ids.hotelId) : null;
+  if (hotel?.address) return hotel.address;
+  const comedor = ids.foodLocationId ? catalogos.comedores.find((c) => c.id === ids.foodLocationId) : null;
+  if (comedor?.address) return comedor.address;
+  return texto?.trim() || null;
 };
 
 const relativeMinutes = (value?: string | null) => {
@@ -2731,7 +2755,19 @@ export default function TripsPage() {
 
                 {/* La ruta: es lo otro que se viene a ver al abrir un viaje. */}
                 {(() => {
-                  const embed = buildDirectionsEmbed(infoTrip.origin, ivenue ? buildVenueAddress(ivenue) : infoTrip.destination);
+                  const catalogos = { venues, hoteles, comedores };
+                  const embed = buildDirectionsEmbed(
+                    direccionParaMapa(
+                      { venueId: infoTrip.originVenueId, hotelId: infoTrip.originHotelId, foodLocationId: infoTrip.originFoodLocationId },
+                      infoTrip.origin,
+                      catalogos,
+                    ),
+                    direccionParaMapa(
+                      { venueId: infoTrip.destinationVenueId, hotelId: infoTrip.destinationHotelId, foodLocationId: infoTrip.destinationFoodLocationId },
+                      infoTrip.destination,
+                      catalogos,
+                    ),
+                  );
                   if (!embed) return null;
                   return (
                     <div style={{ marginBottom: 14, borderRadius: 14, overflow: "hidden", border: `1px solid ${SURFACE.border}` }}>
