@@ -44,6 +44,7 @@ import {
   TrashIcon,
   ArrowRightIcon,
   ChevronRightIcon,
+  RefreshIcon,
 } from "@/components/ui/Icons";
 
 // ── Trip bulk import ─────────────────────────────────────────────────────────
@@ -1783,16 +1784,16 @@ export default function TripsPage() {
       <PageHeader
         title="Operaciones"
         description="Gestión de viajes."
-        action={
+        action={isMobile ? undefined : (
           <button
             type="button"
             onClick={() => loadData()}
             disabled={loading}
-            style={{ border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}
+            style={{ border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: isMobile ? "6px 12px" : "8px 16px", fontSize: isMobile ? "12px" : "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}
           >
             {loading ? "Actualizando..." : "Refrescar ahora"}
           </button>
-        }
+        )}
       />
 
 
@@ -1860,6 +1861,19 @@ export default function TripsPage() {
             >
               {t("Filtros")}{filtrosArribaActivos > 0 ? ` (${filtrosArribaActivos})` : ""}
             </button>
+            {/* El refresco vive aquí en el teléfono: arriba, solo en su fila,
+                dejaba un hueco antes de los KPIs. */}
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => loadData()}
+              disabled={loading}
+              aria-label="Refrescar"
+              title="Refrescar"
+              style={{ flexShrink: 0, width: 46, padding: 0, display: "inline-flex", alignItems: "center", justifyContent: "center", opacity: loading ? 0.6 : 1 }}
+            >
+              <RefreshIcon size={16} />
+            </button>
           </div>
         )}
         <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-4" style={{ display: isMobile && !filtrosArribaAbiertos ? "none" : undefined }}>
@@ -1898,7 +1912,9 @@ export default function TripsPage() {
           )}
         </div>
         {/* Selección múltiple: punto de entrada para limpiar de una vez una
-            importación completa, en vez de borrar viaje por viaje. */}
+            importación completa, en vez de borrar viaje por viaje. Es trabajo
+            de escritorio; en el teléfono la fila sólo estorbaba. */}
+        {!isMobile && (
         <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
           <button
             type="button"
@@ -1924,6 +1940,7 @@ export default function TripsPage() {
             </span>
           )}
         </div>
+        )}
         {error && <p className="mt-3 text-sm" style={{ color: STATE.danger }}>{error}</p>}
       </section>
 
@@ -1944,8 +1961,12 @@ export default function TripsPage() {
         }}>
           Origen del viaje
         </p>
-        {/* Cuatro botones en fila no caben en un teléfono: ahí van de a dos. */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))", alignItems: "stretch", gap: 6 }}>
+        {/* En el teléfono, cuatro tarjetas con subtítulo a dos columnas se
+            leían como un formulario; van como fichas de una fila que se
+            desliza, con icono, nombre y cuenta. */}
+        <div style={isMobile
+          ? { display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none", margin: "0 -6px", padding: "0 6px 2px" }
+          : { display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", alignItems: "stretch", gap: 6 }}>
           {(["", "PORTAL", "DAILY", "MANUAL"] as const).map((src) => {
             const meta = SOURCE_META[src];
             const count = src === ""
@@ -1960,13 +1981,13 @@ export default function TripsPage() {
                 type="button"
                 onClick={() => setTripSource(src)}
                 style={{
-                  flex: 1,
+                  flex: isMobile ? "0 0 auto" : 1,
                   minWidth: 0,
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
-                  padding: isMobile ? "10px 12px" : "12px 14px",
-                  borderRadius: 12,
+                  gap: isMobile ? 7 : 10,
+                  padding: isMobile ? "7px 10px 7px 8px" : "12px 14px",
+                  borderRadius: isMobile ? 99 : 12,
                   background: active ? meta.bg : SURFACE.card,
                   color: active ? meta.color : SURFACE.textSecondary,
                   border: active
@@ -1997,16 +2018,17 @@ export default function TripsPage() {
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: 32, height: 32,
-                  borderRadius: 8,
+                  width: isMobile ? 26 : 32, height: isMobile ? 26 : 32,
+                  borderRadius: isMobile ? 99 : 8,
                   background: active ? meta.color : meta.bg,
                   color: active ? SURFACE.card : meta.color,
                   flexShrink: 0,
                 }}>{meta.icon}</span>
                 <div style={{ flex: 1, minWidth: 0, lineHeight: 1.2 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: active ? meta.color : SURFACE.text }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: active ? meta.color : SURFACE.text, whiteSpace: isMobile ? "nowrap" : undefined }}>
                     {meta.label}
                   </div>
+                  {!isMobile && (
                   <div style={{
                     fontSize: 10,
                     fontWeight: 600,
@@ -2017,6 +2039,7 @@ export default function TripsPage() {
                   }}>
                     {src === "" ? "Todos los viajes" : src === "PORTAL" ? "Desde portal" : src === "DAILY" ? "Excel diario" : "Creados a mano"}
                   </div>
+                  )}
                 </div>
                 <span style={{
                   fontSize: 12,

@@ -1344,7 +1344,9 @@ export default function VehiclePositionsPage() {
               boxShadow: "0 1px 8px rgba(15,23,42,0.08)",
               position: "relative",
             }}>
-              <div style={{ position: "absolute", top: "12px", left: "12px", zIndex: 1000 }}>
+              {/* zIndex bajo a propósito: con 1000 la píldora quedaba por encima
+                  del menú lateral abierto en el teléfono (z 50). */}
+              <div style={{ position: "absolute", top: "12px", left: "12px", zIndex: 2 }}>
                 <span style={{
                   display: "inline-flex", alignItems: "center", gap: "6px",
                   background: "rgba(0,0,0,0.6)", borderRadius: "99px", padding: "5px 12px",
@@ -1359,7 +1361,7 @@ export default function VehiclePositionsPage() {
               {trackedDriversVisibles.length === 0 && (
                 <div style={{
                   position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
-                  zIndex: 999, background: "rgba(255,255,255,0.94)",
+                  zIndex: 3, background: "rgba(255,255,255,0.94)",
                   border: `1px solid ${SURFACE.border}`, borderRadius: "14px",
                   padding: "18px 22px", textAlign: "center" as const, maxWidth: "min(320px, calc(100% - 24px))", width: "max-content",
                   boxShadow: "0 8px 24px rgba(15,23,42,0.12)",

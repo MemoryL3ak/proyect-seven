@@ -1069,7 +1069,9 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
             position: "fixed",
             bottom: 100,
             right: 24,
-            zIndex: 41,
+            // Bajo el velo del menú lateral del teléfono (z 40): con 41 el
+            // aviso quedaba encendido encima del cajón abierto.
+            zIndex: 39,
             maxWidth: 280,
             padding: "14px 18px",
             borderRadius: 16,
@@ -1143,7 +1145,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           // apila ENCIMA de él (72 + 48 + 12) y con más z que el lanzador, pero
           // menos que el panel del chat abierto (115): con bottom 88 quedaba
           // tapado por la pastilla del chat y no se podía tocar.
-          zIndex: compact ? 112 : 40,
+          zIndex: compact ? 112 : 39,
           ...(fabPos
             ? { left: fabPos.x, top: fabPos.y }
             // En el panel del teléfono (app staff) hay barra inferior de
