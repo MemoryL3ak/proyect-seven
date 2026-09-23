@@ -460,18 +460,19 @@ export default function PremiacionesPage() {
             value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
         {events.length > 0 && (
-          <StyledSelect wrapperStyle={{ maxWidth: 220 }} value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
+          <StyledSelect wrapperClassName="md:max-w-[220px]" value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
             <option value="">{t("Todos los eventos")}</option>
             {events.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
           </StyledSelect>
         )}
         {disciplineOptions.length > 0 && (
-          <StyledSelect wrapperStyle={{ maxWidth: 200 }} value={disciplineFilter} onChange={(e) => setDisciplineFilter(e.target.value)}>
+          <StyledSelect wrapperClassName="md:max-w-[200px]" value={disciplineFilter} onChange={(e) => setDisciplineFilter(e.target.value)}>
             <option value="">{t("Todas las disciplinas")}</option>
             {disciplineOptions.map((d) => <option key={d} value={d}>{d}</option>)}
           </StyledSelect>
         )}
-        <StyledSelect wrapperStyle={{ maxWidth: 170 }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        {/* En teléfono los filtros van a ancho completo; el tope solo aplica en escritorio. */}
+        <StyledSelect wrapperClassName="md:max-w-[170px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">{t("Todos los estados")}</option>
           <option value="PROGRAMADA">{t("Programadas")}</option>
           <option value="REALIZADA">{t("Realizadas")}</option>
@@ -638,7 +639,7 @@ export default function PremiacionesPage() {
       {formOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.45)" }}
           onClick={() => !savingForm && !deleting && setFormOpen(false)}>
-          <div className="surface rounded-2xl p-5 w-full max-w-lg space-y-4" style={{ maxHeight: "92vh", overflowY: "auto" }}
+          <div className="surface rounded-2xl p-5 w-full max-w-lg space-y-4" style={{ maxHeight: "calc(100dvh - 32px)", overflowY: "auto" }}
             onClick={(e) => e.stopPropagation()}>
             <div>
               <h3 className="text-lg font-bold" style={{ color: SURFACE.text }}>
@@ -756,7 +757,7 @@ export default function PremiacionesPage() {
 
             {message && <p className="text-sm" style={{ color: STATE.dangerText }}>{message}</p>}
 
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               {formEditingId ? (
                 <button type="button" onClick={deletePremiacion} disabled={savingForm || deleting}
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg"

@@ -288,7 +288,7 @@ export default function DistribucionHotelera() {
           ))}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex flex-wrap items-center gap-2">
           {cambios.size > 0 && (
             <span className="text-xs text-amber-300">
               {cambios.size} {cambios.size === 1 ? t("cambio sin guardar") : t("cambios sin guardar")}
@@ -326,7 +326,7 @@ export default function DistribucionHotelera() {
       ) : columnas.length === 0 ? (
         <p className="text-sm text-white/50">{t("Este evento todavía no tiene disciplinas cargadas.")}</p>
       ) : (
-        <div style={{ overflowX: "auto", border: `1px solid var(--border)`, borderRadius: 12 }}>
+        <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch", border: `1px solid var(--border)`, borderRadius: 12 }}>
           <table className="table text-xs" style={{ borderCollapse: "separate", borderSpacing: 0 }}>
             <thead>
               <tr>

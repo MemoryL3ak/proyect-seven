@@ -21,6 +21,12 @@ const PRINT_CSS = `
   @media screen {
     .print-show { display: none !important; }
   }
+  /* Teléfono: el cuerpo del manual y la portada pierden los márgenes de
+     página impresa, que a 390 px dejaban una columna de texto muy angosta. */
+  @media screen and (max-width: 767px) {
+    #manual-body { padding: 20px 16px 48px !important; }
+    #manual-cover { padding: 32px 0 28px !important; }
+  }
 `;
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -862,7 +868,7 @@ export default function ManualPage() {
           gap: 10,
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <Link
             href="/ayuda"
             style={{
@@ -918,6 +924,7 @@ export default function ManualPage() {
       >
         {/* ── Cover page ─────────────────────────────────────────────────── */}
         <div
+          id="manual-cover"
           className="no-break"
           style={{
             textAlign: "center",

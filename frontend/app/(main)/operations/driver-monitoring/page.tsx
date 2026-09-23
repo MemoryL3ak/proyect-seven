@@ -630,7 +630,7 @@ export default function DriverMonitoringPage() {
             boxShadow: "0 1px 4px rgba(15,23,42,0.04)",
           }}
         >
-          <div className="flex items-center justify-between p-4" style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
+          <div className="flex flex-wrap items-center justify-between gap-2 p-4" style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
             <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: SURFACE.textSecondary }}>
               {t("Mapa de conductores")}
             </h2>
@@ -658,8 +658,8 @@ export default function DriverMonitoringPage() {
               </p>
             </div>
           ) : (
-            <div style={{ padding: 16 }}>
-              <DriverPresenceMap markers={markers} height={420} />
+            <div style={{ padding: isMobile ? 8 : 16 }}>
+              <DriverPresenceMap markers={markers} height={isMobile ? 340 : 420} />
             </div>
           )}
         </section>
@@ -702,7 +702,7 @@ export default function DriverMonitoringPage() {
         >
           {/* Table header bar */}
           <div
-            className="flex items-center justify-between p-4"
+            className="flex flex-wrap items-center justify-between gap-2 p-4"
             style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}
           >
             <h2
@@ -786,7 +786,7 @@ export default function DriverMonitoringPage() {
                       </div>
                     )}
                     {/* Última conexión · sesión */}
-                    <div style={{ display: "flex", justifyContent: "space-between", gap: 8, marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${SURFACE.borderMuted}` }}>
+                    <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 8, marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${SURFACE.borderMuted}` }}>
                       <span style={{ fontSize: 11, color: SURFACE.textMuted }}>
                         {t("Última conexión")}: <b style={{ color: SURFACE.textStrong, fontWeight: 600 }}>{ago(d.secondsSinceSeen)}</b>
                       </span>

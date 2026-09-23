@@ -103,11 +103,12 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
     .join("") || "U";
 
   return (
-    <header className="flex flex-wrap items-center justify-between gap-4 mb-6 pb-5" style={{
+    <header className="flex items-center justify-between gap-3 mb-4 pb-3 md:gap-4 md:mb-6 md:pb-5" style={{
       borderBottom: `1px solid ${SURFACE.border}`,
     }}>
-      {/* Left: hamburger + logo + title */}
-      <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+      {/* Left: hamburger + logo + title. En el teléfono (app staff) el logo y
+          el separador se ocultan y el título ocupa la línea completa. */}
+      <div style={{ display: "flex", alignItems: "center", gap: "14px", minWidth: 0, flex: 1 }}>
         <button
           type="button"
           className="topbar-hamburger"
@@ -133,6 +134,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
         </button>
 
         <img
+          className="topbar-logo"
           src="/branding/LOGO-SEVEN-1.png"
           alt="Seven Arena"
           style={{
@@ -141,18 +143,18 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
             filter: "drop-shadow(0 2px 6px rgba(15,23,42,0.12))",
           }}
         />
-        <div style={{ width: "1px", height: "22px", background: `linear-gradient(to bottom, transparent, ${SURFACE.borderStrong}, transparent)` }} />
-        <div>
-          <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.1, color: SURFACE.text }}>
+        <div className="topbar-divider" style={{ width: "1px", height: "22px", background: `linear-gradient(to bottom, transparent, ${SURFACE.borderStrong}, transparent)` }} />
+        <div style={{ minWidth: 0 }}>
+          <h2 className="topbar-title" style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.02em", lineHeight: 1.15, color: SURFACE.text }}>
             {title}
           </h2>
         </div>
       </div>
 
       {/* Right: profile + logout */}
-      <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
         {/* Profile badge */}
-        <div style={{
+        <div className="topbar-profile" style={{
           display: "flex",
           alignItems: "center",
           gap: "10px",
@@ -178,7 +180,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
           }}>
             {initials}
           </div>
-          <div style={{ minWidth: 0 }}>
+          <div className="topbar-profile-text" style={{ minWidth: 0 }}>
             <p style={{
               margin: 0,
               fontSize: "12px",
@@ -211,10 +213,14 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
         {/* Logout */}
         <button
           type="button"
+          className="topbar-logout"
           onClick={() => { clearTokens(); router.push("/login"); }}
+          aria-label="Cerrar sesión"
+          title="Cerrar sesión"
           style={{
             display: "inline-flex",
             alignItems: "center",
+            justifyContent: "center",
             gap: "8px",
             height: "40px",
             padding: "0 14px",
@@ -233,7 +239,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
             <polyline points="10 17 15 12 10 7" />
             <line x1="15" y1="12" x2="3" y2="12" />
           </svg>
-          Cerrar sesión
+          <span className="topbar-logout-label">Cerrar sesión</span>
         </button>
       </div>
     </header>

@@ -11,6 +11,7 @@ import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import { isEventCoordinator, isMissionHead } from "@/lib/clientTypes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import StyledSelect from "@/components/StyledSelect";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import CoordinadoresHotel, {
@@ -272,6 +273,13 @@ export default function ResourceScreen({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(() => buildInitial(config.fields));
   const [editingId, setEditingId] = useState<string | null>(null);
+  // En el teléfono (app staff) el formulario de alta ocupaba varias pantallas
+  // antes de llegar a la lista: se pliega tras un botón "Nuevo registro" y se
+  // abre solo al editar.
+  const isMobile = useIsMobile();
+  const [formOpen, setFormOpen] = useState(false);
+  const formRef = useRef<HTMLElement | null>(null);
+  const formCollapsible = isMobile && viewMode === "both";
   const [participantEditingId, setParticipantEditingId] = useState<string | null>(
     null
   );
@@ -1879,6 +1887,10 @@ export default function ResourceScreen({
   };
 
   const handleEdit = (item: Record<string, any>) => {
+    if (formCollapsible) {
+      setFormOpen(true);
+      requestAnimationFrame(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
     const next = buildInitial(config.fields);
     if (config.endpoint === "/delegations") {
       setParticipantEditingId(item.id ?? null);
@@ -2760,12 +2772,28 @@ export default function ResourceScreen({
     <div className="space-y-6">
       <PageHeader title={config.name} description={config.description} />
 
-      {viewMode !== "table" ? (
-      <section className="surface p-6" style={{ borderTop: "2px solid var(--brand)" }}>
+      {formCollapsible && !formOpen && !editingId ? (
+        <button
+          type="button"
+          className="btn btn-primary"
+          style={{ width: "100%", padding: "12px 16px", fontSize: "14px" }}
+          onClick={() => setFormOpen(true)}
+        >
+          + {t("Nuevo registro")}
+        </button>
+      ) : null}
+
+      {viewMode !== "table" && (!formCollapsible || formOpen || editingId) ? (
+      <section ref={formRef} className="surface p-6" style={{ borderTop: "2px solid var(--brand)", scrollMarginTop: "12px" }}>
         <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
           <h4 className="font-bold text-xl" style={{ color: "var(--text)" }}>
             {editingId ? t("Editar registro") : t("Nuevo registro")}
           </h4>
+          {!editingId && formCollapsible && (
+            <button className="btn btn-ghost" onClick={() => setFormOpen(false)}>
+              {t("Cerrar")}
+            </button>
+          )}
           {editingId && (
             <button
               className="btn btn-ghost"

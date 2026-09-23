@@ -5,6 +5,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
 import PageHeader from "@/components/ui/PageHeader";
@@ -355,6 +356,8 @@ function fromLocalDateTimeInput(value: string) {
 
 export default function SportsCalendarPage() {
   const { t } = useI18n();
+  // La columna fija de la línea de tiempo va en estilos inline: sin media queries.
+  const isMobile = useIsMobile();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [entries, setEntries] = useState<SportsEvent[]>([]);
   const [eventOptions, setEventOptions] = useState<EventOption[]>([]);
@@ -1037,7 +1040,7 @@ export default function SportsCalendarPage() {
         iconBg={`linear-gradient(135deg, ${BRAND.blue} 0%, #1f4e8c 100%)`}
         accentStrip="teal"
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className="btn btn-ghost text-xs" type="button" onClick={downloadTemplate}>
               {t("Template CSV")}
             </button>
@@ -1070,7 +1073,7 @@ export default function SportsCalendarPage() {
       <section className="surface rounded-2xl p-4 space-y-3">
         {/* Vista + búsqueda */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex bg-gray-50 rounded-xl p-1 gap-1"
+          <div className="flex flex-wrap bg-gray-50 rounded-xl p-1 gap-1"
             style={{ background: SURFACE.borderMuted }}>
             {(["month", "week", "day", "timeline"] as const).map((v) => {
               const active = view === v;
@@ -1199,8 +1202,9 @@ export default function SportsCalendarPage() {
           </div>
         </div>
 
-        <div style={{ marginTop: "16px", overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+        {/* 7 columnas: en teléfono la tabla scrollea en horizontal sin ensanchar la página. */}
+        <div style={{ marginTop: "16px", overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
+          <table style={{ width: "100%", minWidth: "760px", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
               <tr style={{ background: SURFACE.bg }}>
                 {["Delegacion", "Personas", "Disciplinas", "Fecha de llegada (AND)", "Fechas de entrenamiento", "Fechas de pruebas", "Fecha de retiro (AND)"].map((h) => (
@@ -1293,7 +1297,9 @@ export default function SportsCalendarPage() {
           </div>
 
           {view === "week" && (
-            <div className="grid grid-cols-7 gap-2">
+            /* En teléfono la semana scrollea en horizontal en vez de aplastar los 7 días. */
+            <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
+            <div className="grid grid-cols-7 gap-2" style={{ minWidth: 640 }}>
               {weekDays.map((day) => {
                 const key = isoDayKey(day);
                 const isToday = key === todayKey;
@@ -1352,6 +1358,7 @@ export default function SportsCalendarPage() {
                 );
               })}
             </div>
+            </div>
           )}
 
           {view === "day" && (
@@ -1407,6 +1414,9 @@ export default function SportsCalendarPage() {
           )}
 
           {view === "month" && (<>
+          {/* En teléfono el mes scrollea en horizontal en vez de aplastar los 7 días. */}
+          <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
+          <div style={{ minWidth: 640 }}>
           <div className="grid grid-cols-7 gap-2 text-center text-xs uppercase tracking-[0.14em]"
             style={{ color: SURFACE.textFaint }}>
             {WEEK_LABELS.map((label) => <div key={label}>{t(label)}</div>)}
@@ -1512,6 +1522,8 @@ export default function SportsCalendarPage() {
                 </button>
               );
             })}
+          </div>
+          </div>
           </div>
           </>)}
 
@@ -1622,7 +1634,7 @@ export default function SportsCalendarPage() {
                   </div>
                 ) : (
                   <div style={{ display: "flex", border: `1px solid ${SURFACE.border}`, borderRadius: 14, overflow: "hidden", background: SURFACE.card }}>
-                    <div style={{ flex: "0 0 190px", borderRight: `1px solid ${SURFACE.border}`, background: SURFACE.card }}>
+                    <div style={{ flex: isMobile ? "0 0 120px" : "0 0 190px", borderRight: `1px solid ${SURFACE.border}`, background: SURFACE.card }}>
                       <div style={{ height: HEADER_H, display: "flex", alignItems: "center", padding: "0 14px", fontSize: 10, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: SURFACE.textFaint, borderBottom: `1px solid ${SURFACE.border}`, background: SURFACE.bg }}>
                         {t("Disciplina")}
                       </div>
@@ -1633,7 +1645,7 @@ export default function SportsCalendarPage() {
                       ))}
                     </div>
 
-                    <div style={{ flex: 1, overflowX: "auto" }}>
+                    <div style={{ flex: 1, minWidth: 0, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                       <div style={{ minWidth: N * COL_MIN }}>
                         <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: `1px solid ${SURFACE.border}`, background: SURFACE.bg }}>
                           {days.map((d, i) => {
@@ -1704,7 +1716,7 @@ export default function SportsCalendarPage() {
               <p style={{ fontSize: "11px", color: SURFACE.textFaint }}>
                 {t("Llegada y retiro se calculan automaticamente desde AND (no se cargan manualmente aqui).")}
               </p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 <StyledSelect
                   value={getMetaString(newEntry.metadata, "disciplineCategory")}
                   onChange={(e) =>
@@ -1825,7 +1837,7 @@ export default function SportsCalendarPage() {
                 <span style={{ fontSize: 12, fontWeight: 600, color: SURFACE.text }}>{t("Rango de fechas (crear para varios días)")}</span>
               </div>
               {(newEntry.metadata as any)?.useDateRange ? (
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   <div>
                     <label style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, display: "block", marginBottom: 2 }}>{t("Fecha inicio")}</label>
                     <input className="input" type="date" value={(newEntry.metadata as any)?.rangeStart || ""} onChange={(e) => setNewEntry({ ...newEntry, metadata: { ...newEntry.metadata, rangeStart: e.target.value } })} required />
@@ -1873,7 +1885,7 @@ export default function SportsCalendarPage() {
           </form>
 
           <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "16px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "12px", flexWrap: "wrap" }}>
               <div>
                 <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Actividades del dia")}</span>
                 <p style={{ marginTop: "2px", fontSize: "13px", fontWeight: 700, color: SURFACE.text }}>{dayLabel(selectedDay)}</p>

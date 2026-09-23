@@ -1355,7 +1355,7 @@ export default function BulkImportPanel({
             <p style={{ fontSize: "13px", color: "var(--text-muted)", marginTop: "2px" }}>{t("Mostrando")} {previewRows.length} {t("de")} {normalizedRows.length} {t("fila(s).")}</p>
           </div>
           <div style={{ maxWidth: "100%", overflow: "hidden", borderRadius: "10px", border: "1px solid var(--border)" }}>
-            <div className="max-w-full overflow-x-auto overscroll-x-contain">
+            <div className="max-w-full overflow-x-auto overscroll-x-contain" style={{ WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "max-content", minWidth: "100%", textAlign: "left", fontSize: "12px", color: "var(--text-muted)" }}>
               <thead>
                 <tr>

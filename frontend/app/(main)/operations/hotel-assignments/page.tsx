@@ -208,7 +208,7 @@ const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <section className="surface rounded-2xl p-3">
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             className={`btn ${tab === "manual" ? "btn-primary" : "btn-ghost"}`}
             onClick={() => setTab("manual")}
@@ -241,7 +241,7 @@ const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
               una vez, sin tener que crear una ficha por persona. */}
           <AsignarPorGrupo onAsignado={() => setRefreshKey((k) => k + 1)} />
 <section className="surface rounded-2xl p-5 space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="section-label">{t("Carga masiva de asignaciones")}</p>
               <button type="button" className="btn btn-ghost text-xs" onClick={downloadBulkTemplate}>
                 {t("Descargar plantilla")}

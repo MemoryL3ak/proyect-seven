@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { XIcon, PencilIcon, UsersIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -148,6 +149,7 @@ const emptyResForm = (salonId = "", date = "") => ({
 
 export default function SalonesPage() {
   const { locale, t } = useI18n();
+  const isMobile = useIsMobile();
   const dateLocale = locale === "en" ? "en-US" : locale === "pt" ? "pt-BR" : "es-CL";
 
   // ── Palette ─────────────────────────────────────────────────────────────────
@@ -410,7 +412,7 @@ export default function SalonesPage() {
             {t("Gestiona salones, reservas y visualiza la ocupación semanal")}
           </p>
         </div>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
           <button onClick={openCreateSalon} style={{
             padding: "8px 16px", borderRadius: "10px", fontSize: "13px", fontWeight: 600,
             background: SURFACE.card, border: `1px solid ${SURFACE.border}`, color: SURFACE.textMuted, cursor: "pointer",
@@ -490,7 +492,7 @@ export default function SalonesPage() {
                   </button>
                 </div>
 
-                <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "10px" }}>
                   <span style={{
                     fontSize: "10px", fontWeight: 600, padding: "2px 8px", borderRadius: "99px",
                     background: salon.status === "ACTIVE" ? "rgba(16,185,129,0.1)" : "rgba(239,68,68,0.1)",
@@ -573,7 +575,7 @@ export default function SalonesPage() {
 
                 {/* Semana con ancho mínimo: en pantallas chicas scrollea
                     horizontal en vez de aplastar los 7 días. */}
-                <div style={{ overflowX: "auto" }}>
+                <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
                 <div style={{ minWidth: "640px" }}>
                 {/* Day column headers */}
                 <div style={{ display: "grid", gridTemplateColumns: "52px repeat(7, 1fr)", borderBottom: `1px solid ${pal.headerBorder}` }}>
@@ -725,7 +727,7 @@ export default function SalonesPage() {
                 background: pal.panelBg, border: `1px solid ${pal.panelBorder}`,
                 borderRadius: "16px", padding: "20px", boxShadow: pal.shadow,
               }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "10px", marginBottom: "14px" }}>
                   <div>
                     <p style={{ fontSize: "11px", color: pal.accent, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase" }}>
                       {t("Próximas reservas")}
@@ -830,8 +832,8 @@ export default function SalonesPage() {
         >
           <div style={{
             background: pal.panelBg, border: `1px solid ${pal.panelBorder}`,
-            borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "480px",
-            boxShadow: "0 24px 80px rgba(0,0,0,0.4)",
+            borderRadius: "20px", padding: isMobile ? "20px 16px" : "28px", width: "100%", maxWidth: "480px",
+            boxShadow: "0 24px 80px rgba(0,0,0,0.4)", maxHeight: "calc(100dvh - 24px)", overflowY: "auto",
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
               <h2 style={{ fontSize: "17px", fontWeight: 800, color: pal.text }}>
@@ -852,7 +854,7 @@ export default function SalonesPage() {
                 <label style={labelStyle}>{t("Nombre")} *</label>
                 <input style={inputStyle} value={salonForm.name} onChange={(e) => setSalonForm({ ...salonForm, name: e.target.value })} placeholder={t("Ej: Sala Andino")} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={labelStyle}>{t("Tipo")}</label>
                   <select style={inputStyle} value={salonForm.type} onChange={(e) => setSalonForm({ ...salonForm, type: e.target.value })}>
@@ -866,7 +868,7 @@ export default function SalonesPage() {
                   </select>
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={labelStyle}>{t("Capacidad (personas)")}</label>
                   <input style={inputStyle} type="number" min={0} value={salonForm.capacity} onChange={(e) => setSalonForm({ ...salonForm, capacity: e.target.value })} placeholder="0" />
@@ -886,7 +888,7 @@ export default function SalonesPage() {
               <p style={{ marginTop: "12px", fontSize: "12px", color: STATE.danger }}>{modalError}</p>
             )}
 
-            <div style={{ display: "flex", gap: "8px", marginTop: "20px", justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "20px", justifyContent: "flex-end" }}>
               {editingSalon && (
                 <button
                   onClick={() => { setShowSalonModal(false); setConfirmDelete({ type: "salon", id: editingSalon.id }); }}
@@ -921,8 +923,8 @@ export default function SalonesPage() {
         >
           <div style={{
             background: pal.panelBg, border: `1px solid ${pal.panelBorder}`,
-            borderRadius: "20px", padding: "28px", width: "100%", maxWidth: "520px",
-            boxShadow: "0 24px 80px rgba(0,0,0,0.4)", maxHeight: "90vh", overflowY: "auto",
+            borderRadius: "20px", padding: isMobile ? "20px 16px" : "28px", width: "100%", maxWidth: "520px",
+            boxShadow: "0 24px 80px rgba(0,0,0,0.4)", maxHeight: "calc(100dvh - 24px)", overflowY: "auto",
           }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
               <h2 style={{ fontSize: "17px", fontWeight: 800, color: pal.text }}>
@@ -943,7 +945,7 @@ export default function SalonesPage() {
                 <label style={labelStyle}>{t("Título")} *</label>
                 <input style={inputStyle} value={resForm.title} onChange={(e) => setResForm({ ...resForm, title: e.target.value })} placeholder={t("Ej: Reunión técnica delegaciones")} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={labelStyle}>{t("Fecha inicio")} *</label>
                   <input style={inputStyle} type="date" value={resForm.startDate} onChange={(e) => setResForm({ ...resForm, startDate: e.target.value, endDate: resForm.endDate || e.target.value })} />
@@ -953,7 +955,7 @@ export default function SalonesPage() {
                   <input style={inputStyle} type="date" value={resForm.endDate} onChange={(e) => setResForm({ ...resForm, endDate: e.target.value })} />
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={labelStyle}>{t("Hora inicio")} *</label>
                   <input style={inputStyle} type="time" value={resForm.startTime} onChange={(e) => setResForm({ ...resForm, startTime: e.target.value })} />
@@ -963,7 +965,7 @@ export default function SalonesPage() {
                   <input style={inputStyle} type="time" value={resForm.endTime} onChange={(e) => setResForm({ ...resForm, endTime: e.target.value })} />
                 </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={labelStyle}>{t("Organizador")}</label>
                   <input style={inputStyle} value={resForm.organizerName} onChange={(e) => setResForm({ ...resForm, organizerName: e.target.value })} placeholder={t("Nombre")} />
@@ -1010,7 +1012,7 @@ export default function SalonesPage() {
               <p style={{ marginTop: "12px", fontSize: "12px", color: STATE.danger }}>{modalError}</p>
             )}
 
-            <div style={{ display: "flex", gap: "8px", marginTop: "20px", justifyContent: "flex-end" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginTop: "20px", justifyContent: "flex-end" }}>
               {editingRes && (
                 <button
                   onClick={() => { setShowResModal(false); setConfirmDelete({ type: "res", id: editingRes.id }); }}
@@ -1043,7 +1045,7 @@ export default function SalonesPage() {
         }}>
           <div style={{
             background: pal.panelBg, border: `1px solid rgba(239,68,68,0.35)`,
-            borderRadius: "18px", padding: "28px", width: "100%", maxWidth: "380px",
+            borderRadius: "18px", padding: isMobile ? "22px 16px" : "28px", width: "100%", maxWidth: "380px",
             boxShadow: "0 24px 80px rgba(0,0,0,0.5)", textAlign: "center",
           }}>
             <p style={{ fontWeight: 700, fontSize: "16px", color: SURFACE.text }}>{t("¿Confirmar eliminación?")}</p>

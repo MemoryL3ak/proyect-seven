@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import StyledSelect from "@/components/StyledSelect";
 
 type EventItem = { id: string; name?: string | null };
@@ -507,6 +508,7 @@ async function loadLogoAsDataUrl(path: string) {
 
 export default function HealthPage() {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
 
   const pal = {
     panelBg: SURFACE.card, panelBorder: SURFACE.border, panelShadow: "0 1px 4px rgba(15,23,42,0.06)",
@@ -1195,7 +1197,7 @@ export default function HealthPage() {
       {activeSubsection === "dashboard" ? (
         <section style={{ borderRadius: "24px", overflow: "hidden", boxShadow: pal.panelShadow }}>
           {/* ── Command panel header */}
-          <div style={{ background: pal.panelBg, border: `1px solid ${pal.panelBorder}`, borderRadius: "24px", padding: "28px 32px 24px", position: "relative", overflow: "hidden" }}>
+          <div style={{ background: pal.panelBg, border: `1px solid ${pal.panelBorder}`, borderRadius: "24px", padding: isMobile ? "18px 16px 16px" : "28px 32px 24px", position: "relative", overflow: "hidden" }}>
             {/* Ambient orbs */}
             <div style={{ position: "absolute", top: "-60px", right: "-40px", width: "260px", height: "260px", borderRadius: "50%", background: "rgba(33,208,179,0.06)", filter: "blur(60px)", pointerEvents: "none" }} />
             <div style={{ position: "absolute", bottom: "-40px", left: "20%", width: "200px", height: "200px", borderRadius: "50%", background: "rgba(33,208,179,0.04)", filter: "blur(50px)", pointerEvents: "none" }} />
@@ -1220,7 +1222,7 @@ export default function HealthPage() {
             </div>
           </div>
 
-          <div style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: "none", borderRadius: "0 0 24px 24px", padding: "24px 28px 28px" }}>
+          <div style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderTop: "none", borderRadius: "0 0 24px 24px", padding: isMobile ? "16px 14px 18px" : "24px 28px 28px" }}>
 
             {/* ── Primary KPI cards */}
             <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
@@ -1393,8 +1395,9 @@ export default function HealthPage() {
                 if (visibleRows.length === 0) {
                   return <p style={{ fontSize: "13px", color: pal.textMuted, textAlign: "center", padding: "20px 0" }}>{t("No hay participantes que coincidan con el filtro.")}</p>;
                 }
+                // overflowX: en teléfono la tabla es más ancha que la tarjeta y sin esto ensanchaba la página entera.
                 return (
-                  <div style={{ maxHeight: 420, overflowY: "auto", border: `1px solid ${pal.cardBorder}`, borderRadius: "12px" }}>
+                  <div style={{ maxHeight: 420, overflowY: "auto", overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch", border: `1px solid ${pal.cardBorder}`, borderRadius: "12px" }}>
                     <table style={{ width: "100%", fontSize: "13px", borderCollapse: "collapse" }}>
                       <thead>
                         <tr style={{ background: pal.rowBg, position: "sticky", top: 0, zIndex: 1 }}>
@@ -1496,7 +1499,7 @@ export default function HealthPage() {
               {bulkPreview.length === 0 ? (
                 <p style={{ marginTop: "12px", fontSize: "13px", color: SURFACE.textFaint }}>{t("Aún no hay archivo cargado.")}</p>
               ) : (
-                <div style={{ marginTop: "12px", overflowX: "auto" }}>
+                <div style={{ marginTop: "12px", overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                     <thead>
                       <tr style={{ borderBottom: `1px solid ${SURFACE.border}` }}>

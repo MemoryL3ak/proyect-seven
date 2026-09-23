@@ -299,7 +299,7 @@ export default function EventDocumentsPage() {
           {error && <p style={{ fontSize: 12.5, color: STATE.danger }}>{error}</p>}
           {message && <p style={{ fontSize: 12.5, color: STATE.successText }}>{message}</p>}
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button type="submit" disabled={saving}
               style={{
                 padding: "10px 22px", borderRadius: 12, border: "none",
@@ -333,7 +333,7 @@ export default function EventDocumentsPage() {
         )}
 
         {!loading && docs.length > 0 && (
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${pal.cardBorder}`, background: SURFACE.bg }}>

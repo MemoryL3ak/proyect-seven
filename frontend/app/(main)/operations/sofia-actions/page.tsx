@@ -103,7 +103,7 @@ export default function SofiaActionsPage() {
           </span>
         }
         action={
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <button
               type="button"
               onClick={exportCsv}

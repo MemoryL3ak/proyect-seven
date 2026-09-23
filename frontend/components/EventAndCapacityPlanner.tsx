@@ -338,7 +338,7 @@ export default function EventAndCapacityPlanner() {
                   {t("Define cuanto deberia registrar cada delegacion para la disciplina seleccionada.")}
                 </p>
               </div>
-              <div className="grid grid-cols-3 gap-2 text-xs">
+              <div className="grid grid-cols-3 gap-2 text-xs w-full sm:w-auto">
                 <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
                   <div className="text-white/50">{t("Objetivo")}</div>
                   <div className="font-semibold text-white">{selectedDisciplineSummary.total}</div>
@@ -361,7 +361,7 @@ export default function EventAndCapacityPlanner() {
             ) : eventDelegations.length === 0 ? (
               <p className="mt-4 text-sm text-white/50">{t("No hay delegaciones creadas para este evento.")}</p>
             ) : (
-              <div className="mt-4 overflow-x-auto">
+              <div className="mt-4 overflow-x-auto max-w-full" style={{ WebkitOverflowScrolling: "touch" }}>
                 <table className="table">
                   <thead>
                     <tr>

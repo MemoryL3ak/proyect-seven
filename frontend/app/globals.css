@@ -1267,6 +1267,78 @@ label > *:first-child {
     padding: 7px 9px;
     font-size: 12px;
   }
+
+  /* Campos de fecha y hora en iOS: WebKit les da un ancho intrínseco y se
+     salen de la tarjeta aunque tengan width:100% (se veía en Registro /
+     Eventos, "Fecha inicio" cortada por la derecha). Sin apariencia nativa y
+     con min-width:0 respetan el contenedor. */
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  input[type="month"],
+  input[type="week"] {
+    -webkit-appearance: none;
+    appearance: none;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 42px;
+  }
+  input::-webkit-date-and-time-value {
+    text-align: left;
+    min-height: 1.5em;
+  }
+  /* Ningún campo puede ser más ancho que su tarjeta. */
+  .input,
+  select,
+  textarea,
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]) {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Tarjetas: en el teléfono el aire de escritorio (24 px por lado, y
+     tarjeta dentro de tarjeta) dejaba los campos a media pantalla. */
+  .surface.p-5, .surface.p-6, .surface.p-7, .surface.p-8,
+  .surface-premium.p-5, .surface-premium.p-6, .surface-premium.p-7, .surface-premium.p-8 {
+    padding: 14px !important;
+  }
+  .surface-premium.p-14 {
+    padding: 28px 16px !important;
+    min-height: 0 !important;
+  }
+  /* Títulos de pantalla: 24 px ocupaban dos líneas con cualquier módulo. */
+  h1.text-2xl { font-size: 1.25rem; }
+  h4.text-xl { font-size: 1.05rem; }
+
+  /* Header del panel: nombre y rol se ocultan (queda la inicial) y "Cerrar
+     sesión" pasa a solo icono, para que el título tenga la línea completa. */
+  .topbar-profile-text,
+  .topbar-logout-label {
+    display: none !important;
+  }
+  .topbar-logout {
+    width: 36px;
+    height: 36px !important;
+    padding: 0 !important;
+  }
+  .topbar-profile {
+    padding: 3px !important;
+    gap: 0 !important;
+    border-radius: 50% !important;
+  }
+  .topbar-title {
+    font-size: 1.05rem !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .topbar-divider,
+  .topbar-logo {
+    display: none !important;
+  }
 }
 @media (min-width: 768px) {
   .topbar-hamburger {

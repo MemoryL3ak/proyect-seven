@@ -5,6 +5,7 @@ import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { formatFileSize } from "@/lib/event-documents";
 import StyledSelect from "@/components/StyledSelect";
 import { FileTextIcon, DownloadIcon } from "@/components/ui/Icons";
@@ -77,6 +78,8 @@ const formatFecha = (iso?: string | null) => {
 
 export default function AdminArchivosPage() {
   const { t } = useI18n();
+  // Filtros con estilos inline: en teléfono cada select ocupa el ancho completo.
+  const isMobile = useIsMobile();
   const [inventario, setInventario] = useState<Inventario | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -250,7 +253,7 @@ export default function AdminArchivosPage() {
             style={{ width: "100%", padding: "9px 12px", borderRadius: 10, border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.text, fontSize: 13 }}
           />
         </label>
-        <label className="text-sm block" style={{ minWidth: 200 }}>
+        <label className="text-sm block" style={{ minWidth: 200, flex: isMobile ? "1 1 200px" : undefined }}>
           <span className="block mb-1" style={{ fontSize: 12, color: SURFACE.textMuted }}>{t("Almacén")}</span>
           <StyledSelect value={bucket} onChange={(e) => { setBucket(e.target.value); setPagina(0); }}>
             <option value="">{t("Todos")}</option>
@@ -259,7 +262,7 @@ export default function AdminArchivosPage() {
             ))}
           </StyledSelect>
         </label>
-        <label className="text-sm block" style={{ minWidth: 150 }}>
+        <label className="text-sm block" style={{ minWidth: 150, flex: isMobile ? "1 1 150px" : undefined }}>
           <span className="block mb-1" style={{ fontSize: 12, color: SURFACE.textMuted }}>{t("Tipo")}</span>
           <StyledSelect value={tipo} onChange={(e) => { setTipo(e.target.value); setPagina(0); }}>
             <option value="">{t("Todos")}</option>
@@ -268,7 +271,7 @@ export default function AdminArchivosPage() {
             ))}
           </StyledSelect>
         </label>
-        <label className="text-sm block" style={{ minWidth: 170 }}>
+        <label className="text-sm block" style={{ minWidth: 170, flex: isMobile ? "1 1 150px" : undefined }}>
           <span className="block mb-1" style={{ fontSize: 12, color: SURFACE.textMuted }}>{t("Estado")}</span>
           <StyledSelect value={estado} onChange={(e) => { setEstado(e.target.value); setPagina(0); }}>
             <option value="">{t("Todos")}</option>
@@ -296,7 +299,7 @@ export default function AdminArchivosPage() {
             {archivos.length === 0 ? t("No hay archivos cargados.") : t("Ningún archivo coincide con los filtros.")}
           </p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
               <thead>
                 <tr>{["", "Archivo", "Categoría", "Registro", "Tamaño", "Subido", "Estado", ""].map((h, i) => (h ? th(h) : <th key={`v${i}`} style={{ borderBottom: `1px solid ${SURFACE.border}` }} />))}</tr>
@@ -372,10 +375,10 @@ export default function AdminArchivosPage() {
           role="dialog"
           aria-modal="true"
           onClick={() => setVistaPrevia(null)}
-          style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(15,23,42,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24 }}
+          style={{ position: "fixed", inset: 0, zIndex: 60, background: "rgba(15,23,42,0.7)", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? 12 : 24 }}
         >
-          <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: 16, padding: 16, maxWidth: "90vw", maxHeight: "90vh", display: "flex", flexDirection: "column", gap: 10 }}>
-            <img src={vistaPrevia.url} alt={vistaPrevia.nombre} style={{ maxWidth: "85vw", maxHeight: "75vh", objectFit: "contain", borderRadius: 10 }} />
+          <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: 16, padding: isMobile ? 10 : 16, maxWidth: isMobile ? "calc(100vw - 24px)" : "90vw", maxHeight: isMobile ? "calc(100dvh - 24px)" : "90vh", display: "flex", flexDirection: "column", gap: 10 }}>
+            <img src={vistaPrevia.url} alt={vistaPrevia.nombre} style={{ maxWidth: isMobile ? "100%" : "85vw", maxHeight: isMobile ? "calc(100dvh - 120px)" : "75vh", objectFit: "contain", borderRadius: 10 }} />
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, fontSize: 12, color: SURFACE.textMuted }}>
               <span>{t(vistaPrevia.categoria)}{vistaPrevia.entidadNombre ? ` · ${vistaPrevia.entidadNombre}` : ""}</span>
               <button type="button" onClick={() => setVistaPrevia(null)} style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${SURFACE.border}`, background: SURFACE.card, cursor: "pointer", fontSize: 12, fontWeight: 600, color: SURFACE.textSecondary }}>{t("Cerrar")}</button>

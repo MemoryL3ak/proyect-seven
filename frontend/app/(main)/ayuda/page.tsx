@@ -762,7 +762,7 @@ export default function AyudaPage() {
     <div className="space-y-5">
 
       {/* ── Header card */}
-      <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section className="px-4 py-5 md:px-7 md:py-6" style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: tFaint }}>Seven Arena</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
@@ -817,13 +817,13 @@ export default function AyudaPage() {
 
       {/* ── Quick Start ─────────────────────────────────────────────────────── */}
       {!search && activeSection === "inicio" && (
-        <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section className="px-4 py-5 md:px-7 md:py-6" style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
             <ZapIcon size={16} color={acc} strokeWidth={2} />
             <h2 style={{ fontSize: 15, fontWeight: 700, color: tPrim, margin: 0 }}>{t("Inicio rápido")}</h2>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14, marginBottom: 32 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 14, marginBottom: 32 }}>
             {STEPS.map((card) => (
               <Link key={card.step} href={card.href} style={{ textDecoration: "none" }}>
                 <div style={{ background: SURFACE.bg, border: `1px solid ${cBorder}`, borderRadius: 14, padding: "18px", display: "flex", gap: 14, alignItems: "flex-start", transition: "border-color 150ms, box-shadow 150ms" }}
@@ -864,12 +864,12 @@ export default function AyudaPage() {
 
       {/* ── Módulos ─────────────────────────────────────────────────────────── */}
       {!search && activeSection === "modulos" && (
-        <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section className="px-4 py-5 md:px-7 md:py-6" style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
             <LayoutGridIcon size={15} color={acc} strokeWidth={2} />
             <h2 style={{ fontSize: 15, fontWeight: 700, color: tPrim, margin: 0 }}>{t("Módulos de la plataforma")}</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))", gap: 14 }}>
             {MODULES.map((mod) => (
               <ModuleCardItem key={mod.title} mod={mod} />
             ))}
@@ -879,7 +879,7 @@ export default function AyudaPage() {
 
       {/* ── FAQ ──────────────────────────────────────────────────────────────── */}
       {!search && activeSection === "faq" && (
-        <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section className="px-4 py-5 md:px-7 md:py-6" style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
             <MessageIcon size={15} color={acc} strokeWidth={2} />
             <h2 style={{ fontSize: 15, fontWeight: 700, color: tPrim, margin: 0 }}>{t("Preguntas frecuentes")}</h2>
@@ -895,11 +895,11 @@ export default function AyudaPage() {
 
       {/* ── Search results ──────────────────────────────────────────────────── */}
       {search && (
-        <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section className="px-4 py-5 md:px-7 md:py-6" style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           {filteredModules.length > 0 && (
             <div style={{ marginBottom: 28 }}>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: tFaint, margin: "0 0 12px" }}>{t("Módulos")} ({filteredModules.length})</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))", gap: 12 }}>
                 {filteredModules.map((mod) => (
                   <ModuleCardItem key={mod.title} mod={mod} highlight={search} />
                 ))}
@@ -915,7 +915,7 @@ export default function AyudaPage() {
           {filteredCuaderno.length > 0 && (
             <div>
               <p style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.14em", textTransform: "uppercase", color: tFaint, margin: "0 0 12px" }}>{t("Cuaderno de Cargo")} ({filteredCuaderno.length})</p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 12 }}>
                 {filteredCuaderno.map((entry, i) => (
                   <CuadernoCard key={`${entry.term}-${i}`} entry={entry} loc={loc} highlight={search} />
                 ))}
@@ -1103,7 +1103,7 @@ function CuadernoSection({
   // el contenido de referencia de Santiago 2023 queda plegado.
   const [hasPdf, setHasPdf] = useState(false);
   return (
-    <section style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+    <section className="px-4 py-5 md:px-7 md:py-6" style={{ background: cBg, border: `1px solid ${cBorder}`, borderRadius: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 16 }}>
         <div style={{ width: 38, height: 38, borderRadius: 10, background: `${acc}15`, border: `1px solid ${acc}30`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1152,7 +1152,7 @@ function CuadernoSection({
               <h3 style={{ fontSize: 13, fontWeight: 700, color: tPrim, margin: 0 }}>{c.label[loc]}</h3>
               <span style={{ fontSize: 11, fontWeight: 600, color: tFaint }}>· {entries.length}</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 12 }}>
               {entries.map((entry, i) => (
                 <CuadernoCard key={`${entry.term}-${i}`} entry={entry} loc={loc} />
               ))}
@@ -1195,7 +1195,7 @@ function CuadernoSection({
               <h3 style={{ fontSize: 13, fontWeight: 700, color: tPrim, margin: 0 }}>{c.label[loc]}</h3>
               <span style={{ fontSize: 11, fontWeight: 600, color: tFaint }}>· {entries.length}</span>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(280px, 100%), 1fr))", gap: 12 }}>
               {entries.map((entry, i) => (
                 <CuadernoCard key={`${entry.term}-${i}`} entry={entry} loc={loc} />
               ))}

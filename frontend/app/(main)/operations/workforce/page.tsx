@@ -964,7 +964,7 @@ export default function WorkforcePage() {
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: "rgba(0,0,0,0.55)" }} onClick={() => setModal(null)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto"
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-xl max-h-[calc(100dvh-32px)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
               <h2 className="text-lg font-semibold">

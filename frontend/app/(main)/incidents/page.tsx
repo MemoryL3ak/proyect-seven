@@ -225,7 +225,7 @@ export default function IncidentsPage() {
     new Date(iso).toLocaleString("es-CL", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 min-w-0">
       <PageHeader
         title={t("Incidencias")}
         description={
@@ -292,14 +292,15 @@ export default function IncidentsPage() {
       <section className="surface rounded-2xl p-6">
         <div className="flex flex-wrap items-center gap-3 mb-4">
           <h4 className="font-display text-xl text-ink mr-auto">{t("Incidencias")}</h4>
-          <select className="input max-w-[200px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          {/* En teléfono los filtros ocupan todo el ancho; el tope es solo de escritorio. */}
+          <select className="input max-w-full md:max-w-[200px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="">{t("Todos los estados")}</option>
             {STATUSES.map(([v, l]) => (
               <option key={v} value={v}>{t(l)}</option>
             ))}
           </select>
           {!scope && (
-            <select className="input max-w-[260px]" value={delegationFilter} onChange={(e) => setDelegationFilter(e.target.value)}>
+            <select className="input max-w-full md:max-w-[260px]" value={delegationFilter} onChange={(e) => setDelegationFilter(e.target.value)}>
               <option value="">{t("Todas las delegaciones")}</option>
               {delegations.map((d) => (
                 <option key={d.id} value={d.id}>{d.label}</option>
@@ -352,7 +353,7 @@ export default function IncidentsPage() {
                       {resolving?.id === i.id ? (
                         <>
                           <input
-                            className="input flex-1 min-w-[220px]"
+                            className="input flex-1 min-w-[160px]"
                             placeholder={t("Cómo se resolvió")}
                             value={resolving.text}
                             onChange={(e) => setResolving({ id: i.id, text: e.target.value })}

@@ -284,7 +284,7 @@ export default function FleetAvailabilityPage() {
       {/* Tabs + búsqueda */}
       <section className="surface rounded-2xl p-4 space-y-3">
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex gap-1 p-1 rounded-xl" style={{ background: SURFACE.borderMuted }}>
+          <div className="flex flex-wrap gap-1 p-1 rounded-xl" style={{ background: SURFACE.borderMuted }}>
             {(["both", "drivers", "vehicles"] as const).map(tab => {
               const active = activeTab === tab;
               return (
@@ -699,7 +699,7 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
             <input className="input" value={form.fullName}
               onChange={(e) => setForm(f => ({ ...f, fullName: e.target.value }))} />
           </label>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="text-sm block">
               <span className="block mb-1">{t("RUT *")}</span>
               <input className="input font-mono" value={form.rut}
@@ -712,7 +712,7 @@ function DriverFormModal({ eventId, onClose, onSaved }: {
                 onChange={(e) => setForm(f => ({ ...f, licenseNumber: e.target.value }))} />
             </label>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="text-sm block">
               <span className="block mb-1">{t("Email")}</span>
               <input className="input" type="email" value={form.email}
@@ -816,14 +816,14 @@ function VehicleFormModal({ eventId, onClose, onSaved }: {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
       style={{ background: "rgba(0,0,0,0.55)" }} onClick={onClose}>
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg"
+      <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}>
         <div className="p-5 border-b flex items-center justify-between">
           <h2 className="text-lg font-bold">{t("Nuevo vehículo")}</h2>
           <button onClick={onClose} className="text-sm" aria-label="Cerrar"><XIcon size={16} /></button>
         </div>
         <div className="p-5 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="text-sm block">
               <span className="block mb-1">{t("Patente *")}</span>
               <input className="input font-mono uppercase" value={form.plate}
@@ -840,7 +840,7 @@ function VehicleFormModal({ eventId, onClose, onSaved }: {
               </select>
             </label>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="text-sm block">
               <span className="block mb-1">{t("Marca")}</span>
               <input className="input" value={form.brand}
@@ -852,7 +852,7 @@ function VehicleFormModal({ eventId, onClose, onSaved }: {
                 onChange={(e) => setForm(f => ({ ...f, model: e.target.value }))} />
             </label>
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             <label className="text-sm block">
               <span className="block mb-1">{t("Capacidad (pax)")}</span>
               <input className="input" type="number" min={0} value={form.capacity}

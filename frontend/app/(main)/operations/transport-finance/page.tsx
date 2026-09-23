@@ -443,7 +443,7 @@ export default function TransportFinancePage() {
           </span>
         }
         action={
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button className="btn btn-ghost" onClick={() => { setCargando(true); void cargar(); }}>
               <RefreshIcon /> {t("Actualizar")}
             </button>
@@ -646,7 +646,7 @@ export default function TransportFinancePage() {
           </section>
 
           {/* ══ Pestañas ══ */}
-          <div className="flex gap-1 p-1 rounded-xl w-fit" style={{ background: "var(--elevated)" }}>
+          <div className="flex flex-wrap gap-1 p-1 rounded-xl w-fit max-w-full" style={{ background: "var(--elevated)" }}>
             {([
               ["resumen", t("Resumen por dimensión")],
               ["detalle", `${t("Detalle de servicios")} (${detalle.length})`],
@@ -674,7 +674,7 @@ export default function TransportFinancePage() {
 
               <TablaProveedores filas={resumen.porProveedor} />
 
-              <section className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(320px,1fr))" }}>
+              <section className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fit,minmax(min(320px,100%),1fr))" }}>
                 <DesgloseBarras
                   titulo={t("Por tipo de flota")}
                   subtitulo={t("Dónde se concentra el gasto de la operación")}
@@ -724,7 +724,7 @@ function EjecucionPresupuestaria({
 
   return (
     <div className="surface p-5 rounded-2xl">
-      <div className="flex items-start justify-between gap-3 mb-4">
+      <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
         <div>
           <p className="text-[10px] font-bold uppercase" style={{ letterSpacing: "0.14em", color: "var(--text-muted)" }}>
             {t("Ejecución del contrato")}
@@ -747,7 +747,7 @@ function EjecucionPresupuestaria({
         </p>
       ) : (
         <>
-          <div className="grid grid-cols-3 gap-3 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <Cifra etiqueta={t("Adjudicado")} valor={clpCorto(p.adjudicado)} detalle={clp(p.adjudicado)} />
             <Cifra etiqueta={t("Consumido")} valor={clpCorto(p.consumido)} detalle={pct(p.pctConsumido, 2)} color={BRAND.tealInk} />
             <Cifra
@@ -887,7 +887,7 @@ function SerieDiaria({ serie }: { serie: Resumen["serieDiaria"] }) {
             {t("Ingreso y costo por día")}
           </h2>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-4">
           <Leyenda color={BRAND.teal} texto={t("Ingreso")} />
           <Leyenda color={STATE.danger} texto={t("Costo")} />
           <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>

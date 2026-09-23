@@ -260,10 +260,10 @@ export default function DisciplinesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <section className="glass rounded-3xl p-6 flex flex-wrap items-center justify-between gap-4">
+      <section className="glass rounded-3xl p-4 md:p-6 flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.3em]" style={{ color: SURFACE.textFaint }}>Masters</p>
-          <h1 className="font-sans font-bold text-3xl" style={{ color: SURFACE.text }}>{t("Disciplinas")}</h1>
+          <h1 className="font-sans font-bold text-2xl md:text-3xl" style={{ color: SURFACE.text }}>{t("Disciplinas")}</h1>
           <p className="text-sm mt-1" style={{ color: SURFACE.textMuted }}>
             {t("Organiza deportes y sus pruebas (ej: Atletismo → 100m planos, 4×100…)")}
           </p>
@@ -287,10 +287,10 @@ export default function DisciplinesPage() {
           const open = expanded.has(sport.id);
           return (
             <div key={sport.id} className="surface rounded-2xl overflow-hidden">
-              <div className="flex items-center gap-3 px-5 py-4">
+              <div className="flex flex-wrap items-center gap-3 px-4 md:px-5 py-4">
                 <button
                   onClick={() => toggle(sport.id)}
-                  className="flex items-center gap-3 flex-1 text-left min-w-0"
+                  className="flex items-center gap-3 flex-[1_1_220px] text-left min-w-0"
                 >
                   <span
                     className="flex-shrink-0 transition-transform"
@@ -307,7 +307,7 @@ export default function DisciplinesPage() {
                     </span>
                   </span>
                 </button>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 ml-auto">
                   <button
                     onClick={() => openAddSub(sport.id)}
                     className="btn btn-ghost text-xs py-1 px-3"
@@ -321,7 +321,7 @@ export default function DisciplinesPage() {
               {open && (
                 <div style={{ borderTop: `1px solid ${SURFACE.borderMuted}` }}>
                   {subs.length === 0 ? (
-                    <p className="px-14 py-3 text-xs italic" style={{ color: SURFACE.textFaint }}>
+                    <p className="px-5 md:px-14 py-3 text-xs italic" style={{ color: SURFACE.textFaint }}>
                       {t("Sin pruebas. Haz clic en \"+ Prueba\" para agregar.")}
                     </p>
                   ) : (
@@ -329,7 +329,7 @@ export default function DisciplinesPage() {
                       {subs.map((sub, i) => (
                         <div
                           key={sub.id}
-                          className="flex items-center gap-3 px-14 py-2.5 transition-colors"
+                          className="flex items-center gap-3 px-5 md:px-14 py-2.5 transition-colors"
                           style={i > 0 ? { borderTop: `1px solid ${SURFACE.borderMuted}` } : undefined}
                           onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = SURFACE.bg; }}
                           onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = ""; }}
@@ -376,7 +376,7 @@ export default function DisciplinesPage() {
       {/* Modal */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="surface rounded-3xl p-6 w-full max-w-md space-y-4">
+          <div className="surface rounded-3xl p-5 md:p-6 w-full max-w-md space-y-4 max-h-[calc(100dvh-32px)] overflow-y-auto">
             <h2 className="font-bold text-xl" style={{ color: SURFACE.text }}>
               {modal.editing
                 ? t(modal.mode === "sport" ? "Editar deporte" : "Editar prueba")
@@ -411,7 +411,7 @@ export default function DisciplinesPage() {
               </label>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <label className={etiquetaCampo} style={{ color: SURFACE.textFaint }}>
                 {t("Categoría")}
                 <StyledSelect

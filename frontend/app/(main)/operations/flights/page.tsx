@@ -15,6 +15,7 @@ import {
   TrashIcon,
 } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { filterValidatedAthletes } from "@/lib/athletes";
 
 type Flight = {
@@ -163,6 +164,8 @@ const EMPTY_FORM = { flightNumber: "", airline: "", arrivalTime: "", origin: "",
 
 export default function FlightsPage() {
   const { t } = useI18n();
+  // Layout inline: en teléfono se apilan las grillas y se achican los paddings.
+  const isMobile = useIsMobile();
   const [flights, setFlights] = useState<Flight[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [athletes, setAthletes] = useState<AthleteItem[]>([]);
@@ -439,7 +442,7 @@ export default function FlightsPage() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <section style={{ background: SURFACE.card, borderRadius: "24px", padding: "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: `3px solid ${BRAND.teal}` }}>
+      <section style={{ background: SURFACE.card, borderRadius: "24px", padding: isMobile ? "16px" : "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: `3px solid ${BRAND.teal}` }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
@@ -449,8 +452,8 @@ export default function FlightsPage() {
             <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: pal.textPrimary, lineHeight: 1.1 }}>{t("Monitor de vuelos")}</h1>
             <p style={{ fontSize: "13px", color: pal.textMuted, marginTop: "4px" }}>{t("Seguimiento en tiempo real · AviationStack")}</p>
           </div>
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            <select className="input" style={{ width: "200px", borderRadius: "12px" }} value={selectedEventId} onChange={e => setSelectedEventId(e.target.value)}>
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", width: isMobile ? "100%" : undefined }}>
+            <select className="input" style={{ width: isMobile ? "100%" : "200px", borderRadius: "12px" }} value={selectedEventId} onChange={e => setSelectedEventId(e.target.value)}>
               <option value="">{t("Todos los eventos")}</option>
               {events.map(ev => <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>)}
             </select>
@@ -481,7 +484,7 @@ export default function FlightsPage() {
       </section>
 
       {/* Quick flight search */}
-      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "18px", padding: "16px 20px", boxShadow: pal.shadow }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "18px", padding: isMobile ? "14px" : "16px 20px", boxShadow: pal.shadow }}>
         <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: ACCENT.violetLight, marginBottom: "8px" }}>{t("Búsqueda rápida de vuelo")}</p>
         <div style={{ display: "flex", gap: "8px" }}>
           <input className="input flex-1" placeholder={t("Ingresa número de vuelo (ej: LA180, AV457)...")} value={quickSearch}
@@ -552,7 +555,7 @@ export default function FlightsPage() {
               </div>
 
               {/* Ruta: origen — trayecto — destino */}
-              <div style={{ marginTop: "14px", display: "grid", gridTemplateColumns: "minmax(0,1fr) minmax(90px,1.1fr) minmax(0,1fr)", gap: "10px", alignItems: "center" }}>
+              <div style={{ marginTop: "14px", display: "grid", gridTemplateColumns: isMobile ? "minmax(0,1fr) 56px minmax(0,1fr)" : "minmax(0,1fr) minmax(90px,1.1fr) minmax(0,1fr)", gap: "10px", alignItems: "center" }}>
                 {endpoint({
                   label: t("Salida"), iata: quickResult.depIata, city: quickResult.depCity, airport: quickResult.depAirport,
                   scheduled: quickResult.depScheduled, real: depReal, changed: depChanged,
@@ -601,14 +604,15 @@ export default function FlightsPage() {
           <SearchIcon size={14} color={SURFACE.textFaint} strokeWidth={2} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
           <input className="input" style={{ paddingLeft: "32px", borderRadius: "10px", width: "100%" }} placeholder={t("Buscar vuelo, aerolínea u origen...")} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         </div>
-        <input className="input" type="date" style={{ borderRadius: "10px", width: "160px" }} value={filterDate} onChange={e => setFilterDate(e.target.value)} />
-        <select className="input" style={{ borderRadius: "10px", width: "160px" }} value={filterDelegation} onChange={e => setFilterDelegation(e.target.value)}>
+        {/* En teléfono los filtros se reparten de a dos por fila en vez de anchos fijos. */}
+        <input className="input" type="date" style={{ borderRadius: "10px", width: isMobile ? "auto" : "160px", flex: isMobile ? "1 1 140px" : undefined }} value={filterDate} onChange={e => setFilterDate(e.target.value)} />
+        <select className="input" style={{ borderRadius: "10px", width: isMobile ? "auto" : "160px", flex: isMobile ? "1 1 140px" : undefined }} value={filterDelegation} onChange={e => setFilterDelegation(e.target.value)}>
           <option value="">{t("Delegación")}</option>
           {delegations.filter(d => selectedEventId ? d.eventId === selectedEventId : true).map(d => (
             <option key={d.id} value={d.id}>{d.countryCode || d.id}</option>
           ))}
         </select>
-        <select className="input" style={{ borderRadius: "10px", width: "140px" }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+        <select className="input" style={{ borderRadius: "10px", width: isMobile ? "auto" : "140px", flex: isMobile ? "1 1 140px" : undefined }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
           <option value="">{t("Estado")}</option>
           <option value="arrived">{t("Arribado")}</option>
           <option value="today">{t("Hoy")}</option>
@@ -640,7 +644,7 @@ export default function FlightsPage() {
         <div style={{ background: SURFACE.card, borderRadius: "18px", border: `1px solid ${SURFACE.border}`, overflow: "hidden", boxShadow: pal.shadow }}>
           {/* overflow hidden del card recortaba columnas en móvil: la tabla
               scrollea horizontal dentro de su propio contenedor. */}
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
           <table style={{ width: "100%", minWidth: "820px", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: SURFACE.bg }}>
@@ -712,7 +716,13 @@ export default function FlightsPage() {
                   {isExpanded && (
                     <tr key={`${flight.id}-detail`}>
                       <td colSpan={9} style={{ padding: "0 14px 14px", background: SURFACE.bg, borderBottom: `1px solid ${SURFACE.border}` }}>
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", padding: "14px 0" }}>
+                        {/* En teléfono el detalle se apila y queda pegado (sticky) al borde
+                            izquierdo del scroll horizontal: así se lee sin desplazar la
+                            tabla de 820 px. */}
+                        <div style={{
+                          display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px", padding: "14px 0",
+                          ...(isMobile ? { position: "sticky" as const, left: 0, width: "calc(100vw - 60px)", maxWidth: "100%" } : {}),
+                        }}>
                           {/* Passengers */}
                           <div>
                             <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "8px" }}>{t("Pasajeros AND")} ({passengers.length})</p>
@@ -792,7 +802,7 @@ export default function FlightsPage() {
               {t("No hay viajes Transfer In para los filtros actuales.")}
             </p>
           ) : (
-            <div style={{ overflowX: "auto" }}>
+            <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", minWidth: "680px", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: SURFACE.bg }}>
@@ -851,12 +861,12 @@ export default function FlightsPage() {
       {/* Add flight modal */}
       {modal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div style={{ background: SURFACE.card, borderRadius: "24px", width: "100%", maxWidth: "440px", borderTop: `3px solid ${BRAND.teal}`, boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
-            <div style={{ padding: "24px 24px 16px" }}>
+          <div style={{ background: SURFACE.card, borderRadius: "24px", width: "100%", maxWidth: "440px", maxHeight: "calc(100dvh - 32px)", overflowY: "auto", borderTop: `3px solid ${BRAND.teal}`, boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
+            <div style={{ padding: isMobile ? "16px 16px 12px" : "24px 24px 16px" }}>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>{t("Nuevo")}</p>
               <h2 style={{ fontSize: "1.25rem", fontWeight: 800, color: pal.textPrimary }}>{t("Agregar vuelo")}</h2>
             </div>
-            <div style={{ padding: "0 24px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
+            <div style={{ padding: isMobile ? "0 16px 12px" : "0 24px 16px", display: "flex", flexDirection: "column", gap: "12px" }}>
               <label style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.labelColor, display: "flex", flexDirection: "column", gap: "4px" }}>
                 {t("Evento")}
                 <select className="input" style={{ borderRadius: "10px" }} value={form.eventId || selectedEventId} onChange={e => setForm(f => ({ ...f, eventId: e.target.value }))}>
@@ -875,7 +885,7 @@ export default function FlightsPage() {
                   </button>
                 </div>
               </label>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? "12px" : "8px" }}>
                 <label style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.labelColor, display: "flex", flexDirection: "column", gap: "4px" }}>
                   {t("Aerolínea *")}
                   <input className="input" style={{ borderRadius: "10px" }} value={form.airline} placeholder={t("ej: LATAM")} onChange={e => setForm(f => ({ ...f, airline: e.target.value }))} />
@@ -895,7 +905,7 @@ export default function FlightsPage() {
               </label>
               {formError && <p style={{ fontSize: "12px", color: STATE.danger }}>{formError}</p>}
             </div>
-            <div style={{ padding: "12px 24px 20px", display: "flex", justifyContent: "flex-end", gap: "10px", borderTop: `1px solid ${SURFACE.borderMuted}` }}>
+            <div style={{ padding: isMobile ? "12px 16px 16px" : "12px 24px 20px", display: "flex", justifyContent: "flex-end", gap: "10px", borderTop: `1px solid ${SURFACE.borderMuted}` }}>
               <button onClick={() => setModal(false)} disabled={saving} style={{ padding: "10px 20px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: pal.textMuted, fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>{t("Cancelar")}</button>
               <button onClick={saveFlightForm} disabled={saving} style={{ padding: "10px 20px", borderRadius: "10px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
                 {saving ? t("Guardando...") : t("Guardar")}
@@ -908,8 +918,8 @@ export default function FlightsPage() {
       {/* Track modal */}
       {trackModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div style={{ background: SURFACE.card, borderRadius: "24px", width: "100%", maxWidth: "560px", borderTop: `3px solid ${BRAND.teal}`, boxShadow: "0 8px 40px rgba(15,23,42,0.2)", maxHeight: "90vh", display: "flex", flexDirection: "column" }}>
-            <div style={{ padding: "24px 24px 16px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexShrink: 0 }}>
+          <div style={{ background: SURFACE.card, borderRadius: "24px", width: "100%", maxWidth: "560px", borderTop: `3px solid ${BRAND.teal}`, boxShadow: "0 8px 40px rgba(15,23,42,0.2)", maxHeight: "calc(100dvh - 32px)", display: "flex", flexDirection: "column" }}>
+            <div style={{ padding: isMobile ? "16px 16px 12px" : "24px 24px 16px", display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", flexShrink: 0, flexWrap: "wrap" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                 <AirlineLogo iata={trackResult?.airlineIata} flightNumber={trackModal.flight.flightNumber} name={trackResult?.airlineName ?? trackModal.flight.airline} size={40} />
                 <div style={{ minWidth: 0 }}>
@@ -932,7 +942,7 @@ export default function FlightsPage() {
                   style={{ padding: "6px 12px", borderRadius: "99px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, fontSize: "13px", color: pal.textMuted, cursor: "pointer", display: "inline-flex" }} aria-label="Cerrar"><XIcon size={14} /></button>
               </div>
             </div>
-            <div style={{ overflowY: "auto", padding: "0 24px 24px", flex: 1 }}>
+            <div style={{ overflowY: "auto", padding: isMobile ? "0 16px 16px" : "0 24px 24px", flex: 1 }}>
               {tracking && !trackResult && (
                 <div style={{ padding: "32px", textAlign: "center", fontSize: "13px", color: pal.labelColor }}>{t("Consultando AviationStack...")}</div>
               )}
@@ -944,7 +954,7 @@ export default function FlightsPage() {
                 const hasDelay = (trackResult.arrDelayMinutes ?? 0) > 0 || (trackResult.depDelayMinutes ?? 0) > 0;
                 return (
                   <div className="space-y-4">
-                    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 18px", borderRadius: "16px", background: st.bg, border: `1px solid ${st.border}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 18px", borderRadius: "16px", background: st.bg, border: `1px solid ${st.border}`, flexWrap: "wrap" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                         {st.pulse && <span style={{ width: "10px", height: "10px", borderRadius: "50%", background: st.color, animation: "pulse 1.5s infinite", display: "inline-block" }} />}
                         <span style={{ fontSize: "15px", fontWeight: 800, color: st.color }}>{t(st.label)}</span>
@@ -962,7 +972,8 @@ export default function FlightsPage() {
                         {t("No hay datos del")} <b>{trackResult.requestedDate}</b> {t("para este vuelo (el plan actual de la API sólo entrega el vuelo vigente). Se muestra la operación del")} <b>{trackResult.flightDate}</b>.
                       </div>
                     )}
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 40px 1fr", gap: "8px", alignItems: "center" }}>
+                    {/* Salida / flecha / llegada: en teléfono se apilan y la flecha apunta hacia abajo. */}
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 40px 1fr", gap: "8px", alignItems: "center" }}>
                       <div style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "14px", padding: "14px 16px" }}>
                         <p style={{ fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor, marginBottom: "4px" }}>{t("Salida")}</p>
                         <p style={{ fontSize: "20px", fontWeight: 900, color: pal.textPrimary, letterSpacing: "0.06em" }}>{trackResult.depIata ?? "—"}</p>
@@ -976,7 +987,7 @@ export default function FlightsPage() {
                           {trackResult.depCheckInDesk && <p>{t("Check-in:")} <span style={{ fontWeight: 600, color: pal.textPrimary }}>{trackResult.depCheckInDesk}</span></p>}
                         </div>
                       </div>
-                      <div style={{ textAlign: "center" }}>
+                      <div style={{ textAlign: "center", transform: isMobile ? "rotate(90deg)" : undefined }}>
                         <ArrowRightIcon size={20} color={BRAND.teal} strokeWidth={2.5} />
                       </div>
                       <div style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: "14px", padding: "14px 16px" }}>
@@ -1023,7 +1034,7 @@ export default function FlightsPage() {
       {/* Delete confirmation modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+          <div style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "380px", padding: isMobile ? "20px" : "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
             <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <TrashIcon size={24} color={STATE.danger} strokeWidth={2} />
             </div>

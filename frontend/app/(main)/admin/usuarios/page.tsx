@@ -35,6 +35,7 @@ import {
 import { ALL_MODULES, MODULE_GROUPS, type AppModule } from "@/lib/modules";
 import StyledSelect from "@/components/StyledSelect";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 type SupabaseUser = {
@@ -248,6 +249,9 @@ function emptyForm() {
 // ── Component ──────────────────────────────────────────────────────────────
 export default function UsuariosPage() {
   const { t } = useI18n();
+  // Los paddings y grillas de esta pantalla van en estilos inline: sin media
+  // queries, el teléfono se resuelve con este hook.
+  const isMobile = useIsMobile();
 
   const pal = {
     accent: BRAND.teal,
@@ -490,7 +494,7 @@ export default function UsuariosPage() {
     <div className="space-y-5">
 
       {/* ── Header */}
-      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", marginBottom: "24px" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: isMobile ? "16px" : "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)", marginBottom: "24px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>Seven Arena</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
@@ -592,7 +596,7 @@ export default function UsuariosPage() {
               <StyledSelect
                 value={filterRole}
                 onChange={(e) => setFilterRole(e.target.value as Role | "")}
-                wrapperStyle={{ minWidth: "160px", flex: "none" }}
+                wrapperStyle={{ minWidth: "160px", flex: isMobile ? "1 1 150px" : "none" }}
               >
                 <option value="">{t("Todos los roles")}</option>
                 {ROLES.map((r) => <option key={r} value={r}>{t(r)}</option>)}
@@ -602,7 +606,7 @@ export default function UsuariosPage() {
               <StyledSelect
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value as UserStatus | "")}
-                wrapperStyle={{ minWidth: "150px", flex: "none" }}
+                wrapperStyle={{ minWidth: "150px", flex: isMobile ? "1 1 150px" : "none" }}
               >
                 <option value="">{t("Todos los estados")}</option>
                 <option value="active">{t("Activos")}</option>
@@ -624,7 +628,7 @@ export default function UsuariosPage() {
             }}>
               {/* En móvil la tabla-grid de 6 columnas scrollea horizontal en
                   vez de recortarse bajo el overflow hidden del card. */}
-              <div style={{ overflowX: "auto" }}>
+              <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
               <div style={{ minWidth: "760px" }}>
               {/* Table header */}
               <div style={{
@@ -832,7 +836,7 @@ export default function UsuariosPage() {
 
         {/* ── Tab: Roles ── */}
         {activeTab === "roles" && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "20px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(min(320px, 100%), 1fr))", gap: "20px" }}>
             {ROLES.map((role) => {
               const rc = roleColor(role);
               const roleUsers = users.filter((u) => u.role === role);
@@ -940,7 +944,7 @@ export default function UsuariosPage() {
             position: "fixed", inset: 0, zIndex: 1000,
             background: "rgba(0,0,0,0.7)", backdropFilter: "blur(6px)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "20px",
+            padding: isMobile ? "12px" : "20px",
           }}
           onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}
         >
@@ -950,7 +954,7 @@ export default function UsuariosPage() {
             borderRadius: "20px",
             width: "100%",
             maxWidth: "680px",
-            maxHeight: "90vh",
+            maxHeight: "calc(100dvh - 24px)",
             overflowY: "auto",
             boxShadow: "0 24px 80px rgba(0,0,0,0.6)",
             animation: "slide-up 300ms cubic-bezier(0.16,1,0.3,1) both",
@@ -960,7 +964,7 @@ export default function UsuariosPage() {
             {/* Modal header */}
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "24px 28px 20px",
+              padding: isMobile ? "16px 16px 14px" : "24px 28px 20px",
               borderBottom: `1px solid ${pal.modalBorder}`,
             }}>
               <div>
@@ -982,7 +986,7 @@ export default function UsuariosPage() {
             </div>
 
             {/* Modal body */}
-            <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: "22px" }}>
+            <div style={{ padding: isMobile ? "16px" : "24px 28px", display: "flex", flexDirection: "column", gap: "22px" }}>
 
               {/* Basic info */}
               <div>
@@ -1015,7 +1019,7 @@ export default function UsuariosPage() {
                     ))}
                   </div>
                 )}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>
                       {t("Nombre completo *")}
@@ -1085,7 +1089,7 @@ export default function UsuariosPage() {
                 <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: "0 0 14px" }}>
                   {t("Rol y estado")}
                 </h3>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
                   <div>
                     <label style={{ display: "block", fontSize: "12.5px", fontWeight: 600, color: pal.mTextMuted, marginBottom: "6px" }}>{t("Rol")}</label>
                     <StyledSelect
@@ -1111,7 +1115,7 @@ export default function UsuariosPage() {
 
               {/* Temp password */}
               <div>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "0 0 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "8px", margin: "0 0 14px" }}>
                     <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: 0 }}>
                       {editingUser ? t("Restablecer contraseña") : form.loginType === "username" ? t("Contraseña asignada") : t("Contraseña temporal")}
                     </h3>
@@ -1297,7 +1301,7 @@ export default function UsuariosPage() {
             {/* Modal footer */}
             {saveError && (
               <div style={{
-                margin: "0 28px 12px",
+                margin: isMobile ? "0 16px 12px" : "0 28px 12px",
                 padding: "10px 14px",
                 background: "rgba(239,68,68,0.1)",
                 border: "1px solid rgba(239,68,68,0.25)",
@@ -1310,7 +1314,7 @@ export default function UsuariosPage() {
             )}
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "flex-end", gap: "10px",
-              padding: "18px 28px",
+              padding: isMobile ? "14px 16px" : "18px 28px",
               borderTop: `1px solid ${pal.modalBorder}`,
             }}>
               <button
@@ -1366,7 +1370,7 @@ export default function UsuariosPage() {
             position: "fixed", inset: 0, zIndex: 60,
             background: "rgba(0,0,0,0.6)", backdropFilter: "blur(6px)",
             display: "flex", alignItems: "center", justifyContent: "center",
-            padding: "20px",
+            padding: isMobile ? "12px" : "20px",
           }}>
             <div style={{
               background: pal.modalBg,

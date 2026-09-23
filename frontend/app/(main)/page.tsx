@@ -446,7 +446,7 @@ export default function Page() {
   };
 
   return (
-    <div className="space-y-6" style={{ animation: "fadeInUp 0.4s ease" }}>
+    <div className="space-y-6 min-w-0" style={{ animation: "fadeInUp 0.4s ease" }}>
 
       {/* ── Header with export */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
@@ -627,7 +627,7 @@ export default function Page() {
       {/* ── Discipline capacity vs registered */}
       {disciplinesReady && (
         <Card accentColor={CHARCOAL}>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-4">
             <div>
               <SectionLabel color={CHARCOAL}>Acreditación deportiva</SectionLabel>
               <p style={{ fontSize: "15px", fontWeight: 600, color: SURFACE.text, marginTop: "2px" }}>Cupos por disciplina vs registrados AND</p>

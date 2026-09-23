@@ -9,7 +9,7 @@ export default function OperacionAndPage() {
   const [refreshKey, setRefreshKey] = useState(0);
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6 overflow-x-hidden">
       <BulkImportPanel
         type="athletes"
         athleteMode="and"

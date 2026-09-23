@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import StyledSelect from "@/components/StyledSelect";
 
 type EventExpectedCapacity = {
@@ -185,6 +186,9 @@ const primaryBtn: React.CSSProperties = {
 
 export default function DeportesPage() {
   const { t } = useI18n();
+  // Los layouts de esta pantalla van en estilos inline (paddings, grillas de
+  // formulario, columna fija del Gantt), así que no pueden usar media queries.
+  const isMobile = useIsMobile();
 
   // ── Data
   const [events, setEvents] = useState<EventItem[]>([]);
@@ -636,7 +640,7 @@ export default function DeportesPage() {
     <div className="min-w-0 space-y-5 overflow-x-hidden">
 
       {/* ── Header */}
-      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px 28px 22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: isMobile ? "16px 14px 14px" : "24px 28px 22px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Deportes")}</span>
         </div>
@@ -774,7 +778,7 @@ export default function DeportesPage() {
           ) : filteredRows.length === 0 ? (
             <p style={{ padding: "24px", fontSize: "13px", color: SURFACE.textFaint }}>{t("No hay filas para los filtros seleccionados.")}</p>
           ) : (
-            <div style={{ overflowX: "auto" }}>
+            <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
               <table style={{ width: "100%", minWidth: "960px", borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
                   <tr style={{ background: SURFACE.bg }}>
@@ -877,10 +881,12 @@ export default function DeportesPage() {
                   }}
                 >
                   {/* Discipline header */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: "14px 20px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", padding: isMobile ? "12px 14px" : "14px 20px" }}>
+                    {/* En teléfono la etiqueta de tipo/género baja a una segunda línea
+                        (order + flexBasis 100%) para que el nombre no quede en cero. */}
                     <button
                       onClick={() => togglePruebas(discipline.id)}
-                      style={{ display: "flex", alignItems: "center", gap: "12px", flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", minWidth: 0 }}
+                      style={{ display: "flex", alignItems: "center", gap: isMobile ? "8px 12px" : "12px", flex: 1, textAlign: "left", background: "none", border: "none", cursor: "pointer", minWidth: 0, flexWrap: isMobile ? "wrap" : undefined }}
                     >
                       <svg
                         style={{ width: "16px", height: "16px", flexShrink: 0, color: SURFACE.textFaint, transition: "transform 150ms ease", transform: isOpen ? "rotate(90deg)" : "rotate(0deg)" }}
@@ -888,9 +894,9 @@ export default function DeportesPage() {
                       >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
                       </svg>
-                      <span style={{ fontWeight: 600, color: SURFACE.text, fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{discipline.name}</span>
+                      <span style={{ fontWeight: 600, color: SURFACE.text, fontSize: "14px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>{discipline.name}</span>
                       {(discipline.category || discipline.gender) && (
-                        <span style={{ fontSize: "12px", color: SURFACE.textFaint, flexShrink: 0 }}>
+                        <span style={{ fontSize: "12px", color: SURFACE.textFaint, flexShrink: 0, ...(isMobile ? { order: 10, flexBasis: "100%", paddingLeft: "28px" } : {}) }}>
                           {[categoryLabel(discipline.category), genderLabel(discipline.gender)].filter(v => v !== "-").map(v => t(v)).join(" · ")}
                         </span>
                       )}
@@ -910,23 +916,24 @@ export default function DeportesPage() {
                   {isOpen && (
                     <div style={{ borderTop: `1px solid ${SURFACE.borderMuted}` }}>
                       {pruebas.length === 0 ? (
-                        <p style={{ padding: "10px 56px", fontSize: "12px", color: SURFACE.borderStrong, fontStyle: "italic" }}>
+                        <p style={{ padding: isMobile ? "10px 16px" : "10px 56px", fontSize: "12px", color: SURFACE.borderStrong, fontStyle: "italic" }}>
                           {t("Sin pruebas. Haz clic en \"+ Prueba\" para agregar.")}
                         </p>
                       ) : (
                         <div>
                           {pruebas.map((prueba, pi) => (
                             <div key={prueba.id} style={{
-                              display: "flex", alignItems: "center", gap: "12px",
-                              padding: "10px 56px",
+                              display: "flex", alignItems: "center", gap: isMobile ? "6px 12px" : "12px",
+                              padding: isMobile ? "10px 16px" : "10px 56px",
+                              flexWrap: isMobile ? "wrap" : undefined,
                               borderTop: pi > 0 ? `1px solid ${SURFACE.borderMuted}` : "none",
                             }}>
                               <svg style={{ width: "12px", height: "12px", color: SURFACE.borderStrong, flexShrink: 0 }} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
                               </svg>
-                              <span style={{ fontSize: "13px", color: SURFACE.textStrong, flex: 1 }}>{prueba.name}</span>
+                              <span style={{ fontSize: "13px", color: SURFACE.textStrong, flex: 1, minWidth: 0 }}>{prueba.name}</span>
                               {(prueba.category || prueba.gender) && (
-                                <span style={{ fontSize: "12px", color: SURFACE.textFaint }}>
+                                <span style={{ fontSize: "12px", color: SURFACE.textFaint, ...(isMobile ? { order: 10, flexBasis: "100%", paddingLeft: "24px" } : {}) }}>
                                   {[categoryLabel(prueba.category), genderLabel(prueba.gender)].filter(v => v !== "-").map(v => t(v)).join(" · ")}
                                 </span>
                               )}
@@ -1132,7 +1139,7 @@ export default function DeportesPage() {
 
                 {/* Filtro de disciplina */}
                 {disciplineList.length > 0 && (
-                  <StyledSelect wrapperStyle={{ maxWidth: 220 }}
+                  <StyledSelect wrapperStyle={{ maxWidth: isMobile ? "100%" : 220 }}
                     value={calDisciplineFilter} onChange={(e) => setCalDisciplineFilter(e.target.value)}>
                     <option value="">{t("Todas las disciplinas")}</option>
                     {disciplineList.map(([id, name]) => (
@@ -1142,7 +1149,7 @@ export default function DeportesPage() {
                 )}
 
                 {/* Búsqueda rápida */}
-                <input className="input" style={{ maxWidth: 240 }} placeholder="Buscar prueba o sede…"
+                <input className="input" style={{ maxWidth: isMobile ? "100%" : 240 }} placeholder="Buscar prueba o sede…"
                   value={calQuickSearch} onChange={(e) => setCalQuickSearch(e.target.value)} />
               </div>
 
@@ -1298,7 +1305,8 @@ export default function DeportesPage() {
                 return { pid, name: data.name, color: DISC_PALETTE[ri % DISC_PALETTE.length], bars, lanes: Math.max(1, laneEnds.length) };
               }).sort((a, b) => a.name.localeCompare(b.name));
 
-              const COL_MIN = 44, BAR_H = 24, LANE_GAP = 4, HEADER_H = 52, NAME_W = 200;
+              // En teléfono la columna de nombres se angosta para dejar sitio a la grilla.
+              const COL_MIN = 44, BAR_H = 24, LANE_GAP = 4, HEADER_H = 52, NAME_W = isMobile ? 120 : 200;
               const rowH = (lanes: number) => lanes * BAR_H + (lanes - 1) * LANE_GAP + 16;
               const todayK = keyOf(new Date());
 
@@ -1339,7 +1347,7 @@ export default function DeportesPage() {
                       </div>
 
                       {/* Grilla de días + barras */}
-                      <div style={{ flex: 1, overflowX: "auto" }}>
+                      <div style={{ flex: 1, minWidth: 0, overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
                         <div style={{ minWidth: N * COL_MIN }}>
                           <div style={{ height: HEADER_H, display: "grid", gridTemplateColumns: `repeat(${N}, minmax(${COL_MIN}px, 1fr))`, borderBottom: `1px solid ${SURFACE.border}`, background: SURFACE.bg }}>
                             {days.map((d, i) => {
@@ -1384,7 +1392,7 @@ export default function DeportesPage() {
             {calView === "month" && (
               <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {/* En móvil el mes scrollea horizontal en vez de aplastar los 7 días. */}
-                <div style={{ overflowX: "auto" }}>
+                <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
                 <div style={{ minWidth: "640px" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", background: SURFACE.bg, borderBottom: `1px solid ${SURFACE.border}`, paddingTop: 4 }}>
                   {WEEK.map(d => (
@@ -1467,7 +1475,7 @@ export default function DeportesPage() {
             {calView === "week" && (
               <section className="relative accent-strip-top animate-fade-up" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 20, overflow: "hidden", boxShadow: pal.cardShadow }}>
                 {/* En móvil la semana scrollea horizontal en vez de aplastar los 7 días. */}
-                <div style={{ overflowX: "auto" }}>
+                <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", minWidth: "640px", paddingTop: 4 }}>
                   {week.map(day => {
                     const dk = day.toISOString().slice(0, 10);
@@ -1589,8 +1597,8 @@ export default function DeportesPage() {
                     <p style={{ fontSize: 14, color: SURFACE.textFaint }}>Sin pruebas que coincidan con los filtros</p>
                   </div>
                 ) : (
-                  <div style={{ overflowX: "auto" }}>
-                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+                  <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
+                    <table style={{ width: "100%", minWidth: 640, borderCollapse: "collapse", fontSize: 12 }}>
                       <thead>
                         <tr style={{ background: `linear-gradient(135deg, ${SURFACE.text}, #1e293b)`, color: SURFACE.card }}>
                           {["N°", "Día", "Hora", "Prueba", "Deporte", "Categoría", "Recinto"].map(h => (
@@ -1863,7 +1871,7 @@ export default function DeportesPage() {
       {/* ── Prueba modal */}
       {pruebaModal && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.4)", backdropFilter: "blur(4px)", padding: "16px" }}>
-          <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px", width: "100%", maxWidth: "560px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
+          <div style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: isMobile ? "16px" : "24px", width: "100%", maxWidth: "560px", maxHeight: "calc(100dvh - 32px)", overflowY: "auto", boxShadow: "0 8px 40px rgba(15,23,42,0.15)" }}>
             <h2 style={{ fontWeight: 700, fontSize: "18px", color: SURFACE.text, marginBottom: "4px" }}>
               {pruebaModal.editing ? t("Editar prueba") : t("Nueva prueba")}
             </h2>
@@ -1883,7 +1891,7 @@ export default function DeportesPage() {
                 />
               </label>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
                 <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                   <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Categoría")}</span>
                   <StyledSelect value={pruebaForm.category} onChange={e => setPruebaForm(f => ({ ...f, category: e.target.value }))}>
@@ -1913,7 +1921,7 @@ export default function DeportesPage() {
               </div>
 
               {pruebaForm.useDateRange ? (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: "10px" }}>
                   <label style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
                     <span style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Fecha inicio")}</span>
                     <input style={fieldStyle} type="date" value={pruebaForm.rangeStart} onChange={e => setPruebaForm(f => ({ ...f, rangeStart: e.target.value }))} />
@@ -1967,7 +1975,7 @@ export default function DeportesPage() {
 
                 {premiacion.enabled && (
                   <div style={{ background: SURFACE.bg, border: `1px solid ${SURFACE.border}`, borderRadius: 12, padding: "12px", display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 10 }}>
                       <label style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         <span style={{ fontSize: 10, fontWeight: 600, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.05em" }}>{t("Fecha y hora ceremonia")}</span>
                         <input style={fieldStyle} type="datetime-local" value={premiacion.scheduledAt} onChange={e => setPremiacion(p => ({ ...p, scheduledAt: e.target.value }))} />
@@ -2008,7 +2016,7 @@ export default function DeportesPage() {
                         </p>
                       )}
                       {premiacion.awarders.map((a, i) => (
-                        <div key={i} style={{ display: "grid", gridTemplateColumns: "2fr 1fr auto", gap: 6, marginBottom: 4 }}>
+                        <div key={i} style={{ display: "grid", gridTemplateColumns: isMobile ? "minmax(0, 1.4fr) minmax(0, 1fr) auto" : "2fr 1fr auto", gap: 6, marginBottom: 4 }}>
                           <select
                             style={fieldStyle}
                             value={a.athleteId}
@@ -2062,7 +2070,7 @@ export default function DeportesPage() {
       {/* Delete prueba confirmation modal */}
       {deletePruebaConfirm && (
         <div style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.5)", backdropFilter: "blur(4px)", padding: "16px" }}>
-          <div style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "380px", padding: "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
+          <div style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "380px", padding: isMobile ? "20px" : "28px", maxHeight: "calc(100dvh - 32px)", overflowY: "auto", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>
             <div style={{ width: "48px", height: "48px", borderRadius: "50%", background: "rgba(239,68,68,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
               <TrashIcon size={24} color={STATE.danger} strokeWidth={2} />
             </div>

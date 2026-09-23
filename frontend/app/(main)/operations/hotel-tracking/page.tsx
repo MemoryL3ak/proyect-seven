@@ -6,6 +6,7 @@ import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { UsersIcon, CheckIcon, ClockIcon, BuildingIcon, BedIcon, RefreshIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 type Accommodation = {
   id: string;
@@ -78,6 +79,7 @@ const KPI_ICONS = [
 
 export default function HotelTrackingPage() {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
 
   const [hotels, setHotels] = useState<Accommodation[]>([]);
   const [hotelRooms, setHotelRooms] = useState<HotelRoom[]>([]);
@@ -250,7 +252,7 @@ export default function HotelTrackingPage() {
         background: SURFACE.card,
         border: `1px solid ${SURFACE.border}`,
         borderRadius: "20px",
-        padding: "24px 28px",
+        padding: isMobile ? "16px" : "24px 28px",
         boxShadow: "0 1px 4px rgba(15,23,42,0.06)",
       }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
@@ -349,7 +351,7 @@ export default function HotelTrackingPage() {
       </section>
 
       {/* ── Hotel table */}
-      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: isMobile ? "16px" : "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ marginBottom: "16px" }}>
           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>Por propiedad</p>
           <h2 style={{ fontSize: "16px", fontWeight: 700, color: SURFACE.text, marginTop: "4px" }}>{t("Disponibilidad")}</h2>
@@ -357,7 +359,7 @@ export default function HotelTrackingPage() {
         {rows.length === 0 ? (
           <p style={{ fontSize: "13px", color: SURFACE.textFaint }}>{t("Sin hoteles registrados.")}</p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr style={{ borderBottom: `1px solid ${SURFACE.border}` }}>

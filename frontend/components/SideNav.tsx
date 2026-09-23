@@ -443,6 +443,26 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
             }
           </svg>
         </button>
+        {/* Cerrar el menú en el teléfono (app staff): antes solo se cerraba
+            tocando fuera, y no era evidente. */}
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            className="md:hidden"
+            aria-label="Cerrar menú"
+            style={{
+              width: "32px", height: "32px", borderRadius: "8px", flexShrink: 0,
+              background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)",
+              color: "rgba(255,255,255,0.7)", cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+              <path d="M18 6L6 18M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* ── Nav */}

@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 
 type FoodLocation = {
@@ -177,6 +178,7 @@ const labelStyle: React.CSSProperties = {
 
 export default function FoodLocationsPage() {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
   const [locations, setLocations] = useState<FoodLocation[]>([]);
   const [accommodations, setAccommodations] = useState<Record<string, Accommodation>>({});
   const [delegaciones, setDelegaciones] = useState<Delegacion[]>([]);
@@ -576,7 +578,7 @@ export default function FoodLocationsPage() {
           onClick={(e) => { if (e.target === e.currentTarget) setShowForm(false); }}
         >
           <div
-            style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "520px", maxHeight: "90vh", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "0 8px 32px rgba(15,23,42,0.15)" }}
+            style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: isMobile ? "18px 14px" : "24px", width: "100%", maxWidth: "520px", maxHeight: "calc(100dvh - 24px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", boxShadow: "0 8px 32px rgba(15,23,42,0.15)" }}
           >
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
               <h2 style={{ fontWeight: 700, fontSize: "17px", color: SURFACE.text }}>{editingId ? t("Editar lugar") : t("Nuevo lugar de comida")}</h2>
@@ -626,7 +628,7 @@ export default function FoodLocationsPage() {
                 />
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={labelStyle}>{t("Descripción")}</label>
                   <input

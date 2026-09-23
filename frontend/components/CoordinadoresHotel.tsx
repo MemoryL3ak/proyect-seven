@@ -159,7 +159,7 @@ export default function CoordinadoresHotel({
               </StyledSelect>
             </label>
           ) : (
-            <span />
+            <span className="hidden md:block" />
           )}
 
           <button

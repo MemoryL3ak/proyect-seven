@@ -865,7 +865,7 @@ export default function ProveedoresPage() {
                 onChange={e => setProviderSearch(e.target.value)}
               />
             </div>
-            <select className="input w-52" value={filterType} onChange={e => setFilterType(e.target.value)}>
+            <select className="input w-full md:w-52" value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="">{t("— Todos los tipos —")}</option>
               {Object.entries(PROVIDER_TYPES).map(([key, { label }]) => (
                 <option key={key} value={key}>{t(label)}</option>
@@ -1091,7 +1091,7 @@ export default function ProveedoresPage() {
               onChange={e => setParticipantSearch(e.target.value)}
             />
             <select
-              className="input w-64"
+              className="input w-full md:w-64"
               value={providerFilter}
               onChange={e => setProviderFilter(e.target.value)}
             >
@@ -1255,10 +1255,12 @@ export default function ProveedoresPage() {
                 const provider = providers.find(pr => pr.id === p.providerId);
                 const isTransporte = provider?.type === "TRANSPORTE";
                 const docCount = isTransporte ? countUploadedDocs(p.metadata) : -1;
+                // En teléfono los chips y las acciones bajan a una segunda línea:
+                // con todo en una fila el nombre quedaba en un par de letras.
                 return (
                   <div
                     key={p.id}
-                    className="flex items-center gap-4 px-5 py-3"
+                    className="flex flex-wrap items-center gap-3 md:gap-4 px-4 md:px-5 py-3"
                     style={{ borderBottom: i < filteredParticipants.length - 1 ? "1px solid var(--border)" : "none" }}
                   >
                     {/* Photo */}
@@ -1272,7 +1274,7 @@ export default function ProveedoresPage() {
                         </div>
                       );
                     })()}
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0" style={{ flex: "1 1 180px" }}>
                       <span className="block truncate" style={{ fontSize: "14px", fontWeight: 600, color: "var(--text)" }}>{p.fullName}</span>
                       <div style={{ display: "flex", gap: "8px", marginTop: "2px", flexWrap: "wrap" }}>
                         {provider && (
@@ -1425,7 +1427,7 @@ export default function ProveedoresPage() {
           border: `1px solid ${mailToast.ok ? "#a7f3d0" : "#fecaca"}`,
           color: mailToast.ok ? "#047857" : STATE.dangerText,
           borderRadius: "12px", padding: "12px 18px", fontSize: "13px", fontWeight: 600,
-          boxShadow: "0 8px 24px rgba(15,23,42,0.15)", maxWidth: "360px",
+          boxShadow: "0 8px 24px rgba(15,23,42,0.15)", maxWidth: "min(360px, calc(100vw - 48px))",
         }}>
           {mailToast.ok ? <CheckIcon size={12} className="inline mr-1" /> : <XIcon size={12} className="inline mr-1" />}{mailToast.msg}
         </div>
@@ -1436,12 +1438,12 @@ export default function ProveedoresPage() {
             className="surface rounded-3xl w-full flex flex-col"
             style={{
               maxWidth: isTransporteProvider ? "820px" : "448px",
-              maxHeight: "90vh",
+              maxHeight: "min(90vh, calc(100dvh - 32px))",
               borderTop: `2px solid ${BRAND.teal}`,
               boxShadow: "0 8px 32px rgba(15,23,42,0.18)",
             }}
           >
-            <div className="px-6 pt-6 pb-4 flex-shrink-0">
+            <div className="px-4 md:px-6 pt-5 md:pt-6 pb-4 flex-shrink-0">
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>
                 {providerModal.editing ? t("Editar") : t("Nuevo")}
               </p>
@@ -1450,7 +1452,7 @@ export default function ProveedoresPage() {
               </h2>
             </div>
 
-            <div className="overflow-y-auto px-6 pb-2 flex-1 space-y-4">
+            <div className="overflow-y-auto px-4 md:px-6 pb-2 flex-1 space-y-4">
               {/* Logo upload */}
               <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                 {(() => {
@@ -1484,7 +1486,7 @@ export default function ProveedoresPage() {
                 <input className="input" value={providerForm.name} onChange={e => setProviderForm(f => ({ ...f, name: e.target.value }))} placeholder={t("Nombre del proveedor")} autoFocus />
               </label>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                   {t("Tipo")}
                   <select className="input" value={providerForm.type} onChange={e => setProviderForm(f => ({ ...f, type: e.target.value, subtype: "" }))}>
@@ -1503,7 +1505,7 @@ export default function ProveedoresPage() {
                 </label>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                   {t("Email")}
                   <input className="input" type="email" value={providerForm.email} onChange={e => setProviderForm(f => ({ ...f, email: e.target.value }))} placeholder="contacto@proveedor.com" />
@@ -1514,7 +1516,7 @@ export default function ProveedoresPage() {
                 </label>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                   {t("Teléfono")}
                   <input className="input" value={providerForm.phone} onChange={e => setProviderForm(f => ({ ...f, phone: e.target.value }))} placeholder="+56 9 1234 5678" />
@@ -1530,7 +1532,7 @@ export default function ProveedoresPage() {
                 <input className="input" value={providerForm.address} onChange={e => setProviderForm(f => ({ ...f, address: e.target.value }))} placeholder={t("Dirección del proveedor")} />
               </label>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                   {t("Ciudad")}
                   <input className="input" value={providerForm.city} onChange={e => setProviderForm(f => ({ ...f, city: e.target.value }))} placeholder="Santiago" />
@@ -1548,7 +1550,7 @@ export default function ProveedoresPage() {
 
               {/* Bid amount + trip count for transport, hospitality, food */}
               {(providerForm.type === "TRANSPORTE" || providerForm.type === "HOTELERIA" || providerForm.type === "ALIMENTACION") && (
-                <div className={providerForm.type === "TRANSPORTE" ? "grid grid-cols-2 gap-3" : ""}>
+                <div className={providerForm.type === "TRANSPORTE" ? "grid grid-cols-1 md:grid-cols-2 gap-3" : ""}>
                   <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                     {t("Monto licitado")}
                     <input className="input" type="text" inputMode="numeric" value={providerForm.bidAmount ? `$${Number(providerForm.bidAmount).toLocaleString("es-CL")}` : ""} onChange={e => { const raw = e.target.value.replace(/[^0-9]/g, ""); setProviderForm(f => ({ ...f, bidAmount: raw })); }} placeholder="$0" />
@@ -1591,7 +1593,7 @@ export default function ProveedoresPage() {
                   </div>
 
                   {providerRates.length > 0 && (
-                    <div style={{ maxHeight: 320, overflowY: "auto" }}>
+                    <div style={{ maxHeight: 320, overflowY: "auto", overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
                         <thead>
                           <tr style={{ background: SURFACE.bg, position: "sticky", top: 0, zIndex: 1 }}>
@@ -1645,7 +1647,7 @@ export default function ProveedoresPage() {
               {providerError && <p className="text-sm" style={{ color: STATE.danger }}>{providerError}</p>}
             </div>
 
-            <div className="px-6 py-4 flex justify-end gap-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+            <div className="px-4 md:px-6 py-4 flex justify-end gap-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
               <button className="btn btn-ghost" onClick={() => setProviderModal(null)} disabled={savingProvider}>{t("Cancelar")}</button>
               <button className="btn btn-primary" onClick={saveProvider} disabled={savingProvider}>
                 {savingProvider ? t("Guardando…") : t("Guardar")}
@@ -1662,12 +1664,12 @@ export default function ProveedoresPage() {
             className="surface rounded-3xl w-full flex flex-col"
             style={{
               maxWidth: isTransporteParticipant ? "720px" : "560px",
-              maxHeight: "92vh",
+              maxHeight: "min(92vh, calc(100dvh - 32px))",
               borderTop: `2px solid ${BRAND.teal}`,
               boxShadow: "0 8px 32px rgba(15,23,42,0.18)",
             }}
           >
-            <div className="px-6 pt-6 pb-4 flex-shrink-0">
+            <div className="px-4 md:px-6 pt-5 md:pt-6 pb-4 flex-shrink-0">
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>
                 {participantModal.editing ? t("Editar") : t("Nuevo")}
               </p>
@@ -1676,7 +1678,7 @@ export default function ProveedoresPage() {
               </h2>
             </div>
 
-            <div className="overflow-y-auto px-6 pb-2 flex-1 space-y-4">
+            <div className="overflow-y-auto px-4 md:px-6 pb-2 flex-1 space-y-4">
               {/* Proveedor */}
               <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                 {t("Proveedor *")}
@@ -1759,7 +1761,7 @@ export default function ProveedoresPage() {
                   </label>
 
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {participantForm.countryCode === "CHL" ? (
                       <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                         {t("RUT")}
@@ -1777,7 +1779,7 @@ export default function ProveedoresPage() {
                     </label>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                       {t("Email")}
                       <input className="input" type="email" value={participantForm.email} onChange={e => setParticipantForm(f => ({ ...f, email: e.target.value }))} placeholder="nombre@email.com" />
@@ -1788,7 +1790,7 @@ export default function ProveedoresPage() {
                     </label>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                       {t("Rol / Tipo")}
                       <input className="input" value={participantForm.userType} onChange={e => setParticipantForm(f => ({ ...f, userType: e.target.value }))} placeholder={t("Conductor, Coordinador…")} />
@@ -1920,7 +1922,7 @@ export default function ProveedoresPage() {
                             placeholder="ABCD12"
                           />
                         </label>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                             {t("Marca")}
                             <input className="input" value={participantForm.vehicleMarca} onChange={e => setParticipantForm(f => ({ ...f, vehicleMarca: e.target.value }))} placeholder="Toyota" />
@@ -1930,7 +1932,7 @@ export default function ProveedoresPage() {
                             <input className="input" value={participantForm.vehicleModelo} onChange={e => setParticipantForm(f => ({ ...f, vehicleModelo: e.target.value }))} placeholder="Corolla" />
                           </label>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                             {t("Año")}
                             <input className="input" value={participantForm.vehicleAno} onChange={e => setParticipantForm(f => ({ ...f, vehicleAno: e.target.value }))} placeholder="2022" maxLength={4} />
@@ -1962,7 +1964,7 @@ export default function ProveedoresPage() {
                             </select>
                           </label>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                             {t("Capacidad (pasajeros)")}
                             <input
@@ -2029,7 +2031,7 @@ export default function ProveedoresPage() {
               {participantError && <p className="text-sm" style={{ color: STATE.danger }}>{participantError}</p>}
             </div>
 
-            <div className="px-6 py-4 flex justify-end gap-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+            <div className="px-4 md:px-6 py-4 flex justify-end gap-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
               <button className="btn btn-ghost" onClick={() => setParticipantModal(null)} disabled={savingParticipant}>{t("Cancelar")}</button>
               <button className="btn btn-primary" onClick={saveParticipant} disabled={savingParticipant}>
                 {savingParticipant ? t("Guardando…") : t("Guardar")}

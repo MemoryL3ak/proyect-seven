@@ -63,7 +63,7 @@ export default function PageHeader({
         <div className="flex items-start gap-4 min-w-0">
           {icon && (
             <div
-              className="flex-shrink-0 w-14 h-14 rounded-2xl flex items-center justify-center icon-bounce anim-scale-pop relative"
+              className="flex-shrink-0 w-11 h-11 md:w-14 md:h-14 rounded-2xl flex items-center justify-center icon-bounce anim-scale-pop relative"
               style={{
                 background: iconBg,
                 color: iconColor,
@@ -82,7 +82,7 @@ export default function PageHeader({
             </div>
           )}
           <div className="min-w-0">
-            <h1 className="text-2xl font-bold leading-tight mb-1 tracking-tight">
+            <h1 className="text-xl md:text-2xl font-bold leading-tight mb-1 tracking-tight">
               {title}
             </h1>
             {description && (
@@ -96,7 +96,7 @@ export default function PageHeader({
             {meta && <div className="mt-3">{meta}</div>}
           </div>
         </div>
-        {action && <div className="flex-shrink-0">{action}</div>}
+        {action && <div className="flex-shrink-0 min-w-0 max-w-full">{action}</div>}
       </div>
     </section>
   );

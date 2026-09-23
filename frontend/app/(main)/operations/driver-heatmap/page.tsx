@@ -6,6 +6,7 @@ import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { StarIcon, MedalIcon, RefreshIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { nombrePropio } from "@/lib/nombres";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 /* ─── Types ─── */
 /** Estados en los que un viaje ya no le exige nada al conductor. */
@@ -146,6 +147,7 @@ function toLocalDate(d: Date): string {
 /* ─── Component ─── */
 export default function DriverHeatmapPage() {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
   const [trips, setTrips] = useState<Trip[]>([]);
   const [drivers, setDrivers] = useState<Record<string, DriverItem>>({});
   const [selectedDate, setSelectedDate] = useState(toLocalDate(new Date()));
@@ -412,7 +414,7 @@ export default function DriverHeatmapPage() {
             Mapa de Calor & Rankings
           </h1>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
           <input
             type="date"
             value={selectedDate}
@@ -460,12 +462,12 @@ export default function DriverHeatmapPage() {
 
       {/* ── Heatmap ── */}
       <div style={{ background: pal.cardBg, borderRadius: "20px", border: `1px solid ${pal.cardBorder}`, boxShadow: pal.shadow, overflow: "hidden" }}>
-        <div style={{ padding: "18px 20px 12px", borderBottom: `1px solid ${pal.cardBorder}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div style={{ padding: isMobile ? "14px 14px 10px" : "18px 20px 12px", borderBottom: `1px solid ${pal.cardBorder}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
           <div>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>Mapa de calor</p>
             <p style={{ fontSize: "14px", fontWeight: 700, color: pal.textPrimary, margin: 0 }}>Actividad por conductor y hora</p>
           </div>
-          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: "6px", alignItems: "center", flexWrap: "wrap" }}>
             {[
               { count: 0, label: "Sin viajes" },
               { count: 1, label: "1 viaje" },
@@ -480,7 +482,9 @@ export default function DriverHeatmapPage() {
           </div>
         </div>
 
-        <div style={{ overflowX: "auto", padding: "0 0 8px" }}>
+        {/* La grilla de 17 horas mide 900 px: en el teléfono se desplaza
+            horizontal dentro de la tarjeta sin ensanchar la página. */}
+        <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch", padding: "0 0 8px" }}>
           {activeDriverIds.length === 0 ? (
             <div style={{ padding: "48px 24px", textAlign: "center", color: pal.textMuted, fontSize: "14px" }}>
               No hay conductores con viajes para esta fecha.
@@ -582,7 +586,7 @@ export default function DriverHeatmapPage() {
           Regla: arranca con el primer viaje iniciado del día. Al cumplirse el
           plazo no se corta: sigue como horas extra mientras al conductor le
           quede un viaje en curso o viajes del día sin hacer. */}
-      <section style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "20px", padding: "20px", boxShadow: pal.shadow }}>
+      <section style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "20px", padding: isMobile ? "14px" : "20px", boxShadow: pal.shadow }}>
         <div className="flex flex-wrap items-end justify-between gap-3 mb-4">
           <div>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase" as const, color: pal.labelColor }}>
@@ -649,7 +653,7 @@ export default function DriverHeatmapPage() {
                     </p>
                   </div>
 
-                  <div style={{ flex: "1 1 220px", minWidth: 180 }}>
+                  <div style={{ flex: "1 1 220px", minWidth: isMobile ? 0 : 180 }}>
                     <div style={{ height: 7, borderRadius: 99, background: SURFACE.borderMuted, overflow: "hidden" }}>
                       <div style={{ width: `${avance}%`, height: "100%", background: tono.color, transition: "width .3s" }} />
                     </div>
@@ -661,7 +665,7 @@ export default function DriverHeatmapPage() {
                     </p>
                   </div>
 
-                  <div style={{ flex: "0 0 auto", textAlign: "right", minWidth: 150 }}>
+                  <div style={{ flex: isMobile ? "1 1 100%" : "0 0 auto", textAlign: isMobile ? "left" : "right", minWidth: isMobile ? 0 : 150 }}>
                     <span style={{
                       display: "inline-block", fontSize: 10.5, fontWeight: 700,
                       padding: "3px 10px", borderRadius: 99,
@@ -706,7 +710,7 @@ export default function DriverHeatmapPage() {
         <div style={{ background: pal.cardBg, borderRadius: "20px", border: `1px solid ${pal.cardBorder}`, boxShadow: pal.shadow, overflow: "hidden" }}>
           <div style={{ padding: "18px 20px 12px", borderBottom: `1px solid ${pal.cardBorder}` }}>
             <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: ACCENT.indigo, margin: "0 0 8px" }}>Rankings generales</p>
-            <div style={{ display: "flex", gap: "4px" }}>
+            <div style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
               {([
                 { key: "trips" as const, label: "Más viajes" },
                 { key: "rating" as const, label: "Mejor calificados" },
@@ -733,15 +737,15 @@ export default function DriverHeatmapPage() {
                 const medalColor = i === 0 ? STATE.warning : i === 1 ? SURFACE.textFaint : i === 2 ? STATE.warningText : null;
                 return (
                   <div key={r.driverId} style={{
-                    display: "grid", gridTemplateColumns: "40px 1fr 100px 50px",
-                    gap: "8px", alignItems: "center", padding: "10px 20px",
+                    display: "grid", gridTemplateColumns: isMobile ? "30px minmax(0,1fr) 72px 24px" : "40px 1fr 100px 50px",
+                    gap: "8px", alignItems: "center", padding: isMobile ? "10px 12px" : "10px 20px",
                     background: i % 2 === 0 ? "transparent" : "#fafafa",
                     borderBottom: `1px solid ${pal.cardBorder}`,
                   }}>
                     <span style={{ fontSize: "13px", fontWeight: 800, color: medalColor ?? pal.labelColor, textAlign: "center", display: "inline-flex", justifyContent: "center" }}>
                       {medalColor ? <MedalIcon size={16} color={medalColor} /> : `#${i + 1}`}
                     </span>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <p style={{ fontSize: "13px", fontWeight: 600, color: pal.textPrimary, margin: 0 }}>{r.name}</p>
                       <p style={{ fontSize: "10px", color: pal.labelColor, margin: 0 }}>{r.todayTrips} viajes hoy · {r.activeHours}h activo</p>
                     </div>
@@ -799,7 +803,7 @@ export default function DriverHeatmapPage() {
               .map((r, i) => (
                 <div key={r.driverId} style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "10px" }}>
                   <MedalIcon size={18} color={i === 0 ? STATE.warning : i === 1 ? SURFACE.textFaint : STATE.warningText} />
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontSize: "13px", fontWeight: 600, color: pal.textPrimary, margin: 0 }}>{r.name}</p>
                     <p style={{ fontSize: "10px", color: pal.labelColor, margin: 0 }}>{r.completedTrips} viajes completados</p>
                   </div>

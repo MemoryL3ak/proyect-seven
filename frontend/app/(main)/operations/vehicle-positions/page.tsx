@@ -1116,7 +1116,7 @@ export default function VehiclePositionsPage() {
         background: pal.panelBg,
         border: pal.panelBorder,
         borderRadius: "20px",
-        padding: "24px 28px",
+        padding: isMobile ? "16px" : "24px 28px",
         boxShadow: pal.panelShadow,
         position: "relative",
         overflow: "hidden",
@@ -1210,19 +1210,19 @@ export default function VehiclePositionsPage() {
               Filtrar
             </span>
             {tableDriverOptions.length > 0 && (
-              <StyledSelect value={tableDriver} onChange={(e) => setTableDriver(e.target.value)} wrapperStyle={anchoFiltro(230)}>
+              <StyledSelect value={tableDriver} onChange={(e) => setTableDriver(e.target.value)} wrapperStyle={isMobile ? { width: "100%" } : anchoFiltro(230)}>
                 <option value="">Todos los conductores</option>
                 {tableDriverOptions.map((o) => <option key={o.id} value={o.id}>{`${o.label} (${o.count})`}</option>)}
               </StyledSelect>
             )}
             {tableVenueOptions.length > 0 && (
-              <StyledSelect value={tableVenue} onChange={(e) => setTableVenue(e.target.value)} wrapperStyle={anchoFiltro(240)}>
+              <StyledSelect value={tableVenue} onChange={(e) => setTableVenue(e.target.value)} wrapperStyle={isMobile ? { width: "100%" } : anchoFiltro(240)}>
                 <option value="">Todas las sedes</option>
                 {tableVenueOptions.map((o) => <option key={o.id} value={o.id}>{`${o.label} (${o.count})`}</option>)}
               </StyledSelect>
             )}
             {tableHotelOptions.length > 0 && (
-              <StyledSelect value={tableHotel} onChange={(e) => setTableHotel(e.target.value)} wrapperStyle={anchoFiltro(240)}>
+              <StyledSelect value={tableHotel} onChange={(e) => setTableHotel(e.target.value)} wrapperStyle={isMobile ? { width: "100%" } : anchoFiltro(240)}>
                 <option value="">Todos los hoteles</option>
                 {tableHotelOptions.map((o) => <option key={o.id} value={o.id}>{`${o.label} (${o.count})`}</option>)}
               </StyledSelect>
@@ -1289,11 +1289,11 @@ export default function VehiclePositionsPage() {
                   background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.28)",
                   borderRadius: "14px", padding: "12px 18px", gap: "12px",
                 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px", minWidth: 0 }}>
                     <span style={{ color: STATE.success, flexShrink: 0 }}>
                       <CheckCircleIcon size={20} strokeWidth={2} />
                     </span>
-                    <div>
+                    <div style={{ minWidth: 0 }}>
                       <p style={{ fontSize: "13px", fontWeight: 700, color: STATE.success }}>
                         Viaje completado — {alert.driverName}
                       </p>
@@ -1344,7 +1344,7 @@ export default function VehiclePositionsPage() {
                   position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)",
                   zIndex: 999, background: "rgba(255,255,255,0.94)",
                   border: `1px solid ${SURFACE.border}`, borderRadius: "14px",
-                  padding: "18px 22px", textAlign: "center" as const, maxWidth: "320px",
+                  padding: "18px 22px", textAlign: "center" as const, maxWidth: "min(320px, calc(100% - 24px))", width: "max-content",
                   boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
                 }}>
                   <p style={{ fontWeight: 800, fontSize: "14px", color: SURFACE.text }}>
@@ -1465,7 +1465,7 @@ export default function VehiclePositionsPage() {
 
       {/* ── Table view */}
       {activeView === "table" && (
-        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: isMobile ? "14px" : "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10, marginBottom: 14 }}>
             <h2 style={{ fontSize: "18px", fontWeight: 700, color: SURFACE.text, margin: 0 }}>{t("Todos los viajes")}</h2>
             <span style={{ fontSize: 12, fontWeight: 600, color: SURFACE.textMuted, fontVariantNumeric: "tabular-nums" }}>
@@ -1481,7 +1481,7 @@ export default function VehiclePositionsPage() {
                 <input value={tableSearch} onChange={(e) => setTableSearch(e.target.value)} placeholder="Buscar origen, destino, conductor, patente…"
                   style={{ width: "100%", padding: "9px 12px 9px 34px", fontSize: 13, borderRadius: 10, border: `1px solid ${SURFACE.border}`, outline: "none", background: SURFACE.bg, color: SURFACE.text, boxSizing: "border-box" }} />
               </div>
-              <StyledSelect value={tableClient} onChange={(e) => setTableClient(e.target.value)} wrapperStyle={anchoFiltro(190)}>
+              <StyledSelect value={tableClient} onChange={(e) => setTableClient(e.target.value)} wrapperStyle={isMobile ? { width: "100%" } : anchoFiltro(190)}>
                 <option value="">Todos los clientes</option>
                 {tableClientOptions.map((c) => <option key={c} value={c}>{c}</option>)}
               </StyledSelect>
@@ -1551,9 +1551,9 @@ export default function VehiclePositionsPage() {
                       </div>
                       <p style={{ fontSize: 12, color: SURFACE.textMuted, margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{meta}</p>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14, flexShrink: 0 }}>
-                      <div style={{ textAlign: "right" }}>
-                        <p style={{ fontSize: 11.5, color: SURFACE.textSecondary, margin: 0, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{formatDate(when)}</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 6 : 14, flexShrink: 0 }}>
+                      <div style={{ textAlign: "right", maxWidth: isMobile ? 96 : undefined }}>
+                        <p style={{ fontSize: 11.5, color: SURFACE.textSecondary, margin: 0, fontVariantNumeric: "tabular-nums", whiteSpace: isMobile ? "normal" : "nowrap" }}>{formatDate(when)}</p>
                         {trip.tripCost != null && (
                           <p style={{ fontSize: 12.5, fontWeight: 800, color: BRAND.tealInk, margin: "2px 0 0" }}>${Number(trip.tripCost).toLocaleString("es-CL")}</p>
                         )}
@@ -1603,9 +1603,9 @@ export default function VehiclePositionsPage() {
           <div onClick={close}
             style={{ position: "fixed", inset: 0, zIndex: 60, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.5)", padding: "16px", backdropFilter: "blur(6px)" }}>
             <div onClick={(e) => e.stopPropagation()}
-              style={{ background: SURFACE.card, width: "100%", maxWidth: "960px", maxHeight: "92vh", borderRadius: "22px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 72px rgba(15,23,42,0.28)" }}>
+              style={{ background: SURFACE.card, width: "100%", maxWidth: "960px", maxHeight: "calc(100dvh - 24px)", borderRadius: "22px", display: "flex", flexDirection: "column", overflow: "hidden", boxShadow: "0 24px 72px rgba(15,23,42,0.28)" }}>
               {/* Header */}
-              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", padding: "18px 22px 14px", background: `linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`, color: SURFACE.card, flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px", padding: isMobile ? "14px 16px 12px" : "18px 22px 14px", background: `linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight})`, color: SURFACE.card, flexShrink: 0 }}>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: BRAND.tealLight, margin: 0 }}>Detalle del viaje</p>
                   <h3 style={{ fontSize: "17px", fontWeight: 800, margin: "4px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -1620,16 +1620,16 @@ export default function VehiclePositionsPage() {
               </div>
 
               {/* Body */}
-              <div style={{ flex: 1, overflowY: "auto", padding: "16px 18px 22px", display: "flex", flexDirection: "column", gap: "14px" }}>
+              <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "12px 14px 18px" : "16px 18px 22px", display: "flex", flexDirection: "column", gap: "14px" }}>
                 {/* Ruta realizada */}
                 {(() => {
                   const dirEmbed = buildDirectionsEmbed(trip.origin, trip.destination);
                   return (
                     <div style={{ borderRadius: "14px", overflow: "hidden", border: `1px solid ${SURFACE.border}`, background: SURFACE.borderMuted, position: "relative" }}>
                       {hasGps ? (
-                        <TripRouteMap points={detailPositions} height={460} />
+                        <TripRouteMap points={detailPositions} height={isMobile ? 300 : 460} />
                       ) : dirEmbed ? (
-                        <iframe title={`route-${trip.id}`} src={dirEmbed} style={{ width: "100%", height: 460, border: "none", display: "block" }} loading="lazy" />
+                        <iframe title={`route-${trip.id}`} src={dirEmbed} style={{ width: "100%", height: isMobile ? 300 : 460, border: "none", display: "block" }} loading="lazy" />
                       ) : (
                         <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: SURFACE.textFaint, fontSize: "13px", textAlign: "center", padding: "0 20px" }}>
                           {detailLoading ? (
@@ -1654,7 +1654,7 @@ export default function VehiclePositionsPage() {
                 })()}
 
                 {/* Stats */}
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: "8px" }}>
                   {stat("Distancia", km != null ? `${km.toFixed(1)} km` : (detailLoading ? "…" : "—"))}
                   {stat("Valor", trip.tripCost != null ? `$${Number(trip.tripCost).toLocaleString("es-CL")}` : "—", BRAND.tealInk)}
                   {stat("Duración", formatDuration(trip.startedAt, trip.completedAt))}
@@ -1662,13 +1662,13 @@ export default function VehiclePositionsPage() {
                 </div>
 
                 {/* Origen / Destino */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "8px" }}>
                   {field("Origen", trip.origin || "—")}
                   {field("Destino", venue?.name || trip.destination || "—")}
                 </div>
 
                 {/* Conductor / vehículo / delegación / participantes */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "8px" }}>
                   {field("Conductor", driver?.fullName || trip.driverId || "—")}
                   {field("Vehículo", [vehicle?.plate, vehicle?.type].filter(Boolean).join(" · ") || trip.vehicleId || "—")}
                   {field("Delegación", resolveDelegations(trip) !== "-" ? resolveDelegations(trip) : "—")}
@@ -1676,7 +1676,7 @@ export default function VehiclePositionsPage() {
                 </div>
 
                 {/* Tiempos */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: "8px" }}>
                   {field("Programación", formatDate(trip.scheduledAt))}
                   {field("Inicio", formatDate(trip.startedAt))}
                   {field("Cierre", formatDate(trip.completedAt))}
@@ -1694,7 +1694,7 @@ export default function VehiclePositionsPage() {
               </div>
 
               {/* Footer */}
-              <div style={{ flexShrink: 0, padding: "12px 18px", borderTop: `1px solid ${SURFACE.borderMuted}`, display: "flex", justifyContent: "flex-end", gap: "8px" }}>
+              <div style={{ flexShrink: 0, padding: "12px 18px", borderTop: `1px solid ${SURFACE.borderMuted}`, display: "flex", justifyContent: "flex-end", flexWrap: "wrap", gap: "8px" }}>
                 {detailPositions.length > 0 && (
                   <a href={buildGoogleMapsLink(detailPositions[detailPositions.length - 1].lat, detailPositions[detailPositions.length - 1].lng)}
                     target="_blank" rel="noreferrer"
@@ -1746,13 +1746,13 @@ export default function VehiclePositionsPage() {
 
       {mapPreview && (
         <div style={{ position: "fixed", inset: 0, zIndex: 50, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(15,23,42,0.4)", padding: "16px", backdropFilter: "blur(4px)" }}>
-          <div style={{ background: SURFACE.card, width: "100%", maxWidth: "900px", borderRadius: "20px", padding: "20px", boxShadow: "0 24px 64px rgba(15,23,42,0.22)" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
+          <div style={{ background: SURFACE.card, width: "100%", maxWidth: "900px", maxHeight: "calc(100dvh - 24px)", overflowY: "auto", borderRadius: "20px", padding: isMobile ? "14px" : "20px", boxShadow: "0 24px 64px rgba(15,23,42,0.22)" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", marginBottom: "16px" }}>
               <div>
                 <p style={{ fontSize: "10px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.2em", color: BRAND.teal }}>{t("Tracking de viajes")}</p>
                 <h3 style={{ fontSize: "18px", fontWeight: 700, color: SURFACE.text }}>{mapPreview.title}</h3>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
                 <a
                   href={buildGoogleMapsLink(mapPreview.lat, mapPreview.lng)}
                   target="_blank"

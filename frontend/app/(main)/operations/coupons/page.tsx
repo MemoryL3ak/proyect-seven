@@ -459,7 +459,7 @@ function CatalogTab({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
           onClick={() => setModalOpen(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[calc(100dvh-32px)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
               <h2 className="text-lg font-semibold">
@@ -770,7 +770,7 @@ function PartnersTab({
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ backgroundColor: "rgba(0,0,0,0.55)" }}
           onClick={() => setModalOpen(false)}>
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[calc(100dvh-32px)] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}>
             <div className="p-5 border-b flex items-center justify-between sticky top-0 bg-white rounded-t-2xl">
               <h2 className="text-lg font-semibold">
@@ -927,8 +927,9 @@ function ClaimsTab({
         />
       ) : (
         <div className="surface rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
+          <div className="overflow-x-auto max-w-full">
+            {/* Ancho mínimo: en teléfono la tabla scrollea en vez de aplastar las 7 columnas. */}
+            <table className="w-full min-w-[640px] text-xs">
               <thead style={{ backgroundColor: STATE.infoText, color: SURFACE.card }}>
                 <tr>
                   <th className="p-3 text-left">{t("Código")}</th>

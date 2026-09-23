@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { TruckIcon, HomeIcon, CoffeeIcon, XIcon, FileTextIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { downloadExcel, downloadPDF } from "@/lib/reports";
 import { AreaChart, Area, BarChart as RBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
@@ -37,6 +38,9 @@ type BucketData = { key: string; label: string; awarded: number; consumed: numbe
 
 export default function CommercialDashboardPage() {
   const { t } = useI18n();
+  // Las tarjetas llevan el padding en estilos inline; en teléfono se achica.
+  const isMobile = useIsMobile();
+  const cardPad = isMobile ? "16px 14px" : "22px 20px";
   const [buckets, setBuckets] = useState<BucketData[]>([
     { key: "transport",   label: "Transporte",   awarded: 0, consumed: 0, forecast: 0, accentIndex: 0 },
     { key: "hospitality", label: "Hotelería",    awarded: 0, consumed: 0, forecast: 0, accentIndex: 1 },
@@ -125,7 +129,7 @@ export default function CommercialDashboardPage() {
   };
 
   return (
-    <div className="space-y-6" style={{ animation: "fadeInUp 0.4s ease" }}>
+    <div className="space-y-6 min-w-0" style={{ animation: "fadeInUp 0.4s ease" }}>
 
       {/* ── Header ── */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
@@ -172,7 +176,8 @@ export default function CommercialDashboardPage() {
             }}>
             <p style={{ fontSize: "10px", color: SURFACE.textMuted, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>{kpi.label}</p>
             <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 8 }}>
-              <p style={{ fontSize: "1.5rem", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums", margin: 0 }}>{kpi.value}</p>
+              {/* clamp: en teléfono (2 columnas) los montos en CLP no caben a 1.5rem. */}
+              <p style={{ fontSize: "clamp(1.05rem, 4.2vw, 1.5rem)", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums", margin: 0, overflowWrap: "anywhere" }}>{kpi.value}</p>
               {i === 4 && <span style={{ width: 10, height: 10, borderRadius: "50%", background: totalSem.color, display: "inline-block", boxShadow: `0 0 8px ${totalSem.glow}` }} />}
             </div>
           </div>
@@ -193,7 +198,7 @@ export default function CommercialDashboardPage() {
               onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = "0 2px 8px rgba(15,23,42,0.06)"; }}
               style={{
                 background: SURFACE.card, border: `1px solid ${color}20`, borderRadius: 18,
-                padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)",
+                padding: cardPad, boxShadow: "0 2px 8px rgba(15,23,42,0.06)",
                 transition: "all 200ms ease", cursor: "default",
                 animation: "fadeInUp 0.4s ease both", animationDelay: `${i * 0.08}s`,
                 position: "relative", overflow: "hidden",
@@ -246,9 +251,9 @@ export default function CommercialDashboardPage() {
       <div className="grid gap-4 md:grid-cols-2">
 
         {/* Trips comparison */}
-        <div style={{ background: SURFACE.card, border: `1px solid ${TEAL}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${TEAL}20`, borderRadius: 18, padding: cardPad, boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${TEAL}, ${BLUE})` }} />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8, marginBottom: 16 }}>
             <p style={{ fontSize: 11, color: TEAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: 0 }}>Viajes licitados vs consumidos</p>
             <span style={{ width: 12, height: 12, borderRadius: "50%", background: tripSem.color, boxShadow: `0 0 8px ${tripSem.glow}` }} />
           </div>
@@ -280,7 +285,7 @@ export default function CommercialDashboardPage() {
         </div>
 
         {/* Client type breakdown */}
-        <div style={{ background: SURFACE.card, border: `1px solid ${CHARCOAL}15`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+        <div style={{ background: SURFACE.card, border: `1px solid ${CHARCOAL}15`, borderRadius: 18, padding: cardPad, boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${CHARCOAL}, ${CHARCOAL}88)` }} />
           <p style={{ fontSize: 11, color: CHARCOAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: "0 0 14px" }}>Detalle por tipo de cliente</p>
           {clientTypeBreakdown.length > 0 ? (
@@ -291,8 +296,8 @@ export default function CommercialDashboardPage() {
                 const c = ACCENTS[idx % ACCENTS.length];
                 return (
                   <div key={item.clientType}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, marginBottom: 4 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 12, marginBottom: 4, flexWrap: "wrap", gap: 4 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
                         <span style={{ width: 10, height: 10, borderRadius: 3, background: c, flexShrink: 0 }} />
                         <span style={{ fontWeight: 600, color: SURFACE.text }}>{clientTypeLabel(item.clientType)}</span>
                         <span style={{ fontSize: 10, color: SURFACE.textFaint, fontWeight: 700, padding: "2px 7px", borderRadius: 6, background: SURFACE.borderMuted }}>{item.count}</span>
@@ -321,7 +326,7 @@ export default function CommercialDashboardPage() {
         <div className="grid gap-4 md:grid-cols-2">
           {/* Daily trend area chart */}
           {dailySpend.length > 0 && (
-            <div style={{ background: SURFACE.card, border: `1px solid ${TEAL}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+            <div style={{ background: SURFACE.card, border: `1px solid ${TEAL}20`, borderRadius: 18, padding: cardPad, boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${TEAL}, ${BLUE})` }} />
               <p style={{ fontSize: 11, color: TEAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: "0 0 2px" }}>Consumo diario</p>
               <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: "0 0 16px" }}>Monto por día (últimos 14 días)</p>
@@ -348,7 +353,7 @@ export default function CommercialDashboardPage() {
 
           {/* Weekly bar chart */}
           {weeklySpend.length > 0 && (
-            <div style={{ background: SURFACE.card, border: `1px solid ${BLUE}20`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+            <div style={{ background: SURFACE.card, border: `1px solid ${BLUE}20`, borderRadius: 18, padding: cardPad, boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
               <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${BLUE}, ${TEAL})` }} />
               <p style={{ fontSize: 11, color: BLUE, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: "0 0 2px" }}>Consumo semanal</p>
               <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: "0 0 16px" }}>Monto acumulado por semana</p>
@@ -376,7 +381,7 @@ export default function CommercialDashboardPage() {
       )}
 
       {/* ── Executive summary ── */}
-      <div style={{ background: SURFACE.card, border: `1px solid ${CHARCOAL}15`, borderRadius: 18, padding: "22px 20px", boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
+      <div style={{ background: SURFACE.card, border: `1px solid ${CHARCOAL}15`, borderRadius: 18, padding: cardPad, boxShadow: "0 2px 8px rgba(15,23,42,0.06)", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4, background: `linear-gradient(90deg, ${CHARCOAL}, ${TEAL})` }} />
         <p style={{ fontSize: 11, color: CHARCOAL, fontWeight: 700, letterSpacing: "0.15em", textTransform: "uppercase", margin: "0 0 4px" }}>Lectura ejecutiva</p>
         <p style={{ fontSize: 15, fontWeight: 600, color: SURFACE.text, marginBottom: 18 }}>Estado general por servicio</p>
@@ -398,7 +403,7 @@ export default function CommercialDashboardPage() {
                   </div>
                   <span style={{ width: 12, height: 12, borderRadius: "50%", background: hasCon ? s.color : (has ? STATE.success : SURFACE.textFaint), boxShadow: `0 0 8px ${hasCon ? s.glow : "transparent"}` }} />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 12, color: SURFACE.textMuted, marginBottom: 6 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 12, color: SURFACE.textMuted, marginBottom: 6, flexWrap: "wrap", gap: 4 }}>
                   <span>{hasCon ? `${formatCurrency(bucket.consumed)} consumido de ${formatCurrency(bucket.awarded)}` : has ? `${formatCurrency(bucket.awarded)} adjudicado` : "Sin monto adjudicado"}</span>
                   <span style={{ fontWeight: 700, color: hasCon ? s.color : SURFACE.borderStrong }}>{pct}%</span>
                 </div>

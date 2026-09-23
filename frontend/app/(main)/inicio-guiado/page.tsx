@@ -818,7 +818,7 @@ export default function OnboardingPage() {
 
       {/* Header inmersivo */}
       <section
-        className="rounded-3xl p-7 relative overflow-hidden anim-fade-up-soft"
+        className="rounded-3xl p-5 md:p-7 relative overflow-hidden anim-fade-up-soft"
         style={{
           background: `linear-gradient(135deg, #020c18 0%, ${BRAND.navyLight} 50%, ${BRAND.navy} 100%)`,
           boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
@@ -954,7 +954,7 @@ export default function OnboardingPage() {
               />
             </div>
 
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-wrap justify-end gap-2">
               <button type="button" onClick={() => router.push("/dashboard/operacional")}
                 className="btn btn-ghost">
                 {t("Saltar el tour")}
@@ -1040,9 +1040,9 @@ export default function OnboardingPage() {
               </div>
             </div>
 
-            <div className="flex justify-between gap-2 pt-2">
+            <div className="flex flex-wrap justify-between gap-2 pt-2">
               <button type="button" onClick={prev} className="btn btn-ghost">{t("← Atrás")}</button>
-              <div className="inline-flex items-center gap-3">
+              <div className="inline-flex items-center gap-3 flex-wrap justify-end">
                 <span className="text-xs" style={{ color: "var(--text-muted)" }}>
                   {state.goals.length} {state.goals.length === 1 ? t("seleccionado") : t("seleccionados")}
                 </span>

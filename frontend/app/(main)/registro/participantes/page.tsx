@@ -162,7 +162,7 @@ export default function RegistroParticipantesPage() {
         <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "10px" }}>
           {t("Gestión de registros")}
         </p>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
             className={`btn ${tab === "form" ? "btn-primary" : "btn-ghost"}`}
             type="button"

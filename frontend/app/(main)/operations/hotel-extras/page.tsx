@@ -23,7 +23,7 @@ export default function HotelExtrasPage() {
   return (
     <div className="min-w-0 space-y-6 overflow-x-hidden">
       <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "12px" }}>
-        <div style={{ display: "flex", gap: "8px" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
           <button style={tabBtnStyle(tab === "catalog")} onClick={() => setTab("catalog")} type="button">
             Extras
           </button>
@@ -42,7 +42,7 @@ export default function HotelExtrasPage() {
       ) : (
         <>
           <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "12px" }}>
-            <div style={{ display: "flex", gap: "8px" }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
               <button style={tabBtnStyle(reservationView === "calendar")} onClick={() => setReservationView("calendar")} type="button">
                 <CalendarIcon size={13} strokeWidth={2} style={{ display: "inline", marginRight: "6px", verticalAlign: "middle" }} />
                 Calendario

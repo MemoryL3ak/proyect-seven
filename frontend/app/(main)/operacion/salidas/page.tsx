@@ -7,6 +7,7 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
 import { CalendarIcon, AlertIcon, SearchIcon, RefreshIcon, PlaneIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 /* ────────────────────────────────────────────────────────────
    Monitoreo de Salidas de Participantes
@@ -85,6 +86,7 @@ const fechaLarga = (isoDate: string) => {
 
 export default function DepartureMonitoringPage() {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [transferOutTrips, setTransferOutTrips] = useState<Trip[]>([]);
   const [delegations, setDelegations] = useState<Record<string, Delegation>>({});
@@ -256,14 +258,14 @@ export default function DepartureMonitoringPage() {
   return (
     <div className="p-4 md:p-6 space-y-5">
       {/* Header estilo Monitor de Vuelos */}
-      <section style={{ background: SURFACE.card, borderRadius: "24px", padding: "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: `3px solid ${BRAND.teal}` }}>
+      <section style={{ background: SURFACE.card, borderRadius: "24px", padding: isMobile ? "16px" : "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: `3px solid ${BRAND.teal}` }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
               <PlaneIcon size={20} color={BRAND.teal} strokeWidth={2} />
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Operaciones aéreas")}</p>
             </div>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: SURFACE.text, lineHeight: 1.1 }}>{t("Monitoreo de Salidas")}</h1>
+            <h1 style={{ fontSize: isMobile ? "1.4rem" : "1.75rem", fontWeight: 800, color: SURFACE.text, lineHeight: 1.1 }}>{t("Monitoreo de Salidas")}</h1>
             <p style={{ fontSize: "13px", color: SURFACE.textMuted, marginTop: "4px" }}>{t("Participantes con vuelo de salida y viajes Transfer Out · Sólo participantes validados")}</p>
           </div>
           <button className="btn btn-ghost" onClick={() => { setCargando(true); void cargar(); }}>
@@ -343,7 +345,7 @@ export default function DepartureMonitoringPage() {
         porDia.map(([dia, grupo]) => (
           <section key={dia} className="surface rounded-2xl overflow-hidden">
             <div
-              className="px-4 py-3 flex items-center justify-between"
+              className="px-4 py-3 flex flex-wrap items-center justify-between gap-2"
               style={{
                 background: dia === hoy ? "rgba(245,158,11,0.08)" : "var(--elevated)",
                 borderBottom: "1px solid var(--border)",

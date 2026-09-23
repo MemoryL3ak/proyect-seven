@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
 import { PinIcon, ClockIcon, ChevronLeftIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 
@@ -182,6 +183,7 @@ function MenuFormFields({
 // ─── Main component ─────────────────────────────────────────────────────────
 export default function FoodCalendar({ mealType }: { mealType: MealType }) {
   const { locale, t } = useI18n();
+  const isMobile = useIsMobile();
   const dateLocale = locale === "en" ? "en-US" : locale === "pt" ? "pt-BR" : "es-CL";
   const meta = MEAL_META[mealType];
   // Use local date (not UTC) so the banner matches the calendar cells and the user's clock
@@ -303,7 +305,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
     <div className="space-y-4">
 
       {/* TODAY BANNER */}
-      <div style={{ borderRadius: "20px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <div style={{ borderRadius: "20px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, padding: isMobile ? "16px" : "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "12px" }}>
           <div>
             <span style={{ display: "inline-flex", alignItems: "center", gap: "6px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 12px", fontSize: "10px", fontWeight: 700, letterSpacing: "0.25em", textTransform: "uppercase", color: BRAND.teal }}>
@@ -360,11 +362,12 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
       </div>
 
       {/* GRID + PANEL */}
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "16px", alignItems: "start" }}>
+      {/* En teléfono una sola columna: con "2fr 1fr" el panel del día quedaba a dos tercios del ancho. */}
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr", gap: "16px", alignItems: "start" }}>
 
         {/* Calendar grid */}
-        <div style={{ gridColumn: "span 2", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", overflow: "hidden" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
+        <div style={{ gridColumn: isMobile ? "auto" : "span 2", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
             {Array.from({ length: 7 }, (_, i) => {
               const d = new Date(2021, 0, 4 + i);
               return (
@@ -377,7 +380,7 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
           {loading ? (
             <div style={{ height: "256px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", color: SURFACE.textFaint }}>{t("Cargando...")}</div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(7, minmax(0, 1fr))" }}>
               {cells.map((day, i) => {
                 if (!day) return <div key={i} style={{ minHeight: "88px", background: SURFACE.bg, borderRight: `1px solid ${SURFACE.borderMuted}`, borderBottom: `1px solid ${SURFACE.borderMuted}` }} />;
                 const ds = toISO(year, month, day);

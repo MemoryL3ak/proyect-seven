@@ -375,7 +375,7 @@ export default function TripRequestsPage() {
       />
 
       {error && (
-        <section className="surface rounded-2xl p-4 flex items-center justify-between" style={{ borderLeft: `4px solid ${STATE.dangerText}`, backgroundColor: STATE.dangerSoft }}>
+        <section className="surface rounded-2xl p-4 flex flex-wrap items-center justify-between gap-2" style={{ borderLeft: `4px solid ${STATE.dangerText}`, backgroundColor: STATE.dangerSoft }}>
           <p className="text-sm flex items-center gap-2" style={{ color: "#7a1313" }}>
             <AlertIcon size={15} /> {error}
           </p>
@@ -501,11 +501,13 @@ export default function TripRequestsPage() {
 
       {/* Filtros */}
       <section className="surface rounded-2xl p-4 flex flex-wrap items-center gap-3">
-        <select className="input max-w-[220px]" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
+        {/* En el teléfono los filtros van a ancho completo; el tope de ancho
+            es sólo para que en escritorio no se estiren. */}
+        <select className="input md:max-w-[220px]" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
           <option value="">{t("Todos los eventos")}</option>
           {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name ?? ev.id}</option>)}
         </select>
-        <select className="input max-w-[170px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        <select className="input md:max-w-[170px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">{t("Todos los estados")}</option>
           <option value="REQUESTED">{t("Pendiente")}</option>
           <option value="SCHEDULED">{t("Agendada")}</option>
@@ -514,7 +516,7 @@ export default function TripRequestsPage() {
           <option value="COMPLETED">{t("Completada")}</option>
           <option value="CANCELLED">{t("Cancelada")}</option>
         </select>
-        <select className="input max-w-[140px]" value={clientFilter} onChange={(e) => setClientFilter(e.target.value as typeof clientFilter)}>
+        <select className="input md:max-w-[140px]" value={clientFilter} onChange={(e) => setClientFilter(e.target.value as typeof clientFilter)}>
           <option value="">{t("T1 y VIP")}</option>{/* ambos: la pantalla ya no trae otros */}
           <option value="T1">{t("Sólo T1")}</option>
           <option value="VIP">{t("Sólo VIP")}</option>
@@ -706,7 +708,7 @@ export default function TripRequestsPage() {
                 <button type="button" className="btn btn-ghost text-xs" onClick={() => setDetail(null)}>{t("Cerrar")}</button>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 {[
                   [t("Solicitante"), detail.requesterName ?? t("No registrado")],
                   [t("Agendada"), fmtStamp(detail.scheduledAt ?? detail.requestedAt)],
@@ -795,7 +797,7 @@ export default function TripRequestsPage() {
       {/* Modal de asignación */}
       {assigning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.45)" }}>
-          <div className="surface rounded-2xl p-5 w-full max-w-md space-y-4">
+          <div className="surface rounded-2xl p-5 w-full max-w-md space-y-4" style={{ maxHeight: "calc(100dvh - 32px)", overflowY: "auto" }}>
             <div>
               <h3 className="text-lg font-bold" style={{ color: STATE.infoText }}>{t("Asignar solicitud")} {clientTypeLabel(assigning.clientType)}</h3>
               <p className="text-xs" style={{ color: SURFACE.textFaint }}>{assigning.origin ?? "—"} → {assigning.destination ?? "—"}</p>

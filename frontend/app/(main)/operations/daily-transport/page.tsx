@@ -509,10 +509,12 @@ export default function DailyTransportPage() {
         description={t("Importa horarios desde planilla, auto-asigna conductores respetando restricciones, y revisa el día operativo completo.")}
         icon={<TruckIcon size={24} />}
         meta={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <label className="text-xs font-medium uppercase tracking-wide"
               style={{ color: "var(--text-muted)" }}>{t("Evento:")}</label>
-            <select className="input" style={{ minWidth: "240px" }}
+            {/* Sin ancho mínimo en el teléfono: 240 px junto a la etiqueta
+                se salían de la cabecera. */}
+            <select className="input min-w-0 md:min-w-[240px]"
               value={eventId} onChange={(e) => setEventId(e.target.value)}>
               {events.map((e) => <option key={e.id} value={e.id}>{e.name || e.id}</option>)}
             </select>

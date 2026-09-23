@@ -254,7 +254,7 @@ export default function HotelExtraReservationsCalendar({
     <div className="space-y-4">
       {/* Calendar header */}
       <div className="surface rounded-2xl p-4">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -395,7 +395,7 @@ export default function HotelExtraReservationsCalendar({
       {/* Selected day reservations */}
       {selectedDay && (
         <div className="surface rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-3">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
             <h3 className="font-bold text-base">
               {t("Reservas del")} {parseDateLocal(selectedDay).toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" })}
             </h3>
@@ -427,7 +427,7 @@ export default function HotelExtraReservationsCalendar({
                       padding: "12px 14px",
                     }}
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-semibold text-sm truncate">{extraName}</p>
                         <p className="text-xs opacity-70 mt-0.5">{athleteName}</p>
@@ -502,7 +502,7 @@ export default function HotelExtraReservationsCalendar({
                       padding: "12px 14px",
                     }}
                   >
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-semibold text-sm truncate">{extraName}</p>
                         <p className="text-xs opacity-70 mt-0.5">{athleteName}</p>
@@ -553,7 +553,7 @@ export default function HotelExtraReservationsCalendar({
         >
           <div
             className="surface rounded-2xl p-6 w-full max-w-md space-y-4"
-            style={{ maxHeight: "90vh", overflowY: "auto" }}
+            style={{ maxHeight: "calc(100dvh - 24px)", overflowY: "auto" }}
           >
             <div className="flex items-center justify-between">
               <h2 className="font-bold text-lg">{editingId ? t("Editar reserva") : t("Nueva reserva")}</h2>
@@ -581,7 +581,7 @@ export default function HotelExtraReservationsCalendar({
                 </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="label-sm">{t("Desde")}</label>
                   <input
@@ -602,7 +602,7 @@ export default function HotelExtraReservationsCalendar({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>
                   <label className="label-sm">{t("Cantidad")}</label>
                   <input

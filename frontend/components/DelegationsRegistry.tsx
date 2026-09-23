@@ -284,7 +284,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
               {t("Los viajes de esta delegación se asignan a una de estas disciplinas.")}
             </span>
           </div>
-          <div className="md:col-span-3 flex gap-2">
+          <div className="md:col-span-3 flex flex-wrap gap-2">
             <button type="submit" className="btn btn-primary" disabled={saving || !form.eventId || !form.countryCode}>
               {saving ? t("Guardando…") : form.id ? t("Guardar cambios") : t("Crear delegación")}
             </button>
@@ -306,7 +306,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
         ) : rows.length === 0 ? (
           <p style={{ fontSize: 13, color: SURFACE.textFaint, padding: 16, textAlign: "center" }}>{t("No hay delegaciones registradas para este evento.")}</p>
         ) : (
-          <div style={{ overflowX: "auto" }}>
+          <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
             <table className="w-full text-sm" style={{ borderCollapse: "collapse", minWidth: 560 }}>
               <thead>
                 <tr style={{ textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: SURFACE.textMuted }}>

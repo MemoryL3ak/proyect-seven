@@ -171,7 +171,7 @@ export default function SupportChatsPage() {
 
   return (
     <div className="space-y-4">
-      <section style={{ borderRadius: "20px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, padding: "20px 24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section style={{ borderRadius: "20px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, padding: isMobile ? "14px 16px" : "20px 24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "12px" }}>
           <div>
             <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal }}>Asistencia</p>
@@ -222,9 +222,9 @@ export default function SupportChatsPage() {
                     cursor: "pointer", border: "none",
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
-                    <p style={{ fontSize: "13px", fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "200px" }}>{c.origin_name}</p>
-                    <span style={{ fontSize: "10px", color: SURFACE.textFaint }}>{timeShort(c.last_message_at)}</span>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <p style={{ fontSize: "13px", fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0, maxWidth: isMobile ? undefined : "200px" }}>{c.origin_name}</p>
+                    <span style={{ fontSize: "10px", color: SURFACE.textFaint, flexShrink: 0 }}>{timeShort(c.last_message_at)}</span>
                   </div>
                   <div style={{ display: "flex", gap: "4px", marginBottom: "4px", flexWrap: "wrap" }}>
                     <span style={{ fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "99px", background: `${statusMeta.color}15`, color: statusMeta.color }}>
@@ -267,7 +267,7 @@ export default function SupportChatsPage() {
                       <ChevronLeftIcon size={16} strokeWidth={2.5} />
                     </button>
                   )}
-                <div>
+                <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: "14px", fontWeight: 700, color: SURFACE.text }}>{selected.origin_name}</p>
                   <p style={{ fontSize: "11px", color: SURFACE.textMuted }}>
                     {ORIGIN_LABEL[selected.origin_type] || selected.origin_type} · {CATEGORY_LABEL[selected.category] || selected.category} · Prioridad {selected.priority}
@@ -301,7 +301,7 @@ export default function SupportChatsPage() {
                   return (
                     <div key={m.id} style={{ display: "flex", justifyContent: isAgent ? "flex-end" : isSystem ? "center" : "flex-start", marginBottom: "10px" }}>
                       <div style={{
-                        maxWidth: "68%",
+                        maxWidth: isMobile ? "86%" : "68%",
                         background: m.is_internal_note ? STATE.warningSoft : isAgent ? BRAND.teal : SURFACE.card,
                         color: m.is_internal_note ? STATE.warningText : isAgent ? SURFACE.card : SURFACE.text,
                         border: m.is_internal_note ? `1px dashed ${STATE.warning}` : !isAgent ? `1px solid ${SURFACE.border}` : "none",

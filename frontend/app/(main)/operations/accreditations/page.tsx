@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { buildCredentialHtml } from "@/lib/credential-template";
 
@@ -130,6 +131,8 @@ function initials(name?: string | null) {
 
 export default function AccreditationsPage() {
   const { t } = useI18n();
+  // Paddings inline del panel principal: más chicos en teléfono.
+  const isMobile = useIsMobile();
   const pal = {
     panelBg: SURFACE.card, panelBorder: SURFACE.border, panelShadow: "0 1px 4px rgba(15,23,42,0.06)",
     accent: BRAND.teal, titleColor: SURFACE.text, subtitleColor: SURFACE.textMuted,
@@ -566,7 +569,7 @@ export default function AccreditationsPage() {
 
       {/* ── AND Compliance panel */}
       <section style={{ borderRadius: "24px", overflow: "hidden", boxShadow: pal.panelShadow }}>
-        <div style={{ background: pal.panelBg, border: `1px solid ${pal.panelBorder}`, borderRadius: "24px", padding: "24px 28px 22px", position: "relative", overflow: "hidden" }}>
+        <div style={{ background: pal.panelBg, border: `1px solid ${pal.panelBorder}`, borderRadius: "24px", padding: isMobile ? "16px" : "24px 28px 22px", position: "relative", overflow: "hidden" }}>
           <div style={{ position: "absolute", top: "-50px", right: "-30px", width: "250px", height: "250px", borderRadius: "50%", background: pal.orb1, filter: "blur(60px)", pointerEvents: "none" }} />
           <div style={{ position: "absolute", bottom: "-30px", left: "20%", width: "200px", height: "200px", borderRadius: "50%", background: pal.orb2, filter: "blur(50px)", pointerEvents: "none" }} />
 
@@ -647,7 +650,7 @@ export default function AccreditationsPage() {
             </div>
 
             {/* AND rows table */}
-            <div style={{ marginTop: "18px", overflowX: "auto", background: pal.innerBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "16px" }}>
+            <div style={{ marginTop: "18px", overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch", background: pal.innerBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "16px" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
                 <thead>
                   <tr>
@@ -807,7 +810,7 @@ export default function AccreditationsPage() {
           {newSubjectType === "PARTICIPANT" ? (
             <>
               {/* Header bar */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
                 <div>
                   <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Participantes registrados")}</p>
                   <p style={{ fontSize: "12px", color: SURFACE.textMuted, marginTop: "2px" }}>{participantRows.length} resultado{participantRows.length !== 1 ? "s" : ""}</p>
@@ -890,7 +893,7 @@ export default function AccreditationsPage() {
           ) : (
             <>
               {/* Header bar */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px", flexWrap: "wrap", gap: "8px" }}>
                 <div>
                   <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Conductores registrados")}</p>
                   <p style={{ fontSize: "12px", color: SURFACE.textMuted, marginTop: "2px" }}>{driverRows.length} resultado{driverRows.length !== 1 ? "s" : ""}</p>

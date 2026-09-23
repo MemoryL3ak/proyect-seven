@@ -463,7 +463,7 @@ export default function AndRegistrationKpi({
       </div>
 
       {/* ── KPI Cards */}
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mt-4 grid gap-3 md:gap-4 grid-cols-2 lg:grid-cols-4">
         {/* Cumplimiento */}
         <div style={{ background: "var(--surface)", border: "1px solid var(--border)", borderTop: `2px solid ${complianceColor}`, borderRadius: "16px", padding: "18px", boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}>
           <div className="flex items-center justify-between mb-3">
@@ -540,7 +540,7 @@ export default function AndRegistrationKpi({
 
       {error ? <p className="mt-3 text-sm" style={{ color: STATE.danger }}>{error}</p> : null}
 
-      <div className="mt-4 flex items-center justify-between gap-3">
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
         <p className="text-xs" style={{ color: "var(--text-muted)" }}>
           {t("Mostrando")} {Math.min(filteredRows.length, maxRows)} {t("de")} {filteredRows.length} {t("filas")}
         </p>
@@ -559,7 +559,7 @@ export default function AndRegistrationKpi({
         </div>
       </div>
 
-      <div className="mt-3 max-h-[560px] overflow-auto">
+      <div className="mt-3 max-h-[560px] max-w-full overflow-auto" style={{ WebkitOverflowScrolling: "touch" }}>
         <table className="table">
           <thead>
             <tr>

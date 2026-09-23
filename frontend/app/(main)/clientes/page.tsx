@@ -120,7 +120,7 @@ export default function ClientesPage() {
     <div className="space-y-5">
 
       {/* ── Header */}
-      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section className="p-4 md:px-7 md:py-6" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>Seven Arena</span>
           <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", background: "rgba(33,208,179,0.08)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 10px" }}>
@@ -151,7 +151,7 @@ export default function ClientesPage() {
       </section>
 
       {/* ── KPI cards */}
-      <section className="grid gap-4 md:grid-cols-3 lg:grid-cols-5">
+      <section className="grid gap-3 md:gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         {/* Total */}
         <article style={{
           background: pal.cardBg, border: `1px solid ${pal.cardBorder}`,
@@ -202,7 +202,7 @@ export default function ClientesPage() {
         background: pal.cardBg, border: `1px solid ${pal.tableBorder}`,
         borderRadius: "20px", overflow: "hidden", boxShadow: pal.cardShadow,
       }}>
-        <div style={{ overflowX: "auto" }}>
+        <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
               <tr style={{ background: pal.tableHead }}>

@@ -616,7 +616,7 @@ export default function VenuesMasterPage() {
       </section>
 
       {/* Cards */}
-      <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "28px", padding: "28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+      <section className="p-4 md:p-7" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
           <div>
             <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
@@ -850,7 +850,7 @@ function VenueCard({
               <iframe
                 src={embedUrl}
                 title={t("Mapa de {name}").replace("{name}", venue.name)}
-                style={{ width: "100%", minHeight: "180px", height: "100%", border: 0, display: "block" }}
+                style={{ width: "100%", minHeight: "260px", height: "100%", border: 0, display: "block" }}
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
               />
