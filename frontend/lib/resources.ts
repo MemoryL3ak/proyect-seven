@@ -1239,6 +1239,18 @@ export const resources: Record<string, ResourceConfig> = {
       },
       { key: "requestedAt", label: "Fecha solicitud", type: "datetime", formHidden: true },
       { key: "scheduledAt", label: "Fecha programación", type: "datetime" },
+      {
+        // Hora del tramo de regreso. Sólo aparece en un viaje de ida y vuelta,
+        // y no en el propio tramo de regreso (ahí la hora es "Fecha
+        // programación"). No es columna del viaje: el backend la usa para
+        // crear o mover el tramo de regreso y ResourceScreen la carga desde él.
+        key: "returnScheduledAt",
+        label: "Fecha hora regreso",
+        type: "datetime",
+        required: true,
+        showWhen: { field: "isRoundTrip", value: "true" },
+        hideWhen: { field: "legType", value: "RETURN" },
+      },
       // La hora a la que el conductor tiene que estar en el origen. Es un dato
       // propio, no se deduce de la hora del viaje.
       { key: "presentationAt", label: "Presentación conductor", type: "datetime" },
