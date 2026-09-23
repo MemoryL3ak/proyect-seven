@@ -1239,6 +1239,9 @@ export const resources: Record<string, ResourceConfig> = {
       },
       { key: "requestedAt", label: "Fecha solicitud", type: "datetime", formHidden: true },
       { key: "scheduledAt", label: "Fecha programación", type: "datetime" },
+      // La hora a la que el conductor tiene que estar en el origen. Es un dato
+      // propio, no se deduce de la hora del viaje.
+      { key: "presentationAt", label: "Presentación conductor", type: "datetime" },
       { key: "startedAt", label: "Inicio", type: "datetime", formHidden: true },
       { key: "completedAt", label: "Cierre", type: "datetime", formHidden: true },
       // El viaje se asigna a la delegación y a su disciplina: viaja el equipo

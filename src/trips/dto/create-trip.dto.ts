@@ -112,8 +112,8 @@ export class CreateTripDto {
   scheduledAt?: string;
 
   /**
-   * Hora de presentación del conductor. Si no viene, se calcula como la hora
-   * del traslado menos 30 minutos (PRESENTATION_LEAD_MINUTES).
+   * Hora de presentación del conductor, tal como la fija la operación. No se
+   * deduce de la hora del traslado: si no viene, queda vacía.
    */
   @IsISO8601()
   @IsOptional()

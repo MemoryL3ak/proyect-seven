@@ -270,15 +270,10 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
       );
     });
 
-    it('la presentación queda 15 minutos antes de la hora del viaje', () => {
-      const svc = service as unknown as WithDates & {
-        withLead: (at: Date) => Date;
-      };
-      const viaje = svc.mergeDateTime(svc.parseDate('23-sept', '2026'), '07:45');
-      expect(viaje?.toISOString()).toBe('2026-09-23T10:45:00.000Z'); // 07:45 en Chile
-      expect(svc.withLead(viaje as Date).toISOString()).toBe(
-        '2026-09-23T10:30:00.000Z', // 07:30 en Chile
-      );
+    it('ya no existe la regla de restar 15 minutos para la presentación', () => {
+      // La presentación del conductor se toma de la columna "Presentación" de
+      // la planilla, fila por fila; si la regla vuelve, este método reaparece.
+      expect((service as unknown as { withLead?: unknown }).withLead).toBeUndefined();
     });
 
     it('la fecha del viaje no se corre por la zona horaria del servidor', () => {

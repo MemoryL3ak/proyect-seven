@@ -67,14 +67,6 @@ const MONTHS_ES: Record<string, number> = {
  */
 const EVENT_TIME_ZONE = process.env.EVENT_TIME_ZONE || 'America/Santiago';
 
-/**
- * El conductor se presenta 15 minutos antes de la hora del viaje. La hora de
- * presentación se calcula con esta regla y no se toma de la planilla: en los
- * archivos reales esa columna venía con criterios distintos según quién los
- * armaba.
- */
-const PRESENTATION_LEAD_MINUTES = 15;
-
 const VALID_CLIENT_TYPES = [
   'TF',
   'TM',
@@ -197,11 +189,6 @@ export class TripsScheduleService {
     }
 
     return null;
-  }
-
-  /** Hora de presentación: los minutos de anticipación sobre la hora del viaje. */
-  private withLead(at: Date): Date {
-    return new Date(at.getTime() - PRESENTATION_LEAD_MINUTES * 60000);
   }
 
   /** Desfase en minutos de la zona del evento para un instante UTC dado. */
@@ -774,6 +761,9 @@ export class TripsScheduleService {
     const disciplinas = await this.fetchDisciplinas(dto.eventId);
     const driverIssues = new Map<string, number[]>();
     const regionIssues = new Map<string, number[]>();
+    // Filas sin hora de presentación: el viaje se crea igual, pero el
+    // conductor no tendrá hora a la que llegar hasta que alguien la ponga.
+    const sinPresentacion: number[] = [];
     let driverAssignedCount = 0;
     // Columnas que la base desplegada no tiene (desfase de esquema). Se detectan
     // en el primer insert que falla y se omiten en el resto de las filas; antes
@@ -823,19 +813,22 @@ export class TripsScheduleService {
         const arrivalAt = this.mergeDateTime(tripDate, row.arrivalTime);
         const returnAt = this.mergeDateTime(tripDate, row.returnTime);
 
-        // La hora del viaje es la hora del bus: cuando tiene que estar en el
-        // origen recogiendo ("Hora Llegada Bus"). Antes se usaba la llegada al
-        // recinto, que es el final del traslado y no su inicio. Si la planilla
-        // no trae esa columna se cae a la llegada al recinto y luego a la
-        // presentación, para no perder la fila.
-        const scheduledAt = departureAt || arrivalAt || sheetPresentationAt;
+        // La hora del viaje es la llegada al recinto ("Hora Llegada Recinto"),
+        // que es la hora que el grupo tiene que cumplir. Si la planilla no
+        // trae esa columna se cae a la hora del bus y luego a la presentación,
+        // para no perder la fila.
+        const scheduledAt = arrivalAt || departureAt || sheetPresentationAt;
 
         if (!scheduledAt) {
           skipped.push({ index: i, reason: 'Sin hora de salida/llegada' });
           continue;
         }
 
-        const presentationAt = this.withLead(scheduledAt);
+        // La presentación del conductor es la de la planilla, tal cual. Antes
+        // se calculaba restando 15 minutos a la hora del viaje; la operación
+        // la fija fila por fila y esa regla la pisaba.
+        const presentationAt = sheetPresentationAt;
+        if (!presentationAt) sinPresentacion.push(i + 1);
 
         const { clientType, delegationId: delegacionDelAcronimo } =
           this.resolverTipoCliente(row.clientType, delegaciones);
@@ -955,7 +948,8 @@ export class TripsScheduleService {
             origin_food_location_id: destino.foodLocationId,
             destination_food_location_id: origen.foodLocationId,
             scheduled_at: returnAt.toISOString(),
-            presentation_at: this.withLead(returnAt).toISOString(),
+            // La planilla no trae presentación para el regreso automático.
+            presentation_at: null,
             return_at: null,
             is_round_trip: true,
             leg_type: 'RETURN',
@@ -1004,6 +998,14 @@ export class TripsScheduleService {
         `${etiqueta}: ${motivo}. El viaje se creó sin delegación — el Jefe de Misión no lo verá ni saldrá en el filtro por región hasta asignarla en Gestión manual.`,
       );
     });
+
+    if (sinPresentacion.length > 0) {
+      const etiqueta =
+        sinPresentacion.length > 1 ? `Filas ${sinPresentacion.join(', ')}` : `Fila ${sinPresentacion[0]}`;
+      warnings.push(
+        `${etiqueta}: sin hora de presentación. El viaje se creó sin ella — el conductor no tendrá hora a la que llegar hasta que la pongas en Gestión manual.`,
+      );
+    }
 
     return {
       created,

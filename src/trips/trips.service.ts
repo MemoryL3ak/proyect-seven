@@ -70,13 +70,6 @@ type TripRow = {
   updated_at: string;
 };
 
-/**
- * El conductor debe estar en el punto de origen antes que el pasajero: su
- * programación se adelanta esta cantidad de minutos. El jefe de misión y el
- * pasajero siguen viendo la hora del traslado (scheduled_at).
- */
-export const PRESENTATION_LEAD_MINUTES = 30;
-
 type TripAthleteRow = {
   trip_id: string;
   athlete_id: string;
@@ -234,14 +227,12 @@ export class TripsService {
     if (dto.scheduledAt !== undefined) {
       row.scheduled_at = dto.scheduledAt ?? null;
     }
-    // Presentación del conductor: explícita si viene (importación de
-    // operatividad diaria) o media hora antes del traslado.
+    // Presentación del conductor: sólo la que viene dicha (planilla o
+    // editor). Antes, si no venía, se ponía media hora antes del traslado, y
+    // cambiar la hora del viaje desde el editor pisaba la presentación que
+    // había fijado la operación.
     if (dto.presentationAt !== undefined) {
       row.presentation_at = dto.presentationAt || null;
-    } else if (dto.scheduledAt !== undefined) {
-      row.presentation_at = dto.scheduledAt
-        ? new Date(new Date(dto.scheduledAt).getTime() - PRESENTATION_LEAD_MINUTES * 60_000).toISOString()
-        : null;
     }
     if (dto.startedAt !== undefined) {
       row.started_at = dto.startedAt ?? null;

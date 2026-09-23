@@ -337,12 +337,13 @@ const metrosEntre = (aLat: number, aLng: number, bLat: number, bLng: number) => 
 const MOVIMIENTO_MINIMO_M = 12;
 const KEEPALIVE_MS = 20_000;
 
-const PRESENTACION_MINUTOS = 30;
-const horaPresentacion = (trip: { presentationAt?: string | null; scheduledAt?: string | null }) => {
-  if (trip.presentationAt) return trip.presentationAt;
-  if (!trip.scheduledAt) return null;
-  return new Date(new Date(trip.scheduledAt).getTime() - PRESENTACION_MINUTOS * 60_000).toISOString();
-};
+/**
+ * Hora a la que el conductor tiene que presentarse: la que fijó la operación.
+ * Si el viaje no la trae, se muestra la hora del viaje mismo; antes se le
+ * restaba media hora, pero esa regla ya no existe.
+ */
+const horaPresentacion = (trip: { presentationAt?: string | null; scheduledAt?: string | null }) =>
+  trip.presentationAt || trip.scheduledAt || null;
 /** Encabezado de una jornada: "Hoy", "Mañana" o "lun 23 sep". */
 const etiquetaDia = (clave: string, hoy: string) => {
   if (!clave || clave === "sin-fecha") return "Sin fecha";
