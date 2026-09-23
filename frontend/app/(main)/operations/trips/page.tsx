@@ -585,6 +585,13 @@ export default function TripsPage() {
   // Popup de solo lectura al pinchar una tarjeta del timeline operativo
   // (la edición queda como acción explícita dentro del popup).
   const [infoTrip, setInfoTrip] = useState<Trip | null>(null);
+  // El detalle abierto sigue al viaje cuando la lista se recarga: si no, tras
+  // editar seguía mostrando los datos viejos hasta cerrarlo y volver a abrir.
+  useEffect(() => {
+    if (!infoTrip) return;
+    const fresco = trips.flatMap((trip) => [trip, ...(trip.childTrips ?? [])]).find((trip) => trip.id === infoTrip.id);
+    if (fresco && fresco !== infoTrip) setInfoTrip(fresco);
+  }, [trips]);
   const [pendingAction, setPendingAction] = useState<{ trip: Trip; kind: "cancel" | "delete" } | null>(null);
   // Pestaña desde la que se abrió el editor, para volver ahí al cerrarlo en
   // vez de caer siempre en Despacho.
@@ -2993,6 +3000,13 @@ export default function TripsPage() {
             // mismo: quien cancela quiere volver a la lista, no quedarse en un
             // formulario vacío.
             onEditCancelled={cerrarEditor}
+            // Al guardar, la lista se recarga sola y, si se estaba editando
+            // un viaje existente, se vuelve a donde se estaba. Antes había
+            // que refrescar la página para ver el cambio.
+            onDataChanged={() => {
+              void loadData(true);
+              if (selectedTripId) cerrarEditor();
+            }}
           />
         </section>
       )}
