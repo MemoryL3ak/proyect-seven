@@ -90,6 +90,9 @@ const VALID_CLIENT_TYPES = [
   'PROVEEDORES',
 ];
 
+/** Sede u hotel del catálogo, con su nombre ya normalizado para calzar. */
+type LugarCatalogo = { clave: string; venueId: string | null; hotelId: string | null };
+
 type TripWindow = {
   id: string;
   start: number;
@@ -275,6 +278,60 @@ export class TripsScheduleService {
       .replace(/[̀-ͯ]/g, '')
       .replace(/^region\s+(del\s+|de\s+)?/, '')
       .trim();
+  }
+
+  /**
+   * Clave de comparación de un lugar: sin tildes, sin mayúsculas, sin dobles
+   * espacios. Sólo se calza lo que es el mismo nombre escrito distinto, nunca
+   * parecidos. Misma regla que normalizarLugar en el frontend.
+   */
+  private claveLugar(raw: string | undefined | null): string {
+    return String(raw ?? '')
+      .normalize('NFD')
+      .replace(/[̀-ͯ]/g, '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /** Sedes y hoteles del evento, para que cada extremo del viaje apunte al suyo. */
+  private async fetchLugares(eventId: string): Promise<LugarCatalogo[]> {
+    const lugares: LugarCatalogo[] = [];
+    const { data: sedes } = await this.supabase
+      .schema('logistics')
+      .from('venues')
+      .select('id, name')
+      .eq('event_id', eventId);
+    for (const v of (sedes as Array<Record<string, unknown>>) ?? []) {
+      const clave = this.claveLugar(v.name as string | undefined);
+      if (clave) lugares.push({ clave, venueId: String(v.id), hotelId: null });
+    }
+    const { data: hoteles } = await this.supabase
+      .schema('logistics')
+      .from('accommodations')
+      .select('id, name')
+      .eq('event_id', eventId);
+    for (const h of (hoteles as Array<Record<string, unknown>>) ?? []) {
+      const clave = this.claveLugar(h.name as string | undefined);
+      if (clave) lugares.push({ clave, venueId: null, hotelId: String(h.id) });
+    }
+    return lugares;
+  }
+
+  /**
+   * Sede u hotel que nombra un extremo del viaje, por nombre exacto. Los
+   * comedores no están aquí (viven en Alimentación) y "ESC.NAVAL 2" no es el
+   * nombre de nada: esos quedan sin id, con el texto tal cual. Ante dos
+   * calces no se adivina.
+   */
+  private resolverLugar(
+    raw: string | undefined | null,
+    lugares: LugarCatalogo[],
+  ): { venueId: string | null; hotelId: string | null } {
+    const clave = this.claveLugar(raw);
+    const candidatos = clave ? lugares.filter((l) => l.clave === clave) : [];
+    if (candidatos.length !== 1) return { venueId: null, hotelId: null };
+    return { venueId: candidatos[0].venueId, hotelId: candidatos[0].hotelId };
   }
 
   /** Delegaciones del evento, para reconocerlas cuando vienen mal ubicadas. */
@@ -597,6 +654,7 @@ export class TripsScheduleService {
     // repetir la misma advertencia en cada tramo del mismo bus.
     const scheduleDrivers = await this.fetchScheduleDrivers(dto.eventId);
     const delegaciones = await this.fetchDelegaciones(dto.eventId);
+    const lugares = await this.fetchLugares(dto.eventId);
     const driverIssues = new Map<string, number[]>();
     let driverAssignedCount = 0;
     // Columnas que la base desplegada no tiene (desfase de esquema). Se detectan
@@ -673,6 +731,12 @@ export class TripsScheduleService {
         const fleetAcronym = String(row.fleetAcronym || '').trim().toUpperCase() || null;
         const legType = this.isReturnLeg(row.legType) ? 'RETURN' : 'OUTBOUND';
         const isRoundTrip = !!returnAt && legType === 'OUTBOUND';
+        // Sede u hotel al que apunta cada extremo. Sin esto los viajes de la
+        // planilla quedaban sólo con el texto: los filtros por lugar del
+        // portal no tenían con qué calzar y el detalle mostraba la dirección
+        // en vez del recinto.
+        const origen = this.resolverLugar(row.originName || row.originAddress, lugares);
+        const destino = this.resolverLugar(row.destinationName || row.destinationAddress, lugares);
 
         const driverMatch = this.matchScheduleDriver(
           scheduleDrivers,
@@ -695,6 +759,10 @@ export class TripsScheduleService {
           driver_id: driverId,
           origin: row.originName || row.originAddress || null,
           destination: row.destinationName || row.destinationAddress || null,
+          origin_venue_id: origen.venueId,
+          origin_hotel_id: origen.hotelId,
+          destination_venue_id: destino.venueId,
+          destination_hotel_id: destino.hotelId,
           trip_type: row.activity || null,
           client_type: clientType,
           delegation_id: delegationId,
@@ -743,6 +811,11 @@ export class TripsScheduleService {
             ...tripRow,
             origin: row.destinationName || row.destinationAddress || null,
             destination: row.originName || row.originAddress || null,
+            // El regreso va al revés: los ids también.
+            origin_venue_id: destino.venueId,
+            origin_hotel_id: destino.hotelId,
+            destination_venue_id: origen.venueId,
+            destination_hotel_id: origen.hotelId,
             scheduled_at: returnAt.toISOString(),
             presentation_at: this.withLead(returnAt).toISOString(),
             return_at: null,

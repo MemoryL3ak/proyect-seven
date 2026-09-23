@@ -117,6 +117,48 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
     expect(match(undefined, undefined)).toBeNull();
   });
 
+  /**
+   * Sede u hotel de cada extremo, por nombre exacto contra el catálogo. Los
+   * 330 viajes de la primera planilla quedaron sólo con el texto y los filtros
+   * por lugar del portal no tenían con qué calzar.
+   */
+  describe('sede u hotel de cada extremo', () => {
+    type Lugar = { clave: string; venueId: string | null; hotelId: string | null };
+    type Calce = { venueId: string | null; hotelId: string | null };
+    type WithLugares = {
+      claveLugar: (raw?: string | null) => string;
+      resolverLugar: (raw: string | undefined | null, lugares: Lugar[]) => Calce;
+    };
+    const svc = () => service as unknown as WithLugares;
+    const sede = (nombre: string, id: string): Lugar => ({ clave: svc().claveLugar(nombre), venueId: id, hotelId: null });
+    const hotel = (nombre: string, id: string): Lugar => ({ clave: svc().claveLugar(nombre), venueId: null, hotelId: id });
+    // Nombres tal como están en el catálogo del evento.
+    const catalogo = (): Lugar[] => [
+      sede('Estadio Elías Figueroa Brander', 'elias'),
+      sede('Escuela Naval Arturo Prat', 'naval'),
+      hotel('Hotel LRH § Convention Center (ex Gala)', 'lrh'),
+      hotel('Hippocampus Resort § Club', 'hippo'),
+    ];
+    const nada: Calce = { venueId: null, hotelId: null };
+
+    it('calza el nombre exacto aunque cambien tildes, mayúsculas y espacios', () => {
+      expect(svc().resolverLugar('ESTADIO ELIAS FIGUEROA  BRANDER', catalogo())).toEqual({ venueId: 'elias', hotelId: null });
+      expect(svc().resolverLugar('Hippocampus Resort § Club', catalogo())).toEqual({ venueId: null, hotelId: 'hippo' });
+    });
+
+    it('no adivina: un comedor o una abreviatura quedan sin id', () => {
+      expect(svc().resolverLugar('Comedor LRH (EX GALA)', catalogo())).toEqual(nada);
+      expect(svc().resolverLugar('ESC.NAVAL 2', catalogo())).toEqual(nada);
+      expect(svc().resolverLugar('', catalogo())).toEqual(nada);
+      expect(svc().resolverLugar(undefined, catalogo())).toEqual(nada);
+    });
+
+    it('ante dos lugares con el mismo nombre no elige ninguno', () => {
+      const doble = [...catalogo(), sede('Escuela Naval Arturo Prat', 'naval-2')];
+      expect(svc().resolverLugar('Escuela Naval Arturo Prat', doble)).toEqual(nada);
+    });
+  });
+
   describe('horas de la planilla', () => {
     type WithDates = {
       parseDate: (raw?: string, defaultYear?: string) => Date | null;
