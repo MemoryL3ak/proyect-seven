@@ -813,11 +813,11 @@ export class TripsScheduleService {
         const arrivalAt = this.mergeDateTime(tripDate, row.arrivalTime);
         const returnAt = this.mergeDateTime(tripDate, row.returnTime);
 
-        // La hora del viaje es la llegada al recinto ("Hora Llegada Recinto"),
-        // que es la hora que el grupo tiene que cumplir. Si la planilla no
-        // trae esa columna se cae a la hora del bus y luego a la presentación,
+        // La hora del viaje es la hora del bus: cuando tiene que estar en el
+        // origen recogiendo ("Hora Llegada Bus"). Si la planilla no trae esa
+        // columna se cae a la llegada al recinto y luego a la presentación,
         // para no perder la fila.
-        const scheduledAt = arrivalAt || departureAt || sheetPresentationAt;
+        const scheduledAt = departureAt || arrivalAt || sheetPresentationAt;
 
         if (!scheduledAt) {
           skipped.push({ index: i, reason: 'Sin hora de salida/llegada' });

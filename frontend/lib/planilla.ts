@@ -393,7 +393,7 @@ export function compararConPlanilla(
     if (candidatos.length === 0) return base;
 
     // Con varios candidatos, el de hora de viaje más cercana a la planilla.
-    const objetivo = horaNormalizada(fila.arrivalTime) || horaNormalizada(fila.departureTime);
+    const objetivo = horaNormalizada(fila.departureTime) || horaNormalizada(fila.arrivalTime);
     const minutos = (hhmm: string) => (hhmm ? Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5)) : Number.NaN);
     const distancia = (v: ViajeComparable) => {
       const d = Math.abs(minutos(horaEvento(v.scheduledAt)) - minutos(objetivo));
@@ -411,7 +411,8 @@ export function compararConPlanilla(
     const presSistema = horaEvento(viaje.presentationAt);
     anotar("Presentación conductor", presPlanilla, presSistema, presPlanilla === presSistema);
 
-    const horaPlanilla = horaNormalizada(fila.arrivalTime);
+    // La hora del viaje es la del bus en el origen ("Hora Llegada Bus").
+    const horaPlanilla = horaNormalizada(fila.departureTime);
     const horaSistema = horaEvento(viaje.scheduledAt);
     anotar("Hora del viaje", horaPlanilla, horaSistema, horaPlanilla === horaSistema);
 

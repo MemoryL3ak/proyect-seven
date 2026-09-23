@@ -44,7 +44,7 @@ const viaje = (extra: Partial<ViajeComparable> = {}): ViajeComparable => ({
   vehiclePlate: "GXVS-17",
   origin: "Mahia Beach Hotel",
   destination: "Estadio Elias Figueroa Brander",
-  scheduledAt: chile("08:15"),
+  scheduledAt: chile("07:45"),
   presentationAt: chile("07:00"),
   discipline: "Atletismo",
   passengerCount: 40,
@@ -97,15 +97,16 @@ describe("compararConPlanilla", () => {
     expect(r.sinFila).toEqual([]);
   });
 
-  it("calza aunque el viaje traiga la regla vieja de horas, y anota las dos horas", () => {
-    // Regla vieja: hora del viaje = llegada del bus (07:45) y presentación 15 min antes.
-    const r = compararConPlanilla([fila()], [viaje({ scheduledAt: chile("07:45"), presentationAt: chile("07:30") })], ctx);
+  it("calza aunque el viaje traiga la regla vieja de presentación, y anota la hora", () => {
+    // Regla vieja: presentación 15 min antes de la hora del bus (07:45).
+    const r = compararConPlanilla([fila()], [viaje({ presentationAt: chile("07:30") })], ctx);
     expect(r.filas[0].viajeId).toBe("v1");
-    expect(r.filas[0].diferencias).toEqual([
-      { campo: "Presentación conductor", planilla: "07:00", sistema: "07:30" },
-      { campo: "Hora del viaje", planilla: "08:15", sistema: "07:45" },
-    ]);
-    expect(r.porViaje.get("v1")).toHaveLength(2);
+    expect(r.filas[0].diferencias).toEqual([{ campo: "Presentación conductor", planilla: "07:00", sistema: "07:30" }]);
+  });
+
+  it("la hora del viaje se compara con la hora del bus, no con la llegada al recinto", () => {
+    const r = compararConPlanilla([fila()], [viaje({ scheduledAt: chile("08:15") })], ctx);
+    expect(r.filas[0].diferencias).toEqual([{ campo: "Hora del viaje", planilla: "07:45", sistema: "08:15" }]);
   });
 
   it("marca género, región, pasajeros y conductor distintos", () => {
@@ -136,7 +137,7 @@ describe("compararConPlanilla", () => {
 
   it("con dos viajes del mismo servicio elige el de hora más cercana y no repite", () => {
     const r = compararConPlanilla(
-      [fila({ arrivalTime: "08:15" }), fila({ fila: 3, arrivalTime: "15:00", presentationTime: "14:00" })],
+      [fila({ departureTime: "07:45" }), fila({ fila: 3, departureTime: "15:00", presentationTime: "14:00" })],
       [viaje({ id: "tarde", scheduledAt: chile("15:00"), presentationAt: chile("14:00") }), viaje({ id: "manana" })],
       ctx,
     );
