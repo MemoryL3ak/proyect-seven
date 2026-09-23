@@ -61,6 +61,7 @@ import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } fr
 import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { dlog } from "@/lib/native-debug";
 import { gpsWebNecesario, senalDeCorte, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
+import { destinoDeNavegacion, enlacesDeNavegacion, type LugarConDireccion } from "@/lib/navegacion";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import { ChipFilter } from "@/components/ui/FilterControls";
@@ -134,6 +135,13 @@ type Trip = {
   ratedAt?: string | null;
   passengerLat?: number | null;
   passengerLng?: number | null;
+  /** Lugares del catálogo a los que apunta el viaje: por acá sale la dirección para navegar. */
+  originVenueId?: string | null;
+  destinationVenueId?: string | null;
+  originHotelId?: string | null;
+  destinationHotelId?: string | null;
+  originFoodLocationId?: string | null;
+  destinationFoodLocationId?: string | null;
   notes?: string | null;
   /**
    * Viaje de delegación: en los Juegos Escolares el traslado se asigna al
@@ -434,6 +442,7 @@ export default function DriverPortalPage() {
   const [driverPosition, setDriverPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [venues, setVenues] = useState<VenueSite[]>([]);
   const [accommodations, setAccommodations] = useState<AccommodationSite[]>([]);
+  const [foodLocations, setFoodLocations] = useState<LugarConDireccion[]>([]);
   const [flights, setFlights] = useState<FlightItem[]>([]);
   // Rastreo de un vuelo (pestaña Vuelos): estado del popup con la info en vivo.
   const [trackTarget, setTrackTarget] = useState<{ flightNumber: string; airline?: string | null; arrivalTime?: string | null } | null>(null);
@@ -616,9 +625,13 @@ export default function DriverPortalPage() {
         apiFetch<VenueSite[]>("/venues").catch(() => []),
         apiFetch<AccommodationSite[]>("/accommodations").catch(() => []),
         apiFetch<FlightItem[]>("/flights").catch(() => []),
-      ]).then(([venueData, accomData, flightData]) => {
+        // Comedores: el viaje puede apuntar a uno por id, y su dirección es
+        // a la que se navega.
+        apiFetch<LugarConDireccion[]>("/food-locations").catch(() => []),
+      ]).then(([venueData, accomData, flightData, foodData]) => {
         setVenues(venueData || []);
         setAccommodations(accomData || []);
+        setFoodLocations(Array.isArray(foodData) ? foodData : []);
         setFlights(
           (flightData || []).sort((a, b) => new Date(a.arrivalTime || 0).getTime() - new Date(b.arrivalTime || 0).getTime()),
         );
@@ -839,33 +852,13 @@ export default function DriverPortalPage() {
      escrita —, si no el texto de origen); con el pasajero a bordo, el destino. */
   const [navPrompt, setNavPrompt] = useState<{ trip: Trip; phase: "pickup" | "dropoff" } | null>(null);
 
+  // Se navega a la dirección con la que se registró la sede, el hotel o el
+  // comedor, no al nombre: buscar "Hotel Diego de Almagro" en Waze puede
+  // llevar al de otra ciudad (lib/navegacion).
   const navTarget = (trip: Trip, phase: "pickup" | "dropoff"): { waze: string; gmaps: string; label: string } | null => {
-    if (phase === "pickup") {
-      if (typeof trip.passengerLat === "number" && typeof trip.passengerLng === "number") {
-        const ll = `${trip.passengerLat},${trip.passengerLng}`;
-        return {
-          waze: `https://waze.com/ul?ll=${ll}&navigate=yes`,
-          gmaps: `https://www.google.com/maps/dir/?api=1&destination=${ll}`,
-          label: trip.origin || "Punto de recogida (posición del pasajero)",
-        };
-      }
-      if (trip.origin) {
-        return {
-          waze: `https://waze.com/ul?q=${encodeURIComponent(trip.origin)}&navigate=yes`,
-          gmaps: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trip.origin)}`,
-          label: trip.origin,
-        };
-      }
-      return null;
-    }
-    if (trip.destination) {
-      return {
-        waze: `https://waze.com/ul?q=${encodeURIComponent(trip.destination)}&navigate=yes`,
-        gmaps: `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(trip.destination)}`,
-        label: trip.destination,
-      };
-    }
-    return null;
+    const destino = destinoDeNavegacion(trip, phase, { venues, hoteles: accommodations, comedores: foodLocations });
+    if (!destino) return null;
+    return { ...enlacesDeNavegacion(destino), label: destino.etiqueta };
   };
 
   /* ── Abrir la navegacion FUERA del WebView (solo Android) ────────────────
