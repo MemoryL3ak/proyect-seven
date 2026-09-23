@@ -93,6 +93,9 @@ const VALID_CLIENT_TYPES = [
 /** Delegación del evento con sus claves de calce y su nombre visible. */
 type DelegacionClave = { id: string; nombre: string; clave: string; compacta: string; codigo: string };
 
+/** Deporte padre del catálogo, con su nombre ya normalizado para calzar. */
+type DisciplinaCatalogo = { id: string; clave: string; gender: string; paralimpica: boolean };
+
 /** Sede u hotel del catálogo, con su nombre ya normalizado para calzar. */
 type LugarCatalogo = {
   clave: string;
@@ -300,6 +303,59 @@ export class TripsScheduleService {
       .toLowerCase()
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  /** Deportes padre del evento, para que el viaje apunte al suyo por id. */
+  private async fetchDisciplinas(eventId: string): Promise<DisciplinaCatalogo[]> {
+    const { data } = await this.supabase
+      .schema('core')
+      .from('disciplines')
+      .select('id, name, gender, category')
+      .eq('event_id', eventId)
+      .is('parent_id', null);
+    return ((data as Array<Record<string, unknown>>) ?? [])
+      .map((d) => ({
+        id: String(d.id),
+        clave: this.claveLugar(d.name as string | undefined),
+        gender: String(d.gender ?? '').trim().toUpperCase(),
+        paralimpica: String(d.category ?? '').trim().toUpperCase() === 'PARALYMPIC',
+      }))
+      .filter((d) => d.clave);
+  }
+
+  /** Género tal como lo escribe la planilla: "Femenino", "Masculino", "DAMAS Y VARONES". */
+  private generoDePlanilla(raw: string | undefined): string | null {
+    const g = this.claveLugar(raw);
+    if (!g) return null;
+    if (/mixt|damas y varones|varones y damas/.test(g)) return 'MIXED';
+    if (/^(femenin[oa]|damas|mujeres|f)$/.test(g)) return 'FEMALE';
+    if (/^(masculin[oa]|varones|hombres|m)$/.test(g)) return 'MALE';
+    return null;
+  }
+
+  /**
+   * Deporte del viaje por nombre exacto, con el género de la planilla para
+   * separar variantes ("Futsal" existe Femenino y Masculino). "PARATLETISMO"
+   * es Atletismo paralímpico. Si aun así hay más de uno —Voleibol "General"
+   * en la inauguración, que es de los dos— queda sin id, con el texto.
+   */
+  private resolverDisciplina(
+    texto: string | undefined,
+    genero: string | undefined,
+    disciplinas: DisciplinaCatalogo[],
+  ): string | null {
+    const clave = this.claveLugar(texto);
+    if (!clave) return null;
+    const porNombre = disciplinas.filter((d) => {
+      if (clave === d.clave) return !d.paralimpica || clave.startsWith('para');
+      if (!d.paralimpica) return false;
+      const variantes = [`para ${d.clave}`, `para${d.clave}`, d.clave.startsWith('a') ? `par${d.clave}` : ''];
+      return variantes.includes(clave);
+    });
+    if (porNombre.length === 1) return porNombre[0].id;
+    const g = this.generoDePlanilla(genero);
+    const porGenero = g ? porNombre.filter((d) => d.gender === g) : [];
+    return porGenero.length === 1 ? porGenero[0].id : null;
   }
 
   /** Sedes, hoteles y comedores, para que cada extremo del viaje apunte al suyo. */
@@ -715,6 +771,7 @@ export class TripsScheduleService {
     const scheduleDrivers = await this.fetchScheduleDrivers(dto.eventId);
     const delegaciones = await this.fetchDelegaciones(dto.eventId);
     const lugares = await this.fetchLugares(dto.eventId);
+    const disciplinas = await this.fetchDisciplinas(dto.eventId);
     const driverIssues = new Map<string, number[]>();
     const regionIssues = new Map<string, number[]>();
     let driverAssignedCount = 0;
@@ -846,6 +903,7 @@ export class TripsScheduleService {
           requested_vehicle_type: row.fleetType || null,
           vehicle_plate: row.vehiclePlate || null,
           discipline: row.discipline || null,
+          discipline_id: this.resolverDisciplina(row.discipline, row.gender, disciplinas),
           activity: row.activity || null,
           trip_date: tripDate.toISOString().slice(0, 10),
           presentation_at: presentationAt?.toISOString() ?? null,

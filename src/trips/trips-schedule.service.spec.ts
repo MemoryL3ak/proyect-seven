@@ -212,6 +212,40 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
     });
   });
 
+  /** Deporte por nombre + género de la planilla. */
+  describe('deporte de cada fila', () => {
+    type Disc = { id: string; clave: string; gender: string; paralimpica: boolean };
+    type WithDisc = {
+      claveLugar: (raw?: string | null) => string;
+      resolverDisciplina: (texto: string | undefined, genero: string | undefined, d: Disc[]) => string | null;
+    };
+    const svc = () => service as unknown as WithDisc;
+    const d = (id: string, nombre: string, gender: string, paralimpica = false): Disc =>
+      ({ id, clave: svc().claveLugar(nombre), gender, paralimpica });
+    const catalogo = () => [
+      d('atl', 'Atletismo', 'MIXED'), d('atl-para', 'Atletismo', 'MIXED', true),
+      d('fut-f', 'Futsal', 'FEMALE'), d('fut-m', 'Futsal', 'MALE'),
+      d('vol-f', 'Vóleibol', 'FEMALE'), d('vol-m', 'Vóleibol', 'MALE'),
+    ];
+
+    it('separa las variantes por el género de la planilla', () => {
+      expect(svc().resolverDisciplina('Futsal', 'Femenino', catalogo())).toBe('fut-f');
+      expect(svc().resolverDisciplina('Voleibol', 'Masculino', catalogo())).toBe('vol-m');
+    });
+
+    it('"PARATLETISMO" es Atletismo paralímpico; "ATLETISMO" el convencional', () => {
+      expect(svc().resolverDisciplina('PARATLETISMO', 'DAMAS Y VARONES', catalogo())).toBe('atl-para');
+      expect(svc().resolverDisciplina('ATLETISMO', 'DAMAS Y VARONES', catalogo())).toBe('atl');
+    });
+
+    it('sin género que desempate, queda sin id', () => {
+      expect(svc().resolverDisciplina('Voleibol', 'General', catalogo())).toBeNull();
+      expect(svc().resolverDisciplina('Voleibol', undefined, catalogo())).toBeNull();
+      expect(svc().resolverDisciplina('Ajedrez', 'Mixto', catalogo())).toBeNull();
+      expect(svc().resolverDisciplina('', 'Femenino', catalogo())).toBeNull();
+    });
+  });
+
   describe('horas de la planilla', () => {
     type WithDates = {
       parseDate: (raw?: string, defaultYear?: string) => Date | null;
