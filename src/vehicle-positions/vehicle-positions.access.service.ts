@@ -9,6 +9,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Repository } from 'typeorm';
 import { MobileAuthService } from '../mobile-auth/mobile-auth.service';
+import type { StaffScope } from '../auth/staff-scope.service';
 import { CreateVehiclePositionDto } from './dto/create-vehicle-position.dto';
 import { VehiclePosition } from './entities/vehicle-position.entity';
 
@@ -232,6 +233,39 @@ export class VehiclePositionsAccessService {
     if (rows.length === 0) {
       throw new ForbiddenException('No participas en este viaje');
     }
+  }
+
+  /**
+   * Lectura por viaje para quien lo coordina desde el portal: el Jefe de
+   * Misión ve el bus de los viajes de su región (o de todas las regiones) y
+   * los Coordinadores de Comité y de Transporte el de cualquiera. Es el mismo
+   * alcance con el que reciben la lista de viajes; sin esto la tarjeta del
+   * viaje en curso no podía mostrar el bus en vivo a nadie que no viajara en él.
+   */
+  async assertOperatorCanReadTrip(
+    scope: StaffScope | null,
+    tripId: string,
+  ): Promise<void> {
+    if (scope?.kind === 'staff' || scope?.kind === 'committee') return;
+    if (scope?.kind === 'mission_head' && scope.delegationId) {
+      const rows = (await this.vehiclePositionRepository.query(
+        `SELECT 1
+           FROM transport.trips t
+          WHERE t.id = $1
+            AND (t.all_delegations
+                 OR t.delegation_id = $2
+                 OR t.requester_athlete_id IN
+                      (SELECT id FROM core.athletes WHERE delegation_id = $2)
+                 OR EXISTS (SELECT 1 FROM transport.trip_athletes ta
+                              JOIN core.athletes a ON a.id = ta.athlete_id
+                             WHERE ta.trip_id = t.id AND a.delegation_id = $2))
+          LIMIT 1`,
+        [tripId, scope.delegationId],
+      )) as unknown[];
+      if (rows.length > 0) return;
+      throw new ForbiddenException('Este viaje no es de tu delegación');
+    }
+    throw new ForbiddenException('No participas en este viaje');
   }
 
   /** Ingesta GPS: sólo el conductor autenticado puede reportar su propia posición. */

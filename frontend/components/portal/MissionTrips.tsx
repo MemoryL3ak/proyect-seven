@@ -7,6 +7,7 @@ import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { buildDisciplineLabelMap, coincideDisciplinaPorNombre, type DisciplineLike } from "@/lib/discipline-filters";
 import { claveDiaEvento, etiquetaDiaEvento, fechaCortaEvento, fechaHoraEvento, horaEvento } from "@/lib/hora-evento";
 import TripMap from "@/components/TripMap";
+import TripLiveMap from "@/components/portal/TripLiveMap";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import SelectorFiltro from "@/components/portal/SelectorFiltro";
 import { mapaDeLugares, tocaLugar } from "@/lib/lugares";
@@ -528,11 +529,24 @@ export default function MissionTrips({
 
                 {abiertaEsta && (
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${SURFACE.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
-                    {/* Mapa del recorrido: el jefe necesita ubicar el traslado. */}
-                    {(tr.origin || tr.destination) && (
-                      <div style={{ borderRadius: 10, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
-                        <TripMap origin={tr.origin} destination={tr.destination} height={170} />
+                    {/* En ruta: el bus en vivo. Antes o después: la ruta planificada. */}
+                    {EN_CURSO.has(norm(tr.status)) ? (
+                      <div onClick={(e) => e.stopPropagation()}>
+                        <TripLiveMap
+                          tripId={tr.id}
+                          status={tr.status}
+                          driverName={nombreChofer}
+                          vehiclePlate={tr.vehiclePlate}
+                          origin={tr.origin || puntoOrigen(tr)}
+                          destination={tr.destination || puntoDestino(tr)}
+                        />
                       </div>
+                    ) : (
+                      (tr.origin || tr.destination) && (
+                        <div style={{ borderRadius: 10, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+                          <TripMap origin={tr.origin} destination={tr.destination} height={170} />
+                        </div>
+                      )
                     )}
                     <div>
                       <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.08em", color: SURFACE.textFaint, margin: 0 }}>{t("ORIGEN")}</p>

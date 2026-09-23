@@ -394,7 +394,17 @@ export class VehiclePositionsService {
           LIMIT 1`,
         [tripId],
       )) as VehiclePositionRow[];
-      return rows[0] ? this.mapRow(rows[0]) : null;
+      if (rows[0]) return this.mapRow(rows[0]);
+      // Sin fix etiquetado con el viaje (el shell nativo transmite sin
+      // tripId y el etiquetado depende de que el viaje ya estuviera activo
+      // al llegar el fix): mientras el viaje esté en curso, la posición del
+      // viaje es la última de su chofer.
+      const activo = (await this.vehiclePositionRepository.query(
+        `SELECT driver_id FROM transport.trips
+          WHERE id = $1 AND status IN ('EN_ROUTE','PICKED_UP') AND driver_id IS NOT NULL`,
+        [tripId],
+      )) as Array<{ driver_id: string }>;
+      return activo[0] ? this.findLatestByDriver(activo[0].driver_id) : null;
     } catch (error) {
       throw new InternalServerErrorException(
         error instanceof Error

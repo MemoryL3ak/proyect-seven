@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   Param,
   Patch,
@@ -70,7 +71,7 @@ export class VehiclePositionsController {
 
   @Get('by-trip/:tripId')
   async findByTrip(@Param('tripId') tripId: string, @Req() req: VpRequest) {
-    await this.access.assertCanReadTrip(req.vpCaller, tripId);
+    await this.assertCanReadTrip(req, tripId);
     return this.vehiclePositionsService.findByTrip(tripId);
   }
 
@@ -79,8 +80,30 @@ export class VehiclePositionsController {
     @Param('tripId') tripId: string,
     @Req() req: VpRequest,
   ) {
-    await this.access.assertCanReadTrip(req.vpCaller, tripId);
+    await this.assertCanReadTrip(req, tripId);
     return this.vehiclePositionsService.findLatestByTrip(tripId);
+  }
+
+  /**
+   * Participante del viaje (conductor, solicitante, pasajero) o quien lo
+   * coordina desde el portal: Jefe de Misión, Coordinador de Comité o de
+   * Transporte. La tarjeta del viaje en curso les muestra el bus en vivo.
+   */
+  private async assertCanReadTrip(req: VpRequest, tripId: string) {
+    try {
+      await this.access.assertCanReadTrip(req.vpCaller, tripId);
+    } catch (err) {
+      const caller = req.vpCaller;
+      if (
+        !(err instanceof ForbiddenException) ||
+        caller?.type !== 'portal' ||
+        caller.kind !== 'athlete'
+      ) {
+        throw err;
+      }
+      const scope = await this.scope.forRequest(req as unknown as ApiRequest);
+      await this.access.assertOperatorCanReadTrip(scope, tripId);
+    }
   }
 
   @Get(':id')
