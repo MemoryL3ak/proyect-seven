@@ -90,6 +90,9 @@ const VALID_CLIENT_TYPES = [
   'PROVEEDORES',
 ];
 
+/** Delegación del evento con sus claves de calce y su nombre visible. */
+type DelegacionClave = { id: string; nombre: string; clave: string; compacta: string; codigo: string };
+
 /** Sede u hotel del catálogo, con su nombre ya normalizado para calzar. */
 type LugarCatalogo = {
   clave: string;
@@ -351,7 +354,7 @@ export class TripsScheduleService {
   /** Delegaciones del evento, para reconocerlas cuando vienen mal ubicadas. */
   private async fetchDelegaciones(
     eventId: string,
-  ): Promise<Array<{ id: string; clave: string; compacta: string; codigo: string }>> {
+  ): Promise<DelegacionClave[]> {
     const { data } = await this.supabase
       .schema('core')
       .from('delegations')
@@ -363,6 +366,9 @@ export class TripsScheduleService {
       );
       return {
         id: String(d.id),
+        nombre: String(
+          (d.metadata as Record<string, unknown> | null)?.name ?? d.country_code ?? d.id,
+        ),
         clave,
         compacta: clave.replace(/[^a-z0-9]/g, ''),
         codigo: String(d.country_code ?? '').toLowerCase(),
@@ -383,7 +389,7 @@ export class TripsScheduleService {
     delegacion: string | undefined,
     clientName: string | undefined,
     clientTypeRaw: string | undefined,
-    delegaciones: Array<{ id: string; clave: string; compacta: string; codigo: string }>,
+    delegaciones: DelegacionClave[],
   ): string | null {
     // La columna "Delegación" manda. Las otras dos son el rescate para las
     // planillas viejas, que no la tenían y escribían la región donde podían.
@@ -397,12 +403,21 @@ export class TripsScheduleService {
   /** La única delegación que nombra este texto, o null si son cero o varias. */
   private buscarDelegacion(
     raw: string | undefined,
-    delegaciones: Array<{ id: string; clave: string; compacta: string; codigo: string }>,
+    delegaciones: DelegacionClave[],
   ): string | null {
+    const candidatas = this.candidatasDelegacion(raw, delegaciones);
+    return candidatas.length === 1 ? candidatas[0].id : null;
+  }
+
+  /** Todas las delegaciones que este texto podría nombrar. */
+  private candidatasDelegacion(
+    raw: string | undefined,
+    delegaciones: DelegacionClave[],
+  ): DelegacionClave[] {
     const valor = String(raw || '').trim();
-    if (!valor) return null;
+    if (!valor) return [];
     // Un tipo de cliente de verdad nunca es una región.
-    if (VALID_CLIENT_TYPES.includes(valor.toUpperCase())) return null;
+    if (VALID_CLIENT_TYPES.includes(valor.toUpperCase())) return [];
 
     const clave = this.claveRegion(valor);
     const codigo = valor.toLowerCase();
@@ -410,7 +425,7 @@ export class TripsScheduleService {
     // recién acá, porque sacar el apóstrofo deja "ohiggins" de un lado y
     // "o higgins" del otro.
     const compacta = clave.replace(/[^a-z0-9]/g, '');
-    const candidatas = delegaciones.filter(
+    return delegaciones.filter(
       (d) =>
         (d.clave && d.clave === clave) ||
         (d.codigo && d.codigo === codigo) ||
@@ -424,13 +439,35 @@ export class TripsScheduleService {
         (compacta.length >= 5 && d.compacta.includes(compacta)) ||
         (d.compacta.length >= 5 && compacta.includes(d.compacta)),
     );
-    // Ante dos delegaciones posibles no se adivina.
-    return candidatas.length === 1 ? candidatas[0].id : null;
+  }
+
+  /**
+   * Por qué una fila quedó sin región, para decirlo en el resultado de la
+   * carga. En la primera planilla 63 filas quedaron sin delegación sin que
+   * nadie lo viera: el Jefe de Misión no las ve y el filtro por región no las
+   * encuentra. Lo típico es una celda con dos regiones ("Coquimbo / Maule",
+   * van compartida), que no se adivina.
+   */
+  private motivoSinRegion(
+    valores: Array<string | undefined>,
+    delegaciones: DelegacionClave[],
+  ): string {
+    const textos = valores
+      .map((v) => String(v || '').trim())
+      .filter((v) => v && !VALID_CLIENT_TYPES.includes(v.toUpperCase()));
+    for (const texto of textos) {
+      const candidatas = this.candidatasDelegacion(texto, delegaciones);
+      if (candidatas.length > 1) {
+        return `región ambigua: "${texto}" puede ser ${candidatas.map((c) => c.nombre).join(' o ')}`;
+      }
+    }
+    if (textos.length) return `región no reconocida: "${textos.join(' | ')}"`;
+    return 'sin región en la planilla';
   }
 
   private resolverTipoCliente(
     raw: string | undefined,
-    delegaciones: Array<{ id: string; clave: string; compacta: string; codigo: string }>,
+    delegaciones: DelegacionClave[],
   ): { clientType: string | null; delegationId: string | null } {
     const valor = String(raw || '').trim();
     if (!valor) return { clientType: null, delegationId: null };
@@ -670,6 +707,7 @@ export class TripsScheduleService {
     const delegaciones = await this.fetchDelegaciones(dto.eventId);
     const lugares = await this.fetchLugares(dto.eventId);
     const driverIssues = new Map<string, number[]>();
+    const regionIssues = new Map<string, number[]>();
     let driverAssignedCount = 0;
     // Columnas que la base desplegada no tiene (desfase de esquema). Se detectan
     // en el primer insert que falla y se omiten en el resto de las filas; antes
@@ -742,6 +780,14 @@ export class TripsScheduleService {
             row.clientType,
             delegaciones,
           ) ?? delegacionDelAcronimo;
+        // Sin región no se calla: se anota el motivo y se guarda la celda.
+        const celdasRegion = [row.delegation, row.clientName, row.clientType];
+        if (!delegationId) {
+          const motivo = this.motivoSinRegion(celdasRegion, delegaciones);
+          const filas = regionIssues.get(motivo) ?? [];
+          filas.push(i + 1);
+          regionIssues.set(motivo, filas);
+        }
         const fleetAcronym = String(row.fleetAcronym || '').trim().toUpperCase() || null;
         const legType = this.isReturnLeg(row.legType) ? 'RETURN' : 'OUTBOUND';
         const isRoundTrip = !!returnAt && legType === 'OUTBOUND';
@@ -804,6 +850,11 @@ export class TripsScheduleService {
             busNumber: row.busNumber || null,
             gender: row.gender || null,
             country: null,
+            // Lo que decía la planilla cuando la región no se pudo resolver,
+            // para poder arreglarla después sin volver al archivo.
+            regionTexto: delegationId
+              ? null
+              : celdasRegion.map((v) => String(v || '').trim()).filter(Boolean).join(' | ') || null,
           },
         };
 
@@ -876,6 +927,12 @@ export class TripsScheduleService {
       const etiqueta = rows.length > 1 ? `Filas ${rows.join(', ')}` : `Fila ${rows[0]}`;
       warnings.push(
         `${etiqueta}: ${reason}. El viaje se creó sin conductor — asígnalo en "Asignar conductores".`,
+      );
+    });
+    regionIssues.forEach((rows, motivo) => {
+      const etiqueta = rows.length > 1 ? `Filas ${rows.join(', ')}` : `Fila ${rows[0]}`;
+      warnings.push(
+        `${etiqueta}: ${motivo}. El viaje se creó sin delegación — el Jefe de Misión no lo verá ni saldrá en el filtro por región hasta asignarla en Gestión manual.`,
       );
     });
 

@@ -166,6 +166,43 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
     });
   });
 
+  /**
+   * Por qué una fila queda sin región. En la primera planilla 63 filas
+   * quedaron sin delegación sin aviso; lo habitual es una celda con dos
+   * regiones (van compartida), que no se adivina pero sí se explica.
+   */
+  describe('filas sin región', () => {
+    type Delegacion = { id: string; nombre: string; clave: string; compacta: string; codigo: string };
+    type WithRegion = {
+      claveRegion: (raw?: string | null) => string;
+      motivoSinRegion: (valores: Array<string | undefined>, delegaciones: Delegacion[]) => string;
+    };
+    const svc = () => service as unknown as WithRegion;
+    const region = (nombre: string, codigo: string): Delegacion => {
+      const clave = svc().claveRegion(nombre);
+      return { id: codigo, nombre, clave, compacta: clave.replace(/[^a-z0-9]/g, ''), codigo: codigo.toLowerCase() };
+    };
+    const regiones = () => [
+      region('Región de Coquimbo', 'CL-CO'),
+      region('Región del Maule', 'CL-ML'),
+      region('Región de Ñuble', 'CL-NB'),
+    ];
+
+    it('dos regiones en la celda: dice cuáles son', () => {
+      expect(svc().motivoSinRegion([undefined, 'Coquimbo / Maule', 'ATHLETE'], regiones())).toBe(
+        'región ambigua: "Coquimbo / Maule" puede ser Región de Coquimbo o Región del Maule',
+      );
+    });
+
+    it('un texto que no es región: lo muestra tal cual, sin los tipos de cliente', () => {
+      expect(svc().motivoSinRegion(['Todas', undefined, 'TA'], regiones())).toBe('región no reconocida: "Todas"');
+    });
+
+    it('celdas vacías: lo dice', () => {
+      expect(svc().motivoSinRegion([undefined, '', 'VIP'], regiones())).toBe('sin región en la planilla');
+    });
+  });
+
   describe('horas de la planilla', () => {
     type WithDates = {
       parseDate: (raw?: string, defaultYear?: string) => Date | null;
