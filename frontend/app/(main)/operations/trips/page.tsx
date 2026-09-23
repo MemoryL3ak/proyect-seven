@@ -8,7 +8,6 @@ import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import StyledSelect from "@/components/StyledSelect";
-import FilterChips from "@/components/ui/FilterChips";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -2308,10 +2307,9 @@ export default function TripsPage() {
 
             {/* Filtros de la vista, en un solo panel. Antes iban sueltos
                 entre el título y la lista, cada desplegable con un ancho
-                distinto y sin aire, y se veían amontonados. Arriba lo que se
-                elige de un clic (deporte y género: pocos valores, con fichas,
-                así se ve de un vistazo cuáles hay y cuánto pesa cada uno);
-                abajo los desplegables largos, todos del mismo ancho.
+                distinto y sin aire, y se veían amontonados. Todos son
+                desplegables, también disciplina y género: se probó con fichas
+                y Ariel las descartó (ocupaban dos filas y se veían mal).
 
                 Van con StyledSelect y no con el select nativo: el desplegable
                 del sistema operativo rompe el lenguaje visual del resto del
@@ -2338,37 +2336,12 @@ export default function TripsPage() {
                 )}
               </div>
 
-              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "12px 32px" }}>
-                <div style={{ flex: "1 1 360px", minWidth: 0 }}>
-                  <span style={ongoingEtiquetaStyle}>{t("Disciplina")}</span>
-                  <FilterChips
-                    value={ongoingDiscipline}
-                    onChange={(v) => { setOngoingDiscipline(v); setOngoingPage(0); }}
-                    options={ongoingDisciplines.map((d) => ({ value: d.texto, label: d.texto, count: d.total }))}
-                    allLabel={t("Todas")}
-                    allCount={baseSinDisciplina.length}
-                  />
-                </div>
-                <div style={{ flex: "0 1 auto" }}>
-                  <span style={ongoingEtiquetaStyle}>{t("Género")}</span>
-                  <FilterChips
-                    value={ongoingGender}
-                    onChange={(v) => { setOngoingGender(v); setOngoingPage(0); }}
-                    options={ongoingGeneros.map((g) => ({ value: g.key, label: g.texto, count: g.total }))}
-                    allLabel={t("Todos")}
-                    allCount={baseSinGenero.length}
-                  />
-                </div>
-              </div>
-
-              <div style={{ height: 1, background: SURFACE.borderMuted, margin: "14px 0" }} />
-
-              {/* Rejilla y no flex con anchos mínimos: así los cinco
-                  desplegables miden lo mismo y se reparten el ancho; en el
-                  teléfono cada uno ocupa la fila entera. */}
+              {/* Rejilla y no flex con anchos mínimos: así los desplegables
+                  miden lo mismo y se reparten el ancho; en el teléfono cada
+                  uno ocupa la fila entera. */}
               <div style={{
                 display: "grid", gap: 10,
-                gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(190px, 1fr))",
+                gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(180px, 1fr))",
               }}>
                 <label className="text-sm block" style={{ minWidth: 0 }}>
                   <span style={ongoingEtiquetaStyle}>{t("Jornada")}</span>
@@ -2379,6 +2352,32 @@ export default function TripsPage() {
                     <option value="">{`${t("Todas las jornadas")} (${baseSinJornada.length})`}</option>
                     {ongoingDays.map((d) => (
                       <option key={d.key} value={d.key}>{`${d.label} (${d.count})`}</option>
+                    ))}
+                  </StyledSelect>
+                </label>
+
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={ongoingEtiquetaStyle}>{t("Disciplina")}</span>
+                  <StyledSelect
+                    value={ongoingDiscipline}
+                    onChange={(e) => { setOngoingDiscipline(e.target.value); setOngoingPage(0); }}
+                  >
+                    <option value="">{`${t("Todas")} (${baseSinDisciplina.length})`}</option>
+                    {ongoingDisciplines.map((d) => (
+                      <option key={d.texto} value={d.texto}>{`${d.texto} (${d.total})`}</option>
+                    ))}
+                  </StyledSelect>
+                </label>
+
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={ongoingEtiquetaStyle}>{t("Género")}</span>
+                  <StyledSelect
+                    value={ongoingGender}
+                    onChange={(e) => { setOngoingGender(e.target.value); setOngoingPage(0); }}
+                  >
+                    <option value="">{`${t("Todos")} (${baseSinGenero.length})`}</option>
+                    {ongoingGeneros.map((g) => (
+                      <option key={g.key} value={g.key}>{`${g.texto} (${g.total})`}</option>
                     ))}
                   </StyledSelect>
                 </label>
