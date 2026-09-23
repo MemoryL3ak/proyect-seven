@@ -314,6 +314,9 @@ const CLOSED_STATUSES = new Set(["DROPPED_OFF", "COMPLETED", "CANCELLED"]);
 const ONGOING_PAGE_SIZE = 25;
 /** Valor del filtro de conductor que pide los viajes que todavía no tienen uno. */
 const ONGOING_SIN_CONDUCTOR = "sin-conductor";
+const ONGOING_SIN_REGION = "sin-region";
+/** Clave del filtro de región para los traslados de todas las regiones. */
+const ONGOING_TODAS_LAS_REGIONES = "todas-las-regiones";
 const ongoingPaginaStyle = (deshabilitado: boolean) => ({
   borderRadius: "7px",
   border: `1px solid ${SURFACE.border}`,
@@ -588,6 +591,7 @@ export default function TripsPage() {
   // Vista "En curso": filtros propios de la vista y página de la lista.
   const [ongoingDay, setOngoingDay] = useState("");
   const [ongoingDiscipline, setOngoingDiscipline] = useState("");
+  const [ongoingRegion, setOngoingRegion] = useState("");
   const [ongoingHotel, setOngoingHotel] = useState("");
   const [ongoingVenue, setOngoingVenue] = useState("");
   const [ongoingDriver, setOngoingDriver] = useState("");
@@ -928,10 +932,27 @@ export default function TripsPage() {
    * Cada filtro se excluye a sí mismo del recorte: si no, elegir un hotel
    * dejaría ese hotel como única opción y no habría forma de cambiarse a otro.
    */
+  /**
+   * Región (delegación) de un viaje para el filtro. Manda la del viaje mismo;
+   * si no la trae, la del solicitante o de los pasajeros, igual que el
+   * detalle. Los de todas las regiones (inauguración, congresillo) van con
+   * su clave propia; sin ninguna, quedan en "Sin región".
+   */
+  const regionDeViaje = (trip: Trip): { key: string; texto: string } => {
+    if (trip.allDelegations) return { key: ONGOING_TODAS_LAS_REGIONES, texto: t("Todas las regiones") };
+    const porPasajeros = trip.requesterAthleteId
+      ? athletes[trip.requesterAthleteId]?.delegationId
+      : (trip.athleteIds ?? []).map((id) => athletes[id]?.delegationId).find(Boolean);
+    const id = trip.delegationId || porPasajeros;
+    if (!id) return { key: ONGOING_SIN_REGION, texto: t("Sin región") };
+    return { key: id, texto: delegationLabel(delegations[id]) || id };
+  };
+
   const condicionesEnCurso = {
     jornada: (trip: Trip) =>
       !ongoingDay || (trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha") === ongoingDay,
     disciplina: (trip: Trip) => !ongoingDiscipline || trip.discipline === ongoingDiscipline,
+    region: (trip: Trip) => !ongoingRegion || regionDeViaje(trip).key === ongoingRegion,
     hotel: (trip: Trip) => !ongoingHotel || tocaLugar(trip, ongoingHotel, nombreDeLugar),
     sede: (trip: Trip) => !ongoingVenue || tocaLugar(trip, ongoingVenue, nombreDeLugar),
     conductor: (trip: Trip) =>
@@ -952,12 +973,14 @@ export default function TripsPage() {
   // Que cada uno ignore su propio filtro no hace daño: recalcular doscientos
   // viajes no se nota y la lista queda dicha entera.
   const dependenciasEnCurso = [
-    ongoingTrips, ongoingDay, ongoingDiscipline, ongoingHotel, ongoingVenue, ongoingDriver, venues, hoteles, comedores,
+    ongoingTrips, ongoingDay, ongoingDiscipline, ongoingRegion, ongoingHotel, ongoingVenue, ongoingDriver,
+    venues, hoteles, comedores, delegations, athletes,
   ];
 
   /* eslint-disable react-hooks/exhaustive-deps */
   const baseSinJornada = useMemo(() => viajesEnCursoSalvo("jornada"), dependenciasEnCurso);
   const baseSinDisciplina = useMemo(() => viajesEnCursoSalvo("disciplina"), dependenciasEnCurso);
+  const baseSinRegion = useMemo(() => viajesEnCursoSalvo("region"), dependenciasEnCurso);
   const baseSinHotel = useMemo(() => viajesEnCursoSalvo("hotel"), dependenciasEnCurso);
   const baseSinSede = useMemo(() => viajesEnCursoSalvo("sede"), dependenciasEnCurso);
   const baseSinConductor = useMemo(() => viajesEnCursoSalvo("conductor"), dependenciasEnCurso);
@@ -997,6 +1020,40 @@ export default function TripsPage() {
       .sort((a, b) => a.texto.localeCompare(b.texto, "es"));
     return conElegida(lista, ongoingDiscipline, (d) => d.texto, () => ({ texto: ongoingDiscipline, total: 0 }));
   }, [baseSinDisciplina, ongoingDiscipline]);
+
+  /**
+   * Regiones con carga. "Todas las regiones" y "Sin región" van primero,
+   * aparte de las regiones reales, y se quedan aunque queden en cero si
+   * están elegidas, por lo mismo que "Sin conductor".
+   */
+  const ongoingRegiones = useMemo(() => {
+    const porRegion = new Map<string, { key: string; texto: string; total: number }>();
+    for (const trip of baseSinRegion) {
+      const region = regionDeViaje(trip);
+      const actual = porRegion.get(region.key);
+      if (actual) actual.total += 1;
+      else porRegion.set(region.key, { ...region, total: 1 });
+    }
+    const especiales = [ONGOING_TODAS_LAS_REGIONES, ONGOING_SIN_REGION];
+    const etiquetaFija = (key: string) => (key === ONGOING_TODAS_LAS_REGIONES ? t("Todas las regiones") : t("Sin región"));
+    const fijas = especiales.flatMap((key) => {
+      const actual = porRegion.get(key);
+      if (actual) return [actual];
+      return key === ongoingRegion ? [{ key, texto: etiquetaFija(key), total: 0 }] : [];
+    });
+    const regiones = [...porRegion.values()]
+      .filter((r) => !especiales.includes(r.key))
+      .sort((a, b) => a.texto.localeCompare(b.texto, "es"));
+    return [
+      ...fijas,
+      ...conElegida(regiones, ongoingRegion, (r) => r.key, () => ({
+        key: ongoingRegion,
+        texto: delegationLabel(delegations[ongoingRegion]) || ongoingRegion,
+        total: 0,
+      })),
+    ];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseSinRegion, ongoingRegion, delegations, athletes, t]);
 
   // Hoteles y sedes de los filtros: salen de los propios viajes, con la
   // regla compartida con el portal del coordinador (lib/lugares).
@@ -2068,6 +2125,19 @@ export default function TripsPage() {
               </label>
 
               <label className="text-sm block" style={{ minWidth: 200 }}>
+                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Región")}</span>
+                <StyledSelect
+                  value={ongoingRegion}
+                  onChange={(e) => { setOngoingRegion(e.target.value); setOngoingPage(0); }}
+                >
+                  <option value="">{`${t("Todas")} (${baseSinRegion.length})`}</option>
+                  {ongoingRegiones.map((r) => (
+                    <option key={r.key} value={r.key}>{`${r.texto} (${r.total})`}</option>
+                  ))}
+                </StyledSelect>
+              </label>
+
+              <label className="text-sm block" style={{ minWidth: 200 }}>
                 <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Hotel")}</span>
                 <StyledSelect
                   value={ongoingHotel}
@@ -2113,12 +2183,13 @@ export default function TripsPage() {
                 </StyledSelect>
               </label>
 
-              {(ongoingDay || ongoingDiscipline || ongoingHotel || ongoingVenue || ongoingDriver) && (
+              {(ongoingDay || ongoingDiscipline || ongoingRegion || ongoingHotel || ongoingVenue || ongoingDriver) && (
                 <button
                   type="button"
                   onClick={() => {
                     setOngoingDay("");
                     setOngoingDiscipline("");
+                    setOngoingRegion("");
                     setOngoingHotel("");
                     setOngoingVenue("");
                     setOngoingDriver("");
