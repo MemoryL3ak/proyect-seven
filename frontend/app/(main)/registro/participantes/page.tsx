@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { UploadIcon, CheckIcon, AlertCircleIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 type Athlete = {
   id: string;
@@ -45,6 +46,7 @@ function KpiCard({ label, value, color }: { label: string; value: number | strin
 
 export default function RegistroParticipantesPage() {
   const { t } = useI18n();
+  const isMobile = useIsMobile();
   const [refreshKey, setRefreshKey] = useState(0);
   // "delegaciones": registro de las delegaciones del evento (región + jefe).
   const [tab, setTab] = useState<"form" | "table" | "delegaciones">("form");
@@ -162,7 +164,9 @@ export default function RegistroParticipantesPage() {
         <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "10px" }}>
           {t("Gestión de registros")}
         </p>
-        <div className="flex flex-wrap gap-2">
+        {/* En el teléfono las tres pestañas no caben en una línea: se deslizan
+            de lado en vez de partirse en dos filas de distinto ancho. */}
+        <div className={isMobile ? "mobile-strip" : "flex flex-wrap gap-2"} style={isMobile ? ({ "--strip-w": "auto", gap: 8, margin: 0, padding: "0 0 2px" } as React.CSSProperties) : undefined}>
           <button
             className={`btn ${tab === "form" ? "btn-primary" : "btn-ghost"}`}
             type="button"

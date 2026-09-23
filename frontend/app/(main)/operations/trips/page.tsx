@@ -28,6 +28,7 @@ import {
 } from "@/lib/planilla";
 import { legTypeLabel, tripTypeLabel } from "@/lib/tripTypes";
 import {
+  ChevronDownIcon,
   CrownIcon,
   FileSpreadsheetIcon,
   LayoutGridIcon,
@@ -488,6 +489,9 @@ export default function TripsPage() {
   // Los layouts de esta pantalla van con estilos inline: en el teléfono
   // (app staff, ~390 px) se apilan los paneles y se achican los paddings.
   const isMobile = useIsMobile();
+  // Paneles de filtros plegados en el teléfono (ver comentarios donde se pintan).
+  const [filtrosArribaAbiertos, setFiltrosArribaAbiertos] = useState(false);
+  const [filtrosEnCursoAbiertos, setFiltrosEnCursoAbiertos] = useState(false);
 
   const pal = {
     cardBg: SURFACE.card, cardBorder: SURFACE.border, shadow: "0 1px 4px rgba(15,23,42,0.06)",
@@ -523,6 +527,7 @@ export default function TripsPage() {
   const [tripSource, setTripSource] = useState<"" | "PORTAL" | "DAILY" | "MANUAL">("");
   // Filtro por conductor (solicitado)
   const [selectedDriverId, setSelectedDriverId] = useState<string>("");
+  const filtrosArribaActivos = [selectedEventId, selectedClientType, selectedDriverId].filter(Boolean).length;
 
   // Si el usuario aterriza en una tab obsoleta (portal/editor) la mando a dispatch
   useEffect(() => {
@@ -1816,7 +1821,7 @@ export default function TripsPage() {
         </section>
       )}
       {/* ── KPIs: una sola fila horizontal (sin layout mixto) */}
-      <section className="grid gap-3 grid-cols-2 md:grid-cols-3 xl:grid-cols-5">
+      <section className="mobile-strip md:grid gap-3 md:grid-cols-3 xl:grid-cols-5" style={{ "--strip-w": "160px" } as React.CSSProperties}>
         {summaryCards.map((card, i) => (
           <article key={card.label} style={{
             background: SURFACE.card,
@@ -1841,7 +1846,23 @@ export default function TripsPage() {
 
       {/* ── Filtros: una sola card con grid horizontal */}
       <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 16, padding: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
-        <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+        {/* En el teléfono el buscador va primero y los tres desplegables se
+            pliegan tras "Filtros": abrían la pantalla con cuatro campos antes
+            de cualquier viaje. */}
+        {isMobile && (
+          <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+            <input className="input" placeholder={t("Solicitante, sede, patente…")} value={search} onChange={(event) => setSearch(event.target.value)} style={{ flex: 1, minWidth: 0 }} />
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={() => setFiltrosArribaAbiertos((v) => !v)}
+              style={{ flexShrink: 0, fontSize: 13, whiteSpace: "nowrap" }}
+            >
+              {t("Filtros")}{filtrosArribaActivos > 0 ? ` (${filtrosArribaActivos})` : ""}
+            </button>
+          </div>
+        )}
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-4" style={{ display: isMobile && !filtrosArribaAbiertos ? "none" : undefined }}>
           <label className="text-sm block">
             <span className="block mb-1">{t("Evento")}</span>
             <select className="input" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
@@ -1869,10 +1890,12 @@ export default function TripsPage() {
               ))}
             </select>
           </label>
+          {!isMobile && (
           <label className="text-sm block">
             <span className="block mb-1">{t("Buscar")}</span>
             <input className="input" placeholder={t("Solicitante, sede, patente…")} value={search} onChange={(event) => setSearch(event.target.value)} />
           </label>
+          )}
         </div>
         {/* Selección múltiple: punto de entrada para limpiar de una vez una
             importación completa, en vez de borrar viaje por viaje. */}
@@ -1922,7 +1945,7 @@ export default function TripsPage() {
           Origen del viaje
         </p>
         {/* Cuatro botones en fila no caben en un teléfono: ahí van de a dos. */}
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", alignItems: "stretch", gap: 6 }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, minmax(0, 1fr))" : "repeat(4, minmax(0, 1fr))", alignItems: "stretch", gap: 6 }}>
           {(["", "PORTAL", "DAILY", "MANUAL"] as const).map((src) => {
             const meta = SOURCE_META[src];
             const count = src === ""
@@ -1938,6 +1961,7 @@ export default function TripsPage() {
                 onClick={() => setTripSource(src)}
                 style={{
                   flex: 1,
+                  minWidth: 0,
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
@@ -2024,7 +2048,7 @@ export default function TripsPage() {
             {filteredTrips.length} viajes con los filtros actuales
           </span>
         </div>
-        <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-6">
+        <div className="mobile-strip md:grid gap-3 md:grid-cols-3 xl:grid-cols-6" style={{ "--strip-w": "240px" } as React.CSSProperties}>
           {STATUS_FLOW.map((status) => {
             const sc = STATUS_COLORS[status] ?? STATUS_COLORS.SCHEDULED;
             const items = filteredTrips.filter((trip) => trip.status === status);
@@ -2321,10 +2345,25 @@ export default function TripsPage() {
               marginBottom: 14, padding: isMobile ? "12px 14px 14px" : "14px 18px 18px", borderRadius: 14,
               background: pal.filterBg, border: `1px solid ${pal.filterBorder}`, boxShadow: pal.shadow,
             }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: isMobile && !filtrosEnCursoAbiertos ? 0 : 12 }}>
+                {isMobile ? (
+                  // Siete desplegables ocupaban toda la pantalla del teléfono
+                  // antes del primer viaje: se pliegan tras esta fila.
+                  <button
+                    type="button"
+                    onClick={() => setFiltrosEnCursoAbiertos((v) => !v)}
+                    style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", padding: "4px 0", cursor: "pointer", minHeight: 36, color: pal.labelColor }}
+                  >
+                    <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const }}>
+                      {t("Filtros")}{filtrosEnCursoActivos > 0 ? ` (${filtrosEnCursoActivos})` : ""}
+                    </span>
+                    <ChevronDownIcon size={14} style={{ transform: filtrosEnCursoAbiertos ? "rotate(180deg)" : "none", transition: "transform 150ms" }} />
+                  </button>
+                ) : (
                 <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>
                   {t("Filtros")}
                 </span>
+                )}
                 {filtrosEnCursoActivos > 0 && (
                   <button
                     type="button"
@@ -2343,7 +2382,7 @@ export default function TripsPage() {
                   miden lo mismo y se reparten el ancho; en el teléfono cada
                   uno ocupa la fila entera. */}
               <div style={{
-                display: "grid", gap: 10,
+                display: isMobile && !filtrosEnCursoAbiertos ? "none" : "grid", gap: 10,
                 gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(180px, 1fr))",
               }}>
                 <label className="text-sm block" style={{ minWidth: 0 }}>

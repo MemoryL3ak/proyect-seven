@@ -423,7 +423,7 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
         <button
           type="button"
           onClick={() => setCollapsed((v) => !v)}
-          className="md:flex hidden"
+          className="sidenav-collapse md:flex hidden"
           style={{
             width: "26px", height: "26px", borderRadius: "8px", flexShrink: 0,
             background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)",

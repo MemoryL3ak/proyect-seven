@@ -1146,7 +1146,9 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
           zIndex: compact ? 112 : 40,
           ...(fabPos
             ? { left: fabPos.x, top: fabPos.y }
-            : { bottom: compact ? 132 : 24, right: compact ? 16 : 24 }),
+            // En el panel del teléfono (app staff) hay barra inferior de
+            // navegación: el botón sube para no quedar encima de ella.
+            : { bottom: compact ? 132 : isSmallScreen ? 92 : 24, right: compact ? 16 : isSmallScreen ? 14 : 24 }),
           touchAction: "none",
         }}
       >

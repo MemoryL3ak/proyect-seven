@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { AlertCircleIcon } from "@/components/ui/Icons";
+import { useIsMobile } from "@/lib/useIsMobile";
 
 type Props = {
   open: boolean;
@@ -26,6 +27,9 @@ export default function ConfirmDialog({
   onCancel,
 }: Props) {
   const cancelRef = useRef<HTMLButtonElement>(null);
+  // En el teléfono (app staff) el diálogo es una hoja pegada abajo, con los
+  // botones a ancho completo al alcance del pulgar.
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!open) return;
@@ -44,8 +48,8 @@ export default function ConfirmDialog({
       aria-labelledby="cd-title"
       style={{
         position: "fixed", inset: 0, zIndex: 9999,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "16px",
+        display: "flex", alignItems: isMobile ? "flex-end" : "center", justifyContent: "center",
+        padding: isMobile ? 0 : "16px",
         background: "rgba(2,12,24,0.72)",
         backdropFilter: "blur(6px)",
         animation: "cd-bg-in .18s ease both",
@@ -65,10 +69,10 @@ export default function ConfirmDialog({
       <div
         style={{
           background: SURFACE.card,
-          borderRadius: "20px",
+          borderRadius: isMobile ? "20px 20px 0 0" : "20px",
           boxShadow: "0 24px 64px rgba(0,0,0,0.28), 0 0 0 1px rgba(226,232,240,0.8)",
-          padding: "32px 28px 24px",
-          maxWidth: "400px",
+          padding: isMobile ? "24px 20px calc(20px + env(safe-area-inset-bottom))" : "32px 28px 24px",
+          maxWidth: isMobile ? "none" : "400px",
           width: "100%",
           animation: "cd-in .22s cubic-bezier(0.16,1,0.3,1) both",
           position: "relative",
@@ -111,14 +115,14 @@ export default function ConfirmDialog({
           {message}
         </p>
 
-        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexDirection: isMobile ? "column-reverse" : "row" }}>
           <button
             ref={cancelRef}
             className="cd-cancel-btn"
             type="button"
             onClick={onCancel}
             style={{
-              padding: "10px 20px", borderRadius: "12px",
+              padding: "10px 20px", borderRadius: "12px", minHeight: isMobile ? "48px" : undefined,
               border: `1px solid ${SURFACE.border}`, background: SURFACE.bg,
               color: SURFACE.textSecondary, fontSize: "14px", fontWeight: 600,
               cursor: "pointer",
@@ -131,7 +135,7 @@ export default function ConfirmDialog({
             type="button"
             onClick={onConfirm}
             style={{
-              padding: "10px 22px", borderRadius: "12px", border: "none",
+              padding: "10px 22px", borderRadius: "12px", border: "none", minHeight: isMobile ? "48px" : undefined,
               background: danger
                 ? `linear-gradient(135deg,${STATE.danger},${STATE.dangerText})`
                 : `linear-gradient(135deg,${BRAND.teal},#17a68e)`,

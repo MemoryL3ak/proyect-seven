@@ -444,13 +444,17 @@ export default function FlightsPage() {
       {/* Header */}
       <section style={{ background: SURFACE.card, borderRadius: "24px", padding: isMobile ? "16px" : "28px 32px", boxShadow: "0 2px 12px rgba(15,23,42,0.06)", borderTop: `3px solid ${BRAND.teal}` }}>
         <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", gap: "16px" }}>
-          <div>
+          {/* En el teléfono la barra superior ya dice "Vuelos": la cabecera
+              se reduce a una línea. */}
+          <div style={{ minWidth: 0 }}>
+            {!isMobile && (
             <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "6px" }}>
               <PlaneIcon size={20} color={BRAND.teal} strokeWidth={2} />
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Operaciones aéreas")}</p>
             </div>
-            <h1 style={{ fontSize: "1.75rem", fontWeight: 800, color: pal.textPrimary, lineHeight: 1.1 }}>{t("Monitor de vuelos")}</h1>
-            <p style={{ fontSize: "13px", color: pal.textMuted, marginTop: "4px" }}>{t("Seguimiento en tiempo real · AviationStack")}</p>
+            )}
+            <h1 style={{ fontSize: isMobile ? "1.15rem" : "1.75rem", fontWeight: 800, color: pal.textPrimary, lineHeight: 1.1 }}>{t("Monitor de vuelos")}</h1>
+            <p style={{ fontSize: isMobile ? "12px" : "13px", color: pal.textMuted, marginTop: "4px" }}>{t("Seguimiento en tiempo real · AviationStack")}</p>
           </div>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", width: isMobile ? "100%" : undefined }}>
             <select className="input" style={{ width: isMobile ? "100%" : "200px", borderRadius: "12px" }} value={selectedEventId} onChange={e => setSelectedEventId(e.target.value)}>
@@ -466,7 +470,7 @@ export default function FlightsPage() {
         </div>
 
         {/* KPI row */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginTop: "20px" }}>
+        <div className={isMobile ? "mobile-strip" : undefined} style={isMobile ? ({ "--strip-w": "140px", marginTop: 12, marginLeft: -14, marginRight: -14, paddingLeft: 14, paddingRight: 14 } as React.CSSProperties) : { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px", marginTop: "20px" }}>
           {[
             { label: "Total vuelos", value: stats.total, color: pal.textPrimary, accent: SURFACE.textMuted },
             { label: "Arribados", value: stats.arrived, color: SURFACE.textMuted, accent: SURFACE.textMuted },

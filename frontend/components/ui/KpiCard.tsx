@@ -77,7 +77,7 @@ export default function KpiCard({
 
   return (
     <div
-      className="surface-premium p-4 anim-fade-up-soft"
+      className="surface-premium kpi-card p-4 anim-fade-up-soft"
       style={{ borderLeft: `3px solid ${styles.accentBorder}` }}
     >
       <div className="shimmer-top" />

@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
@@ -21,6 +21,14 @@ import CoordinadoresHotel, {
 } from "@/components/CoordinadoresHotel";
 import { delegationLabel } from "@/lib/delegations";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
+import {
+  FILTROS_PARTICIPANTES_VACIOS,
+  contarFiltrosParticipantesActivos,
+  contarPorOpcion,
+  filtrarParticipantes,
+  type FiltrosParticipantes,
+} from "@/lib/filtroParticipantes";
+import { horaRegresoDeViaje } from "@/lib/viajeRegreso";
 
 type Option = { label: string; value: string };
 
@@ -280,6 +288,8 @@ export default function ResourceScreen({
   const [formOpen, setFormOpen] = useState(false);
   const formRef = useRef<HTMLElement | null>(null);
   const formCollapsible = isMobile && viewMode === "both";
+  // Tarjetas de la lista en teléfono: qué filas muestran todos sus campos.
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
   const [participantEditingId, setParticipantEditingId] = useState<string | null>(
     null
   );
@@ -297,9 +307,13 @@ export default function ResourceScreen({
   const [vehicleLookup, setVehicleLookup] = useState<Record<string, any>>({});
   const [vehicleLookupByPlate, setVehicleLookupByPlate] = useState<Record<string, any>>({});
   const [flightLookup, setFlightLookup] = useState<Record<string, any>>({});
-  const [athleteSearch, setAthleteSearch] = useState("");
   const [accommodationSearch, setAccommodationSearch] = useState("");
-  const [athleteStatusFilter, setAthleteStatusFilter] = useState<"all" | "validated" | "pending">("all");
+  /**
+   * Filtros de "Registros y validación" (Inscripción de participantes):
+   * buscador, estado, delegación, disciplina y tipo. La lógica está en
+   * lib/filtroParticipantes.ts.
+   */
+  const [filtrosParticipantes, setFiltrosParticipantes] = useState<FiltrosParticipantes>(FILTROS_PARTICIPANTES_VACIOS);
   /**
    * Envío del código de acceso desde el listado: a quién, cómo va y cómo
    * terminó. La selección se guarda por id y no por posición porque el
@@ -2055,6 +2069,9 @@ export default function ResourceScreen({
       } else if (item.destinationVenueId) {
         next.destinationTypeFilter = "SEDE";
       }
+      // La hora de regreso no es columna del viaje: vive en el tramo de
+      // regreso (o en return_at si vino de la planilla).
+      next.returnScheduledAt = toDateTimeLocalInput(horaRegresoDeViaje(item));
     }
     if (config.endpoint === "/events") {
       const parsedConfig = readEventAndConfig(item.config);
@@ -3584,6 +3601,9 @@ export default function ResourceScreen({
                       </p>
                     ) : null}
                   </section>
+                  {/* Las secciones sin campos (por el tipo de viaje elegido)
+                      no se pintan: quedaba una tarjeta vacía con solo el título. */}
+                  {luggageFields.length > 0 && (
                   <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
                       <p className="section-label">
@@ -3594,6 +3614,8 @@ export default function ResourceScreen({
                       {luggageFields.map((field) => renderField(field))}
                     </div>
                   </section>
+                  )}
+                  {assistanceFields.length > 0 && (
                   <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
                       <p className="section-label">
@@ -3604,6 +3626,8 @@ export default function ResourceScreen({
                       {assistanceFields.map((field) => renderField(field))}
                     </div>
                   </section>
+                  )}
+                  {hotelFields.length > 0 && (
                   <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
                       <p className="section-label">
@@ -3614,6 +3638,7 @@ export default function ResourceScreen({
                       {hotelFields.map((field) => renderField(field))}
                     </div>
                   </section>
+                  )}
                 </>
               );
             }
@@ -3755,6 +3780,7 @@ export default function ResourceScreen({
                       </p>
                     )}
                   </section>
+                  {hotelFields.length > 0 && (
                   <section className="surface md:col-span-2 p-5">
                     <div className="mb-4">
                       <p className="section-label">
@@ -3765,6 +3791,7 @@ export default function ResourceScreen({
                       {hotelFields.map((field) => renderField(field))}
                     </div>
                   </section>
+                  )}
                 </>
               );
             }
@@ -3897,7 +3924,7 @@ export default function ResourceScreen({
           })()}
 
           <div className="flex items-end">
-            <button className="btn btn-primary" type="submit" style={{ padding: "9px 24px", fontSize: "13px", borderRadius: "10px", letterSpacing: "0.06em" }}>
+            <button className="btn btn-primary" type="submit" style={{ padding: "9px 24px", fontSize: isMobile ? "15px" : "13px", borderRadius: "10px", letterSpacing: "0.06em", width: isMobile ? "100%" : undefined, minHeight: isMobile ? "48px" : undefined }}>
               {editingId ? t("Actualizar") : t("Crear")}
             </button>
           </div>
@@ -4111,16 +4138,7 @@ export default function ResourceScreen({
         })() : config.endpoint === "/athletes" ? (() => {
           const validatedCount = items.filter((i) => isAthletePersonalDataValidated(i)).length;
           const pendingCount = items.length - validatedCount;
-          const searchLower = athleteSearch.toLowerCase();
-          const filtered = items.filter((item) => {
-            const nameMatch = !athleteSearch || (item.fullName ?? "").toLowerCase().includes(searchLower);
-            const isVal = isAthletePersonalDataValidated(item);
-            const statusMatch =
-              athleteStatusFilter === "all" ||
-              (athleteStatusFilter === "validated" && isVal) ||
-              (athleteStatusFilter === "pending" && !isVal);
-            return nameMatch && statusMatch;
-          });
+          const filtered = filtrarParticipantes(items, filtrosParticipantes, isAthletePersonalDataValidated);
           const USER_TYPE_LABELS: Record<string, string> = {
             VIP: "VIP",
             FAMILIA_PARAPAN: "Familia Parapan",
@@ -4130,6 +4148,34 @@ export default function ResourceScreen({
             JEFE_MISION: "Jefe de Misión",
             COMITE_ORGANIZADOR: "Comité Organizador",
             PROVEEDORES: "Proveedores",
+          };
+
+          /* Opciones de cada desplegable con su conteo. Cada uno cuenta con
+             los demás filtros puestos e ignorando el propio, para que el
+             número diga cuánta gente quedaría al elegir esa opción y se
+             pueda cambiar de una opción a otra sin volver a "Todas". Solo se
+             listan valores que existen en la base filtrada: una delegación
+             sin inscritos no aparece. */
+          const cambiarFiltro = (parcial: Partial<FiltrosParticipantes>) =>
+            setFiltrosParticipantes((actual) => ({ ...actual, ...parcial }));
+          const conteoEstado = contarPorOpcion(items, filtrosParticipantes, "estado", isAthletePersonalDataValidated);
+          const conteoDelegacion = contarPorOpcion(items, filtrosParticipantes, "delegationId", isAthletePersonalDataValidated);
+          const conteoDisciplina = contarPorOpcion(items, filtrosParticipantes, "disciplineId", isAthletePersonalDataValidated);
+          const conteoTipo = contarPorOpcion(items, filtrosParticipantes, "userType", isAthletePersonalDataValidated);
+          const opcionesDelegacion = delegationOptions
+            .filter((o) => conteoDelegacion.porValor.has(o.value))
+            .map((o) => ({ value: o.value, label: `${o.label} (${conteoDelegacion.porValor.get(o.value)})` }));
+          const opcionesDisciplina = disciplineOptions
+            .filter((o: any) => conteoDisciplina.porValor.has(o.value))
+            .map((o: any) => ({ value: String(o.value), label: `${o.label} (${conteoDisciplina.porValor.get(o.value)})` }));
+          const opcionesTipo = [...conteoTipo.porValor.entries()]
+            .filter(([valor]) => valor !== "")
+            .map(([valor, n]) => ({ value: valor, label: `${USER_TYPE_LABELS[valor] ?? valor} (${n})` }))
+            .sort((a, b) => a.label.localeCompare(b.label, "es"));
+          const filtrosActivos = contarFiltrosParticipantesActivos(filtrosParticipantes);
+          const etiquetaFiltro: CSSProperties = {
+            display: "block", marginBottom: 6, fontSize: "11px", fontWeight: 600,
+            letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)",
           };
           return (
             <div>
@@ -4145,30 +4191,92 @@ export default function ResourceScreen({
                   — {items.length} {t("total")}
                 </span>
               </div>
-              {/* Search + filter */}
-              <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
-                <input
-                  type="text"
-                  placeholder={t("Buscar por nombre...")}
-                  value={athleteSearch}
-                  onChange={(e) => setAthleteSearch(e.target.value)}
-                  style={{ flex: 1, minWidth: "180px", maxWidth: "320px", border: "1px solid var(--border)", borderRadius: "8px", padding: "6px 12px", fontSize: "13px", background: "var(--surface)", color: "var(--text)", outline: "none" }}
-                />
-                {(["all", "validated", "pending"] as const).map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() => setAthleteStatusFilter(f)}
-                    style={{
-                      fontSize: "12px", fontWeight: 600, padding: "5px 14px", borderRadius: "20px", cursor: "pointer", border: "1.5px solid",
-                      borderColor: athleteStatusFilter === f ? (f === "validated" ? STATE.success : f === "pending" ? STATE.warning : BRAND.blue) : "var(--border)",
-                      background: athleteStatusFilter === f ? (f === "validated" ? "rgba(16,185,129,0.1)" : f === "pending" ? "rgba(245,158,11,0.1)" : "rgba(31,205,255,0.1)") : "transparent",
-                      color: athleteStatusFilter === f ? (f === "validated" ? STATE.success : f === "pending" ? STATE.warning : BRAND.blue) : "var(--text-muted)",
-                    }}
-                  >
-                    {f === "all" ? t("Todos") : f === "validated" ? t("Validados") : t("Pendientes")}
-                  </button>
-                ))}
+              {/* Filtros en un solo panel, como en Viajes: buscador más
+                  desplegables de estado, delegación, disciplina y tipo. Van
+                  como StyledSelect y no como fichas (Ariel las descartó en
+                  Viajes: ocupan filas y se ven amontonadas). Rejilla para
+                  que midan lo mismo; en el teléfono, uno por fila. */}
+              <div style={{
+                marginBottom: 16, padding: isMobile ? "12px 14px 14px" : "14px 18px 18px", borderRadius: 14,
+                background: "var(--surface)", border: "1px solid var(--border)",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+                  <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                    {t("Filtros")}
+                  </span>
+                  {filtrosActivos > 0 && (
+                    <button
+                      type="button"
+                      className="btn btn-ghost"
+                      style={{ fontSize: "12px", padding: "5px 12px" }}
+                      onClick={() => cambiarFiltro({ ...FILTROS_PARTICIPANTES_VACIOS, busqueda: filtrosParticipantes.busqueda })}
+                    >
+                      {`${t("Limpiar filtros")} (${filtrosActivos})`}
+                    </button>
+                  )}
+                </div>
+                <div style={{
+                  display: "grid", gap: 10,
+                  gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(180px, 1fr))",
+                }}>
+                  <label className="text-sm block" style={{ minWidth: 0 }}>
+                    <span style={etiquetaFiltro}>{t("Nombre")}</span>
+                    <input
+                      type="text"
+                      placeholder={t("Buscar por nombre...")}
+                      value={filtrosParticipantes.busqueda}
+                      onChange={(e) => cambiarFiltro({ busqueda: e.target.value })}
+                      style={{ width: "100%", border: "1px solid var(--border)", borderRadius: "10px", padding: "7px 12px", fontSize: "13px", background: "var(--surface)", color: "var(--text)", outline: "none", boxSizing: "border-box" }}
+                    />
+                  </label>
+                  <label className="text-sm block" style={{ minWidth: 0 }}>
+                    <span style={etiquetaFiltro}>{t("Estado")}</span>
+                    <StyledSelect
+                      value={filtrosParticipantes.estado}
+                      onChange={(e) => cambiarFiltro({ estado: e.target.value as FiltrosParticipantes["estado"] })}
+                    >
+                      <option value="all">{`${t("Todos")} (${conteoEstado.base.length})`}</option>
+                      <option value="validated">{`${t("Validados")} (${conteoEstado.porValor.get("validated") ?? 0})`}</option>
+                      <option value="pending">{`${t("Pendientes")} (${conteoEstado.porValor.get("pending") ?? 0})`}</option>
+                    </StyledSelect>
+                  </label>
+                  <label className="text-sm block" style={{ minWidth: 0 }}>
+                    <span style={etiquetaFiltro}>{t("Delegación")}</span>
+                    <StyledSelect
+                      value={filtrosParticipantes.delegationId}
+                      onChange={(e) => cambiarFiltro({ delegationId: e.target.value })}
+                    >
+                      <option value="">{`${t("Todas las delegaciones")} (${conteoDelegacion.base.length})`}</option>
+                      {opcionesDelegacion.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </StyledSelect>
+                  </label>
+                  <label className="text-sm block" style={{ minWidth: 0 }}>
+                    <span style={etiquetaFiltro}>{t("Disciplina")}</span>
+                    <StyledSelect
+                      value={filtrosParticipantes.disciplineId}
+                      onChange={(e) => cambiarFiltro({ disciplineId: e.target.value })}
+                    >
+                      <option value="">{`${t("Todas las disciplinas")} (${conteoDisciplina.base.length})`}</option>
+                      {opcionesDisciplina.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </StyledSelect>
+                  </label>
+                  <label className="text-sm block" style={{ minWidth: 0 }}>
+                    <span style={etiquetaFiltro}>{t("Tipo de participante")}</span>
+                    <StyledSelect
+                      value={filtrosParticipantes.userType}
+                      onChange={(e) => cambiarFiltro({ userType: e.target.value })}
+                    >
+                      <option value="">{`${t("Todos los tipos")} (${conteoTipo.base.length})`}</option>
+                      {opcionesTipo.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </StyledSelect>
+                  </label>
+                </div>
               </div>
 
               {/* ═══ Envío del código de acceso ═══
@@ -4607,7 +4715,89 @@ export default function ResourceScreen({
               </div>
             </div>
           );
-        })() : (
+        })() : isMobile ? (
+          /* En el teléfono la tabla de N columnas no se lee: cada registro es
+             una tarjeta con el primer campo de título, el estado como pastilla,
+             tres datos y "Ver más" para el resto. */
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+            {items.map((item, index) => {
+              const rowId = String(item.id ?? index);
+              const statusCol = columns.find((col) => STATUS_KEYS.has(col.key));
+              const dataCols = columns.filter((col) => !STATUS_KEYS.has(col.key));
+              const [titleCol, ...restCols] = dataCols;
+              const expanded = expandedRows.has(rowId);
+              const visibleCols = expanded ? restCols : restCols.slice(0, 3);
+              const title = titleCol ? resolveDisplayValue(titleCol.key, item) : "";
+              const statusDisplay = statusCol ? resolveDisplayValue(statusCol.key, item) : null;
+              const hasStatus = typeof statusDisplay === "string" && statusDisplay !== "-" && statusDisplay.trim() !== "";
+              const tone = hasStatus && statusCol ? statusTone(String(item[statusCol.key] ?? statusDisplay)) : null;
+              return (
+                <div key={rowId} style={{ borderRadius: "14px", border: "1px solid var(--border)", background: "var(--surface)", padding: "12px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "8px" }}>
+                    <p style={{ margin: 0, fontSize: "15px", fontWeight: 700, color: "var(--text)", minWidth: 0, overflowWrap: "anywhere", lineHeight: 1.3 }}>
+                      {title === "-" || title === "" ? t("Sin nombre") : title}
+                    </p>
+                    {hasStatus && tone && (
+                      <span style={{ flexShrink: 0, fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "99px", whiteSpace: "nowrap", background: tone.bg, color: tone.color }}>
+                        {statusDisplay}
+                      </span>
+                    )}
+                  </div>
+                  {visibleCols.length > 0 && (
+                    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 38%) minmax(0, 1fr)", gap: "4px 10px", marginTop: "8px", fontSize: "13px" }}>
+                      {visibleCols.map((col) => (
+                        <div key={col.key} style={{ display: "contents" }}>
+                          <span style={{ color: "var(--text-muted)", fontSize: "11px", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.04em", paddingTop: "2px" }}>{col.label}</span>
+                          <span style={{ color: "var(--text)", minWidth: 0, overflowWrap: "anywhere" }}>{resolveDisplayValue(col.key, item)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ display: "flex", gap: "8px", marginTop: "10px", alignItems: "center" }}>
+                    {restCols.length > 3 && (
+                      <button
+                        type="button"
+                        className="btn btn-ghost"
+                        style={{ fontSize: "12px", minHeight: "36px", padding: "0 10px" }}
+                        onClick={() =>
+                          setExpandedRows((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(rowId)) next.delete(rowId); else next.add(rowId);
+                            return next;
+                          })
+                        }
+                      >
+                        {expanded ? t("Ver menos") : t("Ver más")}
+                      </button>
+                    )}
+                    <div style={{ marginLeft: "auto", display: "flex", gap: "6px" }}>
+                      {item.id && isAccountDeleted(item) && (
+                        <button className="btn btn-ghost" style={{ minHeight: "36px", fontSize: "12px", color: STATE.successText, fontWeight: 700 }} onClick={() => handleReactivate(item.id)}>
+                          {t("Reactivar")}
+                        </button>
+                      )}
+                      <button
+                        className="btn btn-ghost"
+                        style={{ minHeight: "36px", fontSize: "12px" }}
+                        onClick={() => {
+                          handleEdit(item);
+                          if (item.id) onEditRequested?.(item.id);
+                        }}
+                      >
+                        {t("Editar")}
+                      </button>
+                      {item.id && (
+                        <button className="btn btn-ghost" style={{ minHeight: "36px", fontSize: "12px", color: STATE.danger }} onClick={() => handleDelete(item.id)}>
+                          {t("Eliminar")}
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
           <div className="max-h-[70vh] overflow-auto rounded-2xl" style={{ border: "1px solid var(--border)" }}>
             <style>{`
               .rs-data-table tbody tr:nth-child(even){background:rgba(148,163,184,0.045);}

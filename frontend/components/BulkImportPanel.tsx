@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useMemo, useState } from "react";
 import * as XLSX from "xlsx";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { apiFetch } from "@/lib/api";
 import { CLIENT_TYPE_OPTIONS, isEventCoordinator } from "@/lib/clientTypes";
 import { BRAND } from "@/lib/design";
@@ -627,6 +628,10 @@ export default function BulkImportPanel({
 }) {
   const { t } = useI18n();
   const inputId = useId();
+  // En el teléfono (app staff) la carga masiva ocupaba media pantalla encima
+  // de la lista y casi nunca se usa desde ahí: queda plegada tras una fila.
+  const isMobile = useIsMobile();
+  const [abiertoEnTelefono, setAbiertoEnTelefono] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const [errors, setErrors] = useState<ImportError[]>([]);
@@ -1265,11 +1270,35 @@ export default function BulkImportPanel({
 
   const previewRows = normalizedRows.slice(0, 8);
 
+  if (isMobile && !abiertoEnTelefono) {
+    return (
+      <button
+        type="button"
+        className="surface"
+        onClick={() => setAbiertoEnTelefono(true)}
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", gap: "10px", padding: "12px 14px", cursor: "pointer", textAlign: "left" }}
+      >
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: "10px", fontWeight: 700, letterSpacing: "0.16em", textTransform: "uppercase", color: BRAND.teal }}>{t("Carga masiva")}</span>
+          <span style={{ display: "block", fontSize: "14px", fontWeight: 600, color: "var(--text)", marginTop: "2px" }}>{t("Importar desde XLSX")}</span>
+        </span>
+        <span style={{ color: "var(--text-muted)", flexShrink: 0 }} aria-hidden>›</span>
+      </button>
+    );
+  }
+
   return (
     <section
       className="surface max-w-full min-w-0 overflow-hidden rounded-3xl p-6 space-y-4"
       style={{ borderTop: `2px solid ${BRAND.teal}`, boxShadow: "0 1px 6px rgba(15,23,42,0.06)" }}
     >
+      {isMobile && (
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "-8px" }}>
+          <button type="button" className="btn btn-ghost" style={{ minHeight: "36px", fontSize: "12px" }} onClick={() => setAbiertoEnTelefono(false)}>
+            {t("Cerrar")}
+          </button>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px" }}>{t("Carga masiva")}</p>

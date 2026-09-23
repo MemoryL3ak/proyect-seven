@@ -37,7 +37,7 @@ export default function PageHeader({
 
   return (
     <section
-      className={`surface-premium p-5 anim-fade-up-soft relative ${stripClass}`}
+      className={`surface-premium page-header p-5 anim-fade-up-soft relative ${stripClass}`}
       style={{
         background: `linear-gradient(135deg, ${SURFACE.card} 0%, #f8fffe 100%)`,
         paddingTop: accentStrip === "none" ? undefined : "1.5rem",
@@ -63,7 +63,7 @@ export default function PageHeader({
         <div className="flex items-start gap-4 min-w-0">
           {icon && (
             <div
-              className="flex-shrink-0 w-11 h-11 md:w-14 md:h-14 rounded-2xl flex items-center justify-center icon-bounce anim-scale-pop relative"
+              className="page-header-icon flex-shrink-0 w-11 h-11 md:w-14 md:h-14 rounded-2xl flex items-center justify-center icon-bounce anim-scale-pop relative"
               style={{
                 background: iconBg,
                 color: iconColor,

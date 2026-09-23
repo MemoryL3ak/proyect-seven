@@ -1308,8 +1308,10 @@ label > *:first-child {
     padding: 28px 16px !important;
     min-height: 0 !important;
   }
-  /* Títulos de pantalla: 24 px ocupaban dos líneas con cualquier módulo. */
-  h1.text-2xl { font-size: 1.25rem; }
+  /* Títulos de pantalla: 24–34 px ocupaban dos líneas con cualquier módulo,
+     y la barra superior ya dice dónde estás. Con !important también pisa
+     los tamaños inline de las cabeceras "hero" de cada módulo. */
+  main h1 { font-size: 1.25rem !important; line-height: 1.2 !important; }
   h4.text-xl { font-size: 1.05rem; }
 
   /* Header del panel: nombre y rol se ocultan (queda la inicial) y "Cerrar
@@ -1338,6 +1340,149 @@ label > *:first-child {
   .topbar-divider,
   .topbar-logo {
     display: none !important;
+  }
+
+  /* ── Aspecto de app (no de escritorio encogido) ──────────────
+     Menos aire entre secciones, tarjetas planas sin sombra ni brillos,
+     controles de 44 px para el dedo, KPIs compactos y la cabecera del
+     módulo como texto (el título ya va en la barra superior). */
+  .space-y-6 > :not([hidden]) ~ :not([hidden]),
+  .space-y-5 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 12px !important;
+  }
+  .space-y-4 > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 10px !important;
+  }
+  .surface,
+  .surface-premium {
+    border-radius: 16px;
+    box-shadow: none !important;
+  }
+  .surface .surface,
+  .surface .surface-premium,
+  .surface-premium .surface {
+    border-radius: 12px;
+  }
+  .shimmer-top,
+  .ambient-orb,
+  .particle {
+    display: none !important;
+  }
+  .btn {
+    min-height: 42px;
+    border-radius: 12px;
+  }
+  .input,
+  select.input {
+    min-height: 46px;
+    border-radius: 12px;
+  }
+  textarea.input {
+    min-height: 88px;
+  }
+  .kpi-card {
+    padding: 12px 12px 10px !important;
+    border-radius: 14px !important;
+  }
+  .kpi-card .text-3xl {
+    font-size: 1.45rem !important;
+  }
+  .kpi-card .w-9 {
+    width: 30px !important;
+    height: 30px !important;
+  }
+  .page-header {
+    background: transparent !important;
+    border: none !important;
+    padding: 2px 2px 6px !important;
+  }
+  .page-header::before,
+  .page-header::after {
+    display: none !important;
+  }
+  .page-header-icon {
+    display: none !important;
+  }
+  .page-header h1 {
+    font-size: 1.15rem !important;
+  }
+  .page-header h1 + p {
+    font-size: 12.5px !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  /* Menú lateral como cajón de app: más ancho y filas de 44 px. */
+  .sidebar-wrapper aside {
+    width: min(300px, 84vw) !important;
+  }
+  .sidebar-wrapper nav a {
+    padding-top: 10px !important;
+    padding-bottom: 10px !important;
+    font-size: 14px !important;
+  }
+  .sidebar-wrapper nav button {
+    min-height: 44px;
+    font-size: 14px !important;
+  }
+  /* Tiras horizontales: filas de KPIs o columnas de estado que en escritorio
+     son una grilla y en el teléfono se deslizan de lado, de borde a borde.
+     --strip-w fija el ancho de cada tarjeta. */
+  .mobile-strip {
+    display: flex !important;
+    gap: 10px !important;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    margin-left: -16px;
+    margin-right: -16px;
+    padding: 2px 16px 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .mobile-strip::-webkit-scrollbar {
+    display: none;
+  }
+  .mobile-strip > * {
+    flex: 0 0 var(--strip-w, 150px);
+    scroll-snap-align: start;
+    min-width: 0;
+  }
+  /* Filas de KPIs de Tailwind ("grid grid-cols-2 md:grid-cols-4"): en el
+     teléfono una grilla de 2 columnas con 5 o 6 tarjetas altas empujaba el
+     contenido fuera de la primera pantalla. Pasan a tira horizontal como
+     .mobile-strip. Los formularios usan grid-cols-1 md:…, no les afecta. */
+  .grid.grid-cols-2[class*="md:grid-cols-"],
+  .grid.grid-cols-2[class*="lg:grid-cols-"],
+  .grid.grid-cols-2[class*="xl:grid-cols-"] {
+    display: flex !important;
+    gap: 10px !important;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    /* Sin sangrado negativo: muchas páginas recortan con overflow-x-hidden
+       en su raíz y la primera tarjeta quedaba cortada. */
+    padding: 2px 0 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .grid.grid-cols-2[class*="md:grid-cols-"]::-webkit-scrollbar,
+  .grid.grid-cols-2[class*="lg:grid-cols-"]::-webkit-scrollbar,
+  .grid.grid-cols-2[class*="xl:grid-cols-"]::-webkit-scrollbar {
+    display: none;
+  }
+  .grid.grid-cols-2[class*="md:grid-cols-"] > *,
+  .grid.grid-cols-2[class*="lg:grid-cols-"] > *,
+  .grid.grid-cols-2[class*="xl:grid-cols-"] > * {
+    flex: 0 0 160px;
+    scroll-snap-align: start;
+    min-width: 0;
+  }
+  .sidenav-collapse {
+    display: none !important;
+  }
+  /* Barra inferior: el contenido termina antes de ella. */
+  .dark-layout-root > main {
+    padding-bottom: calc(80px + env(safe-area-inset-bottom)) !important;
   }
 }
 @media (min-width: 768px) {

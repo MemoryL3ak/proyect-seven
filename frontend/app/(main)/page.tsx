@@ -467,7 +467,7 @@ export default function Page() {
       </div>
 
       {/* ── KPI row: la tarjeta expande su detalle; el link al módulo vive dentro del panel */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-4 lg:grid-cols-7">
+      <div className="mobile-strip md:grid gap-4 md:grid-cols-4 lg:grid-cols-7">
         {kpis.map((kpi, i) => {
           const isOpen = expandedKpi === kpi.id;
           return (
