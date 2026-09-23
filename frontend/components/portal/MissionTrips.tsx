@@ -4,11 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarIcon, CarIcon, ChevronDownIcon, UsersIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
-import { buildDisciplineLabelMap, coincideDisciplinaPorNombre, type DisciplineLike } from "@/lib/discipline-filters";
+import { buildDisciplineLabelMap, coincideDisciplinaPorNombre, deporteDeViaje, type DisciplineLike } from "@/lib/discipline-filters";
 import { claveDiaEvento, etiquetaDiaEvento, fechaCortaEvento, fechaHoraEvento, horaEvento } from "@/lib/hora-evento";
 import TripMap from "@/components/TripMap";
 import TripLiveMap from "@/components/portal/TripLiveMap";
-import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
+import { SegmentedFilter } from "@/components/ui/FilterControls";
 import SelectorFiltro from "@/components/portal/SelectorFiltro";
 import { mapaDeLugares, tocaLugar } from "@/lib/lugares";
 import { openExternal, whatsappHref } from "@/lib/external-link";
@@ -211,18 +211,24 @@ export default function MissionTrips({
     [propios],
   );
 
-  // Disciplinas presentes, para no ofrecer filtros vacíos.
-  const opcionesDisciplina = useMemo(() => {
-    const vistas = new Map<string, { label: string; total: number }>();
+  /**
+   * Deportes presentes, con cuántos traslados tiene cada uno. Se agrupa por
+   * el deporte del catálogo y no por el texto de cada viaje: antes "Voleibol"
+   * (texto de la planilla), "Vóleibol · Femenino" y "Vóleibol · Masculino"
+   * (por id) salían como tres filtros distintos y el jefe de misión, que
+   * quiere ver "los del vóleibol", tenía que adivinar cuál tocar.
+   */
+  const opcionesDeporte = useMemo(() => {
+    const vistos = new Map<string, number>();
     for (const tr of propios) {
-      const label = disciplinaDe(tr);
-      if (!label) continue;
-      const clave = tr.disciplineId ?? label;
-      const previo = vistas.get(clave);
-      vistas.set(clave, { label, total: (previo?.total ?? 0) + 1 });
+      const deporte = deporteDeViaje(tr, disciplines);
+      if (!deporte) continue;
+      vistos.set(deporte, (vistos.get(deporte) ?? 0) + 1);
     }
-    return [...vistas.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label));
-  }, [propios, labels]);
+    return [...vistos.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0], "es"))
+      .map(([deporte, total]) => ({ value: deporte, label: `${deporte} · ${total}` }));
+  }, [propios, disciplines]);
 
   /**
    * Los días que de verdad tienen traslados, con cuántos hay en cada uno. Un
@@ -268,10 +274,7 @@ export default function MissionTrips({
   const visibles = useMemo(() => {
     const list = propios.filter((tr) => {
       if (!esDelDeporteElegido(tr)) return false;
-      if (disciplinaFiltro) {
-        const clave = tr.disciplineId ?? disciplinaDe(tr) ?? "";
-        if (clave !== disciplinaFiltro) return false;
-      }
+      if (disciplinaFiltro && (deporteDeViaje(tr, disciplines) ?? "") !== disciplinaFiltro) return false;
       if (diaFiltro) {
         const suDia = claveDiaEvento(tr.scheduledAt) || "SIN_FECHA";
         if (suDia !== diaFiltro) return false;
@@ -289,7 +292,7 @@ export default function MissionTrips({
       const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Infinity;
       return ta - tb;
     });
-  }, [propios, disciplinaFiltro, disciplinaExterna, disciplinaElegida, diaFiltro, estadoFiltro, labels]);
+  }, [propios, disciplinaFiltro, disciplinaExterna, disciplinaElegida, diaFiltro, estadoFiltro, labels, disciplines]);
 
   // Si el día elegido deja de existir —cambió la región, el hotel o llegaron
   // otros viajes—, el filtro se suelta solo en vez de dejar la lista vacía
@@ -401,17 +404,23 @@ export default function MissionTrips({
             )}
           </div>
         )}
-        {/* Disciplina: fichas desplazables. Con `todas` manda el panel de
-            filtros del Coordinador de Comité, y dos controles para lo mismo
-            sólo confunden. */}
-        {opcionesDisciplina.length > 0 && !todas && (
-          <ChipFilter
-            style={{ marginTop: 8 }}
-            value={disciplinaFiltro}
-            onChange={setDisciplinaFiltro}
-            allLabel={t("Todas")}
-            options={opcionesDisciplina.map(([value, { label, total }]) => ({ value, label, count: total }))}
-          />
+        {/* Deporte: selector de una línea, igual que el día. Las fichas
+            desplazables cortaban los nombres en el teléfono y con un deporte
+            por hoja de planilla se llenaban de variantes. Con `todas` manda
+            el panel de filtros del Coordinador de Comité, y dos controles
+            para lo mismo sólo confunden. Con un solo deporte no hay nada que
+            filtrar. */}
+        {opcionesDeporte.length > 1 && !todas && (
+          <div style={{ marginTop: 8 }}>
+            <SelectorFiltro
+              rotulo={t("Deporte")}
+              titulo={t("Deporte del traslado")}
+              opciones={opcionesDeporte}
+              etiquetaTodos={t("Todos los deportes")}
+              valor={disciplinaFiltro}
+              onChange={setDisciplinaFiltro}
+            />
+          </div>
         )}
       </div>
 

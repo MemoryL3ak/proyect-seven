@@ -105,3 +105,35 @@ export function coincideDisciplinaPorNombre(
   const variantes = [`para ${nombre}`, `para${nombre}`, nombre.startsWith("a") ? `par${nombre}` : ""];
   return variantes.includes(clave);
 }
+
+/** Palabras de género que la planilla a veces pega al deporte: "Voleibol Masculino". */
+const GENERO_AL_FINAL = /\s+(masculin[oa]s?|femenin[oa]s?|damas|varones|mixt[oa]s?|hombres|mujeres)$/;
+
+/**
+ * Deporte de un viaje tal como lo muestra el filtro de Viajes en curso.
+ *
+ * El filtro agrupaba por el texto de la planilla tal cual, así que "ATLETISMO",
+ * "Voleibol" y "Voleibol Masculino" salían como deportes distintos, cada uno con
+ * su cuenta, y los viajes creados a mano (que traen id y no texto) quedaban
+ * fuera. Acá manda el catálogo: el id si el viaje lo trae, y si no el texto
+ * calzado por nombre con la misma regla del coordinador. El género no separa
+ * (la planilla va por hoja de deporte, "Futsal" cubre a damas y varones), la
+ * categoría paralímpica sí: "PARATLETISMO" es Atletismo · Paralímpica. Un
+ * texto que no calza con nada queda como está escrito.
+ */
+export function deporteDeViaje(
+  viaje: { discipline?: string | null; disciplineId?: string | null },
+  catalogo: DisciplineLike[],
+): string | null {
+  const etiqueta = (d: DisciplineLike) => {
+    const nombre = (d.name || "").trim() || d.id;
+    return normalizeCategory(d.category) === "PARALYMPIC" ? `${nombre} · ${categoryLabel(d.category)}` : nombre;
+  };
+  const porId = viaje.disciplineId ? catalogo.find((d) => d.id === viaje.disciplineId) : undefined;
+  if (porId) return etiqueta(porId);
+  const texto = String(viaje.discipline ?? "").trim();
+  if (!texto) return null;
+  const sinGenero = claveDisciplina(texto).replace(GENERO_AL_FINAL, "");
+  const porNombre = catalogo.find((d) => coincideDisciplinaPorNombre(sinGenero, d));
+  return porNombre ? etiqueta(porNombre) : texto;
+}
