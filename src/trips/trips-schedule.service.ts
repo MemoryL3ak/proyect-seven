@@ -885,7 +885,10 @@ export class TripsScheduleService {
           destination_hotel_id: destino.hotelId,
           origin_food_location_id: origen.foodLocationId,
           destination_food_location_id: destino.foodLocationId,
-          trip_type: row.activity || null,
+          // Tipo de viaje: la actividad si la planilla la trae; si no, el
+          // sentido del tramo (columna "Destino": Ida / Regreso), que es lo
+          // que la operación llama tipo de viaje.
+          trip_type: row.activity || (legType === 'RETURN' ? 'VIAJE_REGRESO' : 'VIAJE_IDA'),
           client_type: clientType,
           delegation_id: delegationId,
           all_delegations: todasLasRegiones,
@@ -948,6 +951,7 @@ export class TripsScheduleService {
             origin_food_location_id: destino.foodLocationId,
             destination_food_location_id: origen.foodLocationId,
             scheduled_at: returnAt.toISOString(),
+            trip_type: row.activity || 'VIAJE_REGRESO',
             // La planilla no trae presentación para el regreso automático.
             presentation_at: null,
             return_at: null,

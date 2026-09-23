@@ -16,6 +16,13 @@ import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { delegationLabel } from "@/lib/delegations";
 import { lugarDeExtremo, lugaresDeViajes, tocaLugar } from "@/lib/lugares";
+import {
+  compararConPlanilla,
+  generoNormalizado,
+  leerPlanilla,
+  tipoDeViajeEfectivo,
+  type ResultadoComparacion,
+} from "@/lib/planilla";
 import { legTypeLabel, tripTypeLabel } from "@/lib/tripTypes";
 import {
   CrownIcon,
@@ -457,6 +464,10 @@ const direccionParaMapa = (
   return texto?.trim() || null;
 };
 
+/** Género del grupo que viaja, como lo dejó la planilla en los metadatos. */
+const generoDeViaje = (trip: { metadata?: Record<string, unknown> | null }) =>
+  generoNormalizado(typeof trip.metadata?.gender === "string" ? trip.metadata.gender : "");
+
 const relativeMinutes = (value?: string | null) => {
   if (!value) return null;
   return Math.round((new Date(value).getTime() - Date.now()) / 60000);
@@ -596,6 +607,12 @@ export default function TripsPage() {
   const [ongoingVenue, setOngoingVenue] = useState("");
   const [ongoingDriver, setOngoingDriver] = useState("");
   const [ongoingPage, setOngoingPage] = useState(0);
+  // Comparación con la planilla de operatividad: el último cruce hecho, con
+  // qué archivo, y si la lista se recorta a lo que difiere.
+  const [comparacion, setComparacion] = useState<ResultadoComparacion | null>(null);
+  const [comparacionArchivo, setComparacionArchivo] = useState("");
+  const [soloDiferencias, setSoloDiferencias] = useState(false);
+  const comparacionFileRef = useRef<HTMLInputElement>(null);
   // Selección múltiple para borrado en lote.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -948,11 +965,109 @@ export default function TripsPage() {
     return { key: id, texto: delegationLabel(delegations[id]) || id };
   };
 
+  /** Viajes que la comparación marcó: difieren de su fila o no tienen fila. */
+  const viajesMarcados = useMemo(() => {
+    const ids = new Set<string>();
+    if (!comparacion) return ids;
+    comparacion.porViaje.forEach((_d, id) => ids.add(id));
+    comparacion.sinFila.forEach((v) => ids.add(v.id));
+    return ids;
+  }, [comparacion]);
+  const sinFilaIds = useMemo(() => new Set((comparacion?.sinFila ?? []).map((v) => v.id)), [comparacion]);
+
+  /**
+   * Cruza la planilla de operatividad con todos los viajes cargados y deja el
+   * resultado en pantalla: cada viaje que difiere queda marcado en la lista y
+   * en su detalle, y el reporte se puede bajar en Excel.
+   */
+  const compararPlanilla = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      try {
+        const filas = leerPlanilla(evt.target?.result as ArrayBuffer);
+        const todos = trips.flatMap((trip) => [trip, ...(trip.childTrips ?? [])]);
+        const patenteDeViaje = (viaje: { vehicleId?: string | null; driverId?: string | null }) => {
+          const propio = viaje.vehicleId ? vehicles[viaje.vehicleId]?.plate : null;
+          if (propio) return propio;
+          const driver = viaje.driverId ? drivers[viaje.driverId] : null;
+          const delConductor = driver?.vehicleId ? vehicles[driver.vehicleId]?.plate : null;
+          if (delConductor) return delConductor;
+          const meta = driver?.metadata as Record<string, unknown> | undefined;
+          return typeof meta?.vehiclePatente === "string" ? meta.vehiclePatente : null;
+        };
+        const resultado = compararConPlanilla(filas, todos, {
+          nombreDeLugar,
+          nombreConductor: (id) => drivers[id]?.fullName,
+          nombreRegion: (id) => delegationLabel(delegations[id]),
+          patenteDeViaje: (viaje) => patenteDeViaje(viaje as { vehicleId?: string | null; driverId?: string | null }),
+          anioPorDefecto: String(new Date().getFullYear()),
+        });
+        setComparacion(resultado);
+        setComparacionArchivo(file.name);
+        setSoloDiferencias(false);
+        setOngoingPage(0);
+        setError(filas.length === 0 ? t("No se detectaron filas válidas en el archivo") : null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t("No se pudo leer el archivo"));
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  };
+
+  const descargarReporteComparacion = () => {
+    if (!comparacion) return;
+    const viajePorId = new Map(trips.flatMap((trip) => [trip, ...(trip.childTrips ?? [])]).map((v) => [v.id, v] as const));
+    const describir = (id: string | null) => {
+      const v = id ? viajePorId.get(id) : null;
+      if (!v) return "";
+      return `${formatDateTime(v.scheduledAt)} · ${lugarDeExtremo(v, "origin", nombreDeLugar)} → ${lugarDeExtremo(v, "destination", nombreDeLugar)}`;
+    };
+    const diferencias = comparacion.filas.flatMap((f) =>
+      f.diferencias.map((d) => ({
+        [t("Hoja")]: f.hoja,
+        [t("Fila")]: f.fila,
+        [t("Servicio")]: f.descripcion,
+        [t("Viaje en sistema")]: describir(f.viajeId),
+        [t("ID viaje")]: f.viajeId ?? "",
+        [t("Campo")]: t(d.campo),
+        [t("Planilla")]: d.planilla,
+        [t("Sistema")]: d.sistema,
+      })),
+    );
+    const sinViaje = comparacion.sinViaje.map((f) => ({
+      [t("Hoja")]: f.hoja,
+      [t("Fila")]: f.fila,
+      [t("Fecha")]: f.fecha ?? "",
+      [t("Servicio")]: f.descripcion,
+    }));
+    const sinFila = comparacion.sinFila.map((v) => ({
+      [t("ID viaje")]: v.id,
+      [t("Viaje en sistema")]: describir(v.id),
+      [t("Patente")]: v.vehiclePlate ?? "",
+      [t("Tramo")]: legTypeLabel(v.legType),
+    }));
+    const resumen = [
+      { [t("Concepto")]: t("Filas de la planilla"), [t("Total")]: comparacion.filas.length },
+      { [t("Concepto")]: t("Filas que calzan con un viaje"), [t("Total")]: comparacion.filas.filter((f) => f.viajeId).length },
+      { [t("Concepto")]: t("Viajes con diferencias"), [t("Total")]: comparacion.porViaje.size },
+      { [t("Concepto")]: t("Filas sin viaje en el sistema"), [t("Total")]: comparacion.sinViaje.length },
+      { [t("Concepto")]: t("Viajes sin fila en la planilla"), [t("Total")]: comparacion.sinFila.length },
+      { [t("Concepto")]: t("Fechas comparadas"), [t("Total")]: comparacion.fechas.join(", ") },
+    ];
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(resumen), t("Resumen"));
+    XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(diferencias.length ? diferencias : [{ [t("Campo")]: t("Sin diferencias") }]), t("Diferencias"));
+    XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(sinViaje.length ? sinViaje : [{ [t("Hoja")]: t("Ninguna") }]), t("Sin viaje en sistema"));
+    XLSX.utils.book_append_sheet(libro, XLSX.utils.json_to_sheet(sinFila.length ? sinFila : [{ [t("ID viaje")]: t("Ninguno") }]), t("Sin fila en planilla"));
+    XLSX.writeFile(libro, `comparacion_planilla_${isoDayKeyLocal(new Date().toISOString())}.xlsx`);
+  };
+
   const condicionesEnCurso = {
     jornada: (trip: Trip) =>
       !ongoingDay || (trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha") === ongoingDay,
     disciplina: (trip: Trip) => !ongoingDiscipline || trip.discipline === ongoingDiscipline,
     region: (trip: Trip) => !ongoingRegion || regionDeViaje(trip).key === ongoingRegion,
+    planilla: (trip: Trip) => !soloDiferencias || !comparacion || viajesMarcados.has(trip.id),
     hotel: (trip: Trip) => !ongoingHotel || tocaLugar(trip, ongoingHotel, nombreDeLugar),
     sede: (trip: Trip) => !ongoingVenue || tocaLugar(trip, ongoingVenue, nombreDeLugar),
     conductor: (trip: Trip) =>
@@ -974,7 +1089,7 @@ export default function TripsPage() {
   // viajes no se nota y la lista queda dicha entera.
   const dependenciasEnCurso = [
     ongoingTrips, ongoingDay, ongoingDiscipline, ongoingRegion, ongoingHotel, ongoingVenue, ongoingDriver,
-    venues, hoteles, comedores, delegations, athletes,
+    venues, hoteles, comedores, delegations, athletes, soloDiferencias, comparacion,
   ];
 
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -1292,8 +1407,9 @@ export default function TripsPage() {
       [t("Destino")]: lugarDeExtremo(trip, "destination", nombreDeLugar),
       [t("Región")]: region(trip),
       [t("Disciplina")]: trip.discipline ?? "",
+      [t("Género")]: generoDeViaje(trip),
       [t("Actividad")]: trip.activity ?? "",
-      [t("Tipo de viaje")]: tripTypeLabel(trip.tripType),
+      [t("Tipo de viaje")]: tripTypeLabel(tipoDeViajeEfectivo(trip)),
       [t("Tipo de cliente")]: trip.clientType ? t(clientTypeLabel(trip.clientType)) : "",
       [t("Solicitante")]: resolveRequester(trip),
       [t("Participantes")]: (trip.athleteNames ?? []).join(", "),
@@ -2015,6 +2131,32 @@ export default function TripsPage() {
             >
               <DownloadIcon size={14} className="inline mr-1" />{t("Exportar Excel")}
             </button>
+            <input
+              ref={comparacionFileRef}
+              type="file"
+              accept=".xlsx,.xls"
+              style={{ display: "none" }}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) compararPlanilla(file);
+                e.target.value = "";
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => comparacionFileRef.current?.click()}
+              disabled={trips.length === 0}
+              title={t("Cruza la planilla de operatividad con los viajes cargados y marca los que difieren")}
+              className="inline-flex items-center gap-1 text-xs font-bold rounded-lg"
+              style={{
+                padding: "7px 14px",
+                background: SURFACE.card, color: SURFACE.textSecondary,
+                border: `1px solid ${SURFACE.borderStrong}`, cursor: trips.length === 0 ? "not-allowed" : "pointer",
+                opacity: trips.length === 0 ? 0.6 : 1,
+              }}
+            >
+              <FileSpreadsheetIcon size={14} className="inline mr-1" />{t("Comparar con planilla")}
+            </button>
           </div>
         </div>
 
@@ -2205,6 +2347,48 @@ export default function TripsPage() {
               )}
             </div>
 
+            {/* Resultado del cruce con la planilla: números arriba, marcas en
+                cada viaje abajo. Se queda hasta que se quite o se cargue otra. */}
+            {comparacion && (() => {
+              const calzan = comparacion.filas.filter((f) => f.viajeId).length;
+              const limpio = comparacion.porViaje.size === 0 && comparacion.sinViaje.length === 0 && comparacion.sinFila.length === 0;
+              return (
+                <div style={{ marginBottom: 14, padding: "12px 16px", borderRadius: 14, background: limpio ? STATE.successSoft : SURFACE.card, border: `1px solid ${limpio ? STATE.successBorder : STATE.dangerBorder}` }}>
+                  <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12 }}>
+                    <div style={{ flex: 1, minWidth: 240 }}>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: SURFACE.text, margin: 0 }}>
+                        {t("Comparación con planilla")} · {comparacionArchivo} · {comparacion.fechas.map(formatDayLabel).join(", ")}
+                      </p>
+                      <p style={{ fontSize: 12, color: SURFACE.textMuted, margin: "3px 0 0" }}>
+                        {`${comparacion.filas.length} ${t("filas")} · ${calzan} ${t("calzan con un viaje")} · `}
+                        <strong style={{ color: comparacion.porViaje.size ? STATE.dangerText : SURFACE.textMuted }}>{`${comparacion.porViaje.size} ${t("con diferencias")}`}</strong>
+                        {` · ${comparacion.sinViaje.length} ${t("filas sin viaje en el sistema")} · ${comparacion.sinFila.length} ${t("viajes sin fila en la planilla")}`}
+                      </p>
+                    </div>
+                    <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: SURFACE.textSecondary, cursor: "pointer" }}>
+                      <input type="checkbox" checked={soloDiferencias} onChange={(e) => { setSoloDiferencias(e.target.checked); setOngoingPage(0); }} style={{ accentColor: BRAND.teal }} />
+                      {t("Solo viajes marcados")}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={descargarReporteComparacion}
+                      className="inline-flex items-center gap-1 text-xs font-bold rounded-lg"
+                      style={{ padding: "7px 12px", background: SURFACE.card, color: SURFACE.textSecondary, border: `1px solid ${SURFACE.borderStrong}`, cursor: "pointer" }}
+                    >
+                      <DownloadIcon size={13} className="inline mr-1" />{t("Descargar reporte")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setComparacion(null); setSoloDiferencias(false); setOngoingPage(0); }}
+                      style={{ padding: "7px 12px", fontSize: 12, borderRadius: 8, background: "transparent", color: SURFACE.textMuted, border: `1px solid ${SURFACE.border}`, cursor: "pointer" }}
+                    >
+                      {t("Quitar marcas")}
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
             {ongoingFiltered.length === 0 ? (
               <div style={{ borderRadius: "14px", border: `1px dashed ${pal.cardBorder}`, background: pal.cardBg, padding: "48px 24px", textAlign: "center" }}>
                 <ClockIcon size={22} color={pal.labelColor} strokeWidth={1.8} />
@@ -2262,6 +2446,7 @@ export default function TripsPage() {
                         sinChofer ? t("Sin conductor") : resolveDriver(trip),
                         vehiculo ? String(vehiculo).toUpperCase() : null,
                         trip.discipline || null,
+                        generoDeViaje(trip) || null,
                         trip.passengerCount ? `${trip.passengerCount} pax` : null,
                         trip.clientType || null,
                       ]
@@ -2333,6 +2518,19 @@ export default function TripsPage() {
                                 {sinChofer && (
                                   <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: STATE.warningSoft, border: `1px solid ${STATE.warningBorder}`, color: STATE.warningText }}>
                                     {t("Por asignar")}
+                                  </span>
+                                )}
+                                {comparacion?.porViaje.has(trip.id) && (
+                                  <span
+                                    title={(comparacion.porViaje.get(trip.id) ?? []).map((d) => `${t(d.campo)}: ${d.planilla} / ${d.sistema}`).join("\n")}
+                                    style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: STATE.dangerSoft, border: `1px solid ${STATE.dangerBorder}`, color: STATE.dangerText }}
+                                  >
+                                    {`${t("Difiere de planilla")} (${comparacion.porViaje.get(trip.id)?.length ?? 0})`}
+                                  </span>
+                                )}
+                                {sinFilaIds.has(trip.id) && (
+                                  <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: STATE.warningSoft, border: `1px solid ${STATE.warningBorder}`, color: STATE.warningText }}>
+                                    {t("Sin fila en planilla")}
                                   </span>
                                 )}
                               </div>
@@ -2819,7 +3017,11 @@ export default function TripsPage() {
           : delegationLabel(infoTrip.delegationId ? delegations[infoTrip.delegationId] : null) ||
             (iporPasajeros === "-" ? "" : iporPasajeros);
         const idisciplina = safeText(infoTrip.discipline, "");
-        const itipoViaje = tripTypeLabel(infoTrip.tripType);
+        const igenero = generoDeViaje(infoTrip);
+        // Sin actividad, el tipo de viaje es el sentido del tramo (la columna
+        // "Destino" de la planilla): antes quedaba en blanco.
+        const itipoViaje = tripTypeLabel(tipoDeViajeEfectivo(infoTrip));
+        const idiferencias = comparacion?.porViaje.get(infoTrip.id) ?? [];
         const itramo = legTypeLabel(infoTrip.legType);
         const iparticipantes = infoTrip.athleteNames?.length ? infoTrip.athleteNames.join(", ") : "";
 
@@ -2831,6 +3033,7 @@ export default function TripsPage() {
         const iclases: { label: string; value: string; destacado?: boolean }[] = [
           { label: "Región", value: iregion || "—", destacado: Boolean(iregion) },
           { label: "Disciplina", value: idisciplina || "—", destacado: Boolean(idisciplina) },
+          { label: "Género", value: igenero || "—", destacado: Boolean(igenero) },
           { label: "Tipo de viaje", value: itipoViaje || "—", destacado: Boolean(itipoViaje) },
           ...(infoTrip.clientType ? [{ label: "Tipo de cliente", value: t(clientTypeLabel(infoTrip.clientType)) }] : []),
           ...(itramo ? [{ label: "Tramo", value: infoTrip.isRoundTrip ? `${itramo} · ${t("ida y vuelta")}` : itramo }] : []),
@@ -2905,6 +3108,17 @@ export default function TripsPage() {
                     </div>
                   ))}
                 </div>
+
+                {idiferencias.length > 0 && (
+                  <div style={{ marginBottom: 14, padding: "10px 12px", borderRadius: 12, background: STATE.dangerSoft, border: `1px solid ${STATE.dangerBorder}` }}>
+                    <p style={{ ...microEtiqueta, color: STATE.dangerText }}>{t("Difiere de la planilla")}</p>
+                    {idiferencias.map((d) => (
+                      <p key={d.campo} style={{ fontSize: 12, margin: "3px 0 0", color: SURFACE.text }}>
+                        <strong>{t(d.campo)}:</strong> {t("planilla")} <strong>{d.planilla}</strong> · {t("sistema")} <strong>{d.sistema}</strong>
+                      </p>
+                    ))}
+                  </div>
+                )}
 
                 {/* La ruta: es lo otro que se viene a ver al abrir un viaje. */}
                 {(() => {

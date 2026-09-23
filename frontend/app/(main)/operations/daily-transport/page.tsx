@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
+import { leerPlanilla, rowDateToIso, type ScheduleRow } from "@/lib/planilla";
 import { apiFetch } from "@/lib/api";
 import PageHeader from "@/components/ui/PageHeader";
 import FileDropZone from "@/components/ui/FileDropZone";
@@ -66,36 +67,6 @@ type Driver = {
   fullName: string;
   allowedClientTypes?: string[] | null;
   vehicleId?: string | null;
-};
-type ScheduleRow = {
-  busNumber?: string;
-  legType?: string;
-  clientType?: string;
-  clientName?: string;
-  /** Delegación (en los Juegos Escolares, la región) a la que sirve el viaje. */
-  delegation?: string;
-  date?: string;
-  discipline?: string;
-  gender?: string;
-  activity?: string;
-  presentationTime?: string;
-  originName?: string;
-  originAddress?: string;
-  departureTime?: string;
-  travelTime?: string;
-  arrivalTime?: string;
-  destinationName?: string;
-  destinationAddress?: string;
-  returnTime?: string;
-  passengerCount?: number;
-  wheelchairCount?: number;
-  fleetAcronym?: string;
-  fleetType?: string;
-  vehiclePlate?: string;
-  driverName?: string;
-  driverPhone?: string;
-  notes?: string;
-  observation?: string;
 };
 // La vista previa muestra TODAS las columnas de la planilla, en el mismo orden
 // del archivo, para que el operador pueda comparar 1:1 contra su Excel antes de
@@ -209,80 +180,6 @@ const FLEET_TYPES = [
   { value: "M5", label: "M5 — Van Adaptada" },
 ];
 
-const COLUMN_ALIASES: Record<string, string> = {
-  "n°bus": "busNumber",
-  "nºbus": "busNumber",
-  "n° bus": "busNumber",
-  "destino": "legType",
-  "acronimo": "clientType",
-  "tipo de cliente": "clientName",
-  // La delegación es la región en los Juegos Escolares, y las planillas la
-  // escriben de las dos formas.
-  "delegacion": "delegation",
-  "delegación": "delegation",
-  "delegacion/region": "delegation",
-  "delegación/región": "delegation",
-  "region": "delegation",
-  "región": "delegation",
-  "fecha": "date",
-  "disciplina": "discipline",
-  "genero": "gender",
-  "género": "gender",
-  "actividad": "activity",
-  "presentación": "presentationTime",
-  "presentacion": "presentationTime",
-  "presentación ": "presentationTime",
-  "lugar origen": "originName",
-  "dirección": "originAddress",
-  "direccion": "originAddress",
-  "hora llegada bus": "departureTime",
-  "hora salida origen": "departureTime",
-  "t° traslado": "travelTime",
-  "tº traslado": "travelTime",
-  "t traslado": "travelTime",
-  "hora llegada recinto": "arrivalTime",
-  " recinto": "destinationName",
-  "recinto": "destinationName",
-  "regresar a las": "returnTime",
-  "capacidad vuelta": "passengerCount",
-  "sillas de rueda": "wheelchairCount",
-  "pax": "passengerCount",
-  "acronimo flota": "fleetAcronym",
-  "tipo flota": "fleetType",
-  "patente": "vehiclePlate",
-  "conductor": "driverName",
-  "teléfono": "driverPhone",
-  "telefono": "driverPhone",
-  "notas": "notes",
-  "obs": "observation",
-  "observacion": "observation",
-  "observación": "observation",
-};
-
-const stripAccents = (s: string) =>
-  s.normalize("NFD").replace(/[̀-ͯ]/g, "");
-
-// Búsqueda de columnas insensible a acentos: la planilla real usa "Acrónimo",
-// "Acrónimo Flota", "Presentación", etc. con tilde, que antes no matcheaban
-// contra los alias sin tilde y dejaban sin mapear tipo de cliente y flota.
-const NORMALIZED_ALIASES: Record<string, string> = Object.fromEntries(
-  Object.entries(COLUMN_ALIASES).map(([k, v]) => [stripAccents(k), v]),
-);
-
-function normalizeKey(key: string): string | null {
-  const k = stripAccents(String(key || "").toLowerCase().trim());
-  return NORMALIZED_ALIASES[k] ?? null;
-}
-
-const pad2 = (n: number) => String(n).padStart(2, "0");
-const DATE_FIELDS = new Set(["date"]);
-const TIME_FIELDS = new Set([
-  "presentationTime",
-  "departureTime",
-  "arrivalTime",
-  "returnTime",
-]);
-
 /**
  * El evento ocurre en Chile, así que la hora que se muestra es siempre la de
  * Chile — no la del reloj del computador que abre el panel, ni la del servidor.
@@ -318,77 +215,6 @@ const eventDayKey = (value?: string | null) => {
     day: "2-digit",
   }).format(d);
 };
-
-// Excel entrega las celdas de fecha/hora como números (serial de fecha o
-// fracción de día) apenas el archivo se abre/edita/guarda en Excel. El backend
-// espera texto "YYYY-MM-DD" y "HH:MM"; sin esta conversión todas las filas se
-// saltan con "Fecha inválida" / "Sin hora de salida/llegada" y no se crea
-// ningún viaje. Usamos el decodificador de seriales de SheetJS (XLSX.SSF).
-function coerceCell(norm: string, value: unknown): string {
-  const isDate = DATE_FIELDS.has(norm);
-  const isTime = TIME_FIELDS.has(norm);
-
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    if (isDate)
-      return `${value.getFullYear()}-${pad2(value.getMonth() + 1)}-${pad2(value.getDate())}`;
-    if (isTime) return `${pad2(value.getHours())}:${pad2(value.getMinutes())}`;
-  }
-
-  if ((isDate || isTime) && typeof value === "number" && Number.isFinite(value)) {
-    const c = XLSX.SSF.parse_date_code(value);
-    if (c) {
-      if (isDate) return `${c.y}-${pad2(c.m)}-${pad2(c.d)}`;
-      if (isTime) return `${pad2(c.H)}:${pad2(c.M)}`;
-    }
-  }
-
-  return String(value ?? "").trim();
-}
-
-function toScheduleRow(raw: Record<string, unknown>): ScheduleRow {
-  const out: ScheduleRow = {};
-  Object.entries(raw).forEach(([k, v]) => {
-    const norm = normalizeKey(k);
-    if (!norm) return;
-    const str = coerceCell(norm, v);
-    if (!str) return;
-    if (norm === "passengerCount" || norm === "wheelchairCount") {
-      const n = parseInt(str, 10);
-      if (!Number.isNaN(n)) (out as any)[norm] = n;
-    } else {
-      (out as any)[norm] = str;
-    }
-  });
-  return out;
-}
-
-// Convierte la fecha de una fila ("15-10", "1-nov", "2026-11-01") al ISO
-// "YYYY-MM-DD" que usa la pestaña "Vista del día", replicando el parseo del
-// backend para poder llevar al operador directo a los viajes recién creados.
-const MONTHS_ES: Record<string, number> = {
-  ene: 1, enero: 1, feb: 2, febrero: 2, mar: 3, marzo: 3, abr: 4, abril: 4,
-  may: 5, mayo: 5, jun: 6, junio: 6, jul: 7, julio: 7, ago: 8, agosto: 8,
-  sep: 9, sept: 9, septiembre: 9, oct: 10, octubre: 10, nov: 11, noviembre: 11,
-  dic: 12, diciembre: 12,
-};
-function rowDateToIso(raw: string | undefined, defaultYear: string): string | null {
-  const t = String(raw || "").trim();
-  if (!t) return null;
-  const iso = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-  if (iso) return `${iso[1]}-${pad2(+iso[2])}-${pad2(+iso[3])}`;
-  const parts = t.split(/[-/\s]/).filter(Boolean);
-  if (parts.length >= 2) {
-    const day = parseInt(parts[0], 10);
-    const mk = String(parts[1]).toLowerCase();
-    const month = MONTHS_ES[mk] ?? parseInt(parts[1], 10);
-    const year =
-      parts[2] && /^\d{4}$/.test(parts[2]) ? Number(parts[2]) : Number(defaultYear);
-    if (!Number.isNaN(day) && month >= 1 && month <= 12 && year) {
-      return `${year}-${pad2(month)}-${pad2(day)}`;
-    }
-  }
-  return null;
-}
 
 // Formatea "YYYY-MM-DD" como "DD-MM-YYYY" para mostrarlo al usuario.
 function isoToDisplay(iso: string): string {
@@ -483,13 +309,14 @@ export default function DailyTransportPage() {
     const reader = new FileReader();
     reader.onload = (evt) => {
       try {
-        const wb = XLSX.read(evt.target?.result, { type: "binary" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw = XLSX.utils.sheet_to_json<Record<string, unknown>>(ws, { defval: "" });
-        // Skip the header-banner row (first cell may say "N° BUS")
-        const cleaned = raw
-          .map((r) => toScheduleRow(r))
-          .filter((r) => r.date || r.clientType || r.delegation || r.discipline);
+        // Todas las hojas del libro: la planilla real trae una por deporte y
+        // antes había que cargarla hoja por hoja.
+        const cleaned: ScheduleRow[] = leerPlanilla(evt.target?.result as string).map((f) => {
+          const row: Record<string, unknown> = { ...f };
+          delete row.hoja;
+          delete row.fila;
+          return row as ScheduleRow;
+        });
         setRows(cleaned);
         if (cleaned.length === 0) setError(t("No se detectaron filas válidas en el archivo"));
       } catch (err) {
