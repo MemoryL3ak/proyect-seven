@@ -3233,7 +3233,9 @@ export default function UserPortalPage() {
         <div
           onClick={() => setCalDetalle(null)}
           style={{
-            position: "fixed", inset: 0, zIndex: 80,
+            // Por encima de la barra de pestañas (zIndex 100): con 80 la barra
+            // tapaba el pie de la ficha y el botón Cerrar en el teléfono.
+            position: "fixed", inset: 0, zIndex: 120,
             background: "rgba(15,23,42,0.55)", backdropFilter: "blur(2px)",
             display: "flex", alignItems: "flex-end", justifyContent: "center",
           }}
@@ -3242,9 +3244,9 @@ export default function UserPortalPage() {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "100%", maxWidth: 520, background: SURFACE.card,
-              borderRadius: "20px 20px 0 0", padding: "18px 18px 24px",
+              borderRadius: "20px 20px 0 0", padding: "18px 18px calc(24px + env(safe-area-inset-bottom, 0px))",
               boxShadow: "0 -8px 40px rgba(15,23,42,0.25)",
-              maxHeight: "80vh", overflowY: "auto",
+              maxHeight: "85dvh", overflowY: "auto",
             }}
           >
             {/* Tirador: en el teléfono la hoja se lee como algo que se cierra

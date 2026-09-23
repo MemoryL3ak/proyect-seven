@@ -13,6 +13,8 @@ import SelectorFiltro from "@/components/portal/SelectorFiltro";
 import { mapaDeLugares, tocaLugar } from "@/lib/lugares";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import { legTypeShort } from "@/lib/tripTypes";
+import { TANDA_LISTA, tramoVisible } from "@/lib/lista-por-tandas";
+import { ESTADOS_ACTIVOS, ESTADOS_EN_CURSO, esPorRealizar } from "@/lib/traslados-por-realizar";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -54,13 +56,13 @@ export type MissionTrip = {
 type NamedPlace = { id: string; name?: string | null; venueType?: string | null };
 type DriverRow = { id: string; userId?: string | null; fullName?: string | null; phone?: string | null };
 
-const ACTIVOS = new Set(["SCHEDULED", "REQUESTED", "EN_ROUTE", "PICKED_UP"]);
+const ACTIVOS = ESTADOS_ACTIVOS;
 /**
  * Los que están andando ahora mismo. "Por realizar" los mete en el mismo saco
  * que los de pasado mañana, así que un bus en ruta quedaba perdido entre los
  * programados y sólo se distinguía por el color de su chip.
  */
-const EN_CURSO = new Set(["EN_ROUTE", "PICKED_UP"]);
+const EN_CURSO = ESTADOS_EN_CURSO;
 const norm = (v?: string | null) => String(v ?? "").trim().toUpperCase();
 
 const chip = (bg: string, color: string): React.CSSProperties => ({
@@ -151,6 +153,23 @@ export default function MissionTrips({
   };
   const [abierto, setAbierto] = useState<string | null>(null);
   const [drivers, setDrivers] = useState<DriverRow[] | null>(null);
+  /**
+   * Tandas de 50 pedidas con el botón "Ver más". Vuelve a una al cambiar
+   * cualquier filtro: la lista es otra y se lee desde el principio.
+   */
+  const [tandas, setTandas] = useState(1);
+  /**
+   * Hora actual, al minuto: "Por realizar" es desde ahora hacia adelante, así
+   * que los traslados cuya hora va pasando salen de la lista sin recargar.
+   */
+  const [ahora, setAhora] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setAhora(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  useEffect(() => {
+    setTandas(1);
+  }, [disciplinaFiltro, diaFiltro, estadoFiltro, disciplinaExterna, delegacionFiltro, hotelFiltro, sedeFiltro]);
 
   const labels = useMemo(() => buildDisciplineLabelMap(disciplines), [disciplines]);
   // "Comedor LRH (ex Gala)", "Sede Elías Figueroa", "Hotel Mahía".
@@ -289,7 +308,8 @@ export default function MissionTrips({
       }
       const suEstado = norm(tr.status);
       if (estadoFiltro === "EN_CURSO") return EN_CURSO.has(suEstado);
-      if (estadoFiltro === "ACTIVOS") return ACTIVOS.has(suEstado);
+      // Por realizar = desde la hora actual hacia adelante (y los en ruta).
+      if (estadoFiltro === "ACTIVOS") return esPorRealizar(tr, ahora);
       if (estadoFiltro === "TERMINADOS") return !ACTIVOS.has(suEstado);
       return true;
     });
@@ -300,7 +320,8 @@ export default function MissionTrips({
       const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Infinity;
       return ta - tb;
     });
-  }, [propios, disciplinaFiltro, disciplinaExterna, disciplinaElegida, diaFiltro, estadoFiltro, labels, disciplines]);
+  }, [propios, disciplinaFiltro, disciplinaExterna, disciplinaElegida, diaFiltro, estadoFiltro, labels, disciplines, ahora]);
+  const tramo = tramoVisible(visibles.length, tandas);
 
   // Si el día elegido deja de existir —cambió la región, el hotel o llegaron
   // otros viajes—, el filtro se suelta solo en vez de dejar la lista vacía
@@ -445,7 +466,7 @@ export default function MissionTrips({
           </p>
         )}
 
-        {visibles.slice(0, 50).map((tr) => {
+        {visibles.slice(0, tramo.mostrados).map((tr) => {
           const st = tripStatusMeta(tr.status);
           const disciplina = disciplinaDe(tr);
           const abiertaEsta = abierto === tr.id;
@@ -605,9 +626,36 @@ export default function MissionTrips({
           );
         })}
 
-        {visibles.length > 50 && (
+        {tramo.restantes > 0 && (
+          <button
+            type="button"
+            onClick={() => setTandas((prev) => prev + 1)}
+            style={{
+              margin: "4px 0 0",
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: `1px solid ${SURFACE.border}`,
+              background: SURFACE.bg,
+              color: BRAND.tealInk,
+              fontSize: 13,
+              fontWeight: 700,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+            }}
+          >
+            <ChevronDownIcon size={14} />
+            {t("Ver {n} más").replace("{n}", String(tramo.proximaTanda))}
+            <span style={{ fontWeight: 500, color: SURFACE.textFaint }}>
+              · {t("{a} de {b}").replace("{a}", String(tramo.mostrados)).replace("{b}", String(visibles.length))}
+            </span>
+          </button>
+        )}
+        {tramo.restantes === 0 && visibles.length > TANDA_LISTA && (
           <p style={{ fontSize: 11, color: SURFACE.textFaint, textAlign: "center", margin: 0 }}>
-            <CalendarIcon size={11} /> {t("Se muestran los 50 más próximos.")}
+            <CalendarIcon size={11} /> {t("Se muestran todos los traslados.")}
           </p>
         )}
       </div>

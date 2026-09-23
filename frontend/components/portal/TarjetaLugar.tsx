@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import VenueMap from "@/components/VenueMap";
 import { BedIcon, ChevronDownIcon, CoffeeIcon, PhoneIcon, PinIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { BRAND, SURFACE } from "@/lib/design";
@@ -201,6 +202,8 @@ export default function TarjetaLugar({
   onToggle: () => void;
 }) {
   const { t } = useI18n();
+  // El "+N" de disciplinas se tocó: la fila muestra todas las fichas.
+  const [verTodas, setVerTodas] = useState(false);
   const consulta = [direccion, lugar].filter(Boolean).join(", ");
   const personas = [...(coordinador ? [coordinador] : []), ...contactos].filter(
     (p) => p.nombre || p.telefono,
@@ -294,7 +297,7 @@ export default function TarjetaLugar({
               dice nada: todos son "un gimnasio en Viña". */}
           {etiquetas.length > 0 && (
             <span style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 5 }}>
-              {etiquetas.slice(0, 3).map((e) => (
+              {(abierta || verTodas ? etiquetas : etiquetas.slice(0, 3)).map((e) => (
                 <span
                   key={e}
                   style={{
@@ -310,8 +313,34 @@ export default function TarjetaLugar({
                   {e}
                 </span>
               ))}
-              {etiquetas.length > 3 && (
-                <span style={{ fontSize: 10, fontWeight: 700, color: SURFACE.textFaint, alignSelf: "center" }}>
+              {/* "+1" se toca y despliega el resto sin abrir la ficha entera;
+                  con la ficha abierta ya se ven todas. */}
+              {etiquetas.length > 3 && !abierta && !verTodas && (
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setVerTodas(true);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setVerTodas(true);
+                    }
+                  }}
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "2px 7px",
+                    borderRadius: 999,
+                    border: `1px dashed ${SURFACE.border}`,
+                    color: BRAND.tealInk,
+                    alignSelf: "center",
+                    cursor: "pointer",
+                  }}
+                >
                   +{etiquetas.length - 3}
                 </span>
               )}

@@ -84,6 +84,9 @@ const translations: Record<Locale, Record<string, string>> = {
     "Ningún traslado coincide con el filtro.": "No transfer matches the filter.",
     "Sin chofer": "No driver",
     "Se muestran los 50 más próximos.": "Showing the 50 closest ones.",
+    "Ver {n} más": "Show {n} more",
+    "{a} de {b}": "{a} of {b}",
+    "Se muestran todos los traslados.": "All transfers are shown.",
     // Capacidad del vehículo en la ficha de chofer (Proveedores).
     "Capacidad (pasajeros)": "Capacity (passengers)",
     "Asientos disponibles para pasajeros. Con este dato el chofer aparece en los viajes según la cantidad de personas.": "Seats available for passengers. With this value the driver shows up in trips according to the number of people.",
@@ -2777,6 +2780,9 @@ const translations: Record<Locale, Record<string, string>> = {
     "Ningún traslado coincide con el filtro.": "Nenhum traslado corresponde ao filtro.",
     "Sin chofer": "Sem motorista",
     "Se muestran los 50 más próximos.": "Mostrando os 50 mais próximos.",
+    "Ver {n} más": "Ver mais {n}",
+    "{a} de {b}": "{a} de {b}",
+    "Se muestran todos los traslados.": "Todos os traslados são exibidos.",
     // Capacidad del vehículo en la ficha de chofer (Proveedores).
     "Capacidad (pasajeros)": "Capacidade (passageiros)",
     "Asientos disponibles para pasajeros. Con este dato el chofer aparece en los viajes según la cantidad de personas.": "Assentos disponíveis para passageiros. Com este dado o motorista aparece nas viagens conforme a quantidade de pessoas.",
