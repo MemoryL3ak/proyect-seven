@@ -18,6 +18,7 @@ import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { delegationLabel } from "@/lib/delegations";
 import { deporteDeViaje, type DisciplineLike } from "@/lib/discipline-filters";
 import { lugarDeExtremo, lugaresDeViajes, tocaLugar } from "@/lib/lugares";
+import { personasMovilizadas } from "@/lib/movilizadas";
 import {
   compararConPlanilla,
   generoNormalizado,
@@ -1346,7 +1347,9 @@ export default function TripsPage() {
   );
 
   const kpis = useMemo(() => {
-    const totalPassengers = filteredTrips.reduce((acc, trip) => acc + (trip.passengerCount || 0), 0);
+    // Sólo los viajes que ya recogieron o dejaron a su gente (lib/movilizadas):
+    // sumar los programados mostraba miles de personas antes de salir el primer bus.
+    const totalPassengers = personasMovilizadas(filteredTrips);
     const portalTrips = filteredTrips.filter((trip) => trip.tripType === "PORTAL_REQUEST").length;
     return {
       requested: incomingRequests.length,
