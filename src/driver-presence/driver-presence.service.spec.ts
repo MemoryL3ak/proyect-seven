@@ -60,3 +60,61 @@ describe('DriverPresenceService.stats', () => {
     expect(sql).toMatch(/started_at >= hoy\.desde/);
   });
 });
+
+/**
+ * list() recibía eventId y lo cruzaba contra el evento del ÚLTIMO fix GPS del
+ * chofer. El shell nativo transmite sin eventId, así que ese campo viene null
+ * en casi todas las posiciones y la condición no se cumplía nunca: el portal
+ * del Jefe de Misión —el único que manda eventId— se quedaba sin un solo
+ * conductor, sin mapa y sin nadie a quien seguir, mientras el KPI "Conductores
+ * en línea" (que sale de stats(), sin ese filtro) seguía contándolos.
+ */
+describe('DriverPresenceService.list', () => {
+  const sqlDe = async (
+    eventId?: string,
+    date?: string,
+    delegationId?: string | null,
+  ): Promise<[string, unknown[]]> => {
+    const query = jest.fn<
+      Promise<Array<Record<string, unknown>>>,
+      [string, unknown[]]
+    >(() => Promise.resolve([]));
+    const service = new DriverPresenceService({
+      query,
+    } as unknown as DataSource);
+    await service.list(eventId, date, delegationId);
+    return query.mock.calls[0];
+  };
+
+  it('pasar eventId no filtra por el evento del último fix GPS', async () => {
+    const [sql] = await sqlDe('0e168c10-a7d1-47ae-9784-265a5fc25d9d');
+    expect(sql).not.toMatch(/g\.event_id\s*=/);
+  });
+
+  it('devuelve los mismos conductores con y sin eventId', async () => {
+    const [conEvento] = await sqlDe(
+      '0e168c10-a7d1-47ae-9784-265a5fc25d9d',
+      undefined,
+      null,
+    );
+    const [sinEvento] = await sqlDe(undefined, undefined, null);
+    expect(conEvento).toBe(sinEvento);
+  });
+
+  it('los parámetros enviados calzan con los placeholders de la consulta', async () => {
+    const [sql, params] = await sqlDe(
+      '0e168c10-a7d1-47ae-9784-265a5fc25d9d',
+      '2026-09-22',
+      '8c247a7b-ed52-44db-8558-b27969da24e1',
+    );
+    // Postgres rechaza el bind si sobran parámetros ("bind message supplies N
+    // parameters, but prepared statement requires M").
+    const marcas: string[] = sql.match(/\$\d+/g) ?? [];
+    const usados = new Set(marcas.map((m) => Number(m.slice(1))));
+    expect(Math.max(...usados)).toBe(params.length);
+    expect(params).toEqual([
+      '2026-09-22',
+      '8c247a7b-ed52-44db-8558-b27969da24e1',
+    ]);
+  });
+});

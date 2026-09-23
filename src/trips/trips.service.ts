@@ -761,16 +761,44 @@ export class TripsService {
    * @param delegationId Jefe de Misión: sólo los viajes de su delegación (los
    * de su región y los de sus participantes). El alcance lo resuelve el
    * controlador, no el navegador.
+   *
+   * Los "de sus participantes" faltaban: el filtro era `delegation_id = X` y
+   * nada más, así que un traslado cargado a mano sin elegir Delegación —o
+   * importado de la planilla de operatividad, que no trae esa columna— no
+   * existía para el jefe aunque viajara su propia gente. Hoy son 65 de 333
+   * viajes. El portal ya contaba con esto: MissionLiveTrips decide qué
+   * traslado es suyo mirando también el solicitante y los pasajeros, y se
+   * quedaba esperando viajes que el backend nunca le mandaba.
+   *
+   * La Flota sigue siendo sólo de su región: ese recorte lo hace la pantalla.
    */
   async findAll(requesterAthleteId?: string, delegationId?: string | null) {
     try {
-      const where: Record<string, unknown> = {};
-      if (requesterAthleteId) where.requesterAthleteId = requesterAthleteId;
-      if (delegationId) where.delegationId = delegationId;
-      const trips = await this.tripRepository.find({
-        where: Object.keys(where).length > 0 ? where : undefined,
-        order: { createdAt: 'DESC' },
-      });
+      const qb = this.tripRepository
+        .createQueryBuilder('t')
+        .orderBy('t.createdAt', 'DESC');
+      if (requesterAthleteId) {
+        qb.andWhere('t.requesterAthleteId = :requesterAthleteId', {
+          requesterAthleteId,
+        });
+      }
+      if (delegationId) {
+        qb.andWhere(
+          `(t.delegationId = :delegationId
+            or t.requesterAthleteId in (
+              select id from core.athletes
+               where delegation_id = :delegationId
+                 and status is distinct from 'DELETED')
+            or exists (
+              select 1 from transport.trip_athletes ta
+                join core.athletes a on a.id = ta.athlete_id
+               where ta.trip_id = t.id
+                 and a.delegation_id = :delegationId
+                 and a.status is distinct from 'DELETED'))`,
+          { delegationId },
+        );
+      }
+      const trips = await qb.getMany();
 
       // Adjunta los pasajeros reales (transport.trip_athletes): sin esto el
       // listado devolvía athleteIds siempre vacío y los portales no podían

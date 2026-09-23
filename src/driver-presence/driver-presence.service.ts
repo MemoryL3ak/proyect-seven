@@ -102,12 +102,29 @@ export class DriverPresenceService {
     return { sessionId: created[0].id, status: 'started' };
   }
 
-  /** Lista todos los conductores con su estado de presencia. */
+  /**
+   * Lista todos los conductores con su estado de presencia.
+   *
+   * `eventId` se acepta por compatibilidad pero NO filtra, igual que en
+   * stats(). Un chofer no pertenece a un evento: core.provider_participants no
+   * tiene event_id. La consulta suplía esa falta con el evento del último fix
+   * GPS, y ahí estaba la trampa: el shell nativo transmite sin eventId (lo
+   * manda sólo el portal web, y sólo si el viaje lo trae), así que casi todas
+   * las posiciones lo tienen en null. El panel nunca pasaba eventId y veía
+   * todo; el portal del Jefe de Misión sí lo pasaba, y el filtro le borraba a
+   * TODOS sus conductores: mapa vacío y ninguna ficha, mientras el indicador
+   * "Conductores en línea" —que sale de stats(), que no filtraba por evento—
+   * seguía mostrando el número correcto. Un chofer sin viaje activo transmite
+   * siempre sin evento, que es justo a quien hay que poder seguir.
+   *
+   * El alcance real es la delegación, y ésa sí existe en la ficha del chofer.
+   */
   async list(
     eventId?: string,
     date?: string,
     delegationId?: string | null,
   ): Promise<DriverPresenceRow[]> {
+    void eventId;
     // Validación de formato YYYY-MM-DD; si es inválido se usa "hoy" en zona Chile.
     const safeDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
     const rows = (await this.dataSource.query(
@@ -187,7 +204,7 @@ export class DriverPresenceService {
          from transport.trips tr
          where tr.driver_id = d.id
            and tr.scheduled_at::date = coalesce(
-             $2::date,
+             $1::date,
              (now() at time zone 'America/Santiago')::date
            )
        ) day_trips on true
@@ -208,17 +225,16 @@ export class DriverPresenceService {
          left join core.disciplines dx on dx.id = a.discipline_id
          where tr.driver_id = d.id
            and tr.scheduled_at::date = coalesce(
-             $2::date,
+             $1::date,
              (now() at time zone 'America/Santiago')::date
            )
        ) disc on true
        where d.metadata->>'isDriver' = 'true'
-         and ($1::uuid is null or g.event_id = $1)
          -- Jefe de Misión: los choferes de su región y los que conducen
          -- viajes de su delegación (la asignación diaria es por viaje).
-         and ($3::uuid is null or ${delegationDriversCondition('$3', 'd.id')})
+         and ($2::uuid is null or ${delegationDriversCondition('$2', 'd.id')})
        order by online desc nulls last, s.last_seen_at desc nulls last, d.full_name asc`,
-      [eventId ?? null, safeDate, delegationId ?? null],
+      [safeDate, delegationId ?? null],
     )) as Array<Record<string, any>>;
 
     return rows.map((r) => ({
