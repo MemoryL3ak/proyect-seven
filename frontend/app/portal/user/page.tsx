@@ -43,6 +43,7 @@ import {
   DownloadIcon,
 } from "@/components/ui/Icons";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
+import { pruebaVisiblePara } from "@/lib/pruebas";
 import { getMobileSession, mobileAwareLogout } from "@/lib/mobile-auth";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { canContactDrivers, isEventCoordinator, normalizeClientType } from "@/lib/clientTypes";
@@ -160,6 +161,8 @@ type CalendarEvent = {
   venueName?: string | null;
   category?: string | null;
   gender?: string | null;
+  /** Regiones que participan (partido: las dos). Vacío = prueba general. */
+  delegationIds?: string[] | null;
 };
 type DisciplineParent = { id: string; name?: string | null; category?: string | null; gender?: string | null };
 /**
@@ -2486,7 +2489,7 @@ export default function UserPortalPage() {
           };
 
           // ── Universo de actividades: competencias/calendario + premiaciones
-          type CalItem = { id:string; type:CalType; date:Date; title:string; subtitle?:string; venue?:string; discId?:string|null };
+          type CalItem = { id:string; type:CalType; date:Date; title:string; subtitle?:string; venue?:string; discId?:string|null; delegIds?:string[] };
           /** Abre la ficha de una actividad. Misma ficha en las cuatro vistas. */
           const abrirDetalle = (it: CalItem) => {
             const cfg = TYPE_CFG[it.type];
@@ -2533,6 +2536,7 @@ export default function UserPortalPage() {
               subtitle: parent?.name && ev.name!==parent.name ? parentLabel : undefined,
               venue: ev.venueName || undefined,
               discId: ev.parentId || null,
+              delegIds: ev.delegationIds ?? [],
             });
           });
           premiaciones.forEach(p => {
@@ -2638,7 +2642,10 @@ export default function UserPortalPage() {
             // disciplina —ceremonias generales— se mantienen visibles). Si
             // elige una región en el filtro, esa elección manda: pidió ver
             // otra cosa a propósito.
-            (regionElegida ? true : esDeLaDelegacion(i.discId)),
+            (regionElegida ? true : esDeLaDelegacion(i.discId)) &&
+            // Un partido lo ven sólo las dos regiones que juegan (o la región
+            // elegida en el filtro); las pruebas sin delegaciones, todas.
+            pruebaVisiblePara({ delegationIds: i.delegIds }, regionElegida ? regionElegida.id : athlete?.delegationId ?? null),
           );
           const inMonth = typed.filter(i => i.date.getFullYear()===y && i.date.getMonth()===m);
           const daysWithEvents = new Set(inMonth.map(i => i.date.getDate()));

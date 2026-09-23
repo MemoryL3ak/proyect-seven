@@ -1,0 +1,49 @@
+deporte;genero;jornada;partido;grupo;delegacion_1;delegacion_2;dia;salida_hotel;hora;retorno_hotel;recinto
+Futsal;Femenino;1;1;A;Maule;Coquimbo;23-sept;7:45;9:00;10:30;UVM
+Futsal;Femenino;1;2;A;Araucanía;Los Lagos;23-sept;9:00;10:30;12:00;UVM
+Futsal;Femenino;1;3;D;Magallanes;Biobío;23-sept;10:30;12:00;13:30;UVM
+Futsal;Femenino;1;4;D;Atacama;Metropolitana;23-sept;12:00;13:30;15:00;UVM
+Futsal;Femenino;1;5;C;O'Higgins;Arica y P.;23-sept;13:30;15:30;17:00;UVM
+Futsal;Femenino;1;6;C;Aysén;Ñuble;23-sept;15:30;17:00;18:30;UVM
+Futsal;Femenino;1;7;B;Los Ríos;Antofagasta;23-sept;13:45;15:00;16:15;Polideportivo Viña
+Futsal;Femenino;1;8;B;Valparaíso;Tarapacá;23-sept;15:00;16:15;17:30;Polideportivo Viña
+Futsal;Femenino;2;9;A;Los Lagos;Maule;24-sept;7:15;9:00;10:30;Nicolás Massu
+Futsal;Femenino;2;10;A;Coquimbo;Araucanía;24-sept;8:45;10:30;12:00;Nicolás Massu
+Futsal;Femenino;2;11;D;Metropolitana;Magallanes;24-sept;10:15;12:00;13:30;Nicolás Massu
+Futsal;Femenino;2;12;D;Biobío;Atacama;24-sept;11:45;13:30;15:00;Nicolás Massu
+Futsal;Femenino;2;13;C;Ñuble;O'Higgins;24-sept;7:30;9:00;10:30;UTFSM Viña
+Futsal;Femenino;2;14;C;Arica y P.;Aysén;24-sept;9:00;10:30;12:00;UTFSM Viña
+Futsal;Femenino;2;15;B;Tarapacá;Los Ríos;24-sept;10:30;12:00;13:30;UTFSM Viña
+Futsal;Femenino;2;16;B;Antofagasta;Valparaíso;24-sept;12:00;13:30;15:00;UTFSM Viña
+Futsal;Femenino;3;17;A;Maule;Araucanía;24-sept;14:15;15:30;17:00;UVM
+Futsal;Femenino;3;18;A;Los Lagos;Coquimbo;24-sept;15:30;17:00;18:30;UVM
+Futsal;Femenino;3;19;D;Magallanes;Atacama;24-sept;17:00;18:30;20:00;UVM
+Futsal;Femenino;3;20;D;Metropolitana;Biobío;24-sept;18:30;20:00;21:30;UVM
+Futsal;Femenino;3;21;C;O'Higgins;Aysén;24-sept;14:30;15:30;17:00;Polideportivo Viña
+Futsal;Femenino;3;22;C;Ñuble;Arica y P.;24-sept;15:30;17:00;18:30;Polideportivo Viña
+Futsal;Femenino;3;23;B;Antofagasta;Tarapacá;24-sept;17:00;18:30;20:00;Polideportivo Viña
+Futsal;Femenino;3;24;B;Valparaíso;Los Ríos;24-sept;18:30;20:00;21:30;Polideportivo Viña
+Futsal;Masculino;1;1;A;Maule;O'Higgins;23-sept;8:15;10:00;11:30;Nicolás Massu
+Futsal;Masculino;1;2;A;Araucanía;Arica y P.;23-sept;9:45;11:30;13:00;Nicolás Massu
+Futsal;Masculino;1;3;D;Los Ríos;Ñuble;23-sept;11:15;13:00;14:30;Nicolás Massu
+Futsal;Masculino;1;4;D;Biobío;Metropolitana;23-sept;12:45;14:30;16:00;Nicolás Massu
+Futsal;Masculino;1;5;C;Magallanes;Aysén;23-sept;14:15;16:00;17:30;Nicolás Massu
+Futsal;Masculino;1;6;C;Los Lagos;Atacama;23-sept;15:45;17:30;19:00;Nicolás Massu
+Futsal;Masculino;1;7;B;Tarapacá;Antofagasta;23-sept;16:15;17:30;18:45;Polideportivo Viña
+Futsal;Masculino;1;8;B;Valparaíso;Coquimbo;23-sept;17:30;18:45;20:00;Polideportivo Viña
+Futsal;Masculino;2;9;A;Arica y P.;Maule;24-sept;7:30;9:00;10:30;UVM
+Futsal;Masculino;2;10;A;O'Higgins;Araucanía;24-sept;9:00;10:30;12:00;UVM
+Futsal;Masculino;2;11;D;Metropolitana;Los Ríos;24-sept;10:30;12:00;13:30;UVM
+Futsal;Masculino;2;12;D;Ñuble;Biobío;24-sept;12:00;13:30;15:00;UVM
+Futsal;Masculino;2;13;C;Atacama;Magallanes;24-sept;7:45;9:00;10:30;Polideportivo Viña
+Futsal;Masculino;2;14;C;Aysén;Los Lagos;24-sept;9:00;10:30;12:00;Polideportivo Viña
+Futsal;Masculino;2;15;B;Coquimbo;Tarapacá;24-sept;10:30;12:00;13:30;Polideportivo Viña
+Futsal;Masculino;2;16;B;Antofagasta;Valparaíso;24-sept;12:00;13:30;15:00;Polideportivo Viña
+Futsal;Masculino;3;17;A;Maule;Araucanía;24-sept;13:45;15:30;17:00;Nicolás Massu
+Futsal;Masculino;3;18;A;Arica y P.;O'Higgins;24-sept;15:15;17:00;18:30;Nicolás Massu
+Futsal;Masculino;3;19;D;Los Ríos;Biobío;24-sept;16:45;18:30;20:00;Nicolás Massu
+Futsal;Masculino;3;20;D;Metropolitana;Ñuble;24-sept;18:15;20:00;21:30;Nicolás Massu
+Futsal;Masculino;3;21;C;Magallanes;Los Lagos;24-sept;14:00;15:30;17:00;UTFSM Viña
+Futsal;Masculino;3;22;C;Atacama;Aysén;24-sept;15:30;17:00;18:30;UTFSM Viña
+Futsal;Masculino;3;23;B;Antofagasta;Coquimbo;24-sept;17:00;18:30;20:00;UTFSM Viña
+Futsal;Masculino;3;24;B;Valparaíso;Tarapacá;24-sept;18:30;20:00;21:30;UTFSM Viña

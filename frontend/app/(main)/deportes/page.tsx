@@ -14,6 +14,8 @@ import {
   TrashIcon,
 } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import { delegationLabel } from "@/lib/delegations";
+import { nombreCortoRegion, pruebaVisiblePara } from "@/lib/pruebas";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import StyledSelect from "@/components/StyledSelect";
@@ -39,12 +41,17 @@ type Discipline = {
   parentId?: string | null;
   scheduledAt?: string | null;
   venueName?: string | null;
+  /** Delegaciones (regiones) que participan; un partido lleva dos. Vacío = general. */
+  delegationIds?: string[] | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type Delegation = {
   id: string;
   eventId?: string | null;
   countryCode?: string | null;
+  name?: string | null;
+  metadata?: Record<string, unknown> | null;
 };
 
 type Athlete = {
@@ -139,7 +146,7 @@ const GENDER_COLORS: Record<string, string> = {
   M: "#60a5fa", F: "#f472b6", X: "#34d399",
 };
 
-const EMPTY_PRUEBA = { name: "", category: "", gender: "", scheduledAt: "", venueName: "", useDateRange: false, rangeStart: "", rangeEnd: "", rangeTime: "" };
+const EMPTY_PRUEBA = { name: "", category: "", gender: "", scheduledAt: "", venueName: "", delegationIds: [] as string[], useDateRange: false, rangeStart: "", rangeEnd: "", rangeTime: "" };
 
 const pal = {
   accent: BRAND.teal,
@@ -222,6 +229,8 @@ export default function DeportesPage() {
   const [calMonthCursor, setCalMonthCursor] = useState(() => { const d = new Date(); d.setDate(1); d.setHours(0,0,0,0); return d; });
   const [calSelectedDay, setCalSelectedDay] = useState(() => new Date());
   const [calView, setCalView] = useState<"gantt" | "month" | "week" | "day" | "table">("gantt");
+  /** Región: sólo las pruebas donde participa (las generales siempre). */
+  const [calDelegationFilter, setCalDelegationFilter] = useState<string>("");
   const [calDayModalOpen, setCalDayModalOpen] = useState(false);
   const [ganttBar, setGanttBar] = useState<null | { title: string; cat: string; color: string; events: Discipline[] }>(null);
   const [calVenueFilter, setCalVenueFilter] = useState<string>("");
@@ -296,6 +305,13 @@ export default function DeportesPage() {
 
   const pruebasOf = (disciplineId: string) =>
     disciplines.filter(d => d.parentId === disciplineId);
+
+  /** Regiones de una prueba, cortas y en el orden guardado ("Maule", "Coquimbo"). */
+  const regionesDePrueba = (d: Discipline): string[] =>
+    (d.delegationIds ?? []).map((id) => {
+      const deleg = delegations.find((x) => x.id === id);
+      return deleg ? nombreCortoRegion(delegationLabel(deleg)) : "";
+    }).filter(Boolean);
 
   const filteredDisciplines = useMemo(() => {
     const q = pruebaSearch.trim().toLowerCase();
@@ -493,6 +509,7 @@ export default function DeportesPage() {
       gender: d.gender ?? "",
       scheduledAt: d.scheduledAt ? (() => { const dt = new Date(d.scheduledAt); const y = dt.getFullYear(); const m = String(dt.getMonth()+1).padStart(2,"0"); const day = String(dt.getDate()).padStart(2,"0"); const h = String(dt.getHours()).padStart(2,"0"); const mi = String(dt.getMinutes()).padStart(2,"0"); return `${y}-${m}-${day}T${h}:${mi}`; })() : "",
       venueName: d.venueName ?? "",
+      delegationIds: d.delegationIds ?? [],
       useDateRange: false,
       rangeStart: "",
       rangeEnd: "",
@@ -574,6 +591,7 @@ export default function DeportesPage() {
               eventId: selectedEventId || null,
               scheduledAt,
               venueName: pruebaForm.venueName || null,
+              delegationIds: pruebaForm.delegationIds,
             }),
           });
           created++;
@@ -589,6 +607,7 @@ export default function DeportesPage() {
           eventId: selectedEventId || null,
           scheduledAt: pruebaForm.scheduledAt ? new Date(pruebaForm.scheduledAt).toISOString() : null,
           venueName: pruebaForm.venueName || null,
+          delegationIds: pruebaForm.delegationIds,
         };
         let disciplineId: string | null = null;
         if (pruebaModal?.editing) {
@@ -932,6 +951,11 @@ export default function DeportesPage() {
                                 <path strokeLinecap="round" strokeLinejoin="round" d="M5 12h14" />
                               </svg>
                               <span style={{ fontSize: "13px", color: SURFACE.textStrong, flex: 1, minWidth: 0 }}>{prueba.name}</span>
+                              {regionesDePrueba(prueba).map((region) => (
+                                <span key={region} style={{ fontSize: "11px", fontWeight: 700, color: BRAND.teal, background: "rgba(33,208,179,0.10)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "2px 8px", whiteSpace: "nowrap" }}>
+                                  {region}
+                                </span>
+                              ))}
                               {(prueba.category || prueba.gender) && (
                                 <span style={{ fontSize: "12px", color: SURFACE.textFaint, ...(isMobile ? { order: 10, flexBasis: "100%", paddingLeft: "24px" } : {}) }}>
                                   {[categoryLabel(prueba.category), genderLabel(prueba.gender)].filter(v => v !== "-").map(v => t(v)).join(" · ")}
@@ -977,9 +1001,10 @@ export default function DeportesPage() {
           if (calVenueFilter && (d.venueName || "") !== calVenueFilter) return false;
           if (calCategoryFilter && (d.category || "") !== calCategoryFilter) return false;
           if (calDisciplineFilter && (d.parentId || "") !== calDisciplineFilter) return false;
+          if (!pruebaVisiblePara(d, calDelegationFilter || null)) return false;
           if (calQuickSearch.trim()) {
             const q = calQuickSearch.trim().toLowerCase();
-            const text = `${d.name} ${d.venueName || ""}`.toLowerCase();
+            const text = `${d.name} ${d.venueName || ""} ${regionesDePrueba(d).join(" ")}`.toLowerCase();
             if (!text.includes(q)) return false;
           }
           return true;
@@ -1148,8 +1173,19 @@ export default function DeportesPage() {
                   </StyledSelect>
                 )}
 
+                {/* Filtro de región: qué juega cada delegación */}
+                {allCalendarPruebas.some((d) => (d.delegationIds ?? []).length > 0) && (
+                  <StyledSelect wrapperStyle={{ maxWidth: isMobile ? "100%" : 220 }}
+                    value={calDelegationFilter} onChange={(e) => setCalDelegationFilter(e.target.value)}>
+                    <option value="">{t("Todas las regiones")}</option>
+                    {eventDelegations.map((d) => (
+                      <option key={d.id} value={d.id}>{nombreCortoRegion(delegationLabel(d)) || d.countryCode || d.id}</option>
+                    ))}
+                  </StyledSelect>
+                )}
+
                 {/* Búsqueda rápida */}
-                <input className="input" style={{ maxWidth: isMobile ? "100%" : 240 }} placeholder="Buscar prueba o sede…"
+                <input className="input" style={{ maxWidth: isMobile ? "100%" : 240 }} placeholder="Buscar prueba, sede o región…"
                   value={calQuickSearch} onChange={(e) => setCalQuickSearch(e.target.value)} />
               </div>
 
@@ -1959,6 +1995,33 @@ export default function DeportesPage() {
                   })()}
                 </select>
               </label>
+
+              {/* Delegaciones que participan: un partido lleva las dos regiones;
+                  sin delegaciones la prueba es general y la ven todas. */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <span style={{ fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: SURFACE.textFaint }}>{t("Delegaciones que participan")}</span>
+                {pruebaForm.delegationIds.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                    {pruebaForm.delegationIds.map((id) => {
+                      const deleg = delegations.find((x) => x.id === id);
+                      return (
+                        <span key={id} style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", fontWeight: 700, color: BRAND.teal, background: "rgba(33,208,179,0.10)", border: "1px solid rgba(33,208,179,0.25)", borderRadius: "99px", padding: "3px 10px" }}>
+                          {deleg ? nombreCortoRegion(delegationLabel(deleg)) : id}
+                          <button type="button" aria-label={t("Quitar") as string}
+                            onClick={() => setPruebaForm(f => ({ ...f, delegationIds: f.delegationIds.filter((x) => x !== id) }))}
+                            style={{ background: "none", border: "none", cursor: "pointer", color: BRAND.teal, padding: 0, fontSize: "13px", lineHeight: 1 }}>×</button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <StyledSelect value="" onChange={e => { const id = e.target.value; if (id) setPruebaForm(f => ({ ...f, delegationIds: f.delegationIds.includes(id) ? f.delegationIds : [...f.delegationIds, id] })); }}>
+                  <option value="">{pruebaForm.delegationIds.length === 0 ? t("Prueba general (todas las delegaciones)") : t("Agregar delegación…")}</option>
+                  {eventDelegations
+                    .filter((d) => !pruebaForm.delegationIds.includes(d.id))
+                    .map((d) => <option key={d.id} value={d.id}>{delegationLabel(d) || d.countryCode || d.id}</option>)}
+                </StyledSelect>
+              </div>
 
               {/* ───── Ceremonia de premiación ───── */}
               <div style={{ borderTop: `1px dashed ${SURFACE.border}`, paddingTop: "12px", marginTop: "4px" }}>

@@ -1,4 +1,11 @@
-import { IsISO8601, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsISO8601,
+  IsNotEmpty,
+  IsObject,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class CreateDisciplineDto {
   @IsString()
@@ -28,4 +35,15 @@ export class CreateDisciplineDto {
   @IsString()
   @IsOptional()
   venueName?: string;
+
+  /** Delegaciones que participan (partido: las dos regiones). Vacío = general. */
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  delegationIds?: string[];
+
+  /** Partido, grupo, jornada, salida/retorno al hotel, etc. */
+  @IsObject()
+  @IsOptional()
+  metadata?: Record<string, unknown>;
 }

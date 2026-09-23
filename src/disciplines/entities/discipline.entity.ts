@@ -1,4 +1,4 @@
-﻿import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'disciplines', schema: 'core' })
 export class Discipline {
@@ -28,4 +28,15 @@ export class Discipline {
   /** Nombre del recinto donde se realiza */
   @Column({ name: 'venue_name', type: 'text', nullable: true })
   venueName?: string | null;
+
+  /**
+   * Delegaciones (regiones) que participan en la prueba. Un partido lleva las
+   * dos regiones; vacío = prueba general (todas la ven).
+   */
+  @Column({ name: 'delegation_ids', type: 'uuid', array: true, default: () => "'{}'::uuid[]" })
+  delegationIds: string[];
+
+  /** Datos de la programación oficial sin columna: partido, grupo, jornada, salida/retorno al hotel. */
+  @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
+  metadata: Record<string, unknown>;
 }

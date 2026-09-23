@@ -11,17 +11,14 @@ import { Repository } from 'typeorm';
 import { CreateDisciplineDto } from './dto/create-discipline.dto';
 import { UpdateDisciplineDto } from './dto/update-discipline.dto';
 import { Discipline } from './entities/discipline.entity';
+import {
+  calendarExternalId,
+  DelegacionNombre,
+  filaCalendarioDePrueba,
+  PruebaRow,
+} from './prueba-calendario';
 
-type DisciplineRow = {
-  id: string;
-  name: string;
-  event_id?: string | null;
-  category?: string | null;
-  gender?: string | null;
-  parent_id?: string | null;
-  scheduled_at?: string | null;
-  venue_name?: string | null;
-};
+type DisciplineRow = PruebaRow;
 
 @Injectable()
 export class DisciplinesService {
@@ -40,10 +37,6 @@ export class DisciplinesService {
   // y eliminarla (o quitarle la fecha) lo borra. Best-effort: un fallo aquí
   // nunca rompe la operación sobre la prueba.
 
-  private calendarExternalId(disciplineId: string): string {
-    return `prueba:${disciplineId}`;
-  }
-
   private async syncCalendarEvent(row: DisciplineRow) {
     try {
       // Sólo las pruebas con fecha van al calendario; una disciplina raíz o
@@ -52,37 +45,19 @@ export class DisciplinesService {
         await this.removeCalendarEvent(row.id);
         return;
       }
-      let parentName: string | null = null;
-      if (row.parent_id) {
-        const { data: parent } = await this.supabase
-          .schema('core')
-          .from('disciplines')
-          .select('name')
-          .eq('id', row.parent_id)
-          .maybeSingle();
-        parentName = (parent?.name as string | undefined) ?? null;
-      }
-      const externalId = this.calendarExternalId(row.id);
-      const calendarRow = {
-        event_id: row.event_id ?? null,
-        sport: parentName || 'Prueba',
-        league: 'Pruebas',
-        home_team: null,
-        away_team: null,
-        venue: row.venue_name ?? null,
-        start_at_utc: row.scheduled_at,
-        status: 'SCHEDULED',
-        external_id: externalId,
-        source: 'PRUEBAS',
-        metadata: {
-          title: `🏁 ${row.name}`,
-          scheduleType: 'COMPETITION',
-          disciplineId: row.id,
-          parentDisciplineId: row.parent_id ?? null,
-          category: row.category ?? null,
-          gender: row.gender ?? null,
-        },
-      };
+      const { data: parent } = await this.supabase
+        .schema('core')
+        .from('disciplines')
+        .select('name')
+        .eq('id', row.parent_id)
+        .maybeSingle();
+      const parentName = (parent?.name as string | undefined) ?? null;
+      const calendarRow = filaCalendarioDePrueba(
+        row,
+        parentName,
+        await this.nombresDeDelegaciones(row.delegation_ids ?? []),
+      );
+      const externalId = calendarExternalId(row.id);
       const { data: existing } = await this.supabase
         .schema('core')
         .from('sports_calendar_events')
@@ -112,13 +87,28 @@ export class DisciplinesService {
     }
   }
 
+  /** Nombre visible de cada delegación (la región), en el orden pedido. */
+  private async nombresDeDelegaciones(ids: string[]): Promise<DelegacionNombre[]> {
+    if (ids.length === 0) return [];
+    const { data } = await this.supabase
+      .schema('core')
+      .from('delegations')
+      .select('id, country_code, metadata')
+      .in('id', ids);
+    return (data ?? []).map((d) => {
+      const meta = (d.metadata ?? {}) as Record<string, unknown>;
+      const nombre = typeof meta.name === 'string' && meta.name.trim() ? meta.name : String(d.country_code ?? d.id);
+      return { id: String(d.id), nombre };
+    });
+  }
+
   private async removeCalendarEvent(disciplineId: string) {
     try {
       const { error } = await this.supabase
         .schema('core')
         .from('sports_calendar_events')
         .delete()
-        .eq('external_id', this.calendarExternalId(disciplineId));
+        .eq('external_id', calendarExternalId(disciplineId));
       if (error) throw new Error(error.message);
     } catch (err) {
       this.logger.warn(
@@ -178,6 +168,12 @@ export class DisciplinesService {
     if (dto.venueName !== undefined) {
       row.venue_name = dto.venueName || null;
     }
+    if (dto.delegationIds !== undefined) {
+      row.delegation_ids = dto.delegationIds ?? [];
+    }
+    if (dto.metadata !== undefined) {
+      row.metadata = dto.metadata ?? {};
+    }
     return row;
   }
 
@@ -191,6 +187,8 @@ export class DisciplinesService {
       parentId: row.parent_id ?? null,
       scheduledAt: row.scheduled_at ? new Date(row.scheduled_at) : null,
       venueName: row.venue_name ?? null,
+      delegationIds: row.delegation_ids ?? [],
+      metadata: row.metadata ?? {},
     };
   }
 
