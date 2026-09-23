@@ -10,6 +10,7 @@ import {
 } from './dto/bulk-from-schedule.dto';
 import { AutoAssignDriversDto } from './dto/auto-assign-drivers.dto';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
+import { consultarPorLotes } from '../supabase/en-lotes';
 
 const MONTHS_ES: Record<string, number> = {
   ene: 0,
@@ -1327,11 +1328,10 @@ export class TripsScheduleService {
         // así que los pasajeros se resuelven desde trip_athletes.
         if (assigned.length > 0) {
           const tripIds = assigned.map((a) => a.tripId);
-          const { data: links } = await this.supabase
-            .schema('transport')
-            .from('trip_athletes')
-            .select('trip_id, athlete_id')
-            .in('trip_id', tripIds);
+          // Por lotes: una planilla grande no cabe en un solo `.in()` (ver en-lotes).
+          const { data: links } = await consultarPorLotes(tripIds, (lote) =>
+            this.supabase.schema('transport').from('trip_athletes').select('trip_id, athlete_id').in('trip_id', lote),
+          );
           const athletesByTrip = new Map<string, string[]>();
           (links ?? []).forEach((l: { trip_id: string; athlete_id: string }) => {
             const current = athletesByTrip.get(l.trip_id) ?? [];

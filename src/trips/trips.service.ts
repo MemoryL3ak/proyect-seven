@@ -16,6 +16,7 @@ import { TripMessage } from './entities/trip-message.entity';
 import { ProviderRate } from '../providers/entities/provider-rate.entity';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 import { marcasAlCambiarEstado, retrocedeASinIniciar } from './estado-viaje';
+import { consultarPorLotes } from '../supabase/en-lotes';
 
 type TripRow = {
   id: string;
@@ -423,11 +424,9 @@ export class TripsService {
     );
     if (faltantes.length === 0) return trips;
 
-    const { data } = await this.supabase
-      .schema('core')
-      .from('disciplines')
-      .select('id, name')
-      .in('id', faltantes);
+    const { data } = await consultarPorLotes(faltantes, (lote) =>
+      this.supabase.schema('core').from('disciplines').select('id, name').in('id', lote),
+    );
 
     const nombrePorId = new Map(
       ((data ?? []) as Array<{ id: string; name: string | null }>).map((fila) => [
@@ -447,11 +446,11 @@ export class TripsService {
     if (trips.length === 0) return trips;
     const tripIds = trips.map((item) => item.id);
 
-    const { data: links, error: linksError } = await this.supabase
-      .schema('transport')
-      .from('trip_athletes')
-      .select('trip_id, athlete_id')
-      .in('trip_id', tripIds);
+    // Por lotes: con todos los viajes del evento en un solo `.in()` la URL
+    // pasaba de 16 KB y la consulta moría con "fetch failed" (23-09-2026).
+    const { data: links, error: linksError } = await consultarPorLotes(tripIds, (lote) =>
+      this.supabase.schema('transport').from('trip_athletes').select('trip_id, athlete_id').in('trip_id', lote),
+    );
 
     if (linksError) {
       throw new InternalServerErrorException(
@@ -481,11 +480,9 @@ export class TripsService {
       }));
     }
 
-    const { data: athletes, error: athletesError } = await this.supabase
-      .schema('core')
-      .from('athletes')
-      .select('id, full_name')
-      .in('id', athleteIds);
+    const { data: athletes, error: athletesError } = await consultarPorLotes(athleteIds, (lote) =>
+      this.supabase.schema('core').from('athletes').select('id, full_name').in('id', lote),
+    );
 
     if (athletesError) {
       throw new InternalServerErrorException(
