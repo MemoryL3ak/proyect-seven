@@ -9,6 +9,7 @@ import { ApiAuthGuard } from './auth/api-auth.guard';
 import { SensitiveFieldsInterceptor } from './auth/sensitive-fields.interceptor';
 import { SignedStorageUrlInterceptor } from './storage/signed-storage-url.interceptor';
 import { AccountPurgeModule } from './account-purge/account-purge.module';
+import { AdminFilesModule } from './admin-files/admin-files.module';
 import { ChatBlocksModule } from './chat-blocks/chat-blocks.module';
 import { AuthModule } from './auth/auth.module';
 import { TransportsModule } from './transports/transports.module';
@@ -121,6 +122,7 @@ import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
     TripRequestsModule,
     VipMonitoringModule,
     AccountPurgeModule,
+    AdminFilesModule,
     ChatBlocksModule,
   ],
   controllers: [AppController],

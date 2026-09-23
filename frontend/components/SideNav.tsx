@@ -142,6 +142,7 @@ const navSections: NavSection[] = [
     items: [
       { href: "/admin/usuarios", label: "Gestión de Usuarios", icon: "users-admin" },
       { href: "/admin/notificaciones", label: "Notificaciones Push", icon: "bell" },
+      { href: "/admin/archivos", label: "Archivos cargados", icon: "document" },
       { href: "/operations/sofia-actions", label: "Acciones de SofIA", icon: "admin" }
     ]
   },
@@ -284,6 +285,7 @@ const HREF_TO_MODULE: Record<string, string> = {
   "/portal/partner": "portales",
   "/admin/usuarios": "admin.usuarios",
   "/admin/notificaciones": "admin.notificaciones",
+  "/admin/archivos": "admin.archivos",
   "/operations/sofia-actions": "_always",
   "/cuenta": "_always",
   "/inicio-guiado": "_always",

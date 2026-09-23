@@ -44,6 +44,10 @@ export const ALL_MODULES: AppModule[] = [
   { id: "documentos", label: "Documentos del Evento", group: "Documentos", icon: "file-text" },
   { id: "portales", label: "Portales", group: "Portales", icon: "globe" },
   { id: "admin.usuarios", label: "Gestión de Usuarios", group: "Administración", icon: "users" },
+  // Faltaba en el catálogo aunque el menú ya lo pedía: un usuario con módulos
+  // acotados no podía recibir Notificaciones Push desde Gestión de Usuarios.
+  { id: "admin.notificaciones", label: "Notificaciones Push", group: "Administración", icon: "bell" },
+  { id: "admin.archivos", label: "Archivos cargados", group: "Administración", icon: "file-text" },
 ];
 
 export const MODULE_GROUPS = [...new Set(ALL_MODULES.map((m) => m.group))];
