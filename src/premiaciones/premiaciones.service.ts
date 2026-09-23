@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { consultarPorLotes, enLotes } from '../supabase/en-lotes';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 import { AwarderInputDto, CreatePremiacionDto } from './dto/create-premiacion.dto';
 import { UpdatePremiacionDto } from './dto/update-premiacion.dto';
@@ -35,11 +36,9 @@ export class PremiacionesService {
         .maybeSingle();
       if (!prem) return;
 
-      const { data: athletes } = await this.supabase
-        .schema('core')
-        .from('athletes')
-        .select('id, user_type')
-        .in('id', athleteIds);
+      const { data: athletes } = await consultarPorLotes(athleteIds, (lote) =>
+        this.supabase.schema('core').from('athletes').select('id, user_type').in('id', lote),
+      );
       const typeById = new Map(
         (athletes ?? []).map((a: any) => [a.id, String(a.user_type ?? '').toUpperCase()]),
       );
@@ -236,12 +235,14 @@ export class PremiacionesService {
       .filter((a) => !desiredIds.has(a.athlete_id))
       .map((a) => a.id);
     if (toRemove.length) {
-      const { error } = await this.supabase
-        .schema('core')
-        .from('premiacion_awarders')
-        .delete()
-        .in('id', toRemove);
-      if (error) throw new InternalServerErrorException(error.message);
+      for (const lote of enLotes(toRemove)) {
+        const { error } = await this.supabase
+          .schema('core')
+          .from('premiacion_awarders')
+          .delete()
+          .in('id', lote);
+        if (error) throw new InternalServerErrorException(error.message);
+      }
     }
 
     // 2. Insertar los entregadores nuevos (sin confirmación previa).
@@ -318,11 +319,9 @@ export class PremiacionesService {
     if (premiaciones.length === 0) return [];
 
     const ids = premiaciones.map((p: PremiacionRow) => p.id);
-    const { data: awardersData, error: awardersError } = await this.supabase
-      .schema('core')
-      .from('premiacion_awarders')
-      .select('*')
-      .in('premiacion_id', ids);
+    const { data: awardersData, error: awardersError } = await consultarPorLotes(ids, (lote) =>
+      this.supabase.schema('core').from('premiacion_awarders').select('*').in('premiacion_id', lote),
+    );
     if (awardersError) throw new InternalServerErrorException(awardersError.message);
 
     const byPremiacion = new Map<string, AwarderRow[]>();
@@ -483,15 +482,18 @@ export class PremiacionesService {
     const premiacionIds = Array.from(
       new Set(assignments.map((a: AwarderRow) => a.premiacion_id)),
     );
-    const { data: premiacionesData, error: premiacionesError } = await this.supabase
-      .schema('core')
-      .from('premiaciones')
-      .select('*')
-      .in('id', premiacionIds)
-      .order('scheduled_at', { ascending: true });
+    const { data: premiacionesData, error: premiacionesError } = await consultarPorLotes(premiacionIds, (lote) =>
+      this.supabase.schema('core').from('premiaciones').select('*').in('id', lote),
+    );
     if (premiacionesError) {
       throw new InternalServerErrorException(premiacionesError.message);
     }
+    // Por lotes el orden se rehace acá.
+    premiacionesData.sort((a, b) =>
+      String((a as { scheduled_at?: string | null }).scheduled_at ?? '').localeCompare(
+        String((b as { scheduled_at?: string | null }).scheduled_at ?? ''),
+      ),
+    );
 
     const byPremiacion = new Map<string, AwarderRow>();
     assignments.forEach((a: AwarderRow) => byPremiacion.set(a.premiacion_id, a));

@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { consultarPorLotes } from '../supabase/en-lotes';
 import { Repository } from 'typeorm';
 import { CreateDisciplineDto } from './dto/create-discipline.dto';
 import { UpdateDisciplineDto } from './dto/update-discipline.dto';
@@ -90,11 +91,9 @@ export class DisciplinesService {
   /** Nombre visible de cada delegación (la región), en el orden pedido. */
   private async nombresDeDelegaciones(ids: string[]): Promise<DelegacionNombre[]> {
     if (ids.length === 0) return [];
-    const { data } = await this.supabase
-      .schema('core')
-      .from('delegations')
-      .select('id, country_code, metadata')
-      .in('id', ids);
+    const { data } = await consultarPorLotes(ids, (lote) =>
+      this.supabase.schema('core').from('delegations').select('id, country_code, metadata').in('id', lote),
+    );
     return (data ?? []).map((d) => {
       const meta = (d.metadata ?? {}) as Record<string, unknown>;
       const nombre = typeof meta.name === 'string' && meta.name.trim() ? meta.name : String(d.country_code ?? d.id);

@@ -40,6 +40,27 @@ function metodoDe(input: Parameters<Fetch>[0], init?: RequestInit): string {
 const esperar = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
 /**
+ * Por sobre este largo la petición ya está cerca del tope de 16 KB de
+ * cabeceras de undici: se avisa en el log con la ruta, para ver de dónde
+ * sale antes de que reviente (ver en-lotes.ts).
+ */
+export const URL_LARGA_CHARS = 8000;
+
+function avisarSiLaUrlEsLarga(input: Parameters<Fetch>[0]): void {
+  const url =
+    typeof input === 'string'
+      ? input
+      : input instanceof URL
+        ? input.href
+        : ((input as { url?: string }).url ?? '');
+  if (url.length <= URL_LARGA_CHARS) return;
+  const ruta = url.replace(/\?.*$/, '').replace(/^https?:\/\/[^/]+/, '');
+  console.error(
+    `[supabase] URL de ${url.length} caracteres en ${ruta}: falta consultar por lotes (en-lotes.ts)`,
+  );
+}
+
+/**
  * Envuelve un `fetch`: las lecturas (GET/HEAD/OPTIONS) que fallan por red se
  * repiten hasta `REINTENTOS_LECTURA` veces; lo demás se propaga tal cual.
  */
@@ -48,6 +69,7 @@ export function fetchConReintento(
   esperas: readonly number[] = ESPERAS_MS,
 ): Fetch {
   return async function fetchReintentando(input, init) {
+    avisarSiLaUrlEsLarga(input);
     const repetible = METODOS_REPETIBLES.has(metodoDe(input, init));
     let intento = 0;
     for (;;) {

@@ -4,6 +4,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { enLotes } from '../supabase/en-lotes';
 
 export type NotificationAudience = {
   userKind: string;
@@ -85,17 +86,24 @@ export class NotificationsService {
     audience: NotificationAudience,
     ids?: string[],
   ): Promise<{ updated: number }> {
-    let query = this.supabase
-      .schema('core')
-      .from('notifications')
-      .update({ read_at: new Date().toISOString() })
-      .eq('user_kind', audience.userKind)
-      .eq('user_id', audience.userId)
-      .is('read_at', null);
+    const marcar = () =>
+      this.supabase
+        .schema('core')
+        .from('notifications')
+        .update({ read_at: new Date().toISOString() })
+        .eq('user_kind', audience.userKind)
+        .eq('user_id', audience.userId)
+        .is('read_at', null);
     if (ids && ids.length > 0) {
-      query = query.in('id', ids);
+      let updated = 0;
+      for (const lote of enLotes(ids)) {
+        const { data, error } = await marcar().in('id', lote).select('id');
+        if (error) throw new InternalServerErrorException(error.message);
+        updated += (data ?? []).length;
+      }
+      return { updated };
     }
-    const { data, error } = await query.select('id');
+    const { data, error } = await marcar().select('id');
     if (error) throw new InternalServerErrorException(error.message);
     return { updated: (data ?? []).length };
   }

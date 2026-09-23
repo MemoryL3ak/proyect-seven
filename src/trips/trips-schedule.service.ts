@@ -642,11 +642,9 @@ export class TripsScheduleService {
 
     const plateByVehicle = new Map<string, string>();
     if (vehicleIds.length) {
-      const { data: vehicleRows } = await this.supabase
-        .schema('transport')
-        .from('vehicles')
-        .select('id, plate')
-        .in('id', vehicleIds);
+      const { data: vehicleRows } = await consultarPorLotes(vehicleIds, (lote) =>
+        this.supabase.schema('transport').from('vehicles').select('id, plate').in('id', lote),
+      );
       ((vehicleRows as Array<Record<string, unknown>>) ?? []).forEach((v) => {
         if (v.plate) plateByVehicle.set(v.id as string, String(v.plate));
       });
@@ -1397,24 +1395,27 @@ export class TripsScheduleService {
   private async fetchPendingTrips(
     dto: AutoAssignDriversDto,
   ): Promise<TripCandidate[]> {
-    let query = this.supabase
+    const armar = () =>
+      this.supabase
       .schema('transport')
       .from('trips')
       .select(
         'id, event_id, origin, destination, client_type, fleet_acronym, passenger_count, wheelchair_count, scheduled_at, return_at, presentation_at, travel_time_minutes, is_round_trip, parent_trip_id, leg_type, driver_id, trip_date',
       )
       .is('driver_id', null);
+    let query = armar();
 
-    if (dto.tripIds && dto.tripIds.length) {
-      query = query.in('id', dto.tripIds);
-    } else {
+    if (!dto.tripIds?.length) {
       if (dto.eventId) query = query.eq('event_id', dto.eventId);
       if (dto.date) query = query.eq('trip_date', dto.date);
       if (dto.clientType) query = query.eq('client_type', dto.clientType);
       if (dto.fleetAcronym) query = query.eq('fleet_acronym', dto.fleetAcronym);
     }
 
-    const { data, error } = await query.order('scheduled_at', { ascending: true });
+    const { data, error } = dto.tripIds?.length
+      ? // Por lotes: una selección grande de viajes no cabe en un solo `.in()`.
+        await consultarPorLotes(dto.tripIds, (lote) => armar().in('id', lote).order('scheduled_at', { ascending: true }))
+      : await query.order('scheduled_at', { ascending: true });
     if (error) {
       throw new InternalServerErrorException(error.message);
     }
@@ -1462,11 +1463,9 @@ export class TripsScheduleService {
 
     let vehicles: Array<Record<string, unknown>> = [];
     if (vehicleIds.length) {
-      const { data: vRows } = await this.supabase
-        .schema('transport')
-        .from('vehicles')
-        .select('id, type, capacity, plate, metadata')
-        .in('id', vehicleIds);
+      const { data: vRows } = await consultarPorLotes(vehicleIds, (lote) =>
+        this.supabase.schema('transport').from('vehicles').select('id, type, capacity, plate, metadata').in('id', lote),
+      );
       vehicles = (vRows as Array<Record<string, unknown>>) ?? [];
     }
     const vehicleById = new Map(vehicles.map((v) => [v.id as string, v]));
@@ -1540,16 +1539,18 @@ export class TripsScheduleService {
     driverIds: string[],
   ): Promise<Map<string, TripWindow[]>> {
     if (driverIds.length === 0) return new Map();
-    const { data, error } = await this.supabase
-      .schema('transport')
-      .from('trips')
-      .select(
-        'id, driver_id, scheduled_at, return_at, presentation_at, travel_time_minutes, status',
-      )
-      // Nota: el enum trip_status de la BD NO tiene 'ASSIGNED' — un viaje
-      // asignado sigue en SCHEDULED con driver_id seteado.
-      .in('driver_id', driverIds)
-      .in('status', ['REQUESTED', 'SCHEDULED', 'EN_ROUTE', 'PICKED_UP']);
+    const { data, error } = await consultarPorLotes(driverIds, (lote) =>
+      this.supabase
+        .schema('transport')
+        .from('trips')
+        .select(
+          'id, driver_id, scheduled_at, return_at, presentation_at, travel_time_minutes, status',
+        )
+        // Nota: el enum trip_status de la BD NO tiene 'ASSIGNED' — un viaje
+        // asignado sigue en SCHEDULED con driver_id seteado.
+        .in('driver_id', lote)
+        .in('status', ['REQUESTED', 'SCHEDULED', 'EN_ROUTE', 'PICKED_UP']),
+    );
 
     if (error) throw new InternalServerErrorException(error.message);
 

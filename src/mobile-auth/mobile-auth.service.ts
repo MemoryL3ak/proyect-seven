@@ -9,6 +9,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { createHmac, randomUUID } from 'crypto';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { enLotes } from '../supabase/en-lotes';
 
 // JWT HS256 mínimo (sin dependencias): suficiente para firmar tokens que
 // Supabase Realtime valida contra el JWT secret del proyecto.
@@ -675,11 +676,15 @@ export class MobileAuthService {
         new Set((links ?? []).map((l) => l.trip_id as string).filter(Boolean)),
       );
       if (tripIds.length > 0) {
-        const { error: memberTripsError } = await this.supabase
-          .schema('transport')
-          .from('trips')
-          .update({ passenger_lat: null, passenger_lng: null })
-          .in('id', tripIds);
+        let memberTripsError: { message: string } | null = null;
+        for (const lote of enLotes(tripIds)) {
+          const { error } = await this.supabase
+            .schema('transport')
+            .from('trips')
+            .update({ passenger_lat: null, passenger_lng: null })
+            .in('id', lote);
+          if (error) memberTripsError = error;
+        }
         if (memberTripsError) {
           this.logger.warn(
             `No se pudo limpiar la posición de pasajero (viajes como miembro) de ${userId}: ${memberTripsError.message}`,

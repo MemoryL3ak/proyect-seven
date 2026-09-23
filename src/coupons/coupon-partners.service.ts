@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { consultarPorLotes, enLotes } from '../supabase/en-lotes';
 import { randomBytes } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import {
@@ -288,9 +289,12 @@ export class CouponPartnersService {
       .maybeSingle();
     const allowed = ((partnerRow as any)?.allowed_coupon_ids as string[] | null) || [];
 
-    let couponsQ = this.supabase.from('coupons').select('id, max_redemptions').eq('status', 'ACTIVE');
-    if (allowed.length > 0) couponsQ = couponsQ.in('id', allowed);
-    const { data: coupons } = await couponsQ;
+    const { data: coupons } =
+      allowed.length > 0
+        ? await consultarPorLotes(allowed, (lote) =>
+            this.supabase.from('coupons').select('id, max_redemptions').eq('status', 'ACTIVE').in('id', lote),
+          )
+        : await this.supabase.from('coupons').select('id, max_redemptions').eq('status', 'ACTIVE');
     const couponList = (coupons as Row[]) || [];
     const eligibleIds = couponList.map((c) => String(c.id));
 
@@ -298,12 +302,14 @@ export class CouponPartnersService {
     let claimsCount = 0;
     let stockRemaining: number | null = 0;
     if (eligibleIds.length > 0) {
-      const { count: cl } = await this.supabase
-        .from('coupon_claims')
-        .select('*', { count: 'exact', head: true })
-        .in('coupon_id', eligibleIds)
-        .in('status', ['CLAIMED', 'REDEEMED']);
-      claimsCount = cl ?? 0;
+      for (const lote of enLotes(eligibleIds)) {
+        const { count: cl } = await this.supabase
+          .from('coupon_claims')
+          .select('*', { count: 'exact', head: true })
+          .in('coupon_id', lote)
+          .in('status', ['CLAIMED', 'REDEEMED']);
+        claimsCount += cl ?? 0;
+      }
 
       // Stock total = suma de max_redemptions (null = "ilimitado")
       let anyUnlimited = false;

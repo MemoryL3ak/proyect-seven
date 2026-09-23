@@ -5,6 +5,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { SupabaseClient } from '@supabase/supabase-js';
+import { consultarPorLotes } from '../supabase/en-lotes';
 import { RegisterTokenDto } from './dto/register-token.dto';
 import { NotificationsService } from '../notifications/notifications.service';
 
@@ -125,21 +126,17 @@ export class PushNotificationsService {
     const names = new Map<string, string>();
 
     if (athleteIds.length > 0) {
-      const { data } = await this.supabase
-        .schema('core')
-        .from('athletes')
-        .select('id, full_name')
-        .in('id', athleteIds);
+      const { data } = await consultarPorLotes(athleteIds, (lote) =>
+        this.supabase.schema('core').from('athletes').select('id, full_name').in('id', lote),
+      );
       for (const a of (data ?? []) as { id: string; full_name: string }[]) {
         names.set(`athlete:${a.id}`, a.full_name);
       }
     }
     if (driverIds.length > 0) {
-      const { data } = await this.supabase
-        .schema('transport')
-        .from('drivers')
-        .select('id, full_name')
-        .in('id', driverIds);
+      const { data } = await consultarPorLotes(driverIds, (lote) =>
+        this.supabase.schema('transport').from('drivers').select('id, full_name').in('id', lote),
+      );
       for (const d of (data ?? []) as { id: string; full_name: string }[]) {
         names.set(`driver:${d.id}`, d.full_name);
       }

@@ -16,7 +16,7 @@ import { TripMessage } from './entities/trip-message.entity';
 import { ProviderRate } from '../providers/entities/provider-rate.entity';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 import { marcasAlCambiarEstado, retrocedeASinIniciar } from './estado-viaje';
-import { consultarPorLotes } from '../supabase/en-lotes';
+import { consultarPorLotes, enLotes } from '../supabase/en-lotes';
 
 type TripRow = {
   id: string;
@@ -1295,11 +1295,9 @@ export class TripsService {
 
     // Los tramos de regreso cuelgan de la ida: se borran con ella aunque el
     // operador sólo haya marcado el viaje padre en la lista.
-    const { data: children, error: childrenError } = await this.supabase
-      .schema('transport')
-      .from('trips')
-      .select('id')
-      .in('parent_trip_id', requested);
+    const { data: children, error: childrenError } = await consultarPorLotes(requested, (lote) =>
+      this.supabase.schema('transport').from('trips').select('id').in('parent_trip_id', lote),
+    );
 
     if (childrenError) {
       throw new InternalServerErrorException(
@@ -1312,20 +1310,21 @@ export class TripsService {
     );
     const targets = Array.from(new Set([...requested, ...childIds]));
 
-    const { data, error } = await this.supabase
-      .schema('transport')
-      .from('trips')
-      .delete()
-      .in('id', targets)
-      .select('id');
-
-    if (error) {
-      throw new InternalServerErrorException(
-        error.message || 'Error deleting trips',
-      );
+    const deletedIds: string[] = [];
+    for (const lote of enLotes(targets)) {
+      const { data, error } = await this.supabase
+        .schema('transport')
+        .from('trips')
+        .delete()
+        .in('id', lote)
+        .select('id');
+      if (error) {
+        throw new InternalServerErrorException(
+          error.message || 'Error deleting trips',
+        );
+      }
+      deletedIds.push(...((data as Array<{ id: string }>) ?? []).map((r) => r.id));
     }
-
-    const deletedIds = ((data as Array<{ id: string }>) ?? []).map((r) => r.id);
     return {
       requestedCount: requested.length,
       deletedCount: deletedIds.length,
