@@ -15,7 +15,7 @@ import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { delegationLabel } from "@/lib/delegations";
-import { lugaresDeViajes, tocaLugar } from "@/lib/lugares";
+import { lugarDeExtremo, lugaresDeViajes, tocaLugar } from "@/lib/lugares";
 import { legTypeLabel, tripTypeLabel } from "@/lib/tripTypes";
 import {
   CrownIcon,
@@ -2170,9 +2170,9 @@ export default function TripsPage() {
                             <div style={{ flex: 1, minWidth: 0 }}>
                               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                                 <span style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
-                                  {trip.origin || t("Origen pendiente")}{" "}
+                                  {lugarDeExtremo(trip, "origin", nombreDeLugar) || t("Origen pendiente")}{" "}
                                   <span style={{ color: SURFACE.textFaint, display: "inline-flex", verticalAlign: "middle" }}><ArrowRightIcon size={12} /></span>{" "}
-                                  {venue?.name || trip.destination || t("Destino pendiente")}
+                                  {lugarDeExtremo(trip, "destination", nombreDeLugar) || t("Destino pendiente")}
                                 </span>
                                 <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, color: sc.accent }}>
                                   {t(statusTone(trip.status).label)}

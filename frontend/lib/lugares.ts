@@ -85,23 +85,41 @@ export type ViajeConLugares = {
 export type NombreDeLugar = (id: string) => string | null | undefined;
 
 /**
- * Los dos lugares de un viaje, tal como los muestra su fila: origen y
- * destino. El texto manda; si un extremo no lo trae, se usa el nombre del
- * catálogo de la sede o el hotel al que apunta por id.
+ * Un extremo del viaje con el nombre del catálogo de la sede, el hotel o el
+ * comedor al que apunta por id; el texto del viaje sólo si no apunta a nada.
+ *
+ * Antes mandaba el texto, y la planilla a veces trae la dirección en vez del
+ * nombre: el viaje quedaba vinculado a la Escuela Naval pero el filtro de
+ * sede lo listaba aparte como "Fco. González de Hontaneda 11, Playa Ancha…"
+ * mientras su fila decía "Escuela Naval Arturo Prat".
  */
-export function lugaresDeViaje(viaje: ViajeConLugares, nombreDe?: NombreDeLugar): string[] {
+export function lugarDeExtremo(
+  viaje: ViajeConLugares,
+  extremo: "origin" | "destination",
+  nombreDe?: NombreDeLugar,
+): string {
   const porId = (id?: string | null) => (id && nombreDe ? String(nombreDe(id) ?? "").trim() : "");
-  const origen =
-    String(viaje.origin ?? "").trim() ||
-    porId(viaje.originVenueId) ||
-    porId(viaje.originHotelId) ||
-    porId(viaje.originFoodLocationId);
-  const destino =
-    String(viaje.destination ?? "").trim() ||
+  if (extremo === "origin") {
+    return (
+      porId(viaje.originVenueId) ||
+      porId(viaje.originHotelId) ||
+      porId(viaje.originFoodLocationId) ||
+      String(viaje.origin ?? "").trim()
+    );
+  }
+  return (
     porId(viaje.destinationVenueId) ||
     porId(viaje.destinationHotelId) ||
-    porId(viaje.destinationFoodLocationId);
-  return [origen, destino].filter((valor) => valor.length > 0);
+    porId(viaje.destinationFoodLocationId) ||
+    String(viaje.destination ?? "").trim()
+  );
+}
+
+/** Los dos lugares de un viaje, tal como los muestra su fila: origen y destino. */
+export function lugaresDeViaje(viaje: ViajeConLugares, nombreDe?: NombreDeLugar): string[] {
+  return [lugarDeExtremo(viaje, "origin", nombreDe), lugarDeExtremo(viaje, "destination", nombreDe)].filter(
+    (valor) => valor.length > 0,
+  );
 }
 
 /** Un viaje "toca" un lugar si sale de él o llega a él. */
