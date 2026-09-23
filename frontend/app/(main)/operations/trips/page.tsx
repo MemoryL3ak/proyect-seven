@@ -8,13 +8,16 @@ import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import StyledSelect from "@/components/StyledSelect";
+import FilterChips from "@/components/ui/FilterChips";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
+import { useIsMobile } from "@/lib/useIsMobile";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { delegationLabel } from "@/lib/delegations";
+import { deporteDeViaje, type DisciplineLike } from "@/lib/discipline-filters";
 import { lugarDeExtremo, lugaresDeViajes, tocaLugar } from "@/lib/lugares";
 import {
   compararConPlanilla,
@@ -322,6 +325,13 @@ const ONGOING_PAGE_SIZE = 25;
 /** Valor del filtro de conductor que pide los viajes que todavía no tienen uno. */
 const ONGOING_SIN_CONDUCTOR = "sin-conductor";
 const ONGOING_SIN_REGION = "sin-region";
+/** Valor del filtro de género para los viajes cuya planilla no lo trajo. */
+const ONGOING_SIN_GENERO = "sin-genero";
+/** Etiqueta de cada filtro de "En curso": la misma sobre fichas y desplegables. */
+const ongoingEtiquetaStyle = {
+  display: "block", marginBottom: 6, fontSize: "11px", fontWeight: 600,
+  letterSpacing: "0.1em", textTransform: "uppercase" as const, color: SURFACE.textMuted,
+};
 /** Clave del filtro de región para los traslados de todas las regiones. */
 const ONGOING_TODAS_LAS_REGIONES = "todas-las-regiones";
 const ongoingPaginaStyle = (deshabilitado: boolean) => ({
@@ -475,6 +485,9 @@ const relativeMinutes = (value?: string | null) => {
 
 export default function TripsPage() {
   const { t } = useI18n();
+  // Los layouts de esta pantalla van con estilos inline: en el teléfono
+  // (app staff, ~390 px) se apilan los paneles y se achican los paddings.
+  const isMobile = useIsMobile();
 
   const pal = {
     cardBg: SURFACE.card, cardBorder: SURFACE.border, shadow: "0 1px 4px rgba(15,23,42,0.06)",
@@ -492,6 +505,8 @@ export default function TripsPage() {
   const [vehicles, setVehicles] = useState<Record<string, VehicleItem>>({});
   const [venues, setVenues] = useState<Record<string, VenueItem>>({});
   const [hoteles, setHoteles] = useState<HotelItem[]>([]);
+  /** Deportes padre del evento: el filtro de disciplina agrupa los viajes con ellos. */
+  const [disciplinas, setDisciplinas] = useState<DisciplineLike[]>([]);
   /** Comedores de Alimentación: un viaje puede apuntar a ellos por id. */
   const [comedores, setComedores] = useState<HotelItem[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
@@ -609,6 +624,7 @@ export default function TripsPage() {
   // Vista "En curso": filtros propios de la vista y página de la lista.
   const [ongoingDay, setOngoingDay] = useState("");
   const [ongoingDiscipline, setOngoingDiscipline] = useState("");
+  const [ongoingGender, setOngoingGender] = useState("");
   const [ongoingRegion, setOngoingRegion] = useState("");
   const [ongoingHotel, setOngoingHotel] = useState("");
   const [ongoingVenue, setOngoingVenue] = useState("");
@@ -643,7 +659,7 @@ export default function TripsPage() {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData, hotelData, foodData] =
+      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData, hotelData, foodData, disciplinaData] =
         await Promise.all([
           apiFetch<Trip[]>("/trips"),
           apiFetch<EventItem[]>("/events"),
@@ -654,6 +670,7 @@ export default function TripsPage() {
           apiFetch<VenueItem[]>("/venues"),
           apiFetch<HotelItem[]>("/accommodations").catch(() => [] as HotelItem[]),
           apiFetch<HotelItem[]>("/food-locations").catch(() => [] as HotelItem[]),
+          apiFetch<(DisciplineLike & { parentId?: string | null })[]>("/disciplines").catch(() => []),
         ]);
 
       const nextTrips = tripData || [];
@@ -706,6 +723,8 @@ export default function TripsPage() {
         }, {})
       );
       setHoteles(hotelData || []);
+      // Sólo los deportes (sin las pruebas que cuelgan de cada uno).
+      setDisciplinas((disciplinaData || []).filter((d) => !d.parentId));
       setComedores(foodData || []);
       setVenues(
         (venueData || []).reduce<Record<string, VenueItem>>((acc, item) => {
@@ -1072,7 +1091,9 @@ export default function TripsPage() {
   const condicionesEnCurso = {
     jornada: (trip: Trip) =>
       !ongoingDay || (trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha") === ongoingDay,
-    disciplina: (trip: Trip) => !ongoingDiscipline || trip.discipline === ongoingDiscipline,
+    disciplina: (trip: Trip) => !ongoingDiscipline || deporteDeViaje(trip, disciplinas) === ongoingDiscipline,
+    genero: (trip: Trip) =>
+      !ongoingGender || (generoDeViaje(trip) || ONGOING_SIN_GENERO) === ongoingGender,
     region: (trip: Trip) => !ongoingRegion || regionDeViaje(trip).key === ongoingRegion,
     planilla: (trip: Trip) => !soloDiferencias || !comparacion || viajesMarcados.has(trip.id),
     hotel: (trip: Trip) => !ongoingHotel || tocaLugar(trip, ongoingHotel, nombreDeLugar),
@@ -1091,23 +1112,39 @@ export default function TripsPage() {
       ),
     );
 
-  // Los seis recortes dependen de lo mismo, así que comparten dependencias.
+  // Los recortes dependen de lo mismo, así que comparten dependencias.
   // Que cada uno ignore su propio filtro no hace daño: recalcular doscientos
   // viajes no se nota y la lista queda dicha entera.
   const dependenciasEnCurso = [
-    ongoingTrips, ongoingDay, ongoingDiscipline, ongoingRegion, ongoingHotel, ongoingVenue, ongoingDriver,
-    venues, hoteles, comedores, delegations, athletes, soloDiferencias, comparacion,
+    ongoingTrips, ongoingDay, ongoingDiscipline, ongoingGender, ongoingRegion, ongoingHotel, ongoingVenue, ongoingDriver,
+    venues, hoteles, comedores, delegations, athletes, soloDiferencias, comparacion, disciplinas,
   ];
 
   /* eslint-disable react-hooks/exhaustive-deps */
   const baseSinJornada = useMemo(() => viajesEnCursoSalvo("jornada"), dependenciasEnCurso);
   const baseSinDisciplina = useMemo(() => viajesEnCursoSalvo("disciplina"), dependenciasEnCurso);
+  const baseSinGenero = useMemo(() => viajesEnCursoSalvo("genero"), dependenciasEnCurso);
   const baseSinRegion = useMemo(() => viajesEnCursoSalvo("region"), dependenciasEnCurso);
   const baseSinHotel = useMemo(() => viajesEnCursoSalvo("hotel"), dependenciasEnCurso);
   const baseSinSede = useMemo(() => viajesEnCursoSalvo("sede"), dependenciasEnCurso);
   const baseSinConductor = useMemo(() => viajesEnCursoSalvo("conductor"), dependenciasEnCurso);
   const ongoingFiltered = useMemo(() => viajesEnCursoSalvo(null), dependenciasEnCurso);
   /* eslint-enable react-hooks/exhaustive-deps */
+
+  /** Cuántos filtros de la vista tienen algo elegido; manda el botón de limpiar. */
+  const filtrosEnCursoActivos = [
+    ongoingDay, ongoingDiscipline, ongoingGender, ongoingRegion, ongoingHotel, ongoingVenue, ongoingDriver,
+  ].filter(Boolean).length;
+  const limpiarFiltrosEnCurso = () => {
+    setOngoingDay("");
+    setOngoingDiscipline("");
+    setOngoingGender("");
+    setOngoingRegion("");
+    setOngoingHotel("");
+    setOngoingVenue("");
+    setOngoingDriver("");
+    setOngoingPage(0);
+  };
 
   /**
    * Días con carga, para el selector. Antes la lista venía partida por
@@ -1130,18 +1167,43 @@ export default function TripsPage() {
     }));
   }, [baseSinJornada, ongoingDay, t]);
 
-  /** Deportes presentes en lo que dejan ver los otros filtros. */
+  /**
+   * Deportes presentes en lo que dejan ver los otros filtros, con el nombre
+   * del catálogo (lib/discipline-filters): "ATLETISMO" y "Atletismo" son uno.
+   */
   const ongoingDisciplines = useMemo(() => {
     const porDisciplina = new Map<string, number>();
     for (const trip of baseSinDisciplina) {
-      if (!trip.discipline) continue;
-      porDisciplina.set(trip.discipline, (porDisciplina.get(trip.discipline) ?? 0) + 1);
+      const deporte = deporteDeViaje(trip, disciplinas);
+      if (!deporte) continue;
+      porDisciplina.set(deporte, (porDisciplina.get(deporte) ?? 0) + 1);
     }
     const lista = [...porDisciplina.entries()]
       .map(([texto, total]) => ({ texto, total }))
       .sort((a, b) => a.texto.localeCompare(b.texto, "es"));
     return conElegida(lista, ongoingDiscipline, (d) => d.texto, () => ({ texto: ongoingDiscipline, total: 0 }));
-  }, [baseSinDisciplina, ongoingDiscipline]);
+  }, [baseSinDisciplina, ongoingDiscipline, disciplinas]);
+
+  /**
+   * Géneros con carga, en orden fijo y no alfabético: la operación los nombra
+   * siempre en este orden. Los viajes cuya planilla no trajo género van a
+   * "Sin género", como los viajes sin conductor en su filtro; y el elegido se
+   * queda aunque los otros filtros lo dejen en cero, por lo mismo.
+   */
+  const ongoingGeneros = useMemo(() => {
+    const porGenero = new Map<string, number>();
+    for (const trip of baseSinGenero) {
+      const clave = generoDeViaje(trip) || ONGOING_SIN_GENERO;
+      porGenero.set(clave, (porGenero.get(clave) ?? 0) + 1);
+    }
+    return ["Femenino", "Masculino", "Mixto", ONGOING_SIN_GENERO]
+      .filter((clave) => (porGenero.get(clave) ?? 0) > 0 || clave === ongoingGender)
+      .map((clave) => ({
+        key: clave,
+        texto: clave === ONGOING_SIN_GENERO ? t("Sin género") : t(clave),
+        total: porGenero.get(clave) ?? 0,
+      }));
+  }, [baseSinGenero, ongoingGender, t]);
 
   /**
    * Regiones con carga. "Todas las regiones" y "Sin región" van primero,
@@ -1497,7 +1559,7 @@ export default function TripsPage() {
           border: `1px solid ${hasDriver ? pal.cardBorder : "#fde68a"}`,
           borderLeft: `4px solid ${sc.accent}`,
           borderRadius: "20px",
-          padding: "18px 20px",
+          padding: isMobile ? "14px" : "18px 20px",
           boxShadow: pal.shadow,
           outline: isFresh ? `2px solid #10b981` : "none",
           outlineOffset: "2px",
@@ -1654,7 +1716,7 @@ export default function TripsPage() {
               Sin observaciones operativas.
             </p>
           )}
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
             {/* Un viaje se edita en cualquier estado. La tarjeta de un viaje en
                 curso no ofrecía nada: si el chofer se cambiaba a mitad de
                 jornada había que ir a buscarlo a otra pantalla. */}
@@ -1857,7 +1919,8 @@ export default function TripsPage() {
         }}>
           Origen del viaje
         </p>
-        <div style={{ display: "flex", alignItems: "stretch", gap: 6 }}>
+        {/* Cuatro botones en fila no caben en un teléfono: ahí van de a dos. */}
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", alignItems: "stretch", gap: 6 }}>
           {(["", "PORTAL", "DAILY", "MANUAL"] as const).map((src) => {
             const meta = SOURCE_META[src];
             const count = src === ""
@@ -1876,7 +1939,7 @@ export default function TripsPage() {
                   display: "flex",
                   alignItems: "center",
                   gap: 10,
-                  padding: "12px 14px",
+                  padding: isMobile ? "10px 12px" : "12px 14px",
                   borderRadius: 12,
                   background: active ? meta.bg : SURFACE.card,
                   color: active ? meta.color : SURFACE.textSecondary,
@@ -2243,115 +2306,142 @@ export default function TripsPage() {
               </div>
             </div>
 
-            {/* Filtros de la vista. Van con StyledSelect y no con el select
-                nativo: el desplegable del sistema operativo rompe el lenguaje
-                visual del resto del panel. */}
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
-              <label className="text-sm block" style={{ minWidth: 230 }}>
-                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Jornada")}</span>
-                <StyledSelect
-                  value={ongoingDay}
-                  onChange={(e) => { setOngoingDay(e.target.value); setOngoingPage(0); }}
-                >
-                  <option value="">{`${t("Todas las jornadas")} (${baseSinJornada.length})`}</option>
-                  {ongoingDays.map((d) => (
-                    <option key={d.key} value={d.key}>{`${d.label} (${d.count})`}</option>
-                  ))}
-                </StyledSelect>
-              </label>
+            {/* Filtros de la vista, en un solo panel. Antes iban sueltos
+                entre el título y la lista, cada desplegable con un ancho
+                distinto y sin aire, y se veían amontonados. Arriba lo que se
+                elige de un clic (deporte y género: pocos valores, con fichas,
+                así se ve de un vistazo cuáles hay y cuánto pesa cada uno);
+                abajo los desplegables largos, todos del mismo ancho.
 
-              <label className="text-sm block" style={{ minWidth: 180 }}>
-                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Disciplina")}</span>
-                <StyledSelect
-                  value={ongoingDiscipline}
-                  onChange={(e) => { setOngoingDiscipline(e.target.value); setOngoingPage(0); }}
-                >
-                  <option value="">{`${t("Todas")} (${baseSinDisciplina.length})`}</option>
-                  {ongoingDisciplines.map((d) => (
-                    <option key={d.texto} value={d.texto}>{`${d.texto} (${d.total})`}</option>
-                  ))}
-                </StyledSelect>
-              </label>
+                Van con StyledSelect y no con el select nativo: el desplegable
+                del sistema operativo rompe el lenguaje visual del resto del
+                panel. */}
+            <div style={{
+              marginBottom: 14, padding: isMobile ? "12px 14px 14px" : "14px 18px 18px", borderRadius: 14,
+              background: pal.filterBg, border: `1px solid ${pal.filterBorder}`, boxShadow: pal.shadow,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 12 }}>
+                <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>
+                  {t("Filtros")}
+                </span>
+                {filtrosEnCursoActivos > 0 && (
+                  <button
+                    type="button"
+                    onClick={limpiarFiltrosEnCurso}
+                    style={{
+                      border: `1px solid ${SURFACE.border}`, borderRadius: 8, background: SURFACE.card,
+                      color: SURFACE.textMuted, padding: "6px 12px", fontSize: "12px", fontWeight: 500, cursor: "pointer",
+                    }}
+                  >
+                    {`${t("Limpiar filtros")} (${filtrosEnCursoActivos})`}
+                  </button>
+                )}
+              </div>
 
-              <label className="text-sm block" style={{ minWidth: 200 }}>
-                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Región")}</span>
-                <StyledSelect
-                  value={ongoingRegion}
-                  onChange={(e) => { setOngoingRegion(e.target.value); setOngoingPage(0); }}
-                >
-                  <option value="">{`${t("Todas")} (${baseSinRegion.length})`}</option>
-                  {ongoingRegiones.map((r) => (
-                    <option key={r.key} value={r.key}>{`${r.texto} (${r.total})`}</option>
-                  ))}
-                </StyledSelect>
-              </label>
+              <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-start", gap: "12px 32px" }}>
+                <div style={{ flex: "1 1 360px", minWidth: 0 }}>
+                  <span style={ongoingEtiquetaStyle}>{t("Disciplina")}</span>
+                  <FilterChips
+                    value={ongoingDiscipline}
+                    onChange={(v) => { setOngoingDiscipline(v); setOngoingPage(0); }}
+                    options={ongoingDisciplines.map((d) => ({ value: d.texto, label: d.texto, count: d.total }))}
+                    allLabel={t("Todas")}
+                    allCount={baseSinDisciplina.length}
+                  />
+                </div>
+                <div style={{ flex: "0 1 auto" }}>
+                  <span style={ongoingEtiquetaStyle}>{t("Género")}</span>
+                  <FilterChips
+                    value={ongoingGender}
+                    onChange={(v) => { setOngoingGender(v); setOngoingPage(0); }}
+                    options={ongoingGeneros.map((g) => ({ value: g.key, label: g.texto, count: g.total }))}
+                    allLabel={t("Todos")}
+                    allCount={baseSinGenero.length}
+                  />
+                </div>
+              </div>
 
-              <label className="text-sm block" style={{ minWidth: 200 }}>
-                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Hotel")}</span>
-                <StyledSelect
-                  value={ongoingHotel}
-                  onChange={(e) => { setOngoingHotel(e.target.value); setOngoingPage(0); }}
-                >
-                  <option value="">{`${t("Todos")} (${baseSinHotel.length})`}</option>
-                  {ongoingHoteles.map((h) => (
-                    <option key={h.texto} value={h.texto}>{`${h.texto} (${h.total})`}</option>
-                  ))}
-                </StyledSelect>
-              </label>
+              <div style={{ height: 1, background: SURFACE.borderMuted, margin: "14px 0" }} />
 
-              <label className="text-sm block" style={{ minWidth: 220 }}>
-                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Sede")}</span>
-                <StyledSelect
-                  value={ongoingVenue}
-                  onChange={(e) => { setOngoingVenue(e.target.value); setOngoingPage(0); }}
-                >
-                  <option value="">{`${t("Todas")} (${baseSinSede.length})`}</option>
-                  {ongoingSedes.map((v) => (
-                    <option key={v.texto} value={v.texto}>{`${v.texto} (${v.total})`}</option>
-                  ))}
-                </StyledSelect>
-              </label>
+              {/* Rejilla y no flex con anchos mínimos: así los cinco
+                  desplegables miden lo mismo y se reparten el ancho; en el
+                  teléfono cada uno ocupa la fila entera. */}
+              <div style={{
+                display: "grid", gap: 10,
+                gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(190px, 1fr))",
+              }}>
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={ongoingEtiquetaStyle}>{t("Jornada")}</span>
+                  <StyledSelect
+                    value={ongoingDay}
+                    onChange={(e) => { setOngoingDay(e.target.value); setOngoingPage(0); }}
+                  >
+                    <option value="">{`${t("Todas las jornadas")} (${baseSinJornada.length})`}</option>
+                    {ongoingDays.map((d) => (
+                      <option key={d.key} value={d.key}>{`${d.label} (${d.count})`}</option>
+                    ))}
+                  </StyledSelect>
+                </label>
 
-              <label className="text-sm block" style={{ minWidth: 220 }}>
-                <span className="block mb-1" style={{ fontSize: "12px", color: pal.textMuted }}>{t("Conductor")}</span>
-                <StyledSelect
-                  value={ongoingDriver}
-                  onChange={(e) => { setOngoingDriver(e.target.value); setOngoingPage(0); }}
-                >
-                  <option value="">{`${t("Todos")} (${baseSinConductor.length})`}</option>
-                  {/* Se muestra tambien cuando esta elegida aunque quede en cero: si
-                      desapareciera, el selector diria "Todos" con el filtro puesto. */}
-                  {(ongoingConductores.sinConductor > 0 || ongoingDriver === ONGOING_SIN_CONDUCTOR) && (
-                    <option value={ONGOING_SIN_CONDUCTOR}>
-                      {`${t("Sin conductor")} (${ongoingConductores.sinConductor})`}
-                    </option>
-                  )}
-                  {ongoingConductores.lista.map((c) => (
-                    <option key={c.id} value={c.id}>{`${c.texto} (${c.total})`}</option>
-                  ))}
-                </StyledSelect>
-              </label>
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={ongoingEtiquetaStyle}>{t("Región")}</span>
+                  <StyledSelect
+                    value={ongoingRegion}
+                    onChange={(e) => { setOngoingRegion(e.target.value); setOngoingPage(0); }}
+                  >
+                    <option value="">{`${t("Todas")} (${baseSinRegion.length})`}</option>
+                    {ongoingRegiones.map((r) => (
+                      <option key={r.key} value={r.key}>{`${r.texto} (${r.total})`}</option>
+                    ))}
+                  </StyledSelect>
+                </label>
 
-              {(ongoingDay || ongoingDiscipline || ongoingRegion || ongoingHotel || ongoingVenue || ongoingDriver) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOngoingDay("");
-                    setOngoingDiscipline("");
-                    setOngoingRegion("");
-                    setOngoingHotel("");
-                    setOngoingVenue("");
-                    setOngoingDriver("");
-                    setOngoingPage(0);
-                  }}
-                  style={{
-                    border: `1px solid ${SURFACE.border}`, borderRadius: 8, background: SURFACE.card,
-                    color: SURFACE.textMuted, padding: "9px 14px", fontSize: "12.5px", fontWeight: 500, cursor: "pointer",
-                  }}
-                >
-                  {t("Limpiar filtros")}
-                </button>
-              )}
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={ongoingEtiquetaStyle}>{t("Hotel")}</span>
+                  <StyledSelect
+                    value={ongoingHotel}
+                    onChange={(e) => { setOngoingHotel(e.target.value); setOngoingPage(0); }}
+                  >
+                    <option value="">{`${t("Todos")} (${baseSinHotel.length})`}</option>
+                    {ongoingHoteles.map((h) => (
+                      <option key={h.texto} value={h.texto}>{`${h.texto} (${h.total})`}</option>
+                    ))}
+                  </StyledSelect>
+                </label>
+
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={ongoingEtiquetaStyle}>{t("Sede")}</span>
+                  <StyledSelect
+                    value={ongoingVenue}
+                    onChange={(e) => { setOngoingVenue(e.target.value); setOngoingPage(0); }}
+                  >
+                    <option value="">{`${t("Todas")} (${baseSinSede.length})`}</option>
+                    {ongoingSedes.map((v) => (
+                      <option key={v.texto} value={v.texto}>{`${v.texto} (${v.total})`}</option>
+                    ))}
+                  </StyledSelect>
+                </label>
+
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={ongoingEtiquetaStyle}>{t("Conductor")}</span>
+                  <StyledSelect
+                    value={ongoingDriver}
+                    onChange={(e) => { setOngoingDriver(e.target.value); setOngoingPage(0); }}
+                  >
+                    <option value="">{`${t("Todos")} (${baseSinConductor.length})`}</option>
+                    {/* Se muestra tambien cuando esta elegida aunque quede en cero: si
+                        desapareciera, el selector diria "Todos" con el filtro puesto. */}
+                    {(ongoingConductores.sinConductor > 0 || ongoingDriver === ONGOING_SIN_CONDUCTOR) && (
+                      <option value={ONGOING_SIN_CONDUCTOR}>
+                        {`${t("Sin conductor")} (${ongoingConductores.sinConductor})`}
+                      </option>
+                    )}
+                    {ongoingConductores.lista.map((c) => (
+                      <option key={c.id} value={c.id}>{`${c.texto} (${c.total})`}</option>
+                    ))}
+                  </StyledSelect>
+                </label>
+              </div>
             </div>
 
             {/* Resultado del cruce con la planilla: números arriba, marcas en
@@ -2482,8 +2572,8 @@ export default function TripsPage() {
                             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setInfoTrip(trip); } }}
                             style={{
                               flex: 1, minWidth: 0,
-                              display: "flex", alignItems: "center", gap: 12,
-                              padding: "13px 16px", borderRadius: 14,
+                              display: "flex", alignItems: "center", gap: isMobile ? 8 : 12,
+                              padding: isMobile ? "11px 12px" : "13px 16px", borderRadius: 14,
                               border: `1px solid ${marcado ? "rgba(33,208,179,0.5)" : SURFACE.border}`,
                               borderLeft: `4px solid ${sc.accent}`,
                               background: marcado ? "rgba(33,208,179,0.06)" : SURFACE.card,
@@ -2513,7 +2603,10 @@ export default function TripsPage() {
                             </span>
 
                             <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              {/* Las etiquetas no se encogen: si no caben al
+                                  lado de la ruta, bajan de línea en vez de
+                                  salirse de la tarjeta. */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                                 <span style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", minWidth: 0 }}>
                                   {lugarDeExtremo(trip, "origin", nombreDeLugar) || t("Origen pendiente")}{" "}
                                   <span style={{ color: SURFACE.textFaint, display: "inline-flex", verticalAlign: "middle" }}><ArrowRightIcon size={12} /></span>{" "}
@@ -2764,7 +2857,7 @@ export default function TripsPage() {
                 <div style={{ borderRadius: "16px", border: `1px solid ${pal.cardBorder}`, overflow: "hidden", boxShadow: pal.shadow }}>
                   {/* Filas de 6 columnas: scroll horizontal en pantallas
                       chicas en vez de aplastarse bajo el overflow hidden. */}
-                  <div style={{ overflowX: "auto" }}>
+                  <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
                   <div style={{ minWidth: "720px" }}>
                   {completedTrips.map((trip, i) => {
                     const sc = STATUS_COLORS[trip.status ?? "COMPLETED"] ?? STATUS_COLORS.COMPLETED;
@@ -2930,14 +3023,14 @@ export default function TripsPage() {
           {/* Preview table */}
           {importRows.length > 0 && (
             <div style={{ border: `1px solid ${pal.cardBorder}`, borderRadius: "16px", overflow: "hidden", boxShadow: pal.shadow }}>
-              <div style={{ padding: "14px 18px", borderBottom: `1px solid ${pal.cardBorder}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div style={{ padding: "14px 18px", borderBottom: `1px solid ${pal.cardBorder}`, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 10 }}>
                 <p style={{ fontSize: "13px", fontWeight: 700, color: pal.textPrimary }}>{importRows.length} fila(s) detectadas</p>
                 <button type="button" onClick={runImport} disabled={importing}
                   style={{ background: BRAND.teal, border: "none", borderRadius: "99px", padding: "8px 22px", fontSize: "13px", fontWeight: 700, color: SURFACE.card, cursor: importing ? "not-allowed" : "pointer", opacity: importing ? 0.7 : 1 }}>
                   {importing ? "Importando…" : "Importar viajes"}
                 </button>
               </div>
-              <div style={{ overflowX: "auto" }}>
+              <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
                 <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
                   <thead>
                     <tr style={{ background: SURFACE.bg }}>
@@ -2976,7 +3069,7 @@ export default function TripsPage() {
       )}
 
       {showAdminEditor && activeTab === "editor" && (
-        <section id="trip-editor-section" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "24px", padding: "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
+        <section id="trip-editor-section" style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "24px", padding: isMobile ? "14px" : "24px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
           <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>{t("Gestion manual")}</p>
@@ -3101,9 +3194,9 @@ export default function TripsPage() {
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setInfoTrip(null)}>
-            <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "520px", maxHeight: "85vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "520px", maxHeight: "min(85vh, calc(100dvh - 32px))", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
               {/* Header */}
-              <div style={{ padding: "20px 24px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
+              <div style={{ padding: isMobile ? "16px 16px 12px" : "20px 24px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "12px" }}>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>{t("Detalle del viaje")}</p>
                   <p style={{ fontSize: "15px", fontWeight: 700, color: SURFACE.text, margin: 0 }}>{resolveRequester(infoTrip)}</p>
@@ -3113,12 +3206,12 @@ export default function TripsPage() {
                 </span>
               </div>
               {/* Datos */}
-              <div style={{ padding: "16px 24px", overflowY: "auto" }}>
+              <div style={{ padding: isMobile ? "14px 16px" : "16px 24px", overflowY: "auto" }}>
                 {/* De quién es el viaje, antes del mapa: al abrir un traslado
                     lo primero que se pregunta la operación es de qué región y
                     de qué deporte es el grupo que se sube. */}
                 <p style={{ ...tituloSeccion, marginTop: 0 }}>{t("Clasificación")}</p>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px", marginBottom: "14px" }}>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr 1fr 1fr", gap: "8px", marginBottom: "14px" }}>
                   {iclases.map((c) => (
                     <div
                       key={c.label}
@@ -3240,7 +3333,7 @@ export default function TripsPage() {
                 )}
               </div>
               {/* Acciones */}
-              <div style={{ padding: "14px 24px 18px", borderTop: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0, display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+              <div style={{ padding: isMobile ? "12px 16px 14px" : "14px 24px 18px", borderTop: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0, display: "flex", gap: "8px", justifyContent: "flex-end", flexWrap: "wrap" }}>
                 <button type="button" onClick={() => setInfoTrip(null)}
                   style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "99px", padding: "8px 16px", fontSize: "13px", fontWeight: 600, color: SURFACE.textMuted, cursor: "pointer" }}>
                   Cerrar
@@ -3270,14 +3363,14 @@ export default function TripsPage() {
       })()}
       {logTrip && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setLogTrip(null)}>
-          <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "480px", maxHeight: "80vh", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "480px", maxHeight: "min(80vh, calc(100dvh - 32px))", display: "flex", flexDirection: "column", boxShadow: "0 8px 40px rgba(15,23,42,0.2)" }}>
             {/* Header */}
-            <div style={{ padding: "20px 24px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0 }}>
+            <div style={{ padding: isMobile ? "16px 16px 12px" : "20px 24px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0 }}>
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: BRAND.teal, margin: "0 0 4px" }}>Bitácora del viaje</p>
               <p style={{ fontSize: "14px", fontWeight: 600, color: SURFACE.text, margin: 0 }}>{resolveRequester(logTrip)} → {logTrip.destination || "Sin destino"}</p>
             </div>
             {/* Log entries */}
-            <div style={{ flex: 1, overflowY: "auto", padding: "16px 24px" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: isMobile ? "14px 16px" : "16px 24px" }}>
               {(() => {
                 const log = Array.isArray((logTrip.metadata as any)?.log) ? (logTrip.metadata as any).log as { action: string; by: string; at: string; detail?: string }[] : [];
                 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
@@ -3376,7 +3469,7 @@ export default function TripsPage() {
               })()}
             </div>
             {/* Footer */}
-            <div style={{ padding: "12px 24px", borderTop: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0, textAlign: "center" }}>
+            <div style={{ padding: isMobile ? "12px 16px" : "12px 24px", borderTop: `1px solid ${SURFACE.borderMuted}`, flexShrink: 0, textAlign: "center" }}>
               <button type="button" onClick={() => setLogTrip(null)}
                 style={{ padding: "10px 32px", borderRadius: "12px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 10px rgba(33,208,179,0.3)" }}>
                 Cerrar
@@ -3403,7 +3496,9 @@ export default function TripsPage() {
             padding: "10px 12px 10px 18px",
             background: SURFACE.card,
             border: `1px solid ${SURFACE.border}`,
-            borderRadius: "999px",
+            // En el teléfono los botones bajan de línea y la píldora recorta
+            // las esquinas del contenido: ahí va con esquinas redondeadas.
+            borderRadius: isMobile ? "20px" : "999px",
             boxShadow: "0 14px 38px rgba(15,23,42,0.26)",
             maxWidth: "calc(100vw - 32px)",
             flexWrap: "wrap",
@@ -3462,6 +3557,7 @@ export default function TripsPage() {
             border: `1px solid ${SURFACE.border}`, borderRadius: "999px",
             boxShadow: "0 14px 38px rgba(15,23,42,0.26)", fontSize: 13, fontWeight: 600,
             color: SURFACE.textSecondary, display: "flex", alignItems: "center", gap: 12,
+            maxWidth: "calc(100vw - 32px)",
           }}
         >
           {bulkNotice}

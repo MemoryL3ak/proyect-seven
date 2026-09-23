@@ -13,6 +13,8 @@ type FilterChipsProps = {
   value: string;
   onChange: (v: string) => void;
   allLabel?: string;
+  /** Cuenta de la ficha "Todos", cuando las demás también la traen. */
+  allCount?: number;
 };
 
 export default function FilterChips({
@@ -20,8 +22,9 @@ export default function FilterChips({
   value,
   onChange,
   allLabel = "Todos",
+  allCount,
 }: FilterChipsProps) {
-  const fullOptions: Option[] = [{ value: "", label: allLabel }, ...options];
+  const fullOptions: Option[] = [{ value: "", label: allLabel, count: allCount }, ...options];
   return (
     <div className="flex flex-wrap gap-2">
       {fullOptions.map((o) => {
