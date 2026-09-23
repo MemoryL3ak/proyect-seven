@@ -11,6 +11,7 @@ import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import SelectorFiltro from "@/components/portal/SelectorFiltro";
 import { mapaDeLugares, tocaLugar } from "@/lib/lugares";
 import { openExternal, whatsappHref } from "@/lib/external-link";
+import { legTypeShort } from "@/lib/tripTypes";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -31,6 +32,8 @@ export type MissionTrip = {
   originFoodLocationId?: string | null;
   destinationFoodLocationId?: string | null;
   scheduledAt?: string | null;
+  /** OUTBOUND (ida) o RETURN (regreso). */
+  legType?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
   discipline?: string | null;
@@ -459,6 +462,10 @@ export default function MissionTrips({
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
                   <span style={chip(st.bg, st.color)}>{t(st.label)}</span>
+                  {/* Ida o regreso: la planilla trae cada tramo como viaje aparte. */}
+                  {legTypeShort(tr.legType) && (
+                    <span style={chip(SURFACE.borderMuted, SURFACE.textSecondary)}>{t(legTypeShort(tr.legType))}</span>
+                  )}
                   {disciplina && <span style={chip("rgba(33,208,179,0.12)", BRAND.tealInk)}>{disciplina}</span>}
                   <span style={{ marginLeft: "auto", display: "flex", color: SURFACE.textFaint, transform: abiertaEsta ? "rotate(180deg)" : "none", transition: "transform 150ms ease" }}>
                     <ChevronDownIcon size={14} strokeWidth={2.2} />

@@ -7,6 +7,7 @@ import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { horaEvento } from "@/lib/hora-evento";
 import { mapaDeLugares } from "@/lib/lugares";
+import { legTypeShort } from "@/lib/tripTypes";
 import type { MissionTrip } from "@/components/portal/MissionTrips";
 
 /**
@@ -214,6 +215,11 @@ export default function MissionLiveTrips({
                 >
                   {t(st.label)}
                 </span>
+                {legTypeShort(tr.legType) && (
+                  <span style={{ ...{ display: "inline-block", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: SURFACE.borderMuted, color: SURFACE.textSecondary }, marginBottom: 3, marginLeft: 4 }}>
+                    {t(legTypeShort(tr.legType))}
+                  </span>
+                )}
                 <p
                   style={{
                     fontSize: 12.5,

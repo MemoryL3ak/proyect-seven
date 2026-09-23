@@ -49,3 +49,11 @@ export function legTypeLabel(value?: string | null): string {
   if (code === "RETURN" || code === "RETORNO" || code === "REGRESO") return "Tramo de regreso";
   return "";
 }
+
+/** "Ida" / "Regreso": la versión de una palabra, para un chip en la tarjeta. */
+export function legTypeShort(value?: string | null): string {
+  const code = String(value || "").trim().toUpperCase();
+  if (code === "OUTBOUND" || code === "IDA") return "Ida";
+  if (code === "RETURN" || code === "RETORNO" || code === "REGRESO") return "Regreso";
+  return "";
+}

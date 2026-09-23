@@ -9,6 +9,7 @@ import { openExternal, whatsappHref } from "@/lib/external-link";
 import { useI18n } from "@/lib/i18n";
 import { claveDiaEvento, fechaHoraEvento, horaEvento, horaSegundosEvento } from "@/lib/hora-evento";
 import { mapaDeLugares } from "@/lib/lugares";
+import { legTypeShort } from "@/lib/tripTypes";
 import type { MissionTrip } from "@/components/portal/MissionTrips";
 
 /**
@@ -252,6 +253,9 @@ export default function MissionFleet({
             <div key={tr.id} style={{ background: SURFACE.card, borderRadius: 12, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${STATE.success}`, padding: "10px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: STATE.successSoft, color: STATE.successText }}>{estado}</span>
+                {legTypeShort(tr.legType) && (
+                  <span style={{ display: "inline-block", padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: SURFACE.borderMuted, color: SURFACE.textSecondary }}>{t(legTypeShort(tr.legType))}</span>
+                )}
                 <span style={{ fontSize: 11.5, color: SURFACE.textMuted }}>{horaEvento(tr.scheduledAt)}</span>
               </div>
               <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: "4px 0 0" }}>
