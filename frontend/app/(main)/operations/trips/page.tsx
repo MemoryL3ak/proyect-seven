@@ -24,6 +24,7 @@ import {
   PenLineIcon,
   AlertIcon,
   UploadIcon,
+  DownloadIcon,
   PinIcon,
   TruckIcon,
   UsersIcon,
@@ -1197,6 +1198,72 @@ export default function TripsPage() {
 
   const statusTone = (status?: string | null) => STATUS_TONES[status || ""] || STATUS_TONES.SCHEDULED;
 
+  /**
+   * Excel con todos los viajes cargados y todo lo que se sabe de cada uno,
+   * una fila por viaje. Los regresos vienen anidados bajo su ida, así que se
+   * sueltan como filas propias con la ida en su columna. Los códigos van
+   * traducidos (estado, tipo de viaje, conductor, vehículo, lugares) para que
+   * la planilla se lea sin el panel. Sale de la lista completa, no de la
+   * vista filtrada: es el respaldo de la operación, no un recorte.
+   */
+  const exportarViajesExcel = () => {
+    const fechaHora = (value?: string | null) => (value ? formatDateTime(value) : "");
+    const evento = (trip: Trip) => (trip.eventId ? events[trip.eventId]?.name ?? trip.eventId : "");
+    const region = (trip: Trip) => {
+      if (trip.allDelegations) return t("Todas las regiones");
+      const porViaje = delegationLabel(trip.delegationId ? delegations[trip.delegationId] : null);
+      if (porViaje) return porViaje;
+      const porPasajeros = resolveDelegation(trip);
+      return porPasajeros === "-" ? "" : porPasajeros;
+    };
+    const conductor = (trip: Trip) => (trip.driverId ? drivers[trip.driverId]?.fullName ?? "" : "");
+    const vehiculo = (trip: Trip) => {
+      const texto = resolveVehicle(trip);
+      return texto === t("Por asignar") ? "" : texto;
+    };
+    const fila = (trip: Trip, ida?: Trip) => ({
+      [t("ID")]: trip.id,
+      [t("Evento")]: evento(trip),
+      [t("Fecha salida")]: fechaHora(trip.scheduledAt),
+      [t("Presentación conductor")]: fechaHora(trip.presentationAt),
+      [t("Regreso")]: fechaHora(trip.returnAt),
+      [t("Estado")]: t(statusTone(trip.status).label),
+      [t("Tramo")]: legTypeLabel(trip.legType),
+      [t("Ida y vuelta")]: trip.isRoundTrip || ida ? t("Sí") : t("No"),
+      [t("Viaje de ida")]: ida?.id ?? "",
+      [t("Origen")]: lugarDeExtremo(trip, "origin", nombreDeLugar),
+      [t("Destino")]: lugarDeExtremo(trip, "destination", nombreDeLugar),
+      [t("Región")]: region(trip),
+      [t("Disciplina")]: trip.discipline ?? "",
+      [t("Actividad")]: trip.activity ?? "",
+      [t("Tipo de viaje")]: tripTypeLabel(trip.tripType),
+      [t("Tipo de cliente")]: trip.clientType ? t(clientTypeLabel(trip.clientType)) : "",
+      [t("Solicitante")]: resolveRequester(trip),
+      [t("Participantes")]: (trip.athleteNames ?? []).join(", "),
+      [t("Pasajeros")]: trip.passengerCount ?? "",
+      [t("Sillas de ruedas")]: trip.wheelchairCount ?? "",
+      [t("Conductor")]: conductor(trip),
+      [t("Vehículo")]: vehiculo(trip),
+      [t("Vehículo pedido")]: trip.requestedVehicleType ? resolveRequestedVehicleType(trip) : "",
+      [t("Flota")]: trip.fleetAcronym ?? "",
+      [t("Duración estimada (min)")]: trip.travelTimeMinutes ?? "",
+      [t("Vuelo")]: trip.flightNumber ?? "",
+      [t("Valor")]: trip.tripCost ?? "",
+      [t("Validado comité")]: trip.committeeValidated ? t("Sí") : t("No"),
+      [t("Solicitado")]: fechaHora(trip.requestedAt),
+      [t("Inicio real")]: fechaHora(trip.startedAt),
+      [t("Término")]: fechaHora(trip.completedAt),
+      [t("Notas")]: trip.notes ?? "",
+    });
+    const filas = [...trips]
+      .sort((a, b) => new Date(a.scheduledAt || 0).getTime() - new Date(b.scheduledAt || 0).getTime())
+      .flatMap((trip) => [fila(trip), ...(trip.childTrips ?? []).map((child) => fila(child, trip))]);
+    const hoja = XLSX.utils.json_to_sheet(filas);
+    const libro = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(libro, hoja, t("Viajes"));
+    XLSX.writeFile(libro, `viajes_${isoDayKeyLocal(new Date().toISOString())}.xlsx`);
+  };
+
   const summaryCards = [
     { label: t("Solicitudes en cola"), value: kpis.requested },
     { label: t("Programados"), value: kpis.scheduled },
@@ -1875,6 +1942,21 @@ export default function TripsPage() {
               }}
             >
               <UploadIcon size={14} className="inline mr-1" />Importar
+            </button>
+            <button
+              type="button"
+              onClick={exportarViajesExcel}
+              disabled={trips.length === 0}
+              title={t("Descarga todos los viajes con su información en Excel")}
+              className="inline-flex items-center gap-1 text-xs font-bold rounded-lg"
+              style={{
+                padding: "7px 14px",
+                background: SURFACE.card, color: SURFACE.textSecondary,
+                border: `1px solid ${SURFACE.borderStrong}`, cursor: trips.length === 0 ? "not-allowed" : "pointer",
+                opacity: trips.length === 0 ? 0.6 : 1,
+              }}
+            >
+              <DownloadIcon size={14} className="inline mr-1" />{t("Exportar Excel")}
             </button>
           </div>
         </div>
