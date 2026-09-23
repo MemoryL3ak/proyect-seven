@@ -27,3 +27,18 @@ update transport.trips
        end
  where status in ('EN_ROUTE', 'PICKED_UP', 'DROPPED_OFF', 'COMPLETED')
    and (started_at is null or (status in ('DROPPED_OFF', 'COMPLETED') and completed_at is null));
+
+-- 3. Viajes en marcha que conservan marcas de un intento anterior: se
+-- iniciaron y cerraron por error, volvieron a Programado con las marcas
+-- puestas y al salir "En ruta" de nuevo la jornada contaba desde el intento
+-- viejo (Ernesto Stuardo: inicio 22-09 18:55, en ruta el 23-09 11:40). El
+-- inicio pasa a ser la última modificación (cuando salió) y el cierre se borra.
+select id, driver_id, status, scheduled_at, started_at, completed_at, updated_at
+  from transport.trips
+ where status in ('EN_ROUTE', 'PICKED_UP')
+   and (completed_at is not null or started_at < scheduled_at - interval '6 hours');
+
+update transport.trips
+   set started_at = updated_at, completed_at = null
+ where status in ('EN_ROUTE', 'PICKED_UP')
+   and (completed_at is not null or started_at < scheduled_at - interval '6 hours');
