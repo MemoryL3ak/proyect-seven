@@ -3000,13 +3000,25 @@ export default function TripsPage() {
       {infoTrip && (() => {
         const isc = STATUS_COLORS[infoTrip.status ?? ""] ?? STATUS_COLORS.SCHEDULED;
         const itone = statusTone(infoTrip.status);
-        const ivenue = infoTrip.destinationVenueId ? venues[infoTrip.destinationVenueId] : null;
-        const icomedor = infoTrip.destinationFoodLocationId
-          ? comedores.find((c) => c.id === infoTrip.destinationFoodLocationId)?.name ?? null
-          : null;
-        const idestino = ivenue
-          ? buildVenueAddress(ivenue)
-          : icomedor ?? safeText(infoTrip.destination, "Destino pendiente");
+        // Cada extremo con el nombre del lugar (sede, hotel o comedor) y su
+        // dirección debajo. Antes el destino vinculado a una sede mostraba
+        // la dirección completa en vez del nombre, y "Fco. González de
+        // Hontaneda 11, Playa Ancha…" no le dice a nadie que es la Escuela
+        // Naval.
+        const catalogosLugar = { venues, hoteles, comedores };
+        const extremo = (lado: "origin" | "destination") => {
+          const ids =
+            lado === "origin"
+              ? { venueId: infoTrip.originVenueId, hotelId: infoTrip.originHotelId, foodLocationId: infoTrip.originFoodLocationId }
+              : { venueId: infoTrip.destinationVenueId, hotelId: infoTrip.destinationHotelId, foodLocationId: infoTrip.destinationFoodLocationId };
+          const texto = lado === "origin" ? infoTrip.origin : infoTrip.destination;
+          const nombre = lugarDeExtremo(infoTrip, lado, nombreDeLugar) || safeText(texto, lado === "origin" ? "Origen pendiente" : "Destino pendiente");
+          const direccion = direccionParaMapa(ids, texto, catalogosLugar);
+          return { nombre, direccion: direccion && direccion !== nombre ? direccion : null };
+        };
+        const iorigen = extremo("origin");
+        const idestino = extremo("destination").nombre;
+        const idestinoDireccion = extremo("destination").direccion;
         // Región y disciplina salen del viaje mismo: en los Juegos Escolares el
         // traslado se asigna a la delegación (región) + deporte y no a una
         // persona. Si el viaje no las trae cargadas, se deducen de los
@@ -3177,11 +3189,13 @@ export default function TripsPage() {
                   <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: "10px" }}>
                     <div>
                       <p style={microEtiqueta}>{t("Origen")}</p>
-                      <p style={valorTexto}>{safeText(infoTrip.origin, "Origen pendiente")}</p>
+                      <p style={valorTexto}>{iorigen.nombre}</p>
+                      {iorigen.direccion && <p style={{ fontSize: "11.5px", color: SURFACE.textMuted, margin: "2px 0 0" }}>{iorigen.direccion}</p>}
                     </div>
                     <div>
                       <p style={microEtiqueta}>{t("Destino")}</p>
                       <p style={valorTexto}>{idestino}</p>
+                      {idestinoDireccion && <p style={{ fontSize: "11.5px", color: SURFACE.textMuted, margin: "2px 0 0" }}>{idestinoDireccion}</p>}
                     </div>
                   </div>
                 </div>
