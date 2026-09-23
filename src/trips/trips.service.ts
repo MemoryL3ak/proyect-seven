@@ -698,6 +698,9 @@ export class TripsService {
 
     if (createTripDto.isRoundTrip) {
       row.leg_type = 'OUTBOUND';
+      // La ida también guarda la hora de regreso (igual que la planilla), así
+      // el editor y la exportación la leen sin buscar el tramo hijo.
+      row.return_at = returnScheduledAt ?? null;
     }
 
     // Auto-assign cost from provider rates
@@ -1021,6 +1024,15 @@ export class TripsService {
       await this.setTripAthletes(id, updateTripDto.athleteIds);
     }
 
+    if (!esTramoRegreso) {
+      await this.sincronizarRegreso(
+        data as TripRow,
+        currentTrip,
+        updateTripDto,
+        quiereRegreso,
+      );
+    }
+
     // Destinatarios pasajeros: el solicitante del portal (VIP) y TODOS los
     // pasajeros del viaje. Los viajes de la operatividad diaria (TA, TF, …)
     // no tienen requester_athlete_id — sus pasajeros viven en trip_athletes,
@@ -1096,6 +1108,116 @@ export class TripsService {
     }
 
     return this.findOne(id);
+  }
+
+  /**
+   * Mantiene el tramo de regreso cuando se edita la ida. Antes la fecha de
+   * regreso sólo se tomaba al crear: editar un viaje de ida y vuelta no movía
+   * el regreso, y pasar un viaje de "Solo ida" a "Ida y vuelta" no creaba el
+   * tramo. Al revés, dejar un viaje en "Solo ida" borra el regreso si todavía
+   * no salió (Solicitado / Programado); si ya está en ruta se conserva.
+   */
+  private async sincronizarRegreso(
+    ida: TripRow,
+    antes: Trip & { athleteIds?: string[] },
+    dto: UpdateTripDto,
+    quiereRegreso: boolean,
+  ) {
+    const { data: hijos } = await this.supabase
+      .schema('transport')
+      .from('trips')
+      .select('*')
+      .eq('parent_trip_id', ida.id);
+    const tramos = (hijos ?? []) as TripRow[];
+    const regreso = tramos.find((h) => h.leg_type === 'RETURN') ?? tramos[0];
+
+    if (!quiereRegreso) {
+      if (
+        regreso &&
+        dto.isRoundTrip === false &&
+        ['REQUESTED', 'SCHEDULED'].includes(regreso.status)
+      ) {
+        await this.supabase
+          .schema('transport')
+          .from('trips')
+          .delete()
+          .eq('id', regreso.id);
+      }
+      return;
+    }
+
+    if (regreso) {
+      const cambios: Record<string, unknown> = {};
+      if (dto.returnScheduledAt !== undefined) {
+        cambios.scheduled_at = dto.returnScheduledAt || null;
+      }
+      if (dto.returnOrigin !== undefined) cambios.origin = dto.returnOrigin ?? null;
+      if (dto.returnDestination !== undefined) {
+        cambios.destination = dto.returnDestination ?? null;
+      }
+      if (dto.returnDestinationVenueId !== undefined) {
+        cambios.destination_venue_id = dto.returnDestinationVenueId || null;
+      }
+      // Lo que describe al grupo viaja igual en los dos tramos.
+      if (dto.passengerCount !== undefined) cambios.passenger_count = dto.passengerCount ?? null;
+      if (dto.requestedVehicleType !== undefined) {
+        cambios.requested_vehicle_type = dto.requestedVehicleType ?? null;
+      }
+      if (dto.clientType !== undefined) cambios.client_type = dto.clientType ?? null;
+      if (dto.delegationId !== undefined) cambios.delegation_id = dto.delegationId || null;
+      if (dto.disciplineId !== undefined) cambios.discipline_id = dto.disciplineId || null;
+      if (dto.allDelegations !== undefined) cambios.all_delegations = dto.allDelegations ?? false;
+      if (Object.keys(cambios).length > 0) {
+        const { error } = await this.supabase
+          .schema('transport')
+          .from('trips')
+          .update(cambios)
+          .eq('id', regreso.id);
+        if (error) {
+          throw new InternalServerErrorException(
+            error.message || 'Error updating return trip',
+          );
+        }
+      }
+      if (dto.athleteIds) {
+        await this.setTripAthletes(regreso.id, dto.athleteIds);
+      }
+      return;
+    }
+
+    // No había regreso: se crea como en create(), al revés de la ida.
+    const returnRow = this.toRow({
+      eventId: ida.event_id,
+      requesterAthleteId: ida.requester_athlete_id ?? undefined,
+      requestedVehicleType: ida.requested_vehicle_type ?? undefined,
+      passengerCount: ida.passenger_count ?? undefined,
+      tripType: ida.trip_type ?? undefined,
+      clientType: ida.client_type ?? undefined,
+      notes: ida.notes ?? undefined,
+      origin: dto.returnOrigin || ida.destination || undefined,
+      destination: dto.returnDestination || ida.origin || undefined,
+      originVenueId: ida.destination_venue_id ?? undefined,
+      originHotelId: ida.destination_hotel_id ?? undefined,
+      originFoodLocationId: ida.destination_food_location_id ?? undefined,
+      destinationVenueId: dto.returnDestinationVenueId || ida.origin_venue_id || undefined,
+      destinationHotelId: ida.origin_hotel_id ?? undefined,
+      destinationFoodLocationId: ida.origin_food_location_id ?? undefined,
+      delegationId: ida.delegation_id ?? undefined,
+      disciplineId: ida.discipline_id ?? undefined,
+      allDelegations: ida.all_delegations ?? undefined,
+      scheduledAt: dto.returnScheduledAt ?? ida.return_at ?? undefined,
+      requestedAt: ida.requested_at ?? undefined,
+    });
+    returnRow.status = 'REQUESTED';
+    returnRow.is_round_trip = true;
+    returnRow.parent_trip_id = ida.id;
+    returnRow.leg_type = 'RETURN';
+
+    const creado = await this.insertTrip(returnRow);
+    const pasajeros = dto.athleteIds ?? antes.athleteIds;
+    if (pasajeros && pasajeros.length > 0) {
+      await this.setTripAthletes(creado.id, pasajeros);
+    }
   }
 
   async remove(id: string) {
