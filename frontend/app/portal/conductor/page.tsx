@@ -968,7 +968,9 @@ export default function DriverPortalPage() {
     setError(null);
     try {
       const payload: Record<string, string> = { status };
-      if (status === "PICKED_UP") {
+      // La jornada arranca al salir "En ruta", no al subir el pasajero; y un
+      // inicio ya marcado no se pisa con la hora del siguiente paso.
+      if ((status === "EN_ROUTE" || status === "PICKED_UP") && !getTripById(tripId)?.startedAt) {
         payload.startedAt = new Date().toISOString();
       }
       if (status === "DROPPED_OFF" || status === "COMPLETED") {

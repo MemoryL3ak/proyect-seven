@@ -81,6 +81,7 @@ type Trip = {
   scheduledAt?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
+  updatedAt?: string | null;
   driverRating?: number | null;
   requestedVehicleType?: string | null;
   requesterAthleteId?: string | null;

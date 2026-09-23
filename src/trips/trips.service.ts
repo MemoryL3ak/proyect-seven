@@ -15,7 +15,7 @@ import { Trip } from './entities/trip.entity';
 import { TripMessage } from './entities/trip-message.entity';
 import { ProviderRate } from '../providers/entities/provider-rate.entity';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
-import { retrocedeASinIniciar } from './estado-viaje';
+import { marcasAlCambiarEstado, retrocedeASinIniciar } from './estado-viaje';
 
 type TripRow = {
   id: string;
@@ -979,6 +979,20 @@ export class TripsService {
       if (updateTripDto.startedAt === undefined) row.started_at = null;
       if (updateTripDto.completedAt === undefined) row.completed_at = null;
     }
+    // Al salir "En ruta" queda el inicio, y al cerrar queda el cierre, aunque
+    // quien cambie el estado no los mande (el panel no los manda nunca, y el
+    // portal sólo marcaba el inicio al subir el pasajero). El control de
+    // jornada cuenta desde ese inicio.
+    Object.assign(
+      row,
+      marcasAlCambiarEstado(
+        currentTrip.status,
+        row.status as string | undefined,
+        { startedAt: currentTrip.startedAt, completedAt: currentTrip.completedAt },
+        { startedAt: updateTripDto.startedAt, completedAt: updateTripDto.completedAt },
+        new Date(),
+      ),
+    );
 
     // Ida y vuelta al editar: la ida guarda la hora de regreso y se marca como
     // tramo de ida; el tramo hijo se crea o se mueve más abajo, ya guardada
