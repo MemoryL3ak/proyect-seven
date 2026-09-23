@@ -269,6 +269,9 @@ export default function VehiclePositionsPage() {
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   const [detailTrip, setDetailTrip] = useState<Trip | null>(null);
   const [detailPositions, setDetailPositions] = useState<TrailPoint[]>([]);
+  // Km del trazado por calles que dibuja el mapa; hasta que llega, la suma
+  // recta entre fijos.
+  const [detailRouteKm, setDetailRouteKm] = useState<number | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [routeExpanded, setRouteExpanded] = useState(false);
   const [tableSearch, setTableSearch] = useState("");
@@ -1052,6 +1055,7 @@ export default function VehiclePositionsPage() {
   const openTripDetail = async (trip: Trip) => {
     setDetailTrip(trip);
     setDetailPositions([]);
+    setDetailRouteKm(null);
     setDetailLoading(true);
     try {
       const rows = await apiFetch<
@@ -1589,7 +1593,7 @@ export default function VehiclePositionsPage() {
         const vehicle = trip.vehicleId ? vehicles[trip.vehicleId] : null;
         const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
         const event = trip.eventId ? events[trip.eventId] : null;
-        const km = detailPositions.length >= 2 ? routeKmFromPts(detailPositions) : null;
+        const km = detailRouteKm ?? (detailPositions.length >= 2 ? routeKmFromPts(detailPositions) : null);
         const hasGps = detailPositions.length >= 2;
         const pax = trip.athleteIds?.length || trip.passengerCount || 0;
         // Pasajero(s): el solicitante del portal (requester) y/o los participantes vinculados.
@@ -1600,7 +1604,7 @@ export default function VehiclePositionsPage() {
             : (trip.athleteIds || []).map((id) => athletes[id]?.fullName).filter((n): n is string => Boolean(n))),
         ]));
         const sc = STATUS_COLORS[trip.status ?? "COMPLETED"] ?? STATUS_COLORS.COMPLETED;
-        const close = () => { setDetailTrip(null); setDetailPositions([]); setRouteExpanded(false); };
+        const close = () => { setDetailTrip(null); setDetailPositions([]); setDetailRouteKm(null); setRouteExpanded(false); };
         const stat = (label: string, value: string, color = SURFACE.text) => (
           <div style={{ padding: "12px 8px", borderRadius: "14px", background: SURFACE.bg, border: `1px solid ${SURFACE.borderMuted}`, textAlign: "center" }}>
             <p style={{ fontSize: "9px", fontWeight: 700, color: SURFACE.textFaint, margin: 0, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
@@ -1641,7 +1645,7 @@ export default function VehiclePositionsPage() {
                   return (
                     <div style={{ borderRadius: "14px", overflow: "hidden", border: `1px solid ${SURFACE.border}`, background: SURFACE.borderMuted, position: "relative" }}>
                       {hasGps ? (
-                        <TripRouteMap points={detailPositions} height={isMobile ? 300 : 460} />
+                        <TripRouteMap points={detailPositions} height={isMobile ? 300 : 460} cacheKey={trip.id} onDistancia={setDetailRouteKm} />
                       ) : dirEmbed ? (
                         <iframe title={`route-${trip.id}`} src={dirEmbed} style={{ width: "100%", height: isMobile ? 300 : 460, border: "none", display: "block" }} loading="lazy" />
                       ) : (
@@ -1742,7 +1746,7 @@ export default function VehiclePositionsPage() {
                   </div>
                   {hasGps ? (
                     <div style={{ flex: 1, minHeight: 0 }}>
-                      <TripRouteMap points={detailPositions} height="100%" />
+                      <TripRouteMap points={detailPositions} height="100%" cacheKey={trip.id} onDistancia={setDetailRouteKm} />
                     </div>
                   ) : dirEmbed ? (
                     <iframe title={`route-full-${trip.id}`} src={dirEmbed} style={{ flex: 1, width: "100%", border: "none" }} loading="lazy" />

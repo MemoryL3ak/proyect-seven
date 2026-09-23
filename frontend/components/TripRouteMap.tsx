@@ -4,20 +4,32 @@
 // Reemplaza a la imagen de Static Maps del detalle de "Todos los viajes":
 // dibuja la polilínea del breadcrumb con marcadores A/B y ajusta el
 // encuadre a la ruta. Permite zoom/arrastre como cualquier mapa real.
+//
+// Los fijos se muestran de inmediato como línea tenue; encima se dibuja el
+// trazado por calles de cada tramo (lib/ruta-realizada) cuando llega. Antes
+// sólo se unían los fijos con rectas, y con fijos a kilómetros la "ruta"
+// cruzaba cerros y mar.
 
 import { useEffect, useRef, useState } from "react";
 import { loadGoogleMaps, splitTrail, type LatLng, type TrailPoint } from "@/lib/google-maps";
+import { trazarPorCalles } from "@/lib/ruta-realizada";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 
 type Props = {
   points: TrailPoint[];
   height?: number | string;
+  /** Identifica el viaje: el trazado por calles se guarda en el navegador y no se vuelve a pedir. */
+  cacheKey?: string;
+  /** Kilómetros del trazado dibujado (por calles cuando se pudo), al terminar. */
+  onDistancia?: (km: number) => void;
 };
 
-export default function TripRouteMap({ points, height = 460 }: Props) {
+export default function TripRouteMap({ points, height = 460, cacheKey, onDistancia }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<any>(null);
   const overlaysRef = useRef<any[]>([]);
+  const onDistanciaRef = useRef(onDistancia);
+  onDistanciaRef.current = onDistancia;
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -54,18 +66,16 @@ export default function TripRouteMap({ points, height = 460 }: Props) {
 
       // Una polilínea por tramo: los saltos que el auto no pudo haber hecho
       // quedan como un hueco, no como una recta cruzando la ciudad.
-      const lines = splitTrail(points)
-        .filter((segment) => segment.length >= 2)
-        .map(
-          (segment) =>
-            new google.maps.Polyline({
-              path: segment,
-              strokeColor: BRAND.teal,
-              strokeOpacity: 0.95,
-              strokeWeight: 5,
-              map,
-            }),
-        );
+      const segments = splitTrail(points).filter((segment) => segment.length >= 2);
+      const linea = (path: LatLng[], tenue: boolean) =>
+        new google.maps.Polyline({
+          path,
+          strokeColor: BRAND.teal,
+          strokeOpacity: tenue ? 0.3 : 0.95,
+          strokeWeight: tenue ? 3 : 5,
+          map,
+        });
+      const crudas = segments.map((segment) => linea(segment, true));
       const marker = (position: LatLng, label: string, color: string) =>
         new google.maps.Marker({
           position,
@@ -83,7 +93,7 @@ export default function TripRouteMap({ points, height = 460 }: Props) {
       // A y B siguen siendo el primer y el último fijo del viaje: el hueco
       // está en el medio, no en los extremos.
       overlaysRef.current = [
-        ...lines,
+        ...crudas,
         marker(points[0], "A", BRAND.teal),
         marker(points[points.length - 1], "B", STATE.danger),
       ];
@@ -91,11 +101,32 @@ export default function TripRouteMap({ points, height = 460 }: Props) {
       const bounds = new google.maps.LatLngBounds();
       points.forEach((p) => bounds.extend(p));
       map.fitBounds(bounds, 48);
+
+      // Trazado por calles, tramo a tramo. Cada uno reemplaza su línea tenue
+      // apenas llega; al final se informa el largo real del dibujo.
+      let metros = 0;
+      for (let i = 0; i < segments.length; i++) {
+        const segment = segments[i];
+        const clave = cacheKey ? `${cacheKey}@${segment[0].ts}#${segment.length}` : undefined;
+        const trazado = await trazarPorCalles(segment, clave);
+        if (cancelled) return;
+        metros += trazado.metros;
+        if (!trazado.ajustado) {
+          crudas[i].setOptions({ strokeOpacity: 0.95, strokeWeight: 5 });
+          continue;
+        }
+        crudas[i].setMap(null);
+        const ajustada = linea(trazado.path, false);
+        overlaysRef.current.push(ajustada);
+        trazado.path.forEach((p) => bounds.extend(p));
+      }
+      map.fitBounds(bounds, 48);
+      onDistanciaRef.current?.(metros / 1000);
     })();
     return () => {
       cancelled = true;
     };
-  }, [points]);
+  }, [points, cacheKey]);
 
   if (failed) {
     return (
