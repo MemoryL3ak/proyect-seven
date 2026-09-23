@@ -51,6 +51,8 @@ type Props = {
   selectedTripId?: string | null;
   /** Clic en un auto del mapa: selecciona (o deselecciona) ese conductor. */
   onSelect?: (tripId: string | null) => void;
+  /** Sin burbuja al tocar el auto (la tarjeta ya dice chofer y patente). */
+  sinBurbuja?: boolean;
 };
 
 function getInitials(name: string): string {
@@ -110,6 +112,7 @@ export default function LiveTrackingMap({
   height = 560,
   selectedTripId,
   onSelect,
+  sinBurbuja = false,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   // El listener de clic se registra una sola vez al crear el marcador; la
@@ -293,6 +296,9 @@ export default function LiveTrackingMap({
               <div style="margin-top:6px;font-size:10px;color:#94a3b8;">GPS ${m.gpsTime}</div>
             </div>
           `;
+          // En la tarjeta del portal la burbuja tapaba al bus y corría el
+          // mapa; chofer y patente ya están escritos arriba del mapa.
+          if (sinBurbuja) return;
           infoWindowRef.current.setContent(html);
           infoWindowRef.current.open(mapRef.current, marker);
         });

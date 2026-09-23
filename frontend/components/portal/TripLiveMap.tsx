@@ -46,7 +46,7 @@ export default function TripLiveMap({
   vehiclePlate,
   origin,
   destination,
-  height = 200,
+  height = 300,
 }: {
   tripId: string;
   status?: string | null;
@@ -88,12 +88,19 @@ export default function TripLiveMap({
   );
 
   if (!fix) {
+    // Sin ninguna posición del chofer no hay bus que dibujar: se muestra la
+    // ruta planificada y se dice por qué, para que el jefe no busque un
+    // marcador que no está.
     return (
       <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
         <div style={{ borderRadius: 10, overflow: "hidden" }}>
-          <TripMap origin={origin} destination={destination} height={170} />
+          <TripMap origin={origin} destination={destination} height={height} />
         </div>
-        {nota(fallo ? t("No se pudo leer la posición del bus.") : t("Esperando la señal del conductor…"))}
+        <p style={{ fontSize: 11.5, fontWeight: 600, color: fallo ? STATE.danger : STATE.warningText, margin: 0 }}>
+          {fallo
+            ? t("No se pudo leer la posición del bus.")
+            : t("El conductor no ha enviado ninguna posición todavía: el bus aparece cuando su app transmita el GPS.")}
+        </p>
       </div>
     );
   }
@@ -107,6 +114,7 @@ export default function TripLiveMap({
         <LiveTrackingMap
           height={height}
           selectedTripId={tripId}
+          sinBurbuja
           markers={[
             {
               tripId,
@@ -124,10 +132,13 @@ export default function TripLiveMap({
           ]}
         />
       </div>
-      {nota(
-        conSenal
-          ? `${t("En vivo")} · ${t("última señal")} ${horaEvento(fix.timestamp)}`
-          : `${t("Sin señal hace")} ${Math.round(edadS / 60)} min · ${t("última")} ${horaEvento(fix.timestamp)}`,
+      {conSenal ? (
+        nota(`${t("En vivo")} · ${t("última señal")} ${horaEvento(fix.timestamp)}`)
+      ) : (
+        <p style={{ fontSize: 11.5, fontWeight: 600, color: STATE.danger, margin: 0 }}>
+          {t("Sin señal hace")} {Math.round(edadS / 60)} min · {t("última")} {horaEvento(fix.timestamp)} ·{" "}
+          {t("el bus se muestra donde estaba entonces")}
+        </p>
       )}
     </div>
   );
