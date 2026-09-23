@@ -2774,6 +2774,9 @@ export default function DriverPortalPage() {
                           accessTypes: driverProfile.accessTypes || [],
                           photoUrl: driverProfile.photoUrl || ((driverProfile.metadata as any)?.photoUrl as string) || ((driverProfile.metadata as any)?.photo_url as string) || ((driverProfile.metadata as any)?.avatar as string) || ((driverProfile.metadata as any)?.avatarUrl as string) || ((driverProfile.metadata as any)?.imageUrl as string) || ((driverProfile.metadata as any)?.image_url as string) || null,
                           qrDataUrl,
+                          userType: "DRIVER",
+                          subjectType: "DRIVER",
+                          detailLabel: prov?.name || "Conductor",
                         });
                         setCredentialPdf({
                           eventName,
@@ -2788,6 +2791,9 @@ export default function DriverPortalPage() {
                           providerLabel: prov?.name || undefined,
                           accessTypes: driverProfile.accessTypes || [],
                           photoUrl: driverProfile.photoUrl || ((driverProfile.metadata as any)?.photoUrl as string) || null,
+                          userType: "DRIVER",
+                          subjectType: "DRIVER",
+                          detailLabel: prov?.name || "Conductor",
                         });
                         setCredentialHtml(html);
                       } catch { driverNotify.push("No se pudo generar la credencial", "error"); }

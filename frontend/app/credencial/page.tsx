@@ -49,6 +49,9 @@ function CredencialDownload() {
           photoUrl: params.get("f") || undefined,
           accessTypes: access.length ? access : undefined,
           qrDataUrl,
+          userType: params.get("u") || undefined,
+          subjectType: params.get("s") === "DRIVER" ? "DRIVER" : params.get("s") === "PARTICIPANT" ? "PARTICIPANT" : undefined,
+          detailLabel: params.get("k") || undefined,
         };
         dataRef.current = data;
         await downloadCredentialPdf(data);

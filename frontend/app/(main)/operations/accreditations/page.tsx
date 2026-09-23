@@ -539,6 +539,11 @@ export default function AccreditationsPage() {
         photoUrl,
         organization: "Seven - Control de Acreditaciones",
         qrDataUrl,
+        // Formato oficial JDE: la categoría sale del tipo de participante y
+        // la línea bajo el nombre dice de dónde viene.
+        userType: subjectType === "PARTICIPANT" ? (athlete as { userType?: string | null } | null)?.userType ?? null : "DRIVER",
+        subjectType,
+        detailLabel: subjectType === "PARTICIPANT" ? `${delegationLabel} · ${disciplineLabel}` : providerLabel,
       });
 
       const popup = window.open("about:blank", "_blank");

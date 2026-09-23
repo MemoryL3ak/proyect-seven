@@ -4472,6 +4472,14 @@ export default function UserPortalPage() {
                     if (typeof v === "string" && v.trim()) { photoUrl = v.trim(); break; }
                   }
                   const accessTypes = Array.isArray(acc?.accessTypes) ? acc.accessTypes : [];
+                  // Formato oficial JDE: categoría según el tipo de participante
+                  // y, bajo el nombre, su región y su deporte.
+                  const userType = isChief ? "JEFE_MISION" : athlete.userType || null;
+                  const delegExt = delegation as { name?: string | null; metadata?: { name?: string } | null; countryCode?: string | null } | null;
+                  const delegNombre = delegExt?.name || delegExt?.metadata?.name || delegExt?.countryCode || "";
+                  const discSuya = ([...disciplineParents, ...calendarEvents] as Array<{ id: string; name?: string | null; parentId?: string | null }>).find((d) => d.id === athlete.disciplineId);
+                  const discNombre = (discSuya?.parentId ? disciplineParents.find((p) => p.id === discSuya.parentId)?.name : null) || discSuya?.name || "";
+                  const detailLabel = [delegNombre, discNombre].filter(Boolean).join(" · ");
                   const html = buildCredentialHtml({
                     eventName: evName,
                     fullName: athlete.fullName,
@@ -4485,6 +4493,9 @@ export default function UserPortalPage() {
                     accessTypes,
                     photoUrl,
                     qrDataUrl,
+                    userType,
+                    subjectType: "PARTICIPANT",
+                    detailLabel,
                   });
                   setCredentialPdf({
                     eventName: evName,
@@ -4498,6 +4509,9 @@ export default function UserPortalPage() {
                     issuedAtLabel: new Date().toLocaleDateString("es-CL"),
                     accessTypes,
                     photoUrl,
+                    userType,
+                    subjectType: "PARTICIPANT",
+                    detailLabel,
                   });
                   setCredentialHtml(html);
                 } catch { notify.push("No se pudo generar la credencial","error"); }
