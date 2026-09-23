@@ -140,7 +140,7 @@ type HotelAssignment = {
 type HotelRoom = { id: string; roomNumber: string; roomType: string };
 type HotelBed = { id: string; bedType: string };
 type Vehicle = { id: string; plate: string; type: string };
-type Trip = { id: string; driverId: string; delegationId?: string | null; disciplineId?: string | null; originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null; vehiclePlate?: string | null };
+type Trip = { id: string; driverId: string; delegationId?: string | null; disciplineId?: string | null; originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; originFoodLocationId?: string | null; destinationFoodLocationId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null; vehiclePlate?: string | null };
 type Driver = { id: string; fullName: string; userId?: string | null };
 type Event = { id: string; name: string };
 // name: las delegaciones de los Juegos Escolares son regiones con nombre visible.
@@ -692,8 +692,8 @@ export default function UserPortalPage() {
   // Gala)", "Sede Elías Figueroa (Martillo)", "Hotel Mahía". Sin recinto
   // asignado sólo queda la dirección escrita a mano.
   const nombreRecinto = useMemo(
-    () => mapaDeLugares(venues, nombresHoteles.length ? nombresHoteles : allAccommodations),
-    [venues, nombresHoteles, allAccommodations],
+    () => mapaDeLugares(venues, nombresHoteles.length ? nombresHoteles : allAccommodations, foodLocations),
+    [venues, nombresHoteles, allAccommodations, foodLocations],
   );
   /**
    * Hoteles y sedes para los filtros del Coordinador, sacados de los propios
@@ -706,18 +706,21 @@ export default function UserPortalPage() {
     const crudo = new Map<string, string>();
     for (const v of venues) if (v.id && v.name) crudo.set(v.id, v.name);
     for (const h of allAccommodations) if (h.id && h.name) crudo.set(h.id, h.name);
+    for (const f of foodLocations) if (f.id && f.name) crudo.set(f.id, f.name);
     const lugares = lugaresDeViajes(delegationTrips, allAccommodations, (id) => crudo.get(id));
     const opcion = (l: LugarConCarga) => ({ value: l.texto, label: `${l.texto} · ${l.total}` });
     return {
       hoteles: lugares.filter((l) => l.esHotel).map(opcion),
       sedes: lugares.filter((l) => !l.esHotel).map(opcion),
     };
-  }, [delegationTrips, venues, allAccommodations]);
+  }, [delegationTrips, venues, allAccommodations, foodLocations]);
   const puntoViaje = (
-    t: { originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; origin?: string | null; destination?: string | null },
+    t: { originVenueId?: string | null; originHotelId?: string | null; originFoodLocationId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; destinationFoodLocationId?: string | null; origin?: string | null; destination?: string | null },
     extremo: "origin" | "destination",
   ) => {
-    const id = extremo === "origin" ? (t.originVenueId ?? t.originHotelId) : (t.destinationVenueId ?? t.destinationHotelId);
+    const id = extremo === "origin"
+      ? (t.originVenueId ?? t.originHotelId ?? t.originFoodLocationId)
+      : (t.destinationVenueId ?? t.destinationHotelId ?? t.destinationFoodLocationId);
     const direccion = (extremo === "origin" ? t.origin : t.destination) ?? "";
     const nombre = id ? nombreRecinto.get(id) ?? null : null;
     return { nombre, direccion };
@@ -2243,6 +2246,7 @@ export default function UserPortalPage() {
                 disciplines={disciplineParents}
                 venues={venues}
                 accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+                comedores={foodLocations}
               />
             )}
             {/* El jefe de misión ve arriba lo que está andando en su
@@ -2255,6 +2259,7 @@ export default function UserPortalPage() {
                 memberIds={[athlete.id, ...delegationMembers.map((m) => m.id)]}
                 venues={venues}
                 accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+                comedores={foodLocations}
                 onVerEnVivo={(tripId) => {
                   // El mapa se abre aquí mismo, justo debajo, centrado en ese
                   // bus. Antes esto saltaba al módulo Flota y sacaba a la
@@ -2278,6 +2283,7 @@ export default function UserPortalPage() {
                   focoTripId={mapaVivo.tripId}
                   venues={venues}
                   accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+                  comedores={foodLocations}
                 />
                 <button type="button" onClick={() => setMapaVivo({ abierto:false, tripId:null })}
                   style={{ position:"absolute",top:8,right:8,zIndex:2,padding:"6px 11px",borderRadius:9,border:"none",cursor:"pointer",
@@ -2409,6 +2415,7 @@ export default function UserPortalPage() {
                 disciplines={disciplineParents}
                 venues={venues}
                 accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+                comedores={foodLocations}
               />
               </div>
             )}
@@ -4123,6 +4130,7 @@ export default function UserPortalPage() {
             trips={delegationTrips.filter((tr) => tr.delegationId && tr.delegationId === athlete.delegationId)}
             venues={venues}
             accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+            comedores={foodLocations}
           />
         )}
 

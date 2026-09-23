@@ -91,7 +91,12 @@ const VALID_CLIENT_TYPES = [
 ];
 
 /** Sede u hotel del catálogo, con su nombre ya normalizado para calzar. */
-type LugarCatalogo = { clave: string; venueId: string | null; hotelId: string | null };
+type LugarCatalogo = {
+  clave: string;
+  venueId: string | null;
+  hotelId: string | null;
+  foodLocationId: string | null;
+};
 
 type TripWindow = {
   id: string;
@@ -294,7 +299,7 @@ export class TripsScheduleService {
       .trim();
   }
 
-  /** Sedes y hoteles del evento, para que cada extremo del viaje apunte al suyo. */
+  /** Sedes, hoteles y comedores, para que cada extremo del viaje apunte al suyo. */
   private async fetchLugares(eventId: string): Promise<LugarCatalogo[]> {
     const lugares: LugarCatalogo[] = [];
     const { data: sedes } = await this.supabase
@@ -304,7 +309,7 @@ export class TripsScheduleService {
       .eq('event_id', eventId);
     for (const v of (sedes as Array<Record<string, unknown>>) ?? []) {
       const clave = this.claveLugar(v.name as string | undefined);
-      if (clave) lugares.push({ clave, venueId: String(v.id), hotelId: null });
+      if (clave) lugares.push({ clave, venueId: String(v.id), hotelId: null, foodLocationId: null });
     }
     const { data: hoteles } = await this.supabase
       .schema('logistics')
@@ -313,25 +318,34 @@ export class TripsScheduleService {
       .eq('event_id', eventId);
     for (const h of (hoteles as Array<Record<string, unknown>>) ?? []) {
       const clave = this.claveLugar(h.name as string | undefined);
-      if (clave) lugares.push({ clave, venueId: null, hotelId: String(h.id) });
+      if (clave) lugares.push({ clave, venueId: null, hotelId: String(h.id), foodLocationId: null });
+    }
+    // Comedores (Alimentación → Lugares). No tienen evento: se cargan todos.
+    const { data: comedores } = await this.supabase
+      .schema('logistics')
+      .from('food_locations')
+      .select('id, name');
+    for (const f of (comedores as Array<Record<string, unknown>>) ?? []) {
+      const clave = this.claveLugar(f.name as string | undefined);
+      if (clave) lugares.push({ clave, venueId: null, hotelId: null, foodLocationId: String(f.id) });
     }
     return lugares;
   }
 
   /**
-   * Sede u hotel que nombra un extremo del viaje, por nombre exacto. Los
-   * comedores no están aquí (viven en Alimentación) y "ESC.NAVAL 2" no es el
-   * nombre de nada: esos quedan sin id, con el texto tal cual. Ante dos
-   * calces no se adivina.
+   * Sede, hotel o comedor que nombra un extremo del viaje, por nombre exacto.
+   * "ESC.NAVAL 2" no es el nombre de nada: queda sin id, con el texto tal
+   * cual. Ante dos calces no se adivina.
    */
   private resolverLugar(
     raw: string | undefined | null,
     lugares: LugarCatalogo[],
-  ): { venueId: string | null; hotelId: string | null } {
+  ): { venueId: string | null; hotelId: string | null; foodLocationId: string | null } {
     const clave = this.claveLugar(raw);
     const candidatos = clave ? lugares.filter((l) => l.clave === clave) : [];
-    if (candidatos.length !== 1) return { venueId: null, hotelId: null };
-    return { venueId: candidatos[0].venueId, hotelId: candidatos[0].hotelId };
+    if (candidatos.length !== 1) return { venueId: null, hotelId: null, foodLocationId: null };
+    const [l] = candidatos;
+    return { venueId: l.venueId, hotelId: l.hotelId, foodLocationId: l.foodLocationId };
   }
 
   /** Delegaciones del evento, para reconocerlas cuando vienen mal ubicadas. */
@@ -763,6 +777,8 @@ export class TripsScheduleService {
           origin_hotel_id: origen.hotelId,
           destination_venue_id: destino.venueId,
           destination_hotel_id: destino.hotelId,
+          origin_food_location_id: origen.foodLocationId,
+          destination_food_location_id: destino.foodLocationId,
           trip_type: row.activity || null,
           client_type: clientType,
           delegation_id: delegationId,
@@ -816,6 +832,8 @@ export class TripsScheduleService {
             origin_hotel_id: destino.hotelId,
             destination_venue_id: origen.venueId,
             destination_hotel_id: origen.hotelId,
+            origin_food_location_id: destino.foodLocationId,
+            destination_food_location_id: origen.foodLocationId,
             scheduled_at: returnAt.toISOString(),
             presentation_at: this.withLead(returnAt).toISOString(),
             return_at: null,

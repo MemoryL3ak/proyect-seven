@@ -72,6 +72,7 @@ export default function MissionFleet({
   trips,
   venues,
   accommodations,
+  comedores = [],
   focoTripId = null,
 }: {
   eventId?: string | null;
@@ -80,6 +81,8 @@ export default function MissionFleet({
   trips: MissionTrip[];
   venues: NamedPlace[];
   accommodations: NamedPlace[];
+  /** Comedores de Alimentación: el viaje puede apuntar a ellos por id. */
+  comedores?: NamedPlace[];
   /**
    * Traslado que se vino a mirar, elegido en el banner "Ahora mismo". El mapa
    * se centra en su chofer y su ficha queda destacada y la primera.
@@ -117,7 +120,7 @@ export default function MissionFleet({
 
   // Nombre del recinto, para no mostrar direcciones largas.
   // "Comedor LRH (ex Gala)", "Sede Elías Figueroa", "Hotel Mahía".
-  const lugar = useMemo(() => mapaDeLugares(venues, accommodations), [venues, accommodations]);
+  const lugar = useMemo(() => mapaDeLugares(venues, accommodations, comedores), [venues, accommodations, comedores]);
   const punto = (tr: MissionTrip, extremo: "origin" | "destination") => {
     const id = extremo === "origin" ? (tr.originVenueId ?? tr.originHotelId) : (tr.destinationVenueId ?? tr.destinationHotelId);
     return (id ? lugar.get(id) : null) ?? (extremo === "origin" ? tr.origin : tr.destination) ?? "—";

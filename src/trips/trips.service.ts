@@ -29,6 +29,8 @@ type TripRow = {
   origin_hotel_id: string | null;
   destination_venue_id: string | null;
   destination_hotel_id: string | null;
+  origin_food_location_id: string | null;
+  destination_food_location_id: string | null;
   requested_vehicle_type: string | null;
   passenger_count: number | null;
   notes: string | null;
@@ -192,6 +194,12 @@ export class TripsService {
     if (dto.destinationHotelId !== undefined) {
       row.destination_hotel_id = dto.destinationHotelId ?? null;
     }
+    if (dto.originFoodLocationId !== undefined) {
+      row.origin_food_location_id = dto.originFoodLocationId || null;
+    }
+    if (dto.destinationFoodLocationId !== undefined) {
+      row.destination_food_location_id = dto.destinationFoodLocationId || null;
+    }
     if (dto.requestedVehicleType !== undefined) {
       row.requested_vehicle_type = dto.requestedVehicleType ?? null;
     }
@@ -341,6 +349,8 @@ export class TripsService {
       requesterAthleteId: row.requester_athlete_id,
       destinationVenueId: row.destination_venue_id,
       destinationHotelId: row.destination_hotel_id,
+      originFoodLocationId: row.origin_food_location_id,
+      destinationFoodLocationId: row.destination_food_location_id,
       requestedVehicleType: row.requested_vehicle_type,
       passengerCount: row.passenger_count,
       notes: row.notes,

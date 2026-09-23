@@ -50,6 +50,18 @@ export class Trip {
   @Column({ name: 'destination_hotel_id', type: 'uuid', nullable: true })
   destinationHotelId?: string | null;
 
+  /**
+   * Comedor de origen/destino (Alimentación → Lugares). Un traslado al
+   * almuerzo no va a una sede ni a un hotel: va al comedor, que vive en su
+   * propia tabla. Sin esto la planilla dejaba "Comedor LRH (EX GALA)" sólo
+   * como texto y ningún filtro por lugar lo encontraba.
+   */
+  @Column({ name: 'origin_food_location_id', type: 'uuid', nullable: true })
+  originFoodLocationId?: string | null;
+
+  @Column({ name: 'destination_food_location_id', type: 'uuid', nullable: true })
+  destinationFoodLocationId?: string | null;
+
   @Column({ name: 'requested_vehicle_type', length: 60, type: 'varchar', nullable: true })
   requestedVehicleType?: string | null;
 

@@ -119,6 +119,9 @@ type Trip = {
   vehiclePlate?: string | null;
   requesterAthleteId?: string | null;
   destinationVenueId?: string | null;
+  /** Comedor de origen/destino (Alimentación → Lugares). */
+  originFoodLocationId?: string | null;
+  destinationFoodLocationId?: string | null;
   requestedVehicleType?: string | null;
   passengerCount?: number | null;
   notes?: string | null;
@@ -448,6 +451,8 @@ export default function TripsPage() {
   const [vehicles, setVehicles] = useState<Record<string, VehicleItem>>({});
   const [venues, setVenues] = useState<Record<string, VenueItem>>({});
   const [hoteles, setHoteles] = useState<HotelItem[]>([]);
+  /** Comedores de Alimentación: un viaje puede apuntar a ellos por id. */
+  const [comedores, setComedores] = useState<HotelItem[]>([]);
   const [selectedEventId, setSelectedEventId] = useState("");
   const [selectedClientType, setSelectedClientType] = useState("");
   const [search, setSearch] = useState("");
@@ -583,7 +588,7 @@ export default function TripsPage() {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData, hotelData] =
+      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData, hotelData, foodData] =
         await Promise.all([
           apiFetch<Trip[]>("/trips"),
           apiFetch<EventItem[]>("/events"),
@@ -593,6 +598,7 @@ export default function TripsPage() {
           apiFetch<VehicleItem[]>("/transports"),
           apiFetch<VenueItem[]>("/venues"),
           apiFetch<HotelItem[]>("/accommodations").catch(() => [] as HotelItem[]),
+          apiFetch<HotelItem[]>("/food-locations").catch(() => [] as HotelItem[]),
         ]);
 
       const nextTrips = tripData || [];
@@ -645,6 +651,7 @@ export default function TripsPage() {
         }, {})
       );
       setHoteles(hotelData || []);
+      setComedores(foodData || []);
       setVenues(
         (venueData || []).reduce<Record<string, VenueItem>>((acc, item) => {
           acc[item.id] = item;
@@ -878,7 +885,8 @@ export default function TripsPage() {
    * guardan por id y sin texto. La regla de lugares vive en lib/lugares, la
    * misma que usa el portal del coordinador.
    */
-  const nombreDeLugar = (id: string) => venues[id]?.name ?? hoteles.find((h) => h.id === id)?.name;
+  const nombreDeLugar = (id: string) =>
+    venues[id]?.name ?? hoteles.find((h) => h.id === id)?.name ?? comedores.find((c) => c.id === id)?.name;
 
   /**
    * Las cinco condiciones de la vista, cada una por su lado.
@@ -917,7 +925,7 @@ export default function TripsPage() {
   // Que cada uno ignore su propio filtro no hace daño: recalcular doscientos
   // viajes no se nota y la lista queda dicha entera.
   const dependenciasEnCurso = [
-    ongoingTrips, ongoingDay, ongoingDiscipline, ongoingHotel, ongoingVenue, ongoingDriver, venues, hoteles,
+    ongoingTrips, ongoingDay, ongoingDiscipline, ongoingHotel, ongoingVenue, ongoingDriver, venues, hoteles, comedores,
   ];
 
   /* eslint-disable react-hooks/exhaustive-deps */
@@ -2615,7 +2623,12 @@ export default function TripsPage() {
         const isc = STATUS_COLORS[infoTrip.status ?? ""] ?? STATUS_COLORS.SCHEDULED;
         const itone = statusTone(infoTrip.status);
         const ivenue = infoTrip.destinationVenueId ? venues[infoTrip.destinationVenueId] : null;
-        const idestino = ivenue ? buildVenueAddress(ivenue) : safeText(infoTrip.destination, "Destino pendiente");
+        const icomedor = infoTrip.destinationFoodLocationId
+          ? comedores.find((c) => c.id === infoTrip.destinationFoodLocationId)?.name ?? null
+          : null;
+        const idestino = ivenue
+          ? buildVenueAddress(ivenue)
+          : icomedor ?? safeText(infoTrip.destination, "Destino pendiente");
         // Región y disciplina salen del viaje mismo: en los Juegos Escolares el
         // traslado se asigna a la delegación (región) + deporte y no a una
         // persona. Si el viaje no las trae cargadas, se deducen de los

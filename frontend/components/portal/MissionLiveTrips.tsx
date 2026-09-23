@@ -42,6 +42,7 @@ export default function MissionLiveTrips({
   memberIds,
   venues,
   accommodations,
+  comedores = [],
   onVerEnVivo,
 }: {
   trips: MissionTrip[];
@@ -49,6 +50,8 @@ export default function MissionLiveTrips({
   memberIds: string[];
   venues: NamedPlace[];
   accommodations: NamedPlace[];
+  /** Comedores de Alimentación: el viaje puede apuntar a ellos por id. */
+  comedores?: NamedPlace[];
   /**
    * Abre el seguimiento en vivo. Con un traslado, centra el mapa en su bus;
    * sin ninguno, muestra la flota entera.
@@ -76,7 +79,7 @@ export default function MissionLiveTrips({
   }, [trips, delegationId, miembros]);
 
   // "Comedor LRH (ex Gala)", "Sede Elías Figueroa", "Hotel Mahía".
-  const lugar = useMemo(() => mapaDeLugares(venues, accommodations), [venues, accommodations]);
+  const lugar = useMemo(() => mapaDeLugares(venues, accommodations, comedores), [venues, accommodations, comedores]);
 
   const origen = (tr: MissionTrip) =>
     lugar.get(tr.originVenueId ?? "") ?? lugar.get(tr.originHotelId ?? "") ?? tr.origin ?? "—";

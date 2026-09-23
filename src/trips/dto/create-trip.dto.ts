@@ -48,6 +48,15 @@ export class CreateTripDto {
   @IsOptional()
   destinationHotelId?: string;
 
+  /** Comedor de origen/destino (Alimentación → Lugares). */
+  @IsString()
+  @IsOptional()
+  originFoodLocationId?: string | null;
+
+  @IsString()
+  @IsOptional()
+  destinationFoodLocationId?: string | null;
+
   @IsString()
   @IsOptional()
   requestedVehicleType?: string;

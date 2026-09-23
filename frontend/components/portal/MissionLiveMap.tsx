@@ -51,6 +51,7 @@ export default function MissionLiveMap({
   focoTripId,
   venues,
   accommodations,
+  comedores = [],
   height = 230,
 }: {
   eventId?: string | null;
@@ -59,6 +60,8 @@ export default function MissionLiveMap({
   focoTripId?: string | null;
   venues: NamedPlace[];
   accommodations: NamedPlace[];
+  /** Comedores de Alimentación: el viaje puede apuntar a ellos por id. */
+  comedores?: NamedPlace[];
   height?: number;
 }) {
   const { t } = useI18n();
@@ -86,7 +89,7 @@ export default function MissionLiveMap({
     };
   }, [eventId]);
 
-  const lugar = useMemo(() => mapaDeLugares(venues, accommodations), [venues, accommodations]);
+  const lugar = useMemo(() => mapaDeLugares(venues, accommodations, comedores), [venues, accommodations, comedores]);
   const punto = (tr: MissionTrip, extremo: "origin" | "destination") => {
     const id = extremo === "origin" ? (tr.originVenueId ?? tr.originHotelId) : (tr.destinationVenueId ?? tr.destinationHotelId);
     return (id ? lugar.get(id) : null) ?? (extremo === "origin" ? tr.origin : tr.destination) ?? "—";

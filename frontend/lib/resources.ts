@@ -57,7 +57,8 @@ export type FieldDef = {
     | "hotelBeds"
     | "disciplines"
     | "accommodationTowers"
-    | "hotelExtras";
+    | "hotelExtras"
+    | "foodLocations";
   transient?: boolean;
   formHidden?: boolean;
   readOnly?: boolean;
@@ -1073,6 +1074,8 @@ export const resources: Record<string, ResourceConfig> = {
       "originTypeFilter",
       "originVenueId",
       "originHotelId",
+      "originFoodLocationId",
+      "destinationFoodLocationId",
       "vehiclePlateDisplay",
       "vehicleId",
       "flightNumber"
@@ -1114,8 +1117,16 @@ export const resources: Record<string, ResourceConfig> = {
         label: "Recinto de origen",
         type: "select",
         optionsSource: "venues",
-        // Sede y comedor son el mismo recinto en la base; cambia la lista.
-        showWhenAny: { field: "originTypeFilter", values: ["SEDE", "COMEDOR"] },
+        showWhen: { field: "originTypeFilter", value: "SEDE" },
+        hideWhen: { field: "tripType", value: "TRANSFER_IN" },
+      },
+      {
+        // Los comedores viven en Alimentación → Lugares, no en Sedes.
+        key: "originFoodLocationId",
+        label: "Comedor de origen",
+        type: "select",
+        optionsSource: "foodLocations",
+        showWhen: { field: "originTypeFilter", value: "COMEDOR" },
         hideWhen: { field: "tripType", value: "TRANSFER_IN" },
       },
       {
@@ -1143,7 +1154,15 @@ export const resources: Record<string, ResourceConfig> = {
         label: "Recinto de destino",
         type: "select",
         optionsSource: "venues",
-        showWhenAny: { field: "destinationTypeFilter", values: ["SEDE", "COMEDOR"] },
+        showWhen: { field: "destinationTypeFilter", value: "SEDE" },
+        hideWhen: { field: "tripType", value: "TRANSFER_OUT" },
+      },
+      {
+        key: "destinationFoodLocationId",
+        label: "Comedor de destino",
+        type: "select",
+        optionsSource: "foodLocations",
+        showWhen: { field: "destinationTypeFilter", value: "COMEDOR" },
         hideWhen: { field: "tripType", value: "TRANSFER_OUT" },
       },
       {

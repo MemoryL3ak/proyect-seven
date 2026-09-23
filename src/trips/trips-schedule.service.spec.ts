@@ -123,31 +123,38 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
    * por lugar del portal no tenían con qué calzar.
    */
   describe('sede u hotel de cada extremo', () => {
-    type Lugar = { clave: string; venueId: string | null; hotelId: string | null };
-    type Calce = { venueId: string | null; hotelId: string | null };
+    type Calce = { venueId: string | null; hotelId: string | null; foodLocationId: string | null };
+    type Lugar = Calce & { clave: string };
     type WithLugares = {
       claveLugar: (raw?: string | null) => string;
       resolverLugar: (raw: string | undefined | null, lugares: Lugar[]) => Calce;
     };
     const svc = () => service as unknown as WithLugares;
-    const sede = (nombre: string, id: string): Lugar => ({ clave: svc().claveLugar(nombre), venueId: id, hotelId: null });
-    const hotel = (nombre: string, id: string): Lugar => ({ clave: svc().claveLugar(nombre), venueId: null, hotelId: id });
+    const lugar = (nombre: string, calce: Calce): Lugar => ({ clave: svc().claveLugar(nombre), ...calce });
+    const nada: Calce = { venueId: null, hotelId: null, foodLocationId: null };
+    const sede = (nombre: string, id: string) => lugar(nombre, { ...nada, venueId: id });
+    const hotel = (nombre: string, id: string) => lugar(nombre, { ...nada, hotelId: id });
+    const comedor = (nombre: string, id: string) => lugar(nombre, { ...nada, foodLocationId: id });
     // Nombres tal como están en el catálogo del evento.
     const catalogo = (): Lugar[] => [
       sede('Estadio Elías Figueroa Brander', 'elias'),
       sede('Escuela Naval Arturo Prat', 'naval'),
       hotel('Hotel LRH § Convention Center (ex Gala)', 'lrh'),
       hotel('Hippocampus Resort § Club', 'hippo'),
+      comedor('Comedor LRH (EX GALA)', 'comedor-lrh'),
     ];
-    const nada: Calce = { venueId: null, hotelId: null };
 
     it('calza el nombre exacto aunque cambien tildes, mayúsculas y espacios', () => {
-      expect(svc().resolverLugar('ESTADIO ELIAS FIGUEROA  BRANDER', catalogo())).toEqual({ venueId: 'elias', hotelId: null });
-      expect(svc().resolverLugar('Hippocampus Resort § Club', catalogo())).toEqual({ venueId: null, hotelId: 'hippo' });
+      expect(svc().resolverLugar('ESTADIO ELIAS FIGUEROA  BRANDER', catalogo())).toEqual({ ...nada, venueId: 'elias' });
+      expect(svc().resolverLugar('Hippocampus Resort § Club', catalogo())).toEqual({ ...nada, hotelId: 'hippo' });
     });
 
-    it('no adivina: un comedor o una abreviatura quedan sin id', () => {
-      expect(svc().resolverLugar('Comedor LRH (EX GALA)', catalogo())).toEqual(nada);
+    it('un comedor de Alimentación calza igual que una sede o un hotel', () => {
+      expect(svc().resolverLugar('comedor lrh (ex gala)', catalogo())).toEqual({ ...nada, foodLocationId: 'comedor-lrh' });
+    });
+
+    it('no adivina: una abreviatura o un comedor no registrado quedan sin id', () => {
+      expect(svc().resolverLugar('Comedor MARINA DEL REY', catalogo())).toEqual(nada);
       expect(svc().resolverLugar('ESC.NAVAL 2', catalogo())).toEqual(nada);
       expect(svc().resolverLugar('', catalogo())).toEqual(nada);
       expect(svc().resolverLugar(undefined, catalogo())).toEqual(nada);

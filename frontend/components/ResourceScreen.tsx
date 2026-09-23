@@ -277,6 +277,8 @@ export default function ResourceScreen({
   const [providerOptions, setProviderOptions] = useState<Option[]>([]);
   const [accommodationOptions, setAccommodationOptions] = useState<Option[]>([]);
   const [venueOptions, setVenueOptions] = useState<Option[]>([]);
+  // Comedores (Alimentación → Lugares): origen o destino "Comedor" de un viaje.
+  const [foodLocationOptions, setFoodLocationOptions] = useState<Option[]>([]);
   const [venuesRaw, setVenuesRaw] = useState<Record<string, any>[]>([]);
   const [accommodationsRaw, setAccommodationsRaw] = useState<Record<string, any>[]>([]);
   const [vehicleOptions, setVehicleOptions] = useState<Option[]>([]);
@@ -432,6 +434,10 @@ export default function ResourceScreen({
   );
   const needsVenues = useMemo(
     () => config.fields.some((field) => field.optionsSource === "venues"),
+    [config.fields]
+  );
+  const needsFoodLocations = useMemo(
+    () => config.fields.some((field) => field.optionsSource === "foodLocations"),
     [config.fields]
   );
   const needsVehicles = useMemo(
@@ -1009,6 +1015,12 @@ export default function ResourceScreen({
       loadVenues();
     }
   }, [needsVenues]);
+
+  useEffect(() => {
+    if (needsFoodLocations) {
+      void loadFoodLocations();
+    }
+  }, [needsFoodLocations]);
 
   useEffect(() => {
     if (needsVehicles) {
@@ -2015,11 +2027,15 @@ export default function ResourceScreen({
       }
       if (item.originHotelId) {
         next.originTypeFilter = "HOTEL";
+      } else if (item.originFoodLocationId) {
+        next.originTypeFilter = "COMEDOR";
       } else if (item.originVenueId) {
         next.originTypeFilter = "SEDE";
       }
       if (item.destinationHotelId) {
         next.destinationTypeFilter = "HOTEL";
+      } else if (item.destinationFoodLocationId) {
+        next.destinationTypeFilter = "COMEDOR";
       } else if (item.destinationVenueId) {
         next.destinationTypeFilter = "SEDE";
       }
@@ -2060,6 +2076,17 @@ export default function ResourceScreen({
       setVenuesRaw(data || []);
     } catch (err) {
       setVenueOptions([]);
+    }
+  };
+
+  const loadFoodLocations = async () => {
+    try {
+      const data = await apiFetch<Record<string, any>[]>("/food-locations");
+      setFoodLocationOptions(
+        (data || []).map((lugar) => ({ label: lugar.name || lugar.id, value: lugar.id })),
+      );
+    } catch {
+      setFoodLocationOptions([]);
     }
   };
 
@@ -2488,6 +2515,7 @@ export default function ResourceScreen({
       }
       return venueOptions;
     }
+    if (source === "foodLocations") return foodLocationOptions;
     if (source === "vehicles") return vehicleOptions;
     if (source === "drivers") return driverOptions;
     if (source === "driverUsers") {
@@ -2937,11 +2965,11 @@ export default function ResourceScreen({
                           // Transfer Out: el destino es siempre el aeropuerto.
                           const AIRPORT = "Aeropuerto Internacional Arturo Merino Benítez, Pudahuel, Santiago, Chile";
                           if (nextValue === "TRANSFER_IN") {
-                            setForm({ ...form, tripType: nextValue, origin: AIRPORT, originTypeFilter: "", originVenueId: "", originHotelId: "" });
+                            setForm({ ...form, tripType: nextValue, origin: AIRPORT, originTypeFilter: "", originVenueId: "", originHotelId: "", originFoodLocationId: "" });
                             return;
                           }
                           if (nextValue === "TRANSFER_OUT") {
-                            setForm({ ...form, tripType: nextValue, destination: AIRPORT, destinationTypeFilter: "", destinationVenueId: "", destinationHotelId: "" });
+                            setForm({ ...form, tripType: nextValue, destination: AIRPORT, destinationTypeFilter: "", destinationVenueId: "", destinationHotelId: "", destinationFoodLocationId: "" });
                             return;
                           }
                           setForm({ ...form, tripType: nextValue });
@@ -2988,11 +3016,11 @@ export default function ResourceScreen({
                         if (config.endpoint === "/trips" && field.key === "destinationTypeFilter") {
                           // Cambiar el tipo descarta la sede/hotel anterior: si no,
                           // el viaje queda apuntando a ambos y "gana" el dato viejo.
-                          setForm({ ...form, destinationTypeFilter: nextValue, destinationVenueId: "", destinationHotelId: "" });
+                          setForm({ ...form, destinationTypeFilter: nextValue, destinationVenueId: "", destinationHotelId: "", destinationFoodLocationId: "" });
                           return;
                         }
                         if (config.endpoint === "/trips" && field.key === "originTypeFilter") {
-                          setForm({ ...form, originTypeFilter: nextValue, originVenueId: "", originHotelId: "" });
+                          setForm({ ...form, originTypeFilter: nextValue, originVenueId: "", originHotelId: "", originFoodLocationId: "" });
                           return;
                         }
                         if (config.endpoint === "/trips" && field.key === "destinationVenueId") {

@@ -28,6 +28,8 @@ export type MissionTrip = {
   originHotelId?: string | null;
   destinationVenueId?: string | null;
   destinationHotelId?: string | null;
+  originFoodLocationId?: string | null;
+  destinationFoodLocationId?: string | null;
   scheduledAt?: string | null;
   startedAt?: string | null;
   completedAt?: string | null;
@@ -73,6 +75,7 @@ export default function MissionTrips({
   disciplines,
   venues,
   accommodations,
+  comedores = [],
   estado,
   onEstado,
   todas = false,
@@ -93,6 +96,8 @@ export default function MissionTrips({
   disciplines: DisciplineLike[];
   venues: NamedPlace[];
   accommodations: NamedPlace[];
+  /** Comedores de Alimentación: el viaje puede apuntar a ellos por id. */
+  comedores?: NamedPlace[];
   /** Filtro de estado mandado desde fuera (el banner "En curso ahora"). */
   estado?: string;
   onEstado?: (valor: string) => void;
@@ -143,20 +148,29 @@ export default function MissionTrips({
 
   const labels = useMemo(() => buildDisciplineLabelMap(disciplines), [disciplines]);
   // "Comedor LRH (ex Gala)", "Sede Elías Figueroa", "Hotel Mahía".
-  const lugar = useMemo(() => mapaDeLugares(venues, accommodations), [venues, accommodations]);
+  const lugar = useMemo(() => mapaDeLugares(venues, accommodations, comedores), [venues, accommodations, comedores]);
   // Nombre pelado del catálogo, para calzar lugares por texto en los filtros.
   const nombreCrudo = useMemo(() => {
     const m = new Map<string, string>();
     for (const v of venues) if (v.id && v.name) m.set(v.id, v.name);
     for (const h of accommodations) if (h.id && h.name) m.set(h.id, h.name);
+    for (const c of comedores) if (c.id && c.name) m.set(c.id, c.name);
     return m;
-  }, [venues, accommodations]);
+  }, [venues, accommodations, comedores]);
 
   // Nombre del recinto cuando el viaje lo tiene asignado; si no, la dirección.
   const puntoOrigen = (tr: MissionTrip) =>
-    lugar.get(tr.originVenueId ?? "") ?? lugar.get(tr.originHotelId ?? "") ?? tr.origin ?? "—";
+    lugar.get(tr.originVenueId ?? "") ??
+    lugar.get(tr.originHotelId ?? "") ??
+    lugar.get(tr.originFoodLocationId ?? "") ??
+    tr.origin ??
+    "—";
   const puntoDestino = (tr: MissionTrip) =>
-    lugar.get(tr.destinationVenueId ?? "") ?? lugar.get(tr.destinationHotelId ?? "") ?? tr.destination ?? "—";
+    lugar.get(tr.destinationVenueId ?? "") ??
+    lugar.get(tr.destinationHotelId ?? "") ??
+    lugar.get(tr.destinationFoodLocationId ?? "") ??
+    tr.destination ??
+    "—";
 
   const disciplinaDe = (tr: MissionTrip) =>
     (tr.disciplineId ? labels.get(tr.disciplineId) : null) ?? tr.discipline ?? null;

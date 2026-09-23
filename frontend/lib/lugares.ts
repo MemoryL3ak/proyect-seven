@@ -33,6 +33,8 @@ export function conTipo(tipo: "Hotel" | "Sede" | "Comedor", nombre?: string | nu
 export function mapaDeLugares(
   venues: LugarVenue[] | null | undefined,
   hoteles: LugarHotel[] | null | undefined,
+  /** Comedores de Alimentación: el viaje puede apuntar a ellos por id. */
+  comedores?: LugarHotel[] | null,
 ): Map<string, string> {
   const mapa = new Map<string, string>();
   for (const v of venues ?? []) {
@@ -45,6 +47,11 @@ export function mapaDeLugares(
     if (!h?.id) continue;
     const etiqueta = conTipo("Hotel", h.name);
     if (etiqueta) mapa.set(h.id, etiqueta);
+  }
+  for (const c of comedores ?? []) {
+    if (!c?.id) continue;
+    const etiqueta = conTipo("Comedor", c.name);
+    if (etiqueta) mapa.set(c.id, etiqueta);
   }
   return mapa;
 }
@@ -70,9 +77,11 @@ export type ViajeConLugares = {
   originHotelId?: string | null;
   destinationVenueId?: string | null;
   destinationHotelId?: string | null;
+  originFoodLocationId?: string | null;
+  destinationFoodLocationId?: string | null;
 };
 
-/** Nombre del catálogo para un id de sede u hotel, si se conoce. */
+/** Nombre del catálogo para un id de sede, hotel o comedor, si se conoce. */
 export type NombreDeLugar = (id: string) => string | null | undefined;
 
 /**
@@ -82,9 +91,16 @@ export type NombreDeLugar = (id: string) => string | null | undefined;
  */
 export function lugaresDeViaje(viaje: ViajeConLugares, nombreDe?: NombreDeLugar): string[] {
   const porId = (id?: string | null) => (id && nombreDe ? String(nombreDe(id) ?? "").trim() : "");
-  const origen = String(viaje.origin ?? "").trim() || porId(viaje.originVenueId) || porId(viaje.originHotelId);
+  const origen =
+    String(viaje.origin ?? "").trim() ||
+    porId(viaje.originVenueId) ||
+    porId(viaje.originHotelId) ||
+    porId(viaje.originFoodLocationId);
   const destino =
-    String(viaje.destination ?? "").trim() || porId(viaje.destinationVenueId) || porId(viaje.destinationHotelId);
+    String(viaje.destination ?? "").trim() ||
+    porId(viaje.destinationVenueId) ||
+    porId(viaje.destinationHotelId) ||
+    porId(viaje.destinationFoodLocationId);
   return [origen, destino].filter((valor) => valor.length > 0);
 }
 
