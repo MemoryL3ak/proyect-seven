@@ -1125,9 +1125,27 @@ export default function UserPortalPage() {
       setHealthRecord(hr);
 
     } catch (err) {
+      const status = (err as { status?: number })?.status;
       let message = err instanceof Error ? err.message : "";
       try { const p = JSON.parse(message); if (p?.message) message = p.message; } catch {}
-      setError(message || t("No se pudo cargar"));
+      if (status === 404 || /not found/i.test(message)) {
+        // El participante ya no existe: fue dado de baja o purgado después de
+        // que este dispositivo entró. Antes se mostraba el error del backend
+        // tal cual ("Athlete with id … not found") y la sesión guardada
+        // volvía a fallar en cada apertura. Se olvida y se pide el código.
+        if (directId) {
+          clearPortalSession("athlete", directId);
+          try { sessionStorage.removeItem("portal_user_id"); } catch {}
+          setAthleteId("");
+          setError(t("Tu acceso anterior ya no está vigente. Ingresa tu código para volver a entrar."));
+          const sesionApp = getMobileSession();
+          if (sesionApp?.kind === "athlete" && sesionApp.athleteId === directId) mobileAwareLogout();
+        } else {
+          setError(t("El código ingresado no corresponde a un usuario registrado."));
+        }
+      } else {
+        setError(message || t("No se pudo cargar"));
+      }
       setFlight(null); setHotel(null); setVehicle(null); setDriver(null); setTrip(null);
       setEvent(null); setDelegation(null); setHotelAssignment(null); setHotelRoom(null); setHotelBed(null);
     } finally { setLoading(false); }
