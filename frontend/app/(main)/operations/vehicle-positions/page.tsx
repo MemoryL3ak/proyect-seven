@@ -1137,17 +1137,19 @@ export default function VehiclePositionsPage() {
         <div style={{ position: "absolute", bottom: "-30px", left: "20%", width: "160px", height: "160px", borderRadius: "50%", background: pal.orb2, filter: "blur(40px)", pointerEvents: "none" }} />
 
         <div className="flex flex-wrap items-start justify-between gap-4" style={{ position: "relative" }}>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <div className="flex items-center gap-3 mb-1">
+              {!isMobile && (
               <p style={{ fontSize: "11px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.accent }}>
                 Operaciones
               </p>
+              )}
               <span style={{ display: "flex", alignItems: "center", gap: "5px", background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.28)", borderRadius: "99px", padding: "2px 8px" }}>
                 <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: STATE.success, animation: "pulse 2s infinite", display: "inline-block" }} />
                 <span style={{ fontSize: "10px", fontWeight: 700, color: STATE.success, letterSpacing: "0.08em" }}>EN VIVO</span>
               </span>
             </div>
-            <h1 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, lineHeight: 1.2, marginBottom: "4px" }}>
+            <h1 style={{ fontSize: isMobile ? "18px" : "22px", fontWeight: 800, color: pal.titleColor, lineHeight: 1.2, marginBottom: "4px" }}>
               Tracking de viajes
             </h1>
             <p style={{ fontSize: "13px", color: pal.subtitleColor }}>
@@ -1178,8 +1180,8 @@ export default function VehiclePositionsPage() {
           </button>
         </div>
 
-        {/* KPI chips */}
-        <div className="flex flex-wrap gap-3 mt-5" style={{ position: "relative" }}>
+        {/* KPI chips: en el teléfono, tira horizontal en vez de 3 filas */}
+        <div className={isMobile ? "mobile-strip mt-3" : "flex flex-wrap gap-3 mt-5"} style={{ position: "relative", ...(isMobile ? ({ "--strip-w": "150px", marginLeft: -14, marginRight: -14, paddingLeft: 14, paddingRight: 14 } as React.CSSProperties) : {}) }}>
           {[
             { label: "Total viajes", value: tripStats.total, color: pal.kpi[0], icon: <TruckIcon size={14} strokeWidth={1.8} /> },
             { label: "En ruta", value: tripStats.active, color: pal.kpi[1], icon: <ClockIcon size={14} strokeWidth={1.8} /> },
