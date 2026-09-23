@@ -42,6 +42,7 @@ import {
   type LatLng,
   type TrailPoint,
 } from "@/lib/google-maps";
+import { lineasDelSeleccionado } from "@/lib/lineas-tracking";
 
 const LiveTrackingMap = dynamic(() => import("@/components/LiveTrackingMap"), { ssr: false });
 const TripRouteMap = dynamic(() => import("@/components/TripRouteMap"), { ssr: false });
@@ -985,6 +986,16 @@ export default function VehiclePositionsPage() {
     });
   }, [trackedDriversVisibles, activeTrips, vehicles, venues]);
 
+  // Al mapa sólo van las líneas del conductor seleccionado. Con todas a la
+  // vez (ruta de Google + rastro GPS de cada uno) el mapa era una maraña de
+  // trazos cruzando Viña, Quilpué y Limache y no se distinguía nada. Sin
+  // selección quedan los autos solos; al elegir uno (tarjeta o clic en el
+  // auto) aparecen su ruta, su rastro y su destino.
+  const { rutasEnMapa, rastrosEnMapa, destinosEnMapa } = useMemo(
+    () => lineasDelSeleccionado(selectedTripId, liveRoutes, liveTrails, liveDestinations),
+    [selectedTripId, liveRoutes, liveTrails, liveDestinations],
+  );
+
   const tripStats = useMemo(() => {
     const active = tripsFiltrados.filter((tr) => ["EN_ROUTE", "PICKED_UP"].includes(tr.status ?? "")).length;
     const scheduled = tripsFiltrados.filter((tr) => tr.status === "SCHEDULED").length;
@@ -1359,12 +1370,13 @@ export default function VehiclePositionsPage() {
               )}
               <LiveTrackingMap
                 markers={trackedMarkers}
-                destinations={liveDestinations}
-                routes={liveRoutes}
-                trails={liveTrails}
+                destinations={destinosEnMapa}
+                routes={rutasEnMapa}
+                trails={rastrosEnMapa}
                 height={isMobile ? 420 : 760}
                 isDark={false}
                 selectedTripId={selectedTripId}
+                onSelect={setSelectedTripId}
               />
             </div>
 

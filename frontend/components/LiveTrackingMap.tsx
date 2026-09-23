@@ -49,6 +49,8 @@ type Props = {
   height?: number;
   isDark?: boolean;
   selectedTripId?: string | null;
+  /** Clic en un auto del mapa: selecciona (o deselecciona) ese conductor. */
+  onSelect?: (tripId: string | null) => void;
 };
 
 function getInitials(name: string): string {
@@ -107,8 +109,15 @@ export default function LiveTrackingMap({
   trails = [],
   height = 560,
   selectedTripId,
+  onSelect,
 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
+  // El listener de clic se registra una sola vez al crear el marcador; la
+  // ref evita que se quede con una versión vieja de onSelect / selección.
+  const onSelectRef = useRef(onSelect);
+  onSelectRef.current = onSelect;
+  const selectedRef = useRef(selectedTripId);
+  selectedRef.current = selectedTripId;
   const mapRef = useRef<any>(null);
   const gmMarkersRef = useRef<Record<string, any>>({});
   // Last accent applied to each marker — drives icon re-generation when the
@@ -259,6 +268,7 @@ export default function LiveTrackingMap({
         });
 
         marker.addListener("click", () => {
+          onSelectRef.current?.(selectedRef.current === m.tripId ? null : m.tripId);
           const html = `
             <div style="font-family:system-ui,sans-serif;min-width:220px;padding:4px 0;">
               <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
