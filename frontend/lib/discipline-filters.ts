@@ -67,3 +67,41 @@ export function buildDisciplineLabelMap(parents: DisciplineLike[]): Map<string, 
     }),
   );
 }
+
+/**
+ * Clave de un nombre de deporte para compararlo con otro: sin tildes, sin
+ * mayúsculas y sin puntuación. "Vóleibol", "VOLEIBOL" y "Voleibol" son lo mismo.
+ */
+export function claveDisciplina(valor?: string | null): string {
+  return String(valor ?? "")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+/**
+ * ¿El texto de disciplina de un viaje corresponde a este deporte del catálogo?
+ *
+ * Los viajes que entran por la planilla de operatividad traen la disciplina
+ * como texto ("ATLETISMO", "Voleibol", "PARATLETISMO") y sin id: hoy son 330
+ * de 333. El filtro de deporte del coordinador comparaba por id y se quedaba
+ * con tres viajes. El prefijo "para" es la categoría paralímpica del mismo
+ * deporte: "PARATLETISMO" calza con Atletismo · Paralímpica y no con la
+ * convencional. Un texto sin género ("Futsal") calza con las dos variantes.
+ */
+export function coincideDisciplinaPorNombre(
+  texto: string | null | undefined,
+  disciplina: DisciplineLike,
+): boolean {
+  const clave = claveDisciplina(texto);
+  const nombre = claveDisciplina(disciplina.name);
+  if (!clave || !nombre) return false;
+  const paralimpica = normalizeCategory(disciplina.category) === "PARALYMPIC";
+  if (clave === nombre) return !paralimpica || clave.startsWith("para");
+  if (!paralimpica) return false;
+  // "paratletismo": el "para" se come la "a" inicial del deporte.
+  const variantes = [`para ${nombre}`, `para${nombre}`, nombre.startsWith("a") ? `par${nombre}` : ""];
+  return variantes.includes(clave);
+}

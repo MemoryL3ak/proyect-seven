@@ -4,7 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarIcon, CarIcon, ChevronDownIcon, UsersIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
-import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
+import { buildDisciplineLabelMap, coincideDisciplinaPorNombre, type DisciplineLike } from "@/lib/discipline-filters";
+import { claveDiaEvento, etiquetaDiaEvento, fechaCortaEvento, fechaHoraEvento, horaEvento } from "@/lib/hora-evento";
 import TripMap from "@/components/TripMap";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import SelectorFiltro from "@/components/portal/SelectorFiltro";
@@ -53,35 +54,6 @@ const ACTIVOS = new Set(["SCHEDULED", "REQUESTED", "EN_ROUTE", "PICKED_UP"]);
  */
 const EN_CURSO = new Set(["EN_ROUTE", "PICKED_UP"]);
 const norm = (v?: string | null) => String(v ?? "").trim().toUpperCase();
-
-const fechaCorta = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }).replace(".", "") : "—";
-
-/**
- * Día de un traslado, en hora local y no en UTC: con el desfase, los viajes
- * de la noche caían en el día siguiente y el filtro los escondía del día que
- * la gente tiene en la cabeza. Vacío = traslado sin hora cargada.
- */
-const claveDia = (iso?: string | null) => {
-  if (!iso) return "";
-  const fecha = new Date(iso);
-  if (Number.isNaN(fecha.getTime())) return "";
-  const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-  const dia = String(fecha.getDate()).padStart(2, "0");
-  return `${fecha.getFullYear()}-${mes}-${dia}`;
-};
-
-/** "Hoy", o "mié 24 sep". Sólo se distingue hoy: el resto se lee por fecha. */
-const etiquetaDia = (clave: string) => {
-  const [anio, mes, dia] = clave.split("-").map(Number);
-  const fecha = new Date(anio, mes - 1, dia);
-  if (clave === claveDia(new Date().toISOString())) return "Hoy";
-  return fecha
-    .toLocaleDateString("es-CL", { weekday: "short", day: "2-digit", month: "short" })
-    .replace(/\./g, "");
-};
-const hora = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false }) : "--:--";
 
 const chip = (bg: string, color: string): React.CSSProperties => ({
   padding: "2px 8px",
@@ -220,12 +192,12 @@ export default function MissionTrips({
    * calendario completo obligaría a tantear fechas vacías; así el filtro
    * muestra la jornada del evento tal como quedó armada.
    */
-  const claveHoy = useMemo(() => claveDia(new Date().toISOString()), []);
+  const claveHoy = useMemo(() => claveDiaEvento(new Date()), []);
 
   const opcionesDia = useMemo(() => {
     const vistos = new Map<string, number>();
     for (const tr of propios) {
-      const clave = claveDia(tr.scheduledAt) || "SIN_FECHA";
+      const clave = claveDiaEvento(tr.scheduledAt) || "SIN_FECHA";
       vistos.set(clave, (vistos.get(clave) ?? 0) + 1);
     }
     return [...vistos.entries()]
@@ -235,7 +207,7 @@ export default function MissionTrips({
         value: clave,
         // La cuenta va en la etiqueta: el selector muestra una sola línea y
         // saber cuántos traslados tiene el día es la mitad de la decisión.
-        label: `${clave === "SIN_FECHA" ? t("Sin fecha") : t(etiquetaDia(clave))} · ${total}`,
+        label: `${clave === "SIN_FECHA" ? t("Sin fecha") : t(etiquetaDiaEvento(clave))} · ${total}`,
       }));
   }, [propios, t]);
 
@@ -244,15 +216,27 @@ export default function MissionTrips({
     [opcionesDia, claveHoy],
   );
 
+  // El deporte elegido arriba por el coordinador. Los viajes de la planilla
+  // traen la disciplina como texto y sin id, así que se calza por nombre.
+  const disciplinaElegida = useMemo(
+    () => (disciplinaExterna ? disciplines.find((d) => d.id === disciplinaExterna) ?? null : null),
+    [disciplines, disciplinaExterna],
+  );
+  const esDelDeporteElegido = (tr: MissionTrip) => {
+    if (!disciplinaExterna) return true;
+    if (tr.disciplineId) return tr.disciplineId === disciplinaExterna;
+    return disciplinaElegida ? coincideDisciplinaPorNombre(tr.discipline, disciplinaElegida) : false;
+  };
+
   const visibles = useMemo(() => {
     const list = propios.filter((tr) => {
-      if (disciplinaExterna && tr.disciplineId !== disciplinaExterna) return false;
+      if (!esDelDeporteElegido(tr)) return false;
       if (disciplinaFiltro) {
         const clave = tr.disciplineId ?? disciplinaDe(tr) ?? "";
         if (clave !== disciplinaFiltro) return false;
       }
       if (diaFiltro) {
-        const suDia = claveDia(tr.scheduledAt) || "SIN_FECHA";
+        const suDia = claveDiaEvento(tr.scheduledAt) || "SIN_FECHA";
         if (suDia !== diaFiltro) return false;
       }
       const suEstado = norm(tr.status);
@@ -268,7 +252,7 @@ export default function MissionTrips({
       const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Infinity;
       return ta - tb;
     });
-  }, [propios, disciplinaFiltro, disciplinaExterna, diaFiltro, estadoFiltro, labels]);
+  }, [propios, disciplinaFiltro, disciplinaExterna, disciplinaElegida, diaFiltro, estadoFiltro, labels]);
 
   // Si el día elegido deja de existir —cambió la región, el hotel o llegaron
   // otros viajes—, el filtro se suelta solo en vez de dejar la lista vacía
@@ -302,7 +286,7 @@ export default function MissionTrips({
     const firma = nombreContacto
       ? `, te escribe ${nombreContacto} de la coordinación de transporte`
       : ", te escribe la coordinación de transporte";
-    const texto = `${saludo}${firma}. Es por el traslado de las ${hora(tr.scheduledAt)} (${puntoOrigen(tr)} → ${puntoDestino(tr)}).`;
+    const texto = `${saludo}${firma}. Es por el traslado de las ${horaEvento(tr.scheduledAt)} (${puntoOrigen(tr)} → ${puntoDestino(tr)}).`;
     openExternal(whatsappHref(String(d.phone), texto));
   };
 
@@ -322,7 +306,7 @@ export default function MissionTrips({
           {/* Sin la cuenta: el recuento ya está al principio de este mismo
               renglón, y repetirlo daba "207 traslados · … · mié 23 sept · 207". */}
           {diaFiltro
-            ? ` · ${diaFiltro === "SIN_FECHA" ? t("Sin fecha") : t(etiquetaDia(diaFiltro))}`
+            ? ` · ${diaFiltro === "SIN_FECHA" ? t("Sin fecha") : t(etiquetaDiaEvento(diaFiltro))}`
             : ""}
         </p>
         <SegmentedFilter
@@ -432,10 +416,10 @@ export default function MissionTrips({
               {/* Hora: es lo primero que busca un jefe de misión. */}
               <div style={{ width: 52, flexShrink: 0, textAlign: "center" }}>
                 <p style={{ fontSize: 15, fontWeight: 800, color: SURFACE.text, margin: 0, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
-                  {hora(tr.scheduledAt)}
+                  {horaEvento(tr.scheduledAt)}
                 </p>
                 <p style={{ fontSize: 10.5, color: SURFACE.textFaint, margin: "2px 0 0", textTransform: "uppercase" }}>
-                  {fechaCorta(tr.scheduledAt)}
+                  {fechaCortaEvento(tr.scheduledAt)}
                 </p>
               </div>
 
@@ -522,7 +506,7 @@ export default function MissionTrips({
                       <div style={{ display: "flex", justifyContent: "space-between" }}>
                         <span style={{ fontSize: 11, color: SURFACE.textMuted }}>{t("Completado")}</span>
                         <span style={{ fontSize: 11, fontWeight: 600, color: BRAND.tealInk }}>
-                          {new Date(tr.completedAt).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
+                          {fechaHoraEvento(tr.completedAt)}
                         </span>
                       </div>
                     )}

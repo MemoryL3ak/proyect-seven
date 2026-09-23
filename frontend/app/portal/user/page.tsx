@@ -90,6 +90,7 @@ import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import QrFullscreenOverlay from "@/components/QrFullscreenOverlay";
 import QRCode from "qrcode";
 import { BRAND, tripStatusMeta, STATE, SURFACE, ACCENT } from "@/lib/design";
+import { diaLargoEvento, fechaCortaEvento, fechaHoraAnioEvento, horaEvento } from "@/lib/hora-evento";
 
 type Athlete = {
   id: string;
@@ -269,15 +270,9 @@ function couponDiscountDisplay(c: Coupon) {
  * de abajo, para el mismo viaje, decía "23:00 · 18-SEPT": dos maneras de
  * escribir la misma hora en una sola pantalla.
  */
-const horaViaje = (iso?: string | null) =>
-  iso && !Number.isNaN(new Date(iso).getTime())
-    ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false })
-    : "--:--";
-
-const fechaViaje = (iso?: string | null) =>
-  iso && !Number.isNaN(new Date(iso).getTime())
-    ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }).replace(".", "")
-    : "—";
+// Hora del evento (America/Santiago), no la del aparato: ver lib/hora-evento.
+const horaViaje = (iso?: string | null) => horaEvento(iso);
+const fechaViaje = (iso?: string | null) => fechaCortaEvento(iso);
 
 const fmtCouponDate = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }) : "-";
@@ -308,10 +303,7 @@ const luggageLabels: Record<string, string> = {
   SUITCASE_23:"Maleta 23kg",EXTRA_BAGGAGE:"Sobreequipaje"
 };
 
-const fmt = (v?: string | null) =>
-  v && v !== "null" && v !== "undefined" && !Number.isNaN(new Date(v).getTime())
-    ? new Date(v).toLocaleString("es-CL", { day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit" })
-    : null;
+const fmt = (v?: string | null) => fechaHoraAnioEvento(v);
 
 /**
  * Viaje que la tarjeta "En curso" debe mostrar entre los del participante.
@@ -4822,7 +4814,7 @@ export default function UserPortalPage() {
                         {ce.name}{parentName ? ` · ${parentName}` : ""}
                       </p>
                       <p style={{ fontSize:10.5,color:SURFACE.textMuted,margin:"1px 0 0" }}>
-                        {new Date(ce.scheduledAt!).toLocaleDateString("es-CL",{ weekday:"short",day:"2-digit",month:"short" })} · {new Date(ce.scheduledAt!).toLocaleTimeString("es-CL",{ hour:"2-digit",minute:"2-digit" })}
+                        {diaLargoEvento(ce.scheduledAt)} · {horaEvento(ce.scheduledAt)}
                         {ce.venueName ? ` · ${ce.venueName}` : ""}
                       </p>
                     </div>

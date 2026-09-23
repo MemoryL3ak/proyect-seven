@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import { useI18n } from "@/lib/i18n";
+import { claveDiaEvento, fechaHoraEvento, horaEvento, horaSegundosEvento } from "@/lib/hora-evento";
 import { mapaDeLugares } from "@/lib/lugares";
 import type { MissionTrip } from "@/components/portal/MissionTrips";
 
@@ -64,9 +65,6 @@ function tripLabel(status: string | null, activeTrips: number): string | null {
   if (activeTrips > 0) return "En viaje";
   return null;
 }
-
-const hora = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false }) : "--:--";
 
 export default function MissionFleet({
   eventId,
@@ -148,11 +146,12 @@ export default function MissionFleet({
   const nombreChofer = (driverId?: string | null) =>
     driverId ? drivers.find((d) => d.driverId === driverId)?.fullName ?? null : null;
 
-  // Viajes en curso y los de hoy, para los indicadores de arriba.
-  const hoyKey = new Date().toDateString();
+  // Viajes en curso y los de hoy, para los indicadores de arriba. "Hoy" es
+  // el día del evento, no el del aparato.
+  const hoyKey = claveDiaEvento(new Date());
   const enCurso = useMemo(() => trips.filter((tr) => EN_CURSO.has(String(tr.status ?? "").toUpperCase())), [trips]);
   const deHoy = useMemo(
-    () => trips.filter((tr) => tr.scheduledAt && new Date(tr.scheduledAt).toDateString() === hoyKey),
+    () => trips.filter((tr) => tr.scheduledAt && claveDiaEvento(tr.scheduledAt) === hoyKey),
     [trips, hoyKey],
   );
 
@@ -174,9 +173,7 @@ export default function MissionFleet({
             onTrip: reporting && d.activeTrips > 0,
             tripLabel: label ? t(label) : null,
             lastSeen: ago(d.secondsSinceSeen, t),
-            gpsTime: d.gpsTimestamp
-              ? new Date(d.gpsTimestamp).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-              : "—",
+            gpsTime: fechaHoraEvento(d.gpsTimestamp),
             activeTrips: d.activeTrips,
             platform: d.platform,
             clientTypes: [],
@@ -210,7 +207,7 @@ export default function MissionFleet({
         <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: 0 }}>{delegationName || "—"}</p>
         <p style={{ fontSize: 11.5, color: SURFACE.textMuted, margin: "3px 0 0", display: "flex", alignItems: "center", gap: 6 }}>
           <RefreshIcon size={11} style={refreshing ? { animation: "spin 1s linear infinite" } : undefined} />
-          {snapshot ? `${t("Actualizado")} ${new Date(snapshot.ts).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false })}` : t("Cargando…")}
+          {snapshot ? `${t("Actualizado")} ${horaSegundosEvento(snapshot.ts)}` : t("Cargando…")}
         </p>
       </div>
 
@@ -252,7 +249,7 @@ export default function MissionFleet({
             <div key={tr.id} style={{ background: SURFACE.card, borderRadius: 12, border: `1px solid ${SURFACE.border}`, borderLeft: `3px solid ${STATE.success}`, padding: "10px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <span style={{ padding: "2px 8px", borderRadius: 999, fontSize: 10, fontWeight: 700, background: STATE.successSoft, color: STATE.successText }}>{estado}</span>
-                <span style={{ fontSize: 11.5, color: SURFACE.textMuted }}>{hora(tr.scheduledAt)}</span>
+                <span style={{ fontSize: 11.5, color: SURFACE.textMuted }}>{horaEvento(tr.scheduledAt)}</span>
               </div>
               <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: "4px 0 0" }}>
                 {punto(tr, "origin")} → {punto(tr, "destination")}

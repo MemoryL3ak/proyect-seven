@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import DriverPresenceMap, { type PresenceMarker } from "@/components/DriverPresenceMap";
 import { apiFetch } from "@/lib/api";
+import { fechaHoraEvento } from "@/lib/hora-evento";
 import { SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { mapaDeLugares } from "@/lib/lugares";
@@ -107,9 +108,7 @@ export default function MissionLiveMap({
             onTrip: transmitiendo && d.activeTrips > 0,
             tripLabel: d.activeTripStatus === "PICKED_UP" ? t("Pasajero a bordo") : d.activeTrips > 0 ? t("Va en camino") : null,
             lastSeen: hace(d.secondsSinceSeen, t),
-            gpsTime: d.gpsTimestamp
-              ? new Date(d.gpsTimestamp).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
-              : "—",
+            gpsTime: fechaHoraEvento(d.gpsTimestamp),
             activeTrips: d.activeTrips,
             platform: d.platform,
             clientTypes: [],

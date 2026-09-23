@@ -5,6 +5,7 @@ import { CarIcon, ChevronRightIcon, UsersIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { horaEvento } from "@/lib/hora-evento";
 import { mapaDeLugares } from "@/lib/lugares";
 import type { MissionTrip } from "@/components/portal/MissionTrips";
 
@@ -34,9 +35,6 @@ const VISIBLES = 3;
 
 type DriverRow = { id: string; userId?: string | null; fullName?: string | null };
 type NamedPlace = { id: string; name?: string | null; venueType?: string | null };
-
-const hora = (iso?: string | null) =>
-  iso ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false }) : "--:--";
 
 export default function MissionLiveTrips({
   trips,
@@ -194,7 +192,7 @@ export default function MissionLiveTrips({
                     lineHeight: 1.1,
                   }}
                 >
-                  {hora(tr.scheduledAt)}
+                  {horaEvento(tr.scheduledAt)}
                 </p>
               </div>
               <div style={{ flex: 1, minWidth: 0 }}>
