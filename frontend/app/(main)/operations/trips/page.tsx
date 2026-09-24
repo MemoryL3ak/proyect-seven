@@ -8,6 +8,8 @@ import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import StyledSelect from "@/components/StyledSelect";
+import { historialDeJornada, jornadasDelHistorial, SIN_FECHA as HISTORIAL_SIN_FECHA } from "@/lib/historial-viajes";
+import { etiquetaDiaEvento } from "@/lib/hora-evento";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -629,6 +631,8 @@ export default function TripsPage() {
   };
   // Vista "En curso": filtros propios de la vista y página de la lista.
   const [ongoingDay, setOngoingDay] = useState("");
+  /** Historial: jornada elegida ("" = todas). */
+  const [historyDay, setHistoryDay] = useState("");
   const [ongoingDiscipline, setOngoingDiscipline] = useState("");
   const [ongoingGender, setOngoingGender] = useState("");
   const [ongoingRegion, setOngoingRegion] = useState("");
@@ -946,6 +950,10 @@ export default function TripsPage() {
         .filter((trip) => trip.status === "DROPPED_OFF" || trip.status === "COMPLETED" || trip.status === "CANCELLED"),
     [generalTrips]
   );
+  /** Jornadas con viajes cerrados, para el desplegable del historial. */
+  const historyDays = useMemo(() => jornadasDelHistorial(completedTrips), [completedTrips]);
+  /** Lo que se lista en Historial: la jornada elegida, del cierre más reciente al más antiguo. */
+  const historyTrips = useMemo(() => historialDeJornada(completedTrips, historyDay), [completedTrips, historyDay]);
 
   /**
    * En curso: la operación viva. Todo lo que no está cerrado ni cancelado, sin
@@ -2909,13 +2917,27 @@ export default function TripsPage() {
                   <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.24em", textTransform: "uppercase" as const, color: pal.labelColor }}>{t("Bitácora reciente")}</p>
                   <h3 style={{ marginTop: "3px", fontWeight: 700, fontSize: "16px", color: pal.textPrimary }}>{t("Últimos cierres")}</h3>
                 </div>
-                <span style={{ fontSize: "12px", fontWeight: 600, color: pal.textMuted, background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "99px", padding: "4px 12px" }}>
-                  {completedTrips.length} viajes
-                </span>
+                {/* Filtro por jornada: "hoy es 23, ver los del 22". Va como
+                    desplegable, igual que los filtros de En curso. */}
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", justifyContent: "flex-end" }}>
+                  <label className="text-sm" style={{ minWidth: 200 }}>
+                    <StyledSelect value={historyDay} onChange={(e) => setHistoryDay(e.target.value)}>
+                      <option value="">{`${t("Todas las jornadas")} (${completedTrips.length})`}</option>
+                      {historyDays.map((d) => (
+                        <option key={d.key} value={d.key}>
+                          {`${d.key === HISTORIAL_SIN_FECHA ? t("Sin fecha") : etiquetaDiaEvento(d.key)} (${d.count})`}
+                        </option>
+                      ))}
+                    </StyledSelect>
+                  </label>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: pal.textMuted, background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "99px", padding: "4px 12px", whiteSpace: "nowrap" }}>
+                    {historyTrips.length} viajes
+                  </span>
+                </div>
               </div>
-              {completedTrips.length === 0 ? (
+              {historyTrips.length === 0 ? (
                 <div style={{ borderRadius: "16px", border: `1px dashed ${pal.cardBorder}`, background: pal.cardBg, padding: "40px 24px", textAlign: "center", color: pal.textMuted, fontSize: "14px" }}>
-                  Sin viajes completados recientes.
+                  {historyDay ? t("Sin viajes cerrados en esa jornada.") : "Sin viajes completados recientes."}
                 </div>
               ) : (
                 <div style={{ borderRadius: "16px", border: `1px solid ${pal.cardBorder}`, overflow: "hidden", boxShadow: pal.shadow }}>
@@ -2923,7 +2945,7 @@ export default function TripsPage() {
                       chicas en vez de aplastarse bajo el overflow hidden. */}
                   <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
                   <div style={{ minWidth: "720px" }}>
-                  {completedTrips.map((trip, i) => {
+                  {historyTrips.map((trip, i) => {
                     const sc = STATUS_COLORS[trip.status ?? "COMPLETED"] ?? STATUS_COLORS.COMPLETED;
                     const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
                     return (
@@ -2932,7 +2954,7 @@ export default function TripsPage() {
                         gap: "12px", alignItems: "center",
                         padding: "12px 16px",
                         background: i % 2 === 0 ? pal.cardBg : "#fafafa",
-                        borderBottom: i < completedTrips.length - 1 ? `1px solid ${pal.cardBorder}` : "none",
+                        borderBottom: i < historyTrips.length - 1 ? `1px solid ${pal.cardBorder}` : "none",
                       }}>
                         <span style={{ background: sc.chipBg, border: `1px solid ${sc.chipBorder}`, borderRadius: "99px", padding: "3px 10px", fontSize: "11px", fontWeight: 700, color: sc.accent, display: "inline-flex", alignItems: "center", gap: "4px", width: "fit-content" }}>
                           {sc.accent === STATE.success && <span style={{ width: "5px", height: "5px", borderRadius: "50%", background: sc.accent, display: "inline-block" }} />}
