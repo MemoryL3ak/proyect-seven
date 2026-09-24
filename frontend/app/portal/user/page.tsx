@@ -4158,7 +4158,12 @@ export default function UserPortalPage() {
 
         {/* ─── Conductores (Coordinador de Transporte) ─── */}
         {activeTab === "conductores" && puedeContactarChoferes && (
-          <DirectorioConductores eventId={athlete.eventId} nombreCoordinador={athlete.fullName} />
+          <DirectorioConductores
+            eventId={athlete.eventId}
+            nombreCoordinador={athlete.fullName}
+            trips={delegationTrips}
+            disciplines={disciplineParents}
+          />
         )}
 
         {/* ─── Flota (Jefe de Misión) ─── */}

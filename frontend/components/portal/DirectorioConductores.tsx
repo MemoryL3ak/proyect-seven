@@ -7,6 +7,7 @@ import { BusIcon, PhoneIcon, RefreshIcon, SearchIcon, WhatsappIcon, XIcon } from
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import {
+  asignacionesDeConductores,
   type ConductorDirectorio,
   describirVehiculo,
   ESTADO_CONDUCTOR_LABEL,
@@ -18,7 +19,9 @@ import {
   saludoWhatsapp,
   vehiculoDe,
 } from "@/lib/directorio-conductores";
+import type { DisciplineLike } from "@/lib/discipline-filters";
 import { openExternal, whatsappHref } from "@/lib/external-link";
+import { claveDiaEvento } from "@/lib/hora-evento";
 import { useI18n } from "@/lib/i18n";
 import { nombrePropio } from "@/lib/nombres";
 
@@ -51,13 +54,27 @@ const ago = (s: number | null, t: (v: string) => string) => {
   return `${t("hace")} ${Math.floor(s / 86400)} d`;
 };
 
+type ViajeDirectorio = {
+  driverId?: string | null;
+  scheduledAt?: string | null;
+  status?: string | null;
+  discipline?: string | null;
+  disciplineId?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
+
 export default function DirectorioConductores({
   eventId,
   nombreCoordinador,
+  trips = [],
+  disciplines = [],
 }: {
   eventId?: string | null;
   /** Quién escribe, para que el WhatsApp llegue firmado. */
   nombreCoordinador?: string | null;
+  /** Viajes del evento: de ahí salen el deporte y el género que lleva hoy cada chofer. */
+  trips?: ViajeDirectorio[];
+  disciplines?: DisciplineLike[];
 }) {
   const { t } = useI18n();
   const [conductores, setConductores] = useState<ConductorDirectorio[]>([]);
@@ -70,6 +87,24 @@ export default function DirectorioConductores({
   const [busqueda, setBusqueda] = useState("");
   const [proveedorId, setProveedorId] = useState("");
   const [estado, setEstado] = useState<"" | EstadoConductor>("");
+  const [disciplina, setDisciplina] = useState("");
+  const [genero, setGenero] = useState("");
+
+  /** Deportes y géneros de los viajes de hoy, por conductor. */
+  const asignaciones = useMemo(
+    () => asignacionesDeConductores(trips, disciplines, claveDiaEvento(new Date())),
+    [trips, disciplines],
+  );
+  const opcionesDisciplina = useMemo(() => {
+    const cuenta = new Map<string, number>();
+    asignaciones.forEach((a) => a.deportes.forEach((d) => cuenta.set(d, (cuenta.get(d) ?? 0) + 1)));
+    return [...cuenta.entries()].sort((x, y) => x[0].localeCompare(y[0], "es")).map(([value, n]) => ({ value, label: `${value} · ${n}` }));
+  }, [asignaciones]);
+  const opcionesGenero = useMemo(() => {
+    const cuenta = new Map<string, number>();
+    asignaciones.forEach((a) => a.generos.forEach((g) => cuenta.set(g, (cuenta.get(g) ?? 0) + 1)));
+    return [...cuenta.entries()].sort().map(([value, n]) => ({ value, label: `${value} · ${n}` }));
+  }, [asignaciones]);
 
   // Conductores y proveedores: una vez. Presencia: cada 30 s.
   useEffect(() => {
@@ -122,8 +157,8 @@ export default function DirectorioConductores({
   }, [proveedores, conductores]);
 
   const visibles = useMemo(
-    () => filtrarConductores(conductores, presencia, { busqueda, proveedorId, estado }),
-    [conductores, presencia, busqueda, proveedorId, estado],
+    () => filtrarConductores(conductores, presencia, { busqueda, proveedorId, estado, disciplina, genero }, asignaciones),
+    [conductores, presencia, busqueda, proveedorId, estado, disciplina, genero, asignaciones],
   );
 
   const resumen = useMemo(() => {
@@ -225,9 +260,30 @@ export default function DirectorioConductores({
             onChange={setProveedorId}
           />
         )}
+        {/* Disciplina y género: lo que cada chofer lleva hoy según sus viajes. */}
+        {(opcionesDisciplina.length > 0 || opcionesGenero.length > 0) && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <SelectorFiltro
+              rotulo={t("Disciplina")}
+              titulo={t("Disciplina que lleva hoy")}
+              opciones={opcionesDisciplina}
+              etiquetaTodos={t("Todas")}
+              valor={disciplina}
+              onChange={setDisciplina}
+            />
+            <SelectorFiltro
+              rotulo={t("Género")}
+              titulo={t("Género del grupo que lleva hoy")}
+              opciones={opcionesGenero}
+              etiquetaTodos={t("Todos")}
+              valor={genero}
+              onChange={setGenero}
+            />
+          </div>
+        )}
         <p style={{ fontSize: 11.5, color: SURFACE.textFaint, margin: 0 }}>
           {visibles.length} {visibles.length === 1 ? t("conductor") : t("conductores")}
-          {busqueda || proveedorId || estado ? ` · ${t("con el filtro")}` : ""}
+          {busqueda || proveedorId || estado || disciplina || genero ? ` · ${t("con el filtro")}` : ""}
         </p>
       </section>
 
@@ -288,6 +344,21 @@ export default function DirectorioConductores({
                 </div>
                 {prov?.name && (
                   <p style={{ fontSize: 12, fontWeight: 700, color: BRAND.tealInk, margin: "5px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{prov.name}</p>
+                )}
+                {/* Qué lleva hoy: deporte y género de sus viajes del día. */}
+                {(asignaciones.get(c.id)?.deportes.length ?? 0) > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 5 }}>
+                    {asignaciones.get(c.id)!.deportes.map((d) => (
+                      <span key={d} style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: "rgba(33,208,179,0.10)", color: BRAND.tealInk, whiteSpace: "nowrap" }}>
+                        {d}
+                      </span>
+                    ))}
+                    {asignaciones.get(c.id)!.generos.map((g) => (
+                      <span key={g} style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: SURFACE.borderMuted, color: SURFACE.textSecondary, whiteSpace: "nowrap" }}>
+                        {g}
+                      </span>
+                    ))}
+                  </div>
                 )}
                 {vehiculo && (
                   <p style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: SURFACE.textMuted, margin: "3px 0 0" }}>

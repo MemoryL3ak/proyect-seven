@@ -1,5 +1,8 @@
+import { deporteDeViaje, type DisciplineLike } from "./discipline-filters";
 import { TIPO_VEHICULO } from "./export-conductores";
+import { claveDiaEvento } from "./hora-evento";
 import { nombrePropio } from "./nombres";
+import { generoNormalizado } from "./planilla";
 
 /**
  * Directorio de conductores del Coordinador de Transporte (app): todos los
@@ -80,7 +83,61 @@ export type FiltroDirectorio = {
   proveedorId: string;
   /** "" = todos, o un EstadoConductor. */
   estado: "" | EstadoConductor;
+  /** Deporte y género de los viajes asignados hoy ("" = todos). */
+  disciplina?: string;
+  genero?: string;
 };
+
+/** Qué lleva hoy cada conductor: deportes y géneros de sus viajes del día. */
+export type AsignacionConductor = { deportes: string[]; generos: string[] };
+
+type ViajeAsignado = {
+  driverId?: string | null;
+  scheduledAt?: string | null;
+  status?: string | null;
+  discipline?: string | null;
+  disciplineId?: string | null;
+  metadata?: Record<string, unknown> | null;
+};
+
+/**
+ * Género del grupo que viaja: el que dejó la planilla en los metadatos y,
+ * si no viene, el que va al final del nombre de la disciplina ("FUTSAL
+ * FEMENINO"). Misma regla que el panel de Viajes.
+ */
+export function generoDeViaje(viaje: ViajeAsignado): string {
+  const meta = typeof viaje.metadata?.gender === "string" ? viaje.metadata.gender : "";
+  return generoNormalizado(meta) || generoNormalizado(String(viaje.discipline ?? "").split(/\s+/).slice(-1)[0]);
+}
+
+/**
+ * Deportes y géneros de los viajes del día (`dia` = clave YYYY-MM-DD en hora
+ * de Chile; sin `dia`, todos los viajes) por conductor, sin cancelados.
+ */
+export function asignacionesDeConductores(
+  viajes: readonly ViajeAsignado[],
+  catalogo: DisciplineLike[],
+  dia?: string | null,
+): Map<string, AsignacionConductor> {
+  const por = new Map<string, { deportes: Set<string>; generos: Set<string> }>();
+  for (const v of viajes) {
+    if (!v.driverId) continue;
+    if (String(v.status ?? "").toUpperCase() === "CANCELLED") continue;
+    if (dia && claveDiaEvento(v.scheduledAt) !== dia) continue;
+    const a = por.get(v.driverId) ?? { deportes: new Set<string>(), generos: new Set<string>() };
+    const deporte = deporteDeViaje(v, catalogo);
+    if (deporte) a.deportes.add(deporte);
+    const genero = generoDeViaje(v);
+    if (genero) a.generos.add(genero);
+    por.set(v.driverId, a);
+  }
+  return new Map(
+    [...por.entries()].map(([id, a]) => [
+      id,
+      { deportes: [...a.deportes].sort((x, y) => x.localeCompare(y, "es")), generos: [...a.generos].sort() },
+    ]),
+  );
+}
 
 export function coincideBusqueda(c: ConductorDirectorio, busqueda: string): boolean {
   const q = clave(busqueda);
@@ -99,12 +156,15 @@ export function filtrarConductores<T extends ConductorDirectorio>(
   lista: readonly T[],
   presencia: ReadonlyMap<string, PresenciaConductor>,
   filtro: FiltroDirectorio,
+  asignaciones: ReadonlyMap<string, AsignacionConductor> = new Map(),
 ): T[] {
   const orden: Record<EstadoConductor, number> = { EN_VIAJE: 0, EN_LINEA: 1, SIN_SENAL: 2, DESCONECTADO: 3 };
   return lista
     .filter((c) => String(c.status ?? "").toUpperCase() !== "DELETED")
     .filter((c) => !filtro.proveedorId || c.providerId === filtro.proveedorId)
     .filter((c) => !filtro.estado || estadoDe(presencia.get(c.id)) === filtro.estado)
+    .filter((c) => !filtro.disciplina || (asignaciones.get(c.id)?.deportes ?? []).includes(filtro.disciplina))
+    .filter((c) => !filtro.genero || (asignaciones.get(c.id)?.generos ?? []).includes(filtro.genero))
     .filter((c) => coincideBusqueda(c, filtro.busqueda))
     .sort((a, b) => {
       const ea = estadoDe(presencia.get(a.id));

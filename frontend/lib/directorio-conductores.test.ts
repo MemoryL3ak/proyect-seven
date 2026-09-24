@@ -76,3 +76,43 @@ describe("inicialesDe / saludoWhatsapp", () => {
     expect(saludoWhatsapp(null, null)).toBe("Hola, te escribe la coordinación de transporte.");
   });
 });
+
+/* ─── Disciplina y género de los viajes del día (24-09-2026) ─── */
+import { asignacionesDeConductores, generoDeViaje } from "./directorio-conductores";
+
+describe("generoDeViaje / asignacionesDeConductores", () => {
+  const catalogo = [
+    { id: "futsal", name: "Futsal", gender: "MALE" },
+    { id: "atl", name: "Atletismo", gender: "MIXED" },
+  ];
+  const viajes = [
+    { driverId: "a", scheduledAt: "2026-09-24T10:00:00-03:00", status: "SCHEDULED", discipline: "FUTSAL FEMENINO", disciplineId: "futsal" },
+    { driverId: "a", scheduledAt: "2026-09-24T15:00:00-03:00", status: "SCHEDULED", discipline: "ATLETISMO", metadata: { gender: "Mixto" } },
+    { driverId: "a", scheduledAt: "2026-09-23T10:00:00-03:00", status: "COMPLETED", discipline: "NATACION MASCULINO" },
+    { driverId: "b", scheduledAt: "2026-09-24T10:00:00-03:00", status: "CANCELLED", discipline: "FUTSAL MASCULINO" },
+    { driverId: null, scheduledAt: "2026-09-24T10:00:00-03:00", status: "SCHEDULED", discipline: "FUTSAL MASCULINO" },
+  ];
+
+  it("el género sale de la planilla o del final del nombre de la disciplina", () => {
+    expect(generoDeViaje({ discipline: "FUTSAL FEMENINO" })).toBe("Femenino");
+    expect(generoDeViaje({ discipline: "ATLETISMO", metadata: { gender: "damas" } })).toBe("Femenino");
+    expect(generoDeViaje({ discipline: "ATLETISMO" })).toBe("");
+  });
+
+  it("agrupa por conductor sólo los viajes del día pedido, sin cancelados ni sin chofer", () => {
+    const hoy = asignacionesDeConductores(viajes, catalogo, "2026-09-24");
+    expect(hoy.get("a")).toEqual({ deportes: ["Atletismo", "Futsal"], generos: ["Femenino", "Mixto"] });
+    expect(hoy.has("b")).toBe(false);
+  });
+
+  it("sin día toma todos los viajes", () => {
+    expect(asignacionesDeConductores(viajes, catalogo).get("a")?.deportes).toEqual(["Atletismo", "Futsal", "Natacion"]);
+  });
+
+  it("filtra conductores por deporte y género asignados", () => {
+    const lista = [{ id: "a", fullName: "Ana" }, { id: "c", fullName: "Cris" }];
+    const asig = asignacionesDeConductores(viajes, catalogo, "2026-09-24");
+    expect(filtrarConductores(lista, new Map(), { busqueda: "", proveedorId: "", estado: "", disciplina: "Futsal" }, asig).map((c) => c.id)).toEqual(["a"]);
+    expect(filtrarConductores(lista, new Map(), { busqueda: "", proveedorId: "", estado: "", genero: "Masculino" }, asig)).toEqual([]);
+  });
+});
