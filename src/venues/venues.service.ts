@@ -118,7 +118,23 @@ export class VenuesService {
     // sale del participante elegido. Sin esto, al editar la sede quedaba el id
     // pero la tarjeta y el portal, que muestran el nombre, no veían a nadie.
     await this.copiarFichaCoordinador(venue, updateVenueDto.coordinatorId);
-    return this.venuesRepository.save(venue);
+    const guardada = await this.venuesRepository.save(venue);
+    // Los viajes guardan el lugar como texto además del id: al renombrar la
+    // sede, los que apuntan a ella pasan a decir el nombre nuevo (el 21-09-2026
+    // "Gimnasio UTFSM" cambió de nombre y 33 viajes siguieron con el viejo).
+    if (updateVenueDto.name !== undefined && guardada.name) {
+      await this.venuesRepository.manager.query(
+        `update transport.trips set origin = $2, updated_at = now()
+          where origin_venue_id = $1 and origin is distinct from $2`,
+        [id, guardada.name],
+      );
+      await this.venuesRepository.manager.query(
+        `update transport.trips set destination = $2, updated_at = now()
+          where destination_venue_id = $1 and destination is distinct from $2`,
+        [id, guardada.name],
+      );
+    }
+    return guardada;
   }
 
   async remove(id: string) {

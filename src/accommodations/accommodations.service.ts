@@ -652,6 +652,20 @@ export class AccommodationsService {
 
       const entity = this.toEntity(rows[0]);
       await this.syncHotelRooms(entity.id, entity.roomInventory);
+      // Los viajes guardan el hotel como texto además del id: al renombrarlo,
+      // los que apuntan a él pasan a decir el nombre nuevo.
+      if (updateDto.name !== undefined && entity.name) {
+        await this.dataSource.query(
+          `update transport.trips set origin = $2, updated_at = now()
+            where origin_hotel_id = $1 and origin is distinct from $2`,
+          [id, entity.name],
+        );
+        await this.dataSource.query(
+          `update transport.trips set destination = $2, updated_at = now()
+            where destination_hotel_id = $1 and destination is distinct from $2`,
+          [id, entity.name],
+        );
+      }
       return entity;
     } catch (error) {
       if (error instanceof NotFoundException) throw error;

@@ -11,6 +11,11 @@ import {
 import { AutoAssignDriversDto } from './dto/auto-assign-drivers.dto';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 import { consultarPorLotes } from '../supabase/en-lotes';
+import {
+  LugarCatalogo,
+  LugarResuelto,
+  resolverLugar as resolverLugarPorNombre,
+} from './lugar-por-nombre';
 
 const MONTHS_ES: Record<string, number> = {
   ene: 0,
@@ -89,13 +94,8 @@ type DelegacionClave = { id: string; nombre: string; clave: string; compacta: st
 /** Deporte padre del catálogo, con su nombre ya normalizado para calzar. */
 type DisciplinaCatalogo = { id: string; clave: string; gender: string; paralimpica: boolean };
 
-/** Sede u hotel del catálogo, con su nombre ya normalizado para calzar. */
-type LugarCatalogo = {
-  clave: string;
-  venueId: string | null;
-  hotelId: string | null;
-  foodLocationId: string | null;
-};
+// Sede, hotel o comedor del catálogo (LugarCatalogo) y su calce por nombre:
+// ver lugar-por-nombre.ts.
 
 type TripWindow = {
   id: string;
@@ -356,7 +356,7 @@ export class TripsScheduleService {
       .eq('event_id', eventId);
     for (const v of (sedes as Array<Record<string, unknown>>) ?? []) {
       const clave = this.claveLugar(v.name as string | undefined);
-      if (clave) lugares.push({ clave, venueId: String(v.id), hotelId: null, foodLocationId: null });
+      if (clave) lugares.push({ clave, nombre: String(v.name), venueId: String(v.id), hotelId: null, foodLocationId: null });
     }
     const { data: hoteles } = await this.supabase
       .schema('logistics')
@@ -365,7 +365,7 @@ export class TripsScheduleService {
       .eq('event_id', eventId);
     for (const h of (hoteles as Array<Record<string, unknown>>) ?? []) {
       const clave = this.claveLugar(h.name as string | undefined);
-      if (clave) lugares.push({ clave, venueId: null, hotelId: String(h.id), foodLocationId: null });
+      if (clave) lugares.push({ clave, nombre: String(h.name), venueId: null, hotelId: String(h.id), foodLocationId: null });
     }
     // Comedores (Alimentación → Lugares). No tienen evento: se cargan todos.
     const { data: comedores } = await this.supabase
@@ -374,25 +374,23 @@ export class TripsScheduleService {
       .select('id, name');
     for (const f of (comedores as Array<Record<string, unknown>>) ?? []) {
       const clave = this.claveLugar(f.name as string | undefined);
-      if (clave) lugares.push({ clave, venueId: null, hotelId: null, foodLocationId: String(f.id) });
+      if (clave) lugares.push({ clave, nombre: String(f.name), venueId: null, hotelId: null, foodLocationId: String(f.id) });
     }
     return lugares;
   }
 
   /**
-   * Sede, hotel o comedor que nombra un extremo del viaje, por nombre exacto.
-   * "ESC.NAVAL 2" no es el nombre de nada: queda sin id, con el texto tal
-   * cual. Ante dos calces no se adivina.
+   * Sede, hotel o comedor que nombra un extremo del viaje: por nombre exacto,
+   * por el alias corto del catálogo ("Gimnasio UTFSM" → "Gimnasio UTFSM -
+   * José Miguel Carrera") o por comienzo del nombre. "ESC.NAVAL 2" no es el
+   * nombre de nada: queda sin id, con el texto tal cual. Ante dos calces no
+   * se adivina. La regla vive en lugar-por-nombre.ts.
    */
   private resolverLugar(
     raw: string | undefined | null,
     lugares: LugarCatalogo[],
-  ): { venueId: string | null; hotelId: string | null; foodLocationId: string | null } {
-    const clave = this.claveLugar(raw);
-    const candidatos = clave ? lugares.filter((l) => l.clave === clave) : [];
-    if (candidatos.length !== 1) return { venueId: null, hotelId: null, foodLocationId: null };
-    const [l] = candidatos;
-    return { venueId: l.venueId, hotelId: l.hotelId, foodLocationId: l.foodLocationId };
+  ): LugarResuelto {
+    return resolverLugarPorNombre(raw, lugares);
   }
 
   /** Delegaciones del evento, para reconocerlas cuando vienen mal ubicadas. */
@@ -876,8 +874,10 @@ export class TripsScheduleService {
         const tripRow: Record<string, unknown> = {
           event_id: dto.eventId,
           driver_id: driverId,
-          origin: row.originName || row.originAddress || null,
-          destination: row.destinationName || row.destinationAddress || null,
+          // Con el lugar enlazado, el viaje lleva el nombre del catálogo: si
+          // la sede se renombra, el texto de la planilla no se queda atrás.
+          origin: origen.nombre ?? (row.originName || row.originAddress || null),
+          destination: destino.nombre ?? (row.destinationName || row.destinationAddress || null),
           origin_venue_id: origen.venueId,
           origin_hotel_id: origen.hotelId,
           destination_venue_id: destino.venueId,
@@ -940,8 +940,8 @@ export class TripsScheduleService {
         if (isRoundTrip && returnAt) {
           const returnRow: Record<string, unknown> = {
             ...tripRow,
-            origin: row.destinationName || row.destinationAddress || null,
-            destination: row.originName || row.originAddress || null,
+            origin: destino.nombre ?? (row.destinationName || row.destinationAddress || null),
+            destination: origen.nombre ?? (row.originName || row.originAddress || null),
             // El regreso va al revés: los ids también.
             origin_venue_id: destino.venueId,
             origin_hotel_id: destino.hotelId,
