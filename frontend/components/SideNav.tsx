@@ -449,13 +449,15 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
           <button
             type="button"
             onClick={onClose}
-            className="md:hidden"
+            // display por clase, no en línea: en línea pisaba al md:hidden y
+            // la X salía también en el escritorio, junto al botón de colapsar.
+            className="flex md:hidden"
             aria-label="Cerrar menú"
             style={{
               width: "32px", height: "32px", borderRadius: "8px", flexShrink: 0,
               background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.1)",
               color: "rgba(255,255,255,0.7)", cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
+              alignItems: "center", justifyContent: "center",
             }}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
