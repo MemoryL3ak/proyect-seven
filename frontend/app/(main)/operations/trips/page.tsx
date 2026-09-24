@@ -2082,7 +2082,12 @@ export default function TripsPage() {
         <div className="mobile-strip md:grid gap-3 md:grid-cols-3 xl:grid-cols-6" style={{ "--strip-w": "240px" } as React.CSSProperties}>
           {STATUS_FLOW.map((status) => {
             const sc = STATUS_COLORS[status] ?? STATUS_COLORS.SCHEDULED;
-            const items = filteredTrips.filter((trip) => trip.status === status);
+            // "Completado" junta DROPPED_OFF (lo que deja "Finalizar servicio"
+            // en la app: 425 viajes el 24-09) y COMPLETED (1). La columna
+            // contaba sólo el segundo y mostraba un único viaje cerrado.
+            const items = filteredTrips.filter((trip) =>
+              status === "COMPLETED" ? trip.status === "COMPLETED" || trip.status === "DROPPED_OFF" : trip.status === status,
+            );
             const hasItems = items.length > 0;
             return (
               <div key={status} style={{
