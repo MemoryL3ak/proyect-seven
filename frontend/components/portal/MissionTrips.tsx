@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarIcon, CarIcon, ChevronDownIcon, UsersIcon, WhatsappIcon } from "@/components/ui/Icons";
+import { CalendarIcon, ChevronDownIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { buildDisciplineLabelMap, coincideDisciplinaPorNombre, deporteDeViaje, idConcuerdaConTexto, claveSinGenero, type DisciplineLike } from "@/lib/discipline-filters";
@@ -488,47 +488,46 @@ export default function MissionTrips({
                 transition: "all 150ms ease",
               }}
             >
-              {/* Hora: es lo primero que busca un jefe de misión. */}
-              <div style={{ width: 52, flexShrink: 0, textAlign: "center" }}>
-                <p style={{ fontSize: 15, fontWeight: 800, color: SURFACE.text, margin: 0, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
+              {/* Hora, con el punto del estado al lado: el mismo formato de
+                  la fila de Viajes del panel. La fecha sólo cuando el
+                  traslado no es de hoy. */}
+              <div style={{ width: 66, flexShrink: 0 }}>
+                <p style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 15, fontWeight: 800, color: SURFACE.text, margin: 0, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: st.color, flexShrink: 0 }} />
                   {horaEvento(tr.scheduledAt)}
                 </p>
-                <p style={{ fontSize: 10.5, color: SURFACE.textFaint, margin: "2px 0 0", textTransform: "uppercase" }}>
-                  {fechaCortaEvento(tr.scheduledAt)}
-                </p>
+                {claveDiaEvento(tr.scheduledAt) !== claveDiaEvento(new Date()) && (
+                  <p style={{ fontSize: 10.5, color: SURFACE.textFaint, margin: "2px 0 0 14px", textTransform: "uppercase" }}>
+                    {fechaCortaEvento(tr.scheduledAt)}
+                  </p>
+                )}
               </div>
 
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap", marginBottom: 4 }}>
+                {/* Ruta y estado en una línea, como la fila de Viajes del panel. */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <p style={{ flex: 1, fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: 0, minWidth: 0, ...(abiertaEsta ? {} : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }) }}>
+                    {puntoOrigen(tr)} → {puntoDestino(tr)}
+                  </p>
                   <span style={chip(st.bg, st.color)}>{t(st.label)}</span>
-                  {/* Ida o regreso: la planilla trae cada tramo como viaje aparte. */}
-                  {legTypeShort(tr.legType) && (
-                    <span style={chip(SURFACE.borderMuted, SURFACE.textSecondary)}>{t(legTypeShort(tr.legType))}</span>
-                  )}
-                  {disciplina && <span style={chip("rgba(33,208,179,0.12)", BRAND.tealInk)}>{disciplina}</span>}
-                  <span style={{ marginLeft: "auto", display: "flex", color: SURFACE.textFaint, transform: abiertaEsta ? "rotate(180deg)" : "none", transition: "transform 150ms ease" }}>
+                  <span style={{ display: "flex", color: SURFACE.textFaint, transform: abiertaEsta ? "rotate(180deg)" : "none", transition: "transform 150ms ease" }}>
                     <ChevronDownIcon size={14} strokeWidth={2.2} />
                   </span>
                 </div>
 
-                <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: 0, ...(abiertaEsta ? {} : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }) }}>
-                  {puntoOrigen(tr)} → {puntoDestino(tr)}
+                {/* Segunda línea: chofer · patente · tramo · disciplina · personas · región. */}
+                <p style={{ fontSize: 11, color: SURFACE.textMuted, margin: "3px 0 0", ...(abiertaEsta ? {} : { overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }) }}>
+                  {[
+                    nombreChofer ?? t("Sin chofer"),
+                    tr.vehiclePlate,
+                    legTypeShort(tr.legType) ? t(legTypeShort(tr.legType)) : null,
+                    disciplina,
+                    (tr.passengerCount || pasajeros.length > 0) ? `${tr.passengerCount ?? pasajeros.length} pax` : null,
+                    todas && tr.allDelegations ? t("Todas las regiones") : todas ? nombreDelegacion?.(tr.delegationId) : null,
+                  ].filter(Boolean).join(" · ")}
                 </p>
-                {/* Viendo el evento entero, sin la región no se sabe de quién
-                    es cada traslado. */}
-                {todas && (tr.allDelegations || nombreDelegacion?.(tr.delegationId)) && (
-                  <p style={{ fontSize: 11, fontWeight: 700, color: BRAND.tealInk, margin: "2px 0 0" }}>
-                    {tr.allDelegations ? t("Todas las regiones") : nombreDelegacion?.(tr.delegationId)}
-                  </p>
-                )}
 
                 <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 4 }}>
-                  {(nombreChofer || tr.vehiclePlate) && (
-                    <span style={{ fontSize: 11, color: SURFACE.textMuted, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      <CarIcon size={11} /> {nombreChofer ?? t("Sin chofer")}
-                      {tr.vehiclePlate ? ` · ${tr.vehiclePlate}` : ""}
-                    </span>
-                  )}
                   {/* El botón va junto al nombre del chofer y no dentro del
                       detalle: escribirle es lo primero que se hace cuando un
                       traslado se atrasa, y abrir la tarjeta para llegar a él
@@ -557,11 +556,6 @@ export default function MissionTrips({
                     >
                       <WhatsappIcon size={11} /> {t("WhatsApp")}
                     </button>
-                  )}
-                  {(tr.passengerCount || pasajeros.length > 0) && (
-                    <span style={{ fontSize: 11, color: SURFACE.textMuted, display: "inline-flex", alignItems: "center", gap: 4 }}>
-                      <UsersIcon size={11} /> {tr.passengerCount ?? pasajeros.length} {t("personas")}
-                    </span>
                   )}
                 </div>
 
