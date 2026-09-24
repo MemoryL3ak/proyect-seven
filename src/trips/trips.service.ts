@@ -15,6 +15,7 @@ import { Trip } from './entities/trip.entity';
 import { TripMessage } from './entities/trip-message.entity';
 import { ProviderRate } from '../providers/entities/provider-rate.entity';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
+import { diaEvento } from './dia-evento';
 import { marcasAlCambiarEstado, retrocedeASinIniciar } from './estado-viaje';
 import { consultarPorLotes, enLotes } from '../supabase/en-lotes';
 
@@ -228,6 +229,10 @@ export class TripsService {
     }
     if (dto.scheduledAt !== undefined) {
       row.scheduled_at = dto.scheduledAt ?? null;
+      // trip_date agrupa Operatividad Diaria, el panel financiero y las horas
+      // extra: si cambia la hora programada, el día la sigue.
+      const dia = diaEvento(dto.scheduledAt);
+      if (dia) row.trip_date = dia;
     }
     // Presentación del conductor: sólo la que viene dicha (planilla o
     // editor). Antes, si no venía, se ponía media hora antes del traslado, y
