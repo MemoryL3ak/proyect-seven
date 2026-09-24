@@ -262,9 +262,22 @@ export default function MissionTrips({
    */
   const claveHoy = useMemo(() => claveDiaEvento(new Date()), []);
 
+  /** El filtro de estado, suelto: lo usan la lista y el selector de días. */
+  const pasaEstado = (tr: MissionTrip) => {
+    const suEstado = norm(tr.status);
+    if (estadoFiltro === "EN_CURSO") return EN_CURSO.has(suEstado);
+    // Por realizar = desde la hora actual hacia adelante (y los en ruta).
+    if (estadoFiltro === "ACTIVOS") return esPorRealizar(tr, ahora);
+    if (estadoFiltro === "TERMINADOS") return !ACTIVOS.has(suEstado);
+    return true;
+  };
+
   const opcionesDia = useMemo(() => {
     const vistos = new Map<string, number>();
+    // Sólo los días con traslados en el estado elegido: en "Por realizar" no
+    // tiene sentido ofrecer el martes pasado con 19 viajes que nadie hizo.
     for (const tr of propios) {
+      if (!pasaEstado(tr)) continue;
       const clave = claveDiaEvento(tr.scheduledAt) || "SIN_FECHA";
       vistos.set(clave, (vistos.get(clave) ?? 0) + 1);
     }
@@ -277,7 +290,8 @@ export default function MissionTrips({
         // saber cuántos traslados tiene el día es la mitad de la decisión.
         label: `${clave === "SIN_FECHA" ? t("Sin fecha") : t(etiquetaDiaEvento(clave))} · ${total}`,
       }));
-  }, [propios, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [propios, estadoFiltro, ahora, t]);
 
   const hayHoy = useMemo(
     () => opcionesDia.some((opcion) => opcion.value === claveHoy),
@@ -306,12 +320,7 @@ export default function MissionTrips({
         const suDia = claveDiaEvento(tr.scheduledAt) || "SIN_FECHA";
         if (suDia !== diaFiltro) return false;
       }
-      const suEstado = norm(tr.status);
-      if (estadoFiltro === "EN_CURSO") return EN_CURSO.has(suEstado);
-      // Por realizar = desde la hora actual hacia adelante (y los en ruta).
-      if (estadoFiltro === "ACTIVOS") return esPorRealizar(tr, ahora);
-      if (estadoFiltro === "TERMINADOS") return !ACTIVOS.has(suEstado);
-      return true;
+      return pasaEstado(tr);
     });
     // Del más temprano al más tarde, sin excepciones: el jefe lee la jornada
     // de corrido. Los viajes sin hora quedan al final.
