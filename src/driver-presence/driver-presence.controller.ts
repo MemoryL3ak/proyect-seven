@@ -49,7 +49,9 @@ export class DriverPresenceController {
     @Query('eventId') eventId?: string,
     @Query('date') date?: string,
   ) {
-    return this.service.snapshot(eventId, date, (await this.scope.requireOperator(req)).delegationId);
+    // El Coordinador de Transporte también lo pide desde la app (directorio
+    // de conductores con estado en vivo).
+    return this.service.snapshot(eventId, date, (await this.scope.requireFleetViewer(req)).delegationId);
   }
 
   /** SSE: emite un snapshot de presencia cada 8 segundos. */

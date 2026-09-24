@@ -38,7 +38,7 @@ export type ProveedorExportable = {
   contactName?: string | null;
 };
 
-const TIPO_VEHICULO: Record<string, string> = {
+export const TIPO_VEHICULO: Record<string, string> = {
   SEDAN: "Sedán",
   SUV: "SUV",
   VAN_10: "Van 10",

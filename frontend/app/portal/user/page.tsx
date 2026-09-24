@@ -69,6 +69,7 @@ import MenuDelDia from "@/components/portal/MenuDelDia";
 import { contactosDeHotel, type CoordinadorHotel } from "@/lib/hotel-coordinadores";
 import { prepararFoto } from "@/lib/imagen";
 import MissionFleet from "@/components/portal/MissionFleet";
+import DirectorioConductores from "@/components/portal/DirectorioConductores";
 import MissionTrips from "@/components/portal/MissionTrips";
 import MissionLiveTrips from "@/components/portal/MissionLiveTrips";
 import MissionLiveMap from "@/components/portal/MissionLiveMap";
@@ -205,7 +206,7 @@ type Premiacion = {
   awarders?: PremAwarder[] | null;
 };
 // flota: sólo para el Jefe de Misión (participante encargado de su delegación).
-type PortalTab = "itinerario" | "flota" | "actividades" | "calendario" | "premiaciones" | "sedes" | "hoteles" | "alimentacion" | "delegacion" | "cupones" | "documentos" | "cuenta";
+type PortalTab = "itinerario" | "flota" | "conductores" | "actividades" | "calendario" | "premiaciones" | "sedes" | "hoteles" | "alimentacion" | "delegacion" | "cupones" | "documentos" | "cuenta";
 
 type Coupon = {
   id: string;
@@ -763,6 +764,7 @@ export default function UserPortalPage() {
     const all: { key: PortalTab; label: string; icon: React.ReactNode }[] = [
       { key:"itinerario", label:"Itinerario", icon:<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8"><circle cx="12" cy="5" r="3"/><line x1="12" y1="8" x2="12" y2="16"/><circle cx="12" cy="19" r="3"/></svg> },
       { key:"flota", label:"Flota", icon:<CarIcon size={16} strokeWidth={1.8} /> },
+      { key:"conductores", label:"Conductores", icon:<PhoneIcon size={16} strokeWidth={1.8} /> },
       { key:"actividades", label:"Actividades", icon:<TruckIcon size={16} strokeWidth={1.8} /> },
       { key:"calendario", label:"Calendario", icon:<CalendarIcon size={16} strokeWidth={1.8} /> },
       { key:"premiaciones", label:"Premiaciones", icon:<TrophyIcon size={16} strokeWidth={1.8} /> },
@@ -777,7 +779,11 @@ export default function UserPortalPage() {
     if (isComite) {
       // Alimentación y Documentos entran también para el comité: el informativo
       // del evento y los comedores son parte de lo que coordina.
-      const ORDEN_COMITE: PortalTab[] = ["actividades", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"];
+      // El Coordinador de Transporte lleva además el directorio de
+      // conductores (llamar y WhatsApp), justo después de los traslados.
+      const ORDEN_COMITE: PortalTab[] = puedeContactarChoferes
+        ? ["actividades", "conductores", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"]
+        : ["actividades", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"];
       return ORDEN_COMITE.map(key => all.find(t => t.key === key)).filter((t): t is typeof all[number] => Boolean(t));
     }
     if (isTA) return all.filter(t => ["actividades","calendario","sedes","alimentacion","cupones","documentos","cuenta"].includes(t.key));
@@ -788,14 +794,16 @@ export default function UserPortalPage() {
     // cargo. Sin itinerario personal, premiaciones ni beneficios.
     const ORDEN_JEFE: PortalTab[] = ["actividades","flota","calendario","sedes","alimentacion","documentos","cuenta"];
     return ORDEN_JEFE.map(key => all.find(t => t.key === key)).filter((t): t is typeof all[number] => Boolean(t));
-  }, [isChief, isTA, isComite]);
+  }, [isChief, isTA, isComite, puedeContactarChoferes]);
 
   // La barra inferior muestra hasta 4 pestañas fijas + "Más"; el resto se agrupa
   // en una hoja inferior. Orden de prioridad para elegir cuáles quedan fijas.
   const { primaryTabs, overflowTabs } = useMemo(() => {
     const MAX_PRIMARY = 4;
     const PRIORITY = isComite
-      ? ["actividades", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"]
+      ? (puedeContactarChoferes
+        ? ["actividades", "conductores", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"]
+        : ["actividades", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"])
       : isChief
       ? ["actividades", "flota", "calendario", "sedes", "alimentacion", "documentos", "cuenta"]
       : ["itinerario", "actividades", "calendario", "delegacion", "alimentacion", "sedes", "cuenta", "documentos", "premiaciones", "cupones"];
@@ -808,7 +816,7 @@ export default function UserPortalPage() {
       primaryTabs: portalTabs.filter((t) => primaryKeys.has(t.key)),
       overflowTabs: portalTabs.filter((t) => !primaryKeys.has(t.key)),
     };
-  }, [portalTabs, isChief, isComite]);
+  }, [portalTabs, isChief, isComite, puedeContactarChoferes]);
 
   /**
    * Un solo arranque. Habia dos efectos que cargaban al participante por su
@@ -4146,6 +4154,11 @@ export default function UserPortalPage() {
               </div>
             )}
           </div>
+        )}
+
+        {/* ─── Conductores (Coordinador de Transporte) ─── */}
+        {activeTab === "conductores" && puedeContactarChoferes && (
+          <DirectorioConductores eventId={athlete.eventId} nombreCoordinador={athlete.fullName} />
         )}
 
         {/* ─── Flota (Jefe de Misión) ─── */}

@@ -210,6 +210,29 @@ export class StaffScopeService {
     return scope;
   }
 
+  /**
+   * Presencia de la flota (quién está en línea): además del panel y el Jefe
+   * de Misión, la ve el Coordinador de Transporte, que desde la app tiene el
+   * directorio de conductores con su estado en vivo (24-09-2026). Su alcance
+   * es el evento entero (delegationId null).
+   */
+  async requireFleetViewer(req: ApiRequest): Promise<StaffScope> {
+    const scope = await this.forRequest(req);
+    const esCoordinadorTransporte =
+      scope?.kind === 'committee' && scope.role === TRANSPORT_ROLE;
+    if (
+      !scope ||
+      (scope.kind !== 'staff' &&
+        scope.kind !== 'mission_head' &&
+        !esCoordinadorTransporte)
+    ) {
+      throw new ForbiddenException(
+        'Requiere sesión del panel, de Jefe de Misión o de Coordinador de Transporte',
+      );
+    }
+    return scope;
+  }
+
   invalidate(userId: string) {
     this.cache.delete(`staff:${userId}`);
     this.cache.delete(`athlete:${userId}`);
