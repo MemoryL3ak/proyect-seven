@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import KpiCard from "@/components/ui/KpiCard";
@@ -123,6 +123,42 @@ type Detalle = {
 type EventItem = { id: string; name?: string | null };
 type ProviderItem = { id: string; name?: string | null };
 
+/** GET /trips/finance/jornadas: horas de jornada y extras (regla de 13 h). */
+type Jornadas = {
+  horasJornada: number;
+  generadoEn: string;
+  totales: {
+    conductores: number;
+    jornadas: number;
+    jornadasAbiertas: number;
+    jornadasConExtra: number;
+    horasTrabajadas: number;
+    horasExtra: number;
+  };
+  porConductor: {
+    driverId: string;
+    nombre: string;
+    proveedor: string;
+    jornadas: number;
+    jornadasConExtra: number;
+    horasTrabajadas: number;
+    horasExtra: number;
+    diasConExtra: string[];
+  }[];
+  jornadas: {
+    driverId: string;
+    nombre: string;
+    proveedor: string;
+    dia: string;
+    inicio: string;
+    fin: string | null;
+    abierta: boolean;
+    viajes: number;
+    horasTrabajadas: number;
+    horasExtra: number;
+  }[];
+};
+
 /* ── Formato ── */
 const clp = (n: number) =>
   `$${Math.round(n || 0).toLocaleString("es-CL")}`;
@@ -204,6 +240,7 @@ export default function TransportFinancePage() {
   const { t } = useI18n();
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [detalle, setDetalle] = useState<Detalle[]>([]);
+  const [jornadas, setJornadas] = useState<Jornadas | null>(null);
   const [eventos, setEventos] = useState<EventItem[]>([]);
   const [proveedores, setProveedores] = useState<ProviderItem[]>([]);
   const [eventId, setEventId] = useState("");
@@ -232,12 +269,15 @@ export default function TransportFinancePage() {
     if (proveedorId) qs.set("providerId", proveedorId);
     const sufijo = qs.toString() ? `?${qs}` : "";
     try {
-      const [r, d] = await Promise.all([
+      const [r, d, j] = await Promise.all([
         apiFetch<Resumen>(`/trips/finance/summary${sufijo}`),
         apiFetch<Detalle[]>(`/trips/finance/detail${sufijo}`),
+        // Las horas extra no bloquean el panel si fallan.
+        apiFetch<Jornadas>(`/trips/finance/jornadas${sufijo}`).catch(() => null),
       ]);
       setResumen(r);
       setDetalle(Array.isArray(d) ? d : []);
+      setJornadas(j);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("No se pudo cargar la información financiera."));
     } finally {
@@ -696,6 +736,8 @@ export default function TransportFinancePage() {
               </section>
 
               <TopConductores filas={resumen.topConductores} />
+
+              <HorasExtra datos={jornadas} />
             </div>
           )}
 
@@ -1380,3 +1422,99 @@ function CalidadDatos({
 function CheckOrAlert({ ok }: { ok: boolean }) {
   return ok ? <DollarIcon /> : <AlertIcon />;
 }
+
+/**
+ * Horas extra de jornada por conductor: la regla de 13 h del Control de
+ * jornada llevada al período y los filtros del panel. Se muestran horas, no
+ * pesos: no hay una tarifa de hora extra cargada en la plataforma.
+ */
+function HorasExtra({ datos }: { datos: Jornadas | null }) {
+  const { t } = useI18n();
+  const [verDias, setVerDias] = useState<string | null>(null);
+  if (!datos || datos.totales.jornadas === 0) return null;
+  const horas = (h: number) => `${h.toLocaleString("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} h`;
+  const fechaCorta = (dia: string) => dia.split("-").reverse().slice(0, 2).join("-");
+  const hora = (iso: string | null) =>
+    iso ? new Date(iso).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Santiago" }) : "—";
+  const kpis = [
+    { label: t("Conductores"), valor: String(datos.totales.conductores), color: "var(--text)" },
+    { label: t("Jornadas"), valor: String(datos.totales.jornadas), color: "var(--text)" },
+    { label: t("Con horas extra"), valor: String(datos.totales.jornadasConExtra), color: datos.totales.jornadasConExtra > 0 ? STATE.warningText : "var(--text)" },
+    { label: t("Horas trabajadas"), valor: horas(datos.totales.horasTrabajadas), color: "var(--text)" },
+    { label: t("Horas extra"), valor: horas(datos.totales.horasExtra), color: datos.totales.horasExtra > 0 ? STATE.dangerText : "var(--text)" },
+  ];
+
+  return (
+    <div className="surface rounded-2xl overflow-hidden">
+      <div className="p-5 pb-3">
+        <p className="text-[10px] font-bold uppercase" style={{ letterSpacing: "0.14em", color: "var(--text-muted)" }}>
+          {t("Control de jornada")}
+        </p>
+        <h2 className="text-lg font-bold mt-0.5" style={{ color: "var(--text)" }}>
+          {t("Horas extra del período")}
+        </h2>
+        <p className="text-xs mt-1" style={{ color: "var(--text-muted)" }}>
+          {t("Jornada de")} {datos.horasJornada} {t("horas desde el primer viaje iniciado; lo que pasa de ahí hasta cerrar el último viaje del día es hora extra.")}
+          {datos.totales.jornadasAbiertas > 0 && ` ${datos.totales.jornadasAbiertas} ${t("jornadas siguen abiertas y sus horas son provisorias.")}`}
+        </p>
+        <div className="mobile-strip md:grid md:grid-cols-5 gap-3 mt-4" style={{ "--strip-w": "150px" } as React.CSSProperties}>
+          {kpis.map((k) => (
+            <div key={k.label} style={{ background: "var(--elevated)", border: "1px solid var(--border)", borderRadius: 12, padding: "10px 14px" }}>
+              <p className="text-[10px] font-bold uppercase" style={{ letterSpacing: "0.12em", color: "var(--text-muted)", margin: 0 }}>{k.label}</p>
+              <p style={{ fontSize: 20, fontWeight: 800, color: k.color, margin: "2px 0 0", fontVariantNumeric: "tabular-nums" }}>{k.valor}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm" style={{ minWidth: 640 }}>
+          <thead>
+            <tr style={{ background: "var(--elevated)" }}>
+              <Th>{t("Conductor")}</Th>
+              <Th>{t("Proveedor")}</Th>
+              <Th alinear="right">{t("Jornadas")}</Th>
+              <Th alinear="right">{t("Con extra")}</Th>
+              <Th alinear="right">{t("Horas trabajadas")}</Th>
+              <Th alinear="right">{t("Horas extra")}</Th>
+            </tr>
+          </thead>
+          <tbody>
+            {datos.porConductor.map((c) => {
+              const abierto = verDias === c.driverId;
+              const dias = datos.jornadas.filter((j) => j.driverId === c.driverId);
+              return (
+                <Fragment key={c.driverId}>
+                  <tr
+                    onClick={() => setVerDias(abierto ? null : c.driverId)}
+                    style={{ borderTop: "1px solid var(--border)", cursor: "pointer", background: abierto ? "var(--elevated)" : undefined }}
+                    title={t("Ver el detalle por día")}
+                  >
+                    <td className="px-4 py-3 font-semibold" style={{ color: "var(--text)" }}>{c.nombre}</td>
+                    <td className="px-4 py-3" style={{ color: "var(--text-muted)" }}>{c.proveedor}</td>
+                    <td className="px-4 py-3 text-right" style={{ color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{c.jornadas}</td>
+                    <td className="px-4 py-3 text-right" style={{ color: c.jornadasConExtra > 0 ? STATE.warningText : "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{c.jornadasConExtra}</td>
+                    <td className="px-4 py-3 text-right" style={{ color: "var(--text)", fontVariantNumeric: "tabular-nums" }}>{horas(c.horasTrabajadas)}</td>
+                    <td className="px-4 py-3 text-right font-bold" style={{ color: c.horasExtra > 0 ? STATE.dangerText : "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{horas(c.horasExtra)}</td>
+                  </tr>
+                  {abierto && dias.map((j) => (
+                    <tr key={`${j.driverId}-${j.dia}`} style={{ background: "var(--elevated)" }}>
+                      <td className="px-4 py-2 pl-8 text-xs" style={{ color: "var(--text-muted)" }}>
+                        {fechaCorta(j.dia)} · {hora(j.inicio)} → {j.abierta ? t("abierta") : hora(j.fin)}
+                      </td>
+                      <td className="px-4 py-2 text-xs" style={{ color: "var(--text-muted)" }}>{j.viajes} {j.viajes === 1 ? t("viaje") : t("viajes")}</td>
+                      <td className="px-4 py-2" />
+                      <td className="px-4 py-2" />
+                      <td className="px-4 py-2 text-right text-xs" style={{ color: "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{horas(j.horasTrabajadas)}</td>
+                      <td className="px-4 py-2 text-right text-xs font-bold" style={{ color: j.horasExtra > 0 ? STATE.dangerText : "var(--text-muted)", fontVariantNumeric: "tabular-nums" }}>{horas(j.horasExtra)}</td>
+                    </tr>
+                  ))}
+                </Fragment>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+

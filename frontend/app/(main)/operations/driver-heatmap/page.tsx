@@ -2,7 +2,15 @@
 
 import { useState, useEffect, useMemo, useRef } from "react";
 import { apiFetch } from "@/lib/api";
-import { iniciosDeJornada } from "@/lib/jornada";
+import {
+  calcularJornadas,
+  formatoDuracion,
+  JORNADA_HORAS,
+  JORNADA_MS,
+  type EstadoJornada,
+  type Jornada,
+} from "@/lib/jornada";
+import StyledSelect from "@/components/StyledSelect";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { StarIcon, MedalIcon, RefreshIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
@@ -22,10 +30,7 @@ const CERRADOS = new Set(["DROPPED_OFF", "COMPLETED", "CANCELLED"]);
  * cierra recién cuando termina el último viaje, y las extras son lo que va
  * desde el plazo hasta ese cierre.
  */
-const JORNADA_HORAS = 13;
-const JORNADA_MS = JORNADA_HORAS * 60 * 60 * 1000;
-/** Umbral para avisar que la jornada está por vencer. */
-const JORNADA_AVISO_MS = 60 * 60 * 1000;
+// La regla (13 h, aviso a falta de una hora, extras) vive en lib/jornada.ts.
 
 /** Color por estado: el operador mira la franja izquierda, no el texto. */
 const ESTADO_JORNADA: Record<
@@ -38,36 +43,6 @@ const ESTADO_JORNADA: Record<
   EXTRA: { label: "Horas extra", color: "#ef4444", bg: "rgba(239,68,68,0.1)", borde: "rgba(239,68,68,0.35)", texto: "#b91c1c" },
   CERRADA: { label: "Cerrada", color: "#94a3b8", bg: "#f1f5f9", borde: "#e2e8f0", texto: "#475569" },
 };
-
-type EstadoJornada = "SIN_INICIAR" | "EN_JORNADA" | "POR_VENCER" | "EXTRA" | "CERRADA";
-
-type Jornada = {
-  driverId: string;
-  inicio: Date | null;
-  /** Inicio + 13 h. */
-  limite: Date | null;
-  /** Cierre real: fin del último viaje, o null si la jornada sigue abierta. */
-  cierre: Date | null;
-  estado: EstadoJornada;
-  /** Milisegundos trabajados, hasta ahora o hasta el cierre. */
-  trabajadoMs: number;
-  /** Milisegundos por sobre las 13 h. */
-  extraMs: number;
-  /** Lo que mantiene la jornada abierta pasado el plazo. */
-  viajeEnCurso: boolean;
-  pendientes: number;
-  totalViajes: number;
-};
-
-/** "4 h 20 min", "35 min". Un contador de jornada no necesita segundos. */
-function formatoDuracion(ms: number): string {
-  const total = Math.max(0, Math.round(ms / 60000));
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  if (h === 0) return `${m} min`;
-  if (m === 0) return `${h} h`;
-  return `${h} h ${m} min`;
-}
 
 function horaCorta(fecha: Date | null): string {
   if (!fecha) return "—";
@@ -153,6 +128,8 @@ export default function DriverHeatmapPage() {
   const [trips, setTrips] = useState<Trip[]>([]);
   const [drivers, setDrivers] = useState<Record<string, DriverItem>>({});
   const [selectedDate, setSelectedDate] = useState(toLocalDate(new Date()));
+  /** Control de jornada: conductor elegido ("" = todos). */
+  const [jornadaConductor, setJornadaConductor] = useState("");
   const [loading, setLoading] = useState(true);
   const [rankTab, setRankTab] = useState<"trips" | "rating" | "idle">("trips");
   const [hoveredCell, setHoveredCell] = useState<{ driverId: string; hour: number } | null>(null);
@@ -216,80 +193,42 @@ export default function DriverHeatmapPage() {
     }),
   [trips, dayStart, dayEnd, isViewingToday]);
 
-  /* ─── Jornadas del día: 13 h desde el primer viaje iniciado ─── */
-  const jornadas = useMemo<Jornada[]>(() => {
-    const ahora = new Date();
-    const porConductor = new Map<string, Trip[]>();
-    for (const tr of dayTrips) {
-      if (!tr.driverId) continue;
-      const lista = porConductor.get(tr.driverId) ?? [];
-      lista.push(tr);
-      porConductor.set(tr.driverId, lista);
+  /* ─── Jornadas del día: 13 h desde el primer viaje iniciado (lib/jornada) ─── */
+  const jornadas = useMemo<Jornada[]>(
+    () => calcularJornadas(dayTrips, new Date(), (id) => drivers[id]?.fullName ?? ""),
+    [dayTrips, drivers],
+  );
+
+  /** Días con viajes, para el desplegable del Control de jornada. */
+  const diasConViajes = useMemo(() => {
+    const porDia = new Map<string, number>();
+    for (const tr of trips) {
+      const raw = tr.scheduledAt || tr.startedAt;
+      if (!raw) continue;
+      const k = toLocalDate(new Date(raw));
+      porDia.set(k, (porDia.get(k) ?? 0) + 1);
     }
+    if (!porDia.has(selectedDate)) porDia.set(selectedDate, 0);
+    return [...porDia.entries()].sort((a, b) => b[0].localeCompare(a[0])).map(([key, count]) => ({ key, count }));
+  }, [trips, selectedDate]);
 
-    const filas: Jornada[] = [];
-    porConductor.forEach((viajes, driverId) => {
-      // Sólo viajes que están o estuvieron en marcha: uno devuelto a
-      // Programado conserva un startedAt viejo que no arranca la jornada.
-      const iniciados = iniciosDeJornada(viajes);
+  /** Conductores con viajes ese día, por nombre. */
+  const conductoresDelDia = useMemo(
+    () => jornadas
+      .map((j) => ({ id: j.driverId, nombre: nombreConductor(drivers[j.driverId]) }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, "es")),
+    [jornadas, drivers],
+  );
 
-      // Sin un viaje iniciado no hay jornada que contar: lo programado no
-      // empieza a correr el reloj.
-      if (iniciados.length === 0) {
-        filas.push({
-          driverId, inicio: null, limite: null, cierre: null, estado: "SIN_INICIAR",
-          trabajadoMs: 0, extraMs: 0, viajeEnCurso: false,
-          pendientes: viajes.length, totalViajes: viajes.length,
-        });
-        return;
-      }
+  const jornadasVisibles = useMemo(
+    () => (jornadaConductor ? jornadas.filter((j) => j.driverId === jornadaConductor) : jornadas),
+    [jornadas, jornadaConductor],
+  );
 
-      const inicio = iniciados[0];
-      const limite = new Date(inicio.getTime() + JORNADA_MS);
-      const viajeEnCurso = viajes.some((v) => v.status === "EN_ROUTE" || v.status === "PICKED_UP");
-      // Programados del día que todavía no se hacen. Son los que mantienen el
-      // contador corriendo pasado el plazo.
-      const pendientes = viajes.filter(
-        (v) => !CERRADOS.has(v.status ?? "") && v.status !== "CANCELLED",
-      ).length;
-
-      const cierres = viajes
-        .map((v) => (v.completedAt ? new Date(v.completedAt) : null))
-        .filter((d): d is Date => !!d && !Number.isNaN(d.getTime()))
-        .sort((a, b) => b.getTime() - a.getTime());
-      const ultimoCierre = cierres[0] ?? null;
-
-      const abierta = viajeEnCurso || pendientes > 0;
-      const cierre = abierta ? null : ultimoCierre;
-      const hasta = abierta ? ahora : (ultimoCierre ?? ahora);
-      const trabajadoMs = Math.max(0, hasta.getTime() - inicio.getTime());
-      const extraMs = Math.max(0, hasta.getTime() - limite.getTime());
-
-      let estado: EstadoJornada;
-      if (!abierta) estado = "CERRADA";
-      else if (ahora >= limite) estado = "EXTRA";
-      else if (limite.getTime() - ahora.getTime() <= JORNADA_AVISO_MS) estado = "POR_VENCER";
-      else estado = "EN_JORNADA";
-
-      filas.push({
-        driverId, inicio, limite, cierre, estado,
-        trabajadoMs, extraMs, viajeEnCurso, pendientes,
-        totalViajes: viajes.length,
-      });
-    });
-
-    // Primero quien está en extras, después quien va a vencer: es el orden en
-    // que el operador tiene que actuar.
-    const peso: Record<EstadoJornada, number> = {
-      EXTRA: 0, POR_VENCER: 1, EN_JORNADA: 2, CERRADA: 3, SIN_INICIAR: 4,
-    };
-    return filas.sort(
-      (a, b) =>
-        peso[a.estado] - peso[b.estado] ||
-        b.extraMs - a.extraMs ||
-        (drivers[a.driverId]?.fullName ?? "").localeCompare(drivers[b.driverId]?.fullName ?? ""),
-    );
-  }, [dayTrips, drivers]);
+  // Si cambia el día y el conductor elegido no tiene viajes, se suelta el filtro.
+  useEffect(() => {
+    if (jornadaConductor && !jornadas.some((j) => j.driverId === jornadaConductor)) setJornadaConductor("");
+  }, [jornadas, jornadaConductor]);
 
   /* ─── Active driver IDs for the day ─── */
   const activeDriverIds = useMemo(() => {
@@ -602,9 +541,9 @@ export default function DriverHeatmapPage() {
           </div>
           <div style={{ display: "flex", gap: 18, flexWrap: "wrap" }}>
             {[
-              { label: t("En jornada"), valor: jornadas.filter((j) => j.estado === "EN_JORNADA").length, color: null },
-              { label: t("Por vencer"), valor: jornadas.filter((j) => j.estado === "POR_VENCER").length, color: STATE.warning },
-              { label: t("En extras"), valor: jornadas.filter((j) => j.estado === "EXTRA").length, color: STATE.danger },
+              { label: t("En jornada"), valor: jornadasVisibles.filter((j) => j.estado === "EN_JORNADA").length, color: null },
+              { label: t("Por vencer"), valor: jornadasVisibles.filter((j) => j.estado === "POR_VENCER").length, color: STATE.warning },
+              { label: t("En extras"), valor: jornadasVisibles.filter((j) => j.estado === "EXTRA").length, color: STATE.danger },
             ].map((k) => (
               <span key={k.label} style={{ display: "inline-flex", flexDirection: "column", gap: 2 }}>
                 <span style={{ fontSize: "10px", fontWeight: 600, letterSpacing: "0.12em", textTransform: "uppercase" as const, color: pal.labelColor, whiteSpace: "nowrap" }}>
@@ -618,13 +557,36 @@ export default function DriverHeatmapPage() {
           </div>
         </div>
 
-        {jornadas.length === 0 ? (
+        {/* Filtros: día y conductor. El día es el mismo del resto de la
+            página (el selector de arriba); acá va como desplegable con la
+            cantidad de viajes de cada jornada. */}
+        <div style={{ display: "grid", gap: 10, marginBottom: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 260px))" }}>
+          <label className="text-sm block" style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: pal.labelColor, marginBottom: 4 }}>{t("Día")}</span>
+            <StyledSelect value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}>
+              {diasConViajes.map((d) => (
+                <option key={d.key} value={d.key}>
+                  {`${d.key === toLocalDate(new Date()) ? t("Hoy") + " · " : ""}${d.key.split("-").reverse().join("-")} (${d.count})`}
+                </option>
+              ))}
+            </StyledSelect>
+          </label>
+          <label className="text-sm block" style={{ minWidth: 0 }}>
+            <span style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: pal.labelColor, marginBottom: 4 }}>{t("Conductor")}</span>
+            <StyledSelect value={jornadaConductor} onChange={(e) => setJornadaConductor(e.target.value)}>
+              <option value="">{`${t("Todos los conductores")} (${jornadas.length})`}</option>
+              {conductoresDelDia.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+            </StyledSelect>
+          </label>
+        </div>
+
+        {jornadasVisibles.length === 0 ? (
           <div style={{ borderRadius: "14px", border: `1px dashed ${pal.cardBorder}`, padding: "36px 20px", textAlign: "center", color: pal.textMuted, fontSize: "13px" }}>
             {t("Ningún conductor con viajes este día.")}
           </div>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {jornadas.map((j) => {
+            {jornadasVisibles.map((j) => {
               const tono = ESTADO_JORNADA[j.estado];
               const chofer = drivers[j.driverId];
               // La barra se llena con las 13 h; en extras se pinta completa.

@@ -1,5 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import {
+  jornadasDeViajes,
+  resumenDeJornadas,
+  ResumenJornadas,
+  ViajeJornadaRow,
+} from './jornada-extras';
 
 /**
  * Panel financiero de Transporte.
@@ -261,6 +267,48 @@ export class TripsFinanceService {
       );
       return null;
     }
+  }
+
+  /**
+   * Horas de jornada y horas extra por conductor y día, sobre el mismo
+   * universo filtrado que el resto del panel. La regla (13 h desde el primer
+   * viaje iniciado) vive en jornada-extras.ts.
+   */
+  async jornadas(filters: FinanceFilters = {}): Promise<ResumenJornadas> {
+    const params = this.params(filters);
+    const rows = (await this.dataSource.query(
+      `${this.baseCte()}
+       select
+         c.driver_id::text                    as driver_id,
+         to_char(c.dia, 'YYYY-MM-DD')         as dia,
+         c.status                             as status,
+         c.scheduled_at                       as scheduled_at,
+         c.started_at                         as started_at,
+         c.completed_at                       as completed_at,
+         c.updated_at                         as updated_at,
+         c.driver_name                        as nombre,
+         c.provider_id::text                  as provider_id,
+         p.name                               as proveedor
+       from con_conductor c
+       left join core.providers p on p.id = c.provider_id
+       where c.driver_id is not null
+         and c.status <> 'CANCELLED'`,
+      params,
+    )) as Array<Record<string, unknown>>;
+    const viajes: ViajeJornadaRow[] = rows.map((r) => ({
+      driverId: String(r.driver_id ?? ''),
+      dia: String(r.dia ?? ''),
+      status: typeof r.status === 'string' ? r.status : null,
+      scheduledAt: r.scheduled_at as Date | null,
+      startedAt: r.started_at as Date | null,
+      completedAt: r.completed_at as Date | null,
+      updatedAt: r.updated_at as Date | null,
+      nombre: typeof r.nombre === 'string' ? r.nombre : null,
+      providerId: typeof r.provider_id === 'string' ? r.provider_id : null,
+      proveedor: typeof r.proveedor === 'string' ? r.proveedor : null,
+    }));
+    const ahora = new Date();
+    return resumenDeJornadas(jornadasDeViajes(viajes, ahora), ahora);
   }
 
   async summary(filters: FinanceFilters = {}) {

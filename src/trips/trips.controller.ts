@@ -75,6 +75,19 @@ export class TripsController {
     return this.financeService.summary({ eventId, from, to, clientType, fleet, service, providerId });
   }
 
+  @Get('finance/jornadas')
+  financeJornadas(
+    @Query('eventId') eventId?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('clientType') clientType?: string,
+    @Query('fleet') fleet?: string,
+    @Query('service') service?: string,
+    @Query('providerId') providerId?: string,
+  ) {
+    return this.financeService.jornadas({ eventId, from, to, clientType, fleet, service, providerId });
+  }
+
   @Get('finance/detail')
   financeDetail(
     @Query('eventId') eventId?: string,
