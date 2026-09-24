@@ -5,6 +5,17 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { descargarConductores, ES_CONDUCTOR } from "@/lib/export-conductores";
 import {
+  cumpleFiltroDocumentacion,
+  cumpleFiltroTipo,
+  documentacionDe,
+  DOCS_PERSONA,
+  DOCS_VEHICULO,
+  DOCS_CONDUCTOR,
+  type FiltroDocumentacion,
+  type FiltroTipoPersona,
+  OPCIONES_FILTRO_DOCUMENTACION,
+} from "@/lib/documentos-personas";
+import {
   CheckIcon,
   XIcon,
   AlertIcon,
@@ -49,25 +60,11 @@ const PROVIDER_TYPES: Record<string, TypeEntry> = {
 };
 
 // ── Transport documents ─────────────────────────────────────────────────────
-const TRANSPORT_DOCS_PERSON = [
-  { key: "doc_carnet",        label: "Fotocopia Carnet" },
-  { key: "doc_antecedentes",  label: "Antecedentes" },
-  { key: "doc_inhabilidades", label: "Cert. Inhabilidades menores" },
-  { key: "doc_licencia",      label: "Licencia de conducir" },
-  { key: "doc_foto_carnet",   label: "Foto tipo Carnet" },
-];
-
-const TRANSPORT_DOCS_VEHICLE = [
-  { key: "doc_permiso_circ",     label: "Permiso de circulación" },
-  { key: "doc_soap",             label: "SOAP" },
-  { key: "doc_decreto_80",       label: "Decreto 80" },
-  { key: "doc_gases",            label: "Gases" },
-  { key: "doc_padron",           label: "Padrón" },
-  { key: "doc_seguro_adicional", label: "Seguros adicionales" },
-  { key: "doc_foto_vehiculo",    label: "Foto del vehículo" },
-];
-
-const ALL_TRANSPORT_DOCS = [...TRANSPORT_DOCS_PERSON, ...TRANSPORT_DOCS_VEHICLE];
+// La lista vive en lib/documentos-personas, que también usa el módulo
+// Documentos para decir quién no ha subido nada.
+const TRANSPORT_DOCS_PERSON = DOCS_PERSONA;
+const TRANSPORT_DOCS_VEHICLE = DOCS_VEHICULO;
+const ALL_TRANSPORT_DOCS = DOCS_CONDUCTOR;
 
 const TRIP_TYPES = ["ARRIVAL", "DEPARTURE", "BOTH"];
 const TRIP_TYPE_LABELS: Record<string, string> = {
@@ -294,6 +291,18 @@ export default function ProveedoresPage() {
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [participantSearch, setParticipantSearch] = useState("");
+  /** Filtros de la nómina: conductor u otro, y estado de su documentación. */
+  const [participantTipo, setParticipantTipo] = useState<FiltroTipoPersona>("");
+  const [participantDocs, setParticipantDocs] = useState<FiltroDocumentacion>("");
+  // Llegada desde el módulo Documentos: /registro/proveedores?buscar=<nombre>
+  // abre la nómina con esa persona buscada.
+  useEffect(() => {
+    const buscar = new URLSearchParams(window.location.search).get("buscar");
+    if (buscar) {
+      setParticipantSearch(buscar);
+      setActiveTab("participantes");
+    }
+  }, []);
   const [bulkPhotoResult, setBulkPhotoResult] = useState<{ matched: number; notFound: number; names: string[] } | null>(null);
   const [participantModal, setParticipantModal] = useState<null | { editing?: Participant }>(null);
   const [participantForm, setParticipantForm] = useState(EMPTY_PARTICIPANT_FORM);
@@ -583,9 +592,14 @@ export default function ProveedoresPage() {
       if (q && !p.fullName.toLowerCase().includes(q) &&
           !(p.rut ?? "").toLowerCase().includes(q) &&
           !(p.email ?? "").toLowerCase().includes(q)) return false;
+      if (!cumpleFiltroTipo(p, participantTipo)) return false;
+      if (participantDocs) {
+        const tipoProveedor = providers.find(pr => pr.id === p.providerId)?.type;
+        if (!cumpleFiltroDocumentacion(documentacionDe(p, tipoProveedor).estado, participantDocs)) return false;
+      }
       return true;
     });
-  }, [participants, participantSearch]);
+  }, [participants, participantSearch, participantTipo, participantDocs, providers]);
 
   const openAddParticipant = () => {
     setParticipantForm({ ...EMPTY_PARTICIPANT_FORM, providerId: providerFilter });
@@ -1098,6 +1112,28 @@ export default function ProveedoresPage() {
               <option value="">{t("— Todos los proveedores —")}</option>
               {providers.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            {/* Quién es conductor y quién no ha subido documentos: la misma
+                pregunta que responde el módulo Documentos, aquí en la nómina. */}
+            <select
+              className="input w-full md:w-44"
+              value={participantTipo}
+              onChange={e => setParticipantTipo(e.target.value as FiltroTipoPersona)}
+              aria-label={t("Tipo")}
+            >
+              <option value="">{t("— Todos los tipos —")}</option>
+              <option value="CONDUCTOR">{t("Conductores")}</option>
+              <option value="OTRO">{t("Otros participantes")}</option>
+            </select>
+            <select
+              className="input w-full md:w-56"
+              value={participantDocs}
+              onChange={e => setParticipantDocs(e.target.value as FiltroDocumentacion)}
+              aria-label={t("Documentos")}
+            >
+              {OPCIONES_FILTRO_DOCUMENTACION.map(o => (
+                <option key={o.value} value={o.value}>{o.value ? t(o.label) : t("— Documentos: todos —")}</option>
               ))}
             </select>
             {activeFilterProvider && (

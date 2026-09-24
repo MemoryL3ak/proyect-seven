@@ -2,6 +2,7 @@
 
 import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
+import DocumentacionPersonas from "@/components/DocumentacionPersonas";
 import StyledSelect from "@/components/StyledSelect";
 import { apiFetch } from "@/lib/api";
 import { STATE, SURFACE, BRAND, ACCENT } from "@/lib/design";
@@ -203,6 +204,11 @@ export default function EventDocumentsPage() {
 
   return (
     <div className="space-y-4">
+      {/* Quién ha subido sus documentos (conductores y personal de
+          proveedores). Va antes de la publicación: es lo que se viene a
+          mirar en plena operación. */}
+      <DocumentacionPersonas />
+
       <section style={{ background: pal.cardBg, border: `1px solid ${pal.cardBorder}`, borderRadius: 18, padding: "18px 20px", boxShadow: pal.shadow }}>
         <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: ACCENT.violetLight, marginBottom: 4 }}>
           {t("Documentos del evento")}
