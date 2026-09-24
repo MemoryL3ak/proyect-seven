@@ -32,6 +32,7 @@ import {
   DownloadIcon,
 } from "@/components/ui/Icons";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import StyledSelect from "@/components/StyledSelect";
 import CountrySelect from "@/components/CountrySelect";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
@@ -879,12 +880,12 @@ export default function ProveedoresPage() {
                 onChange={e => setProviderSearch(e.target.value)}
               />
             </div>
-            <select className="input w-full md:w-52" value={filterType} onChange={e => setFilterType(e.target.value)}>
-              <option value="">{t("— Todos los tipos —")}</option>
+            <StyledSelect wrapperClassName="w-full md:w-52" value={filterType} onChange={e => setFilterType(e.target.value)}>
+              <option value="">{t("Todos los tipos")}</option>
               {Object.entries(PROVIDER_TYPES).map(([key, { label }]) => (
                 <option key={key} value={key}>{t(label)}</option>
               ))}
-            </select>
+            </StyledSelect>
             <span style={{ fontSize: "12px", color: "var(--text-faint)", whiteSpace: "nowrap" }}>
               {filteredProviders.length} {t("de")} {providers.length}
             </span>
@@ -1104,38 +1105,26 @@ export default function ProveedoresPage() {
               value={participantSearch}
               onChange={e => setParticipantSearch(e.target.value)}
             />
-            <select
-              className="input w-full md:w-64"
-              value={providerFilter}
-              onChange={e => setProviderFilter(e.target.value)}
-            >
-              <option value="">{t("— Todos los proveedores —")}</option>
+            {/* Filtros con el selector del panel (StyledSelect), nunca el
+                <select> nativo: Ariel lo pidió expresamente el 24-09-2026. */}
+            <StyledSelect wrapperClassName="w-full md:w-64" value={providerFilter} onChange={e => setProviderFilter(e.target.value)}>
+              <option value="">{t("Todos los proveedores")}</option>
               {providers.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
-            </select>
+            </StyledSelect>
             {/* Quién es conductor y quién no ha subido documentos: la misma
                 pregunta que responde el módulo Documentos, aquí en la nómina. */}
-            <select
-              className="input w-full md:w-44"
-              value={participantTipo}
-              onChange={e => setParticipantTipo(e.target.value as FiltroTipoPersona)}
-              aria-label={t("Tipo")}
-            >
-              <option value="">{t("— Todos los tipos —")}</option>
+            <StyledSelect wrapperClassName="w-full md:w-48" value={participantTipo} onChange={e => setParticipantTipo(e.target.value as FiltroTipoPersona)}>
+              <option value="">{t("Tipo: todos")}</option>
               <option value="CONDUCTOR">{t("Conductores")}</option>
               <option value="OTRO">{t("Otros participantes")}</option>
-            </select>
-            <select
-              className="input w-full md:w-56"
-              value={participantDocs}
-              onChange={e => setParticipantDocs(e.target.value as FiltroDocumentacion)}
-              aria-label={t("Documentos")}
-            >
+            </StyledSelect>
+            <StyledSelect wrapperClassName="w-full md:w-60" value={participantDocs} onChange={e => setParticipantDocs(e.target.value as FiltroDocumentacion)}>
               {OPCIONES_FILTRO_DOCUMENTACION.map(o => (
-                <option key={o.value} value={o.value}>{o.value ? t(o.label) : t("— Documentos: todos —")}</option>
+                <option key={o.value} value={o.value}>{o.value ? t(o.label) : t("Documentos: todos")}</option>
               ))}
-            </select>
+            </StyledSelect>
             {activeFilterProvider && (
               <button
                 onClick={() => setProviderFilter("")}
