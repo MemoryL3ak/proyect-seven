@@ -402,8 +402,10 @@ export default function MissionTrips({
         />
         {/* Día del traslado. Va antes que la disciplina porque la jornada es
             lo primero que se acota: "qué tengo mañana" se pregunta más que
-            "qué tiene el vóleibol". Sólo aparece si hay más de un día: con
-            uno solo, el filtro no filtra nada.
+            "qué tiene el vóleibol". Aparece siempre que haya algún día: en
+            "Por realizar" suele quedar sólo "Hoy" hasta que se cargan las
+            planillas siguientes, y Ariel quiere ver igual el selector con
+            hoy y los días posteriores.
 
             En selector y no en fichas: el evento dura trece días, y trece
             fichas en una tira que se desplaza de lado obligan a arrastrar a
@@ -411,7 +413,7 @@ export default function MissionTrips({
             cualquiera sea el largo del evento, dice qué día se está mirando
             y abre la lista completa —con buscador— en una hoja. "Hoy" queda
             al lado porque es el filtro que más se usa y así es un toque. */}
-        {opcionesDia.length > 1 && (
+        {opcionesDia.length > 0 && (
           <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
             <SelectorFiltro
               rotulo={t("Día")}
