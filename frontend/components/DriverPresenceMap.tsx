@@ -207,7 +207,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
         ],
       });
       setMapaListo(true);
-      infoWindowRef.current = new google.maps.InfoWindow();
+      infoWindowRef.current = new google.maps.InfoWindow({ maxWidth: 300 });
     });
 
     return () => {
@@ -253,10 +253,13 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
         </div>`;
       const html = `
         <div style="font-family:system-ui,sans-serif;min-width:230px;max-width:270px;padding:2px 2px 4px;">
-          <div style="display:flex;align-items:center;gap:10px;padding-bottom:9px;border-bottom:1px solid #eef2f7;">
+          <!-- padding-right: la X de cerrar de Google va sobre la esquina y tapaba
+               el final del nombre; word-break: un nombre largo baja de línea en
+               vez de meterse debajo de la X. -->
+          <div style="display:flex;align-items:center;gap:10px;padding:0 18px 9px 0;border-bottom:1px solid #eef2f7;">
             <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,${accent},${accent}cc);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#fff;box-shadow:0 2px 6px ${accent}55;">${initials}</div>
             <div style="min-width:0;">
-              <div style="font-weight:800;font-size:14px;color:#0f172a;line-height:1.2;">${m.name}</div>
+              <div style="font-weight:800;font-size:14px;color:#0f172a;line-height:1.2;word-break:break-word;">${m.name}</div>
               <div style="display:inline-flex;align-items:center;gap:5px;margin-top:2px;font-size:10px;font-weight:800;letter-spacing:0.04em;text-transform:uppercase;color:${accent};">
                 <span style="width:6px;height:6px;border-radius:50%;background:${accent};"></span>${statusLabel}
               </div>
@@ -349,6 +352,8 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
   }, [markers, focoId, mapaListo]);
 
   return (
-    <div ref={containerRef} style={{ width: "100%", height: `${height}px`, borderRadius: 12 }} />
+    // La clase permite que la ficha del conductor (InfoWindow) crezca entera
+    // en vez de recortarse con scroll: ver .mapa-conductores en globals.css.
+    <div ref={containerRef} className="mapa-conductores" style={{ width: "100%", height: `${height}px`, borderRadius: 12 }} />
   );
 }

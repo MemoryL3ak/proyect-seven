@@ -1594,3 +1594,16 @@ input[type="number"]::-webkit-outer-spin-button {
     flex: 1 1 100% !important;
   }
 }
+
+/* Ficha del conductor en el mapa (DriverPresenceMap). Google limita el alto
+   de la InfoWindow al del mapa y mete scroll: con el mapa de 340-420 px la
+   ficha se abría recortada, con el nombre escondido bajo el borde de arriba
+   y sólo se veían las filas del medio (24-09-2026). */
+.mapa-conductores .gm-style .gm-style-iw-c {
+  max-height: none !important;
+  padding-top: 14px !important;
+}
+.mapa-conductores .gm-style .gm-style-iw-d {
+  max-height: none !important;
+  overflow: hidden !important;
+}
