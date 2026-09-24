@@ -107,7 +107,8 @@ export default function MobileTabBar({ onMenuOpen }: { onMenuOpen: () => void })
         right: 0,
         bottom: 0,
         zIndex: 35,
-        display: "grid",
+        // El display va en globals.css (.mobile-tabbar): puesto aquí en línea
+        // pisaba al md:hidden y la barra salía también en el escritorio.
         gridTemplateColumns: "repeat(5, 1fr)",
         paddingBottom: "env(safe-area-inset-bottom)",
         background: "rgba(255,255,255,0.96)",

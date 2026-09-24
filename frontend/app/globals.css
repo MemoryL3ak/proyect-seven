@@ -1607,3 +1607,15 @@ input[type="number"]::-webkit-outer-spin-button {
   max-height: none !important;
   overflow: hidden !important;
 }
+
+/* Barra inferior de la app staff (MobileTabBar): sólo en el teléfono. El
+   display iba en línea en el componente y pisaba al md:hidden, así que la
+   barra aparecía también en la web de escritorio (24-09-2026). */
+.mobile-tabbar {
+  display: grid;
+}
+@media (min-width: 768px) {
+  .mobile-tabbar {
+    display: none !important;
+  }
+}
