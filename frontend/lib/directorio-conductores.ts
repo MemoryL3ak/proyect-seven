@@ -2,7 +2,7 @@ import { deporteDeViaje, type DisciplineLike } from "./discipline-filters";
 import { TIPO_VEHICULO } from "./export-conductores";
 import { claveDiaEvento } from "./hora-evento";
 import { nombrePropio } from "./nombres";
-import { generoNormalizado } from "./planilla";
+import { generoDeViaje } from "./genero-viaje";
 
 /**
  * Directorio de conductores del Coordinador de Transporte (app): todos los
@@ -100,15 +100,7 @@ type ViajeAsignado = {
   metadata?: Record<string, unknown> | null;
 };
 
-/**
- * Género del grupo que viaja: el que dejó la planilla en los metadatos y,
- * si no viene, el que va al final del nombre de la disciplina ("FUTSAL
- * FEMENINO"). Misma regla que el panel de Viajes.
- */
-export function generoDeViaje(viaje: ViajeAsignado): string {
-  const meta = typeof viaje.metadata?.gender === "string" ? viaje.metadata.gender : "";
-  return generoNormalizado(meta) || generoNormalizado(String(viaje.discipline ?? "").split(/\s+/).slice(-1)[0]);
-}
+export { generoDeViaje };
 
 /**
  * Deportes y géneros de los viajes del día (`dia` = clave YYYY-MM-DD en hora

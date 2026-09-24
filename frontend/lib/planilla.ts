@@ -202,16 +202,9 @@ export function rowDateToIso(raw: string | undefined, defaultYear: string): stri
 }
 
 /** "Damas y Varones", "F", "MASCULINO" → Mixto / Femenino / Masculino. */
-export function generoNormalizado(valor?: string | null): "Masculino" | "Femenino" | "Mixto" | "" {
-  const v = stripAccents(String(valor ?? "").toLowerCase()).replace(/\s+/g, " ").trim();
-  if (!v) return "";
-  const femenino = /femenin|damas|mujer|^f$|^fem$/.test(v);
-  const masculino = /masculin|varon|hombre|^m$|^masc$/.test(v);
-  if (/mixt|ambos|^x$/.test(v) || (femenino && masculino)) return "Mixto";
-  if (femenino) return "Femenino";
-  if (masculino) return "Masculino";
-  return "";
-}
+// La regla vive en lib/genero-viaje.ts (sin la librería de Excel), porque
+// también la usan las tarjetas del portal.
+export { generoNormalizado } from "./genero-viaje";
 
 /** "Ida" / "Regreso" / "OUTBOUND" → OUTBOUND | RETURN. */
 export const tramoNormalizado = (valor?: string | null): "OUTBOUND" | "RETURN" => {

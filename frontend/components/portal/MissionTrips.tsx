@@ -15,6 +15,7 @@ import { openExternal, whatsappHref } from "@/lib/external-link";
 import { legTypeShort } from "@/lib/tripTypes";
 import { TANDA_LISTA, tramoVisible } from "@/lib/lista-por-tandas";
 import { ESTADOS_ACTIVOS, ESTADOS_EN_CURSO, esPorRealizar } from "@/lib/traslados-por-realizar";
+import { conGenero, generoDeViaje } from "@/lib/genero-viaje";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -51,6 +52,8 @@ export type MissionTrip = {
   driverId?: string | null;
   vehiclePlate?: string | null;
   notes?: string | null;
+  /** Metadatos de la planilla (género del grupo, etc.). */
+  metadata?: Record<string, unknown> | null;
 };
 
 type NamedPlace = { id: string; name?: string | null; venueType?: string | null };
@@ -200,10 +203,16 @@ export default function MissionTrips({
   // Etiqueta de la tarjeta: la del catálogo (con género) si el id concuerda
   // con el texto del viaje; si no, lo que dice la planilla. Un viaje de
   // "PARATLETISMO" apuntando a Atletismo no puede decir "Atletismo".
+  // Con el género del viaje al final, como en la web: el catálogo sólo lo
+  // agrega cuando el deporte existe en dos variantes, y la app mostraba
+  // "Futsal" donde el panel decía "Futsal · Masculino".
   const disciplinaDe = (tr: MissionTrip) => {
     const porId = tr.disciplineId ? disciplines.find((d) => d.id === tr.disciplineId) : undefined;
-    if (porId && idConcuerdaConTexto(tr, porId)) return labels.get(porId.id) ?? porId.name ?? null;
-    return deporteDeViaje(tr, disciplines) ?? tr.discipline ?? null;
+    const etiqueta =
+      porId && idConcuerdaConTexto(tr, porId)
+        ? (labels.get(porId.id) ?? porId.name ?? null)
+        : (deporteDeViaje(tr, disciplines) ?? tr.discipline ?? null);
+    return conGenero(etiqueta, generoDeViaje(tr));
   };
 
   const miembros = useMemo(() => new Set(memberIds), [memberIds]);
