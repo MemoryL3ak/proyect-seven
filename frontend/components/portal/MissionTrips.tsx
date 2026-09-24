@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { CalendarIcon, ChevronDownIcon, WhatsappIcon } from "@/components/ui/Icons";
+import { CalendarIcon, ChevronDownIcon, PhoneIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
 import { buildDisciplineLabelMap, coincideDisciplinaPorNombre, deporteDeViaje, idConcuerdaConTexto, claveSinGenero, type DisciplineLike } from "@/lib/discipline-filters";
@@ -575,6 +575,33 @@ export default function MissionTrips({
                       }}
                     >
                       <WhatsappIcon size={11} /> {t("WhatsApp")}
+                    </button>
+                  )}
+                  {/* Llamar: cuando el chofer no contesta el WhatsApp, el
+                      coordinador marca. Mismo tamaño, al lado. */}
+                  {contactoChofer && choferViaje?.phone && (
+                    <button
+                      type="button"
+                      title={t("Llamar al conductor")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openExternal(`tel:${String(choferViaje.phone).replace(/\s+/g, "")}`);
+                      }}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 4,
+                        padding: "2px 9px",
+                        borderRadius: 999,
+                        border: `1px solid ${SURFACE.border}`,
+                        background: SURFACE.card,
+                        color: SURFACE.textSecondary,
+                        fontSize: 10.5,
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      <PhoneIcon size={11} /> {t("Llamar")}
                     </button>
                   )}
                 </div>
