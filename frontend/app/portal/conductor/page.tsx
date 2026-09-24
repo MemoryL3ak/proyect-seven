@@ -44,6 +44,7 @@ import AssistanceChat from "@/components/AssistanceChat";
 import DevicePermissionsSection from "@/components/DevicePermissionsSection";
 import DeleteAccountSection from "@/components/DeleteAccountSection";
 import EventDocumentsSection from "@/components/EventDocumentsSection";
+import { permisoDeInicio } from "@/lib/inicio-viaje";
 import PortalSkeleton from "@/components/PortalSkeleton";
 import { deletePortalAccount } from "@/lib/account-deletion";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
@@ -944,6 +945,15 @@ export default function DriverPortalPage() {
   };
 
   const updateTrip = async (tripId: string, status: string) => {
+    // Iniciar sólo desde una hora antes de la hora programada, no antes.
+    const viaje = getTripById(tripId);
+    if (["EN_ROUTE", "PICKED_UP"].includes(status) && viaje && ["SCHEDULED", "REQUESTED"].includes(viaje.status ?? "")) {
+      const permiso = permisoDeInicio(viaje.scheduledAt);
+      if (!permiso.permitido) {
+        driverNotify.push(`${t("Podrás iniciar este viaje desde las")} ${permiso.desdeTexto}`, "doc");
+        return;
+      }
+    }
     // Primer viaje del día: pedir la foto de inicio de jornada antes de partir.
     if (["EN_ROUTE", "PICKED_UP"].includes(status) && driverProfile?.id && !hasJourneyMark("START")) {
       setJourneyPhoto({ kind: "START", tripId, nextStatus: status });
@@ -2468,10 +2478,16 @@ export default function DriverPortalPage() {
                                 trackingTripId && trackingTripId !== trip.id ? (
                                   renderBlockedNotice("servicio")
                                 ) : (
-                                  <button type="button" onClick={() => updateTrip(trip.id, "PICKED_UP")} disabled={loading}
-                                    style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,#818cf8,${ACCENT.indigo})`,color:SURFACE.card,fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(99,102,241,0.3)",opacity:loading?0.7:1 }}>
-                                    {t("Iniciar servicio")}
+                                  (() => {
+                                    // Desde una hora antes de la hora programada, no antes.
+                                    const permiso = permisoDeInicio(trip.scheduledAt);
+                                    return (
+                                  <button type="button" onClick={() => updateTrip(trip.id, "PICKED_UP")} disabled={loading || !permiso.permitido}
+                                    style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:permiso.permitido?`linear-gradient(135deg,#818cf8,${ACCENT.indigo})`:SURFACE.borderMuted,color:permiso.permitido?SURFACE.card:SURFACE.textMuted,fontSize:14,fontWeight:800,cursor:permiso.permitido?"pointer":"not-allowed",boxShadow:permiso.permitido?"0 3px 12px rgba(99,102,241,0.3)":"none",opacity:loading?0.7:1 }}>
+                                    {permiso.permitido ? t("Iniciar servicio") : `${t("Disponible desde las")} ${permiso.desdeTexto}`}
                                   </button>
+                                    );
+                                  })()
                                 )
                               ) : status === "EN_ROUTE" || status === "PICKED_UP" ? (
                                 <button type="button" onClick={() => updateTrip(trip.id, "COMPLETED")} disabled={loading}
@@ -2483,10 +2499,16 @@ export default function DriverPortalPage() {
                               trackingTripId && trackingTripId !== trip.id ? (
                                 renderBlockedNotice("viaje")
                               ) : (
-                                <button type="button" onClick={() => updateTrip(trip.id, "EN_ROUTE")} disabled={loading}
-                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:SURFACE.text,fontSize:14,fontWeight:800,cursor:"pointer",boxShadow:"0 3px 12px rgba(33,208,179,0.3)",opacity:loading?0.7:1 }}>
-                                  {t("Iniciar — En ruta al punto de encuentro")}
+                                (() => {
+                                  // Desde una hora antes de la hora programada, no antes.
+                                  const permiso = permisoDeInicio(trip.scheduledAt);
+                                  return (
+                                <button type="button" onClick={() => updateTrip(trip.id, "EN_ROUTE")} disabled={loading || !permiso.permitido}
+                                  style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:permiso.permitido?`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`:SURFACE.borderMuted,color:permiso.permitido?SURFACE.text:SURFACE.textMuted,fontSize:14,fontWeight:800,cursor:permiso.permitido?"pointer":"not-allowed",boxShadow:permiso.permitido?"0 3px 12px rgba(33,208,179,0.3)":"none",opacity:loading?0.7:1 }}>
+                                  {permiso.permitido ? t("Iniciar — En ruta al punto de encuentro") : `${t("Iniciar disponible desde las")} ${permiso.desdeTexto}`}
                                 </button>
+                                  );
+                                })()
                               )
                             ) : status === "EN_ROUTE" ? (
                               <div style={{ display:"flex",flexDirection:"column",gap:6 }}>

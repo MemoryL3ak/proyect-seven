@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Inject,
   Injectable,
   InternalServerErrorException,
@@ -16,6 +17,7 @@ import { TripMessage } from './entities/trip-message.entity';
 import { ProviderRate } from '../providers/entities/provider-rate.entity';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 import { diaEvento } from './dia-evento';
+import { motivoInicioAnticipado } from './inicio-anticipado';
 import { marcasAlCambiarEstado, retrocedeASinIniciar } from './estado-viaje';
 import { consultarPorLotes, enLotes } from '../supabase/en-lotes';
 
@@ -930,6 +932,17 @@ export class TripsService {
 
   async update(id: string, updateTripDto: UpdateTripDto, caller?: ApiCaller | null) {
     const currentTrip = await this.findOne(id);
+
+    // El conductor inicia desde una hora antes de la hora programada, no
+    // antes. El panel (operaciones) sí puede forzarlo.
+    if (caller?.type === 'portal' && caller.kind === 'driver') {
+      const motivo = motivoInicioAnticipado(
+        currentTrip.status,
+        updateTripDto.status,
+        currentTrip.scheduledAt,
+      );
+      if (motivo) throw new BadRequestException(motivo);
+    }
 
     // ── Auto-generate bitácora entries from detected changes ──
     const existingMeta = (currentTrip.metadata ?? {}) as Record<string, unknown>;
