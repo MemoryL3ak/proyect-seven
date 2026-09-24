@@ -27,6 +27,7 @@ import {
   PlaneIcon,
   BuildingIcon,
   FileTextIcon,
+  FolderIcon,
   UserIcon,
   DownloadIcon,
 } from "@/components/ui/Icons";
@@ -397,10 +398,10 @@ export default function DriverPortalPage() {
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
   // El home del portal es siempre Actividades; sólo un refresh (F5) restaura
   // la sección donde estaba el usuario.
-  const [activeTab, setActiveTab] = useState<"actividades" | "vuelos" | "sedes" | "reportes" | "cuenta">(() =>
-    restoreOnReload<"actividades" | "vuelos" | "sedes" | "reportes" | "cuenta">(
+  const [activeTab, setActiveTab] = useState<"actividades" | "vuelos" | "sedes" | "reportes" | "documentos" | "cuenta">(() =>
+    restoreOnReload<"actividades" | "vuelos" | "sedes" | "reportes" | "documentos" | "cuenta">(
       "portal_conductor_tab",
-      ["actividades", "vuelos", "sedes", "reportes", "cuenta"],
+      ["actividades", "vuelos", "sedes", "reportes", "documentos", "cuenta"],
       "actividades",
     ),
   );
@@ -535,7 +536,8 @@ export default function DriverPortalPage() {
   // modificó los accesos o reemitió la credencial mientras la sesión estaba
   // abierta, la credencial se muestra al día sin volver a iniciar sesión.
   useEffect(() => {
-    if (activeTab !== "cuenta" || !driverProfile?.id) return;
+    // Documentos también: ahí se ven los archivos ya subidos de la ficha.
+    if ((activeTab !== "cuenta" && activeTab !== "documentos") || !driverProfile?.id) return;
     (async () => {
       try {
         const fresh = driverProfile._isParticipant
@@ -2665,7 +2667,10 @@ export default function DriverPortalPage() {
             })()}
 
             {/* ─── TAB: Cuenta ─── */}
-            {activeTab === "cuenta" && (
+            {/* ─── Documentos: los del evento (certificado, informativos) y
+                los propios del conductor y su vehículo. Antes vivían dentro
+                de Cuenta y nadie los encontraba (24-09-2026). ─── */}
+            {activeTab === "documentos" && (
               <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
                 {/* Documentos informativos del evento */}
                 <EventDocumentsSection
@@ -2673,6 +2678,104 @@ export default function DriverPortalPage() {
                   eventId={(driverProfile as { eventId?: string | null }).eventId ?? null}
                 />
 
+                {/* Documents section */}
+                <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,padding:"14px",overflow:"hidden" }}>
+                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:"0 0 4px" }}>Mis documentos</p>
+                  <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"0 0 10px" }}>Los tuyos y los del vehículo. Súbelos desde el celular o la galería; el punto verde marca los que ya están.</p>
+                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
+                    {([
+                      { key: "doc_carnet", label: "Fotocopia Carnet" },
+                      { key: "doc_antecedentes", label: "Antecedentes" },
+                      { key: "doc_inhabilidades", label: "Cert. Inhabilidades menores" },
+                      { key: "doc_licencia", label: "Licencia de conducir" },
+                      { key: "doc_foto_carnet", label: "Foto tipo Carnet" },
+                      { key: "doc_permiso_circ", label: "Permiso de circulación" },
+                      { key: "doc_soap", label: "SOAP" },
+                      { key: "doc_decreto_80", label: "Decreto 80" },
+                      { key: "doc_padron", label: "Padrón" },
+                      { key: "doc_foto_vehiculo", label: "Foto del vehículo" },
+                    ]).map((doc) => {
+                      const docValue = (driverProfile.metadata as any)?.[doc.key];
+                      const uploaded = !!docValue;
+                      const isUploading = uploadingDoc === doc.key;
+                      return (
+                        <div key={doc.key} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,gap:8 }}>
+                          <div style={{ display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0 }}>
+                            <span style={{ width:7,height:7,borderRadius:"50%",background:uploaded ? BRAND.teal : SURFACE.border,flexShrink:0 }} />
+                            <span style={{ fontSize:12,fontWeight:500,color:uploaded ? SURFACE.text : SURFACE.textFaint,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{doc.label}</span>
+                          </div>
+                          <div style={{ display:"flex",gap:4,flexShrink:0 }}>
+                            {uploaded && typeof docValue === "string" && (docValue.startsWith("http") || docValue.startsWith("data:")) && (
+                              <a href={docValue} target="_blank" rel="noreferrer"
+                                style={{ display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28,borderRadius:7,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,cursor:"pointer",flexShrink:0 }}>
+                                <EyeIcon size={12} color={SURFACE.textMuted} strokeWidth={2} />
+                              </a>
+                            )}
+                            <button type="button" disabled={isUploading} onClick={() => {
+                              const input = document.createElement("input");
+                              input.type = "file"; input.accept = "image/*,.pdf";
+                              input.onchange = async () => {
+                                const file = input.files?.[0];
+                                if (!file || !driverProfile.id) return;
+                                setUploadingDoc(doc.key);
+                                try {
+                                  const dataUrl = await new Promise<string>((resolve, reject) => {
+                                    const reader = new FileReader();
+                                    reader.onload = () => resolve(reader.result as string);
+                                    reader.onerror = () => reject(new Error("Error leyendo archivo"));
+                                    reader.readAsDataURL(file);
+                                  });
+                                  // Upload document to Supabase storage
+                                  const endpoint = driverProfile._isParticipant
+                                    ? `/provider-participants/${driverProfile.id}/document`
+                                    : `/drivers/${driverProfile.id}/document`;
+                                  const result = await apiFetch<any>(endpoint, {
+                                    method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ key: doc.key, dataUrl }),
+                                  });
+                                  const newUrl = result?.metadata?.[doc.key] ?? `uploaded_${Date.now()}`;
+                                  setDriverProfile({ ...driverProfile, metadata: { ...(driverProfile.metadata || {}), [doc.key]: newUrl } });
+                                  driverNotify.push(`${doc.label} cargado`, "doc");
+                                } catch (err) { console.error("Doc upload error:", err); driverNotify.push(`Error: ${err instanceof Error ? err.message : "No se pudo subir"} ${doc.label}`, "error"); }
+                                finally { setUploadingDoc(null); }
+                              };
+                              input.click();
+                            }}
+                              style={{
+                                display:"flex",alignItems:"center",justifyContent:"center",
+                                height:28,borderRadius:7,border:"none",cursor: isUploading ? "not-allowed" : "pointer",
+                                fontSize:10,fontWeight:600,flexShrink:0,gap:4,
+                                padding: uploaded ? "0 8px" : "0 10px",
+                                background: uploaded ? SURFACE.borderMuted : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,
+                                color: uploaded ? SURFACE.textMuted : SURFACE.card,
+                                opacity: isUploading ? 0.5 : 1,
+                              }}>
+                              {isUploading ? (
+                                <span>...</span>
+                              ) : uploaded ? (
+                                <>
+                                  <CameraIcon size={10} strokeWidth={2} />
+                                  Cambiar
+                                </>
+                              ) : (
+                                <>
+                                  <PlusIcon size={10} strokeWidth={2.5} />
+                                  Subir
+                                </>
+                              )}
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+              </div>
+            )}
+
+            {activeTab === "cuenta" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
                 {/* Profile + Photo */}
                 <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,padding:"16px 14px",display:"flex",alignItems:"center",gap:14 }}>
                   <div style={{ position:"relative",flexShrink:0 }}>
@@ -2831,99 +2934,6 @@ export default function DriverPortalPage() {
                     </div>
                   );
                 })()}
-
-                {/* Documents section */}
-                <div style={{ background:SURFACE.card,borderRadius:16,border:`1px solid ${SURFACE.border}`,padding:"14px",overflow:"hidden" }}>
-                  <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.18em",textTransform:"uppercase",color:BRAND.teal,margin:"0 0 4px" }}>Documentos</p>
-                  <p style={{ fontSize:11,color:SURFACE.textFaint,margin:"0 0 10px" }}>Sube tus documentos desde el celular o galería</p>
-                  <div style={{ display:"flex",flexDirection:"column",gap:6 }}>
-                    {([
-                      { key: "doc_carnet", label: "Fotocopia Carnet" },
-                      { key: "doc_antecedentes", label: "Antecedentes" },
-                      { key: "doc_inhabilidades", label: "Cert. Inhabilidades menores" },
-                      { key: "doc_licencia", label: "Licencia de conducir" },
-                      { key: "doc_foto_carnet", label: "Foto tipo Carnet" },
-                      { key: "doc_permiso_circ", label: "Permiso de circulación" },
-                      { key: "doc_soap", label: "SOAP" },
-                      { key: "doc_decreto_80", label: "Decreto 80" },
-                      { key: "doc_padron", label: "Padrón" },
-                      { key: "doc_foto_vehiculo", label: "Foto del vehículo" },
-                    ]).map((doc) => {
-                      const docValue = (driverProfile.metadata as any)?.[doc.key];
-                      const uploaded = !!docValue;
-                      const isUploading = uploadingDoc === doc.key;
-                      return (
-                        <div key={doc.key} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 10px",borderRadius:10,background:SURFACE.bg,border:`1px solid ${SURFACE.borderMuted}`,gap:8 }}>
-                          <div style={{ display:"flex",alignItems:"center",gap:8,flex:1,minWidth:0 }}>
-                            <span style={{ width:7,height:7,borderRadius:"50%",background:uploaded ? BRAND.teal : SURFACE.border,flexShrink:0 }} />
-                            <span style={{ fontSize:12,fontWeight:500,color:uploaded ? SURFACE.text : SURFACE.textFaint,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>{doc.label}</span>
-                          </div>
-                          <div style={{ display:"flex",gap:4,flexShrink:0 }}>
-                            {uploaded && typeof docValue === "string" && (docValue.startsWith("http") || docValue.startsWith("data:")) && (
-                              <a href={docValue} target="_blank" rel="noreferrer"
-                                style={{ display:"flex",alignItems:"center",justifyContent:"center",width:28,height:28,borderRadius:7,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,cursor:"pointer",flexShrink:0 }}>
-                                <EyeIcon size={12} color={SURFACE.textMuted} strokeWidth={2} />
-                              </a>
-                            )}
-                            <button type="button" disabled={isUploading} onClick={() => {
-                              const input = document.createElement("input");
-                              input.type = "file"; input.accept = "image/*,.pdf";
-                              input.onchange = async () => {
-                                const file = input.files?.[0];
-                                if (!file || !driverProfile.id) return;
-                                setUploadingDoc(doc.key);
-                                try {
-                                  const dataUrl = await new Promise<string>((resolve, reject) => {
-                                    const reader = new FileReader();
-                                    reader.onload = () => resolve(reader.result as string);
-                                    reader.onerror = () => reject(new Error("Error leyendo archivo"));
-                                    reader.readAsDataURL(file);
-                                  });
-                                  // Upload document to Supabase storage
-                                  const endpoint = driverProfile._isParticipant
-                                    ? `/provider-participants/${driverProfile.id}/document`
-                                    : `/drivers/${driverProfile.id}/document`;
-                                  const result = await apiFetch<any>(endpoint, {
-                                    method: "POST", headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ key: doc.key, dataUrl }),
-                                  });
-                                  const newUrl = result?.metadata?.[doc.key] ?? `uploaded_${Date.now()}`;
-                                  setDriverProfile({ ...driverProfile, metadata: { ...(driverProfile.metadata || {}), [doc.key]: newUrl } });
-                                  driverNotify.push(`${doc.label} cargado`, "doc");
-                                } catch (err) { console.error("Doc upload error:", err); driverNotify.push(`Error: ${err instanceof Error ? err.message : "No se pudo subir"} ${doc.label}`, "error"); }
-                                finally { setUploadingDoc(null); }
-                              };
-                              input.click();
-                            }}
-                              style={{
-                                display:"flex",alignItems:"center",justifyContent:"center",
-                                height:28,borderRadius:7,border:"none",cursor: isUploading ? "not-allowed" : "pointer",
-                                fontSize:10,fontWeight:600,flexShrink:0,gap:4,
-                                padding: uploaded ? "0 8px" : "0 10px",
-                                background: uploaded ? SURFACE.borderMuted : `linear-gradient(135deg,${BRAND.teal},#14AE98)`,
-                                color: uploaded ? SURFACE.textMuted : SURFACE.card,
-                                opacity: isUploading ? 0.5 : 1,
-                              }}>
-                              {isUploading ? (
-                                <span>...</span>
-                              ) : uploaded ? (
-                                <>
-                                  <CameraIcon size={10} strokeWidth={2} />
-                                  Cambiar
-                                </>
-                              ) : (
-                                <>
-                                  <PlusIcon size={10} strokeWidth={2.5} />
-                                  Subir
-                                </>
-                              )}
-                            </button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
 
                 {/* El tracking ya no se activa manualmente: la app lo arranca
                     sola al iniciar sesión y transmite mientras esté abierta. */}
@@ -3140,6 +3150,7 @@ export default function DriverPortalPage() {
               { key: "vuelos" as const, label: "Vuelos", icon: <PlaneIcon size={20} strokeWidth={1.8} /> },
               { key: "sedes" as const, label: "Sedes", icon: <PinIcon size={20} strokeWidth={1.8} /> },
               { key: "reportes" as const, label: "Reportes", icon: <FileTextIcon size={20} strokeWidth={1.8} /> },
+              { key: "documentos" as const, label: "Documentos", icon: <FolderIcon size={20} strokeWidth={1.8} /> },
               { key: "cuenta" as const, label: "Cuenta", icon: <UserIcon size={20} strokeWidth={1.8} /> },
             ]).map((tab) => (
               <button key={tab.key} type="button" className="dc-tab-btn" onClick={() => setActiveTab(tab.key)}
