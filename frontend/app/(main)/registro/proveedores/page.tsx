@@ -67,6 +67,13 @@ const TRANSPORT_DOCS_PERSON = DOCS_PERSONA;
 const TRANSPORT_DOCS_VEHICLE = DOCS_VEHICULO;
 const ALL_TRANSPORT_DOCS = DOCS_CONDUCTOR;
 
+/**
+ * Ancho de un filtro en la barra: StyledSelect fija width 100% en línea, así
+ * que la clase md:w-* no manda. Con flex y un tope, en el escritorio se
+ * reparten la fila y en el teléfono cada uno ocupa la fila entera.
+ */
+const FILTRO_ANCHO = (base: number): React.CSSProperties => ({ flex: `1 1 ${base}px`, width: "auto", maxWidth: base + 80 });
+
 const TRIP_TYPES = ["ARRIVAL", "DEPARTURE", "BOTH"];
 const TRIP_TYPE_LABELS: Record<string, string> = {
   ARRIVAL: "Llegada",
@@ -880,7 +887,7 @@ export default function ProveedoresPage() {
                 onChange={e => setProviderSearch(e.target.value)}
               />
             </div>
-            <StyledSelect wrapperClassName="w-full md:w-52" value={filterType} onChange={e => setFilterType(e.target.value)}>
+            <StyledSelect wrapperStyle={FILTRO_ANCHO(200)} value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="">{t("Todos los tipos")}</option>
               {Object.entries(PROVIDER_TYPES).map(([key, { label }]) => (
                 <option key={key} value={key}>{t(label)}</option>
@@ -1107,7 +1114,7 @@ export default function ProveedoresPage() {
             />
             {/* Filtros con el selector del panel (StyledSelect), nunca el
                 <select> nativo: Ariel lo pidió expresamente el 24-09-2026. */}
-            <StyledSelect wrapperClassName="w-full md:w-64" value={providerFilter} onChange={e => setProviderFilter(e.target.value)}>
+            <StyledSelect wrapperStyle={FILTRO_ANCHO(240)} value={providerFilter} onChange={e => setProviderFilter(e.target.value)}>
               <option value="">{t("Todos los proveedores")}</option>
               {providers.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
@@ -1115,12 +1122,12 @@ export default function ProveedoresPage() {
             </StyledSelect>
             {/* Quién es conductor y quién no ha subido documentos: la misma
                 pregunta que responde el módulo Documentos, aquí en la nómina. */}
-            <StyledSelect wrapperClassName="w-full md:w-48" value={participantTipo} onChange={e => setParticipantTipo(e.target.value as FiltroTipoPersona)}>
+            <StyledSelect wrapperStyle={FILTRO_ANCHO(180)} value={participantTipo} onChange={e => setParticipantTipo(e.target.value as FiltroTipoPersona)}>
               <option value="">{t("Tipo: todos")}</option>
               <option value="CONDUCTOR">{t("Conductores")}</option>
               <option value="OTRO">{t("Otros participantes")}</option>
             </StyledSelect>
-            <StyledSelect wrapperClassName="w-full md:w-60" value={participantDocs} onChange={e => setParticipantDocs(e.target.value as FiltroDocumentacion)}>
+            <StyledSelect wrapperStyle={FILTRO_ANCHO(220)} value={participantDocs} onChange={e => setParticipantDocs(e.target.value as FiltroDocumentacion)}>
               {OPCIONES_FILTRO_DOCUMENTACION.map(o => (
                 <option key={o.value} value={o.value}>{o.value ? t(o.label) : t("Documentos: todos")}</option>
               ))}
