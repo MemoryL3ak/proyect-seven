@@ -8,6 +8,7 @@ import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import StyledSelect from "@/components/StyledSelect";
+import TripMap from "@/components/TripMap";
 import { historialDeJornada, jornadasDelHistorial, SIN_FECHA as HISTORIAL_SIN_FECHA } from "@/lib/historial-viajes";
 import { etiquetaDiaEvento } from "@/lib/hora-evento";
 import { apiFetch } from "@/lib/api";
@@ -3333,28 +3334,23 @@ export default function TripsPage() {
                 {/* La ruta: es lo otro que se viene a ver al abrir un viaje. */}
                 {(() => {
                   const catalogos = { venues, hoteles, comedores };
-                  const embed = buildDirectionsEmbed(
-                    direccionParaMapa(
-                      { venueId: infoTrip.originVenueId, hotelId: infoTrip.originHotelId, foodLocationId: infoTrip.originFoodLocationId },
-                      infoTrip.origin,
-                      catalogos,
-                    ),
-                    direccionParaMapa(
-                      { venueId: infoTrip.destinationVenueId, hotelId: infoTrip.destinationHotelId, foodLocationId: infoTrip.destinationFoodLocationId },
-                      infoTrip.destination,
-                      catalogos,
-                    ),
+                  // Mapa dibujado con la librería de Google y no un iframe de
+                  // google.com: la app staff sólo deja cargar sevenarena.app
+                  // y en iOS el iframe quedaba en blanco (25-09-2026).
+                  const origen = direccionParaMapa(
+                    { venueId: infoTrip.originVenueId, hotelId: infoTrip.originHotelId, foodLocationId: infoTrip.originFoodLocationId },
+                    infoTrip.origin,
+                    catalogos,
                   );
-                  if (!embed) return null;
+                  const destino = direccionParaMapa(
+                    { venueId: infoTrip.destinationVenueId, hotelId: infoTrip.destinationHotelId, foodLocationId: infoTrip.destinationFoodLocationId },
+                    infoTrip.destination,
+                    catalogos,
+                  );
+                  if (!origen || !destino) return null;
                   return (
                     <div style={{ marginBottom: 14, borderRadius: 14, overflow: "hidden", border: `1px solid ${SURFACE.border}` }}>
-                      <iframe
-                        title={t("Ruta del viaje")}
-                        src={embed}
-                        style={{ width: "100%", height: 220, border: "none", display: "block" }}
-                        loading="lazy"
-                        referrerPolicy="no-referrer-when-downgrade"
-                      />
+                      <TripMap origin={origen} destination={destino} height={220} />
                     </div>
                   );
                 })()}

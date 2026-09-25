@@ -1,5 +1,7 @@
 ﻿"use client";
 
+import TripMap from "@/components/TripMap";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
@@ -1649,7 +1651,7 @@ export default function VehiclePositionsPage() {
                       {hasGps ? (
                         <TripRouteMap points={detailPositions} height={isMobile ? 300 : 460} cacheKey={trip.id} onDistancia={setDetailRouteKm} />
                       ) : dirEmbed ? (
-                        <iframe title={`route-${trip.id}`} src={dirEmbed} style={{ width: "100%", height: isMobile ? 300 : 460, border: "none", display: "block" }} loading="lazy" />
+                        <TripMap origin={trip.origin} destination={trip.destination} height={isMobile ? 300 : 460} />
                       ) : (
                         <div style={{ height: 180, display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 8, color: SURFACE.textFaint, fontSize: "13px", textAlign: "center", padding: "0 20px" }}>
                           {detailLoading ? (
@@ -1751,7 +1753,9 @@ export default function VehiclePositionsPage() {
                       <TripRouteMap points={detailPositions} height="100%" cacheKey={trip.id} onDistancia={setDetailRouteKm} />
                     </div>
                   ) : dirEmbed ? (
-                    <iframe title={`route-full-${trip.id}`} src={dirEmbed} style={{ flex: 1, width: "100%", border: "none" }} loading="lazy" />
+                    <div style={{ flex: 1, minHeight: 0 }}>
+                      <TripMap origin={trip.origin} destination={trip.destination} height={Math.max(320, window.innerHeight - 64)} />
+                    </div>
                   ) : (
                     <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: SURFACE.textFaint, fontSize: 13 }}>
                       Sin recorrido disponible.
