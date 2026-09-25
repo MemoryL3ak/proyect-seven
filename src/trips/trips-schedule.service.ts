@@ -285,7 +285,9 @@ export class TripsScheduleService {
    * parecidos. Misma regla que normalizarLugar en el frontend.
    */
   private claveLugar(raw: string | undefined | null): string {
+    // "§" es un "&" mal codificado en planillas antiguas.
     return String(raw ?? '')
+      .replace(/§/g, '&')
       .normalize('NFD')
       .replace(/[̀-ͯ]/g, '')
       .toLowerCase()

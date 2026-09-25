@@ -2275,6 +2275,7 @@ export default function UserPortalPage() {
                 disciplines={disciplineParents}
                 venues={venues}
                 accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+                direcciones={{ venues, hoteles: allAccommodations, comedores: foodLocations as { id: string; name?: string | null; address?: string | null }[] }}
                 comedores={foodLocations}
               />
             )}
@@ -2444,6 +2445,7 @@ export default function UserPortalPage() {
                 disciplines={disciplineParents}
                 venues={venues}
                 accommodations={nombresHoteles.length ? nombresHoteles : allAccommodations}
+                direcciones={{ venues, hoteles: allAccommodations, comedores: foodLocations as { id: string; name?: string | null; address?: string | null }[] }}
                 comedores={foodLocations}
               />
               </div>

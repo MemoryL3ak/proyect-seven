@@ -39,7 +39,9 @@ const MINIMO_PREFIJO = 8;
 
 /** Clave de comparación: sin tildes, sin mayúsculas, sin dobles espacios. */
 export function claveLugar(raw: string | undefined | null): string {
+  // "§" es un "&" mal codificado en planillas antiguas: se comparan iguales.
   return String(raw ?? '')
+    .replace(/§/g, '&')
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase()

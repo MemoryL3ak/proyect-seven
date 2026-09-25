@@ -16,6 +16,7 @@ import { legTypeShort } from "@/lib/tripTypes";
 import { TANDA_LISTA, tramoVisible } from "@/lib/lista-por-tandas";
 import { ESTADOS_ACTIVOS, ESTADOS_EN_CURSO, esPorRealizar } from "@/lib/traslados-por-realizar";
 import { conGenero, generoDeViaje } from "@/lib/genero-viaje";
+import { destinoDeNavegacion, type CatalogosDeLugares } from "@/lib/navegacion";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -54,6 +55,10 @@ export type MissionTrip = {
   notes?: string | null;
   /** Metadatos de la planilla (género del grupo, etc.). */
   metadata?: Record<string, unknown> | null;
+  /** Hora a la que el conductor se presenta en el origen. */
+  presentationAt?: string | null;
+  passengerLat?: number | null;
+  passengerLng?: number | null;
 };
 
 type NamedPlace = { id: string; name?: string | null; venueType?: string | null };
@@ -98,6 +103,7 @@ export default function MissionTrips({
   nombreDelegacion,
   contactoChofer = false,
   nombreContacto = null,
+  direcciones,
 }: {
   trips: MissionTrip[];
   delegationId?: string | null;
@@ -138,6 +144,13 @@ export default function MissionTrips({
   contactoChofer?: boolean;
   /** Quién escribe, para que el mensaje llegue firmado. */
   nombreContacto?: string | null;
+  /**
+   * Sedes, hoteles y comedores con su dirección registrada. El mapa ubica
+   * cada extremo por esa dirección, no por el nombre: "Hippocampus Resort &
+   * Club" buscado por nombre caía en otro lugar (25-09-2026). Misma regla
+   * que Waze y Maps del conductor (lib/navegacion).
+   */
+  direcciones?: CatalogosDeLugares;
 }) {
   const { t } = useI18n();
   const [disciplinaFiltro, setDisciplinaFiltro] = useState("");
@@ -609,24 +622,65 @@ export default function MissionTrips({
                 {abiertaEsta && (
                   <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px dashed ${SURFACE.border}`, display: "flex", flexDirection: "column", gap: 8 }}>
                     {/* En ruta: el bus en vivo. Antes o después: la ruta planificada. */}
-                    {EN_CURSO.has(norm(tr.status)) ? (
-                      <div onClick={(e) => e.stopPropagation()}>
-                        <TripLiveMap
-                          tripId={tr.id}
-                          status={tr.status}
-                          driverName={nombreChofer}
-                          vehiclePlate={tr.vehiclePlate}
-                          origin={tr.origin || puntoOrigen(tr)}
-                          destination={tr.destination || puntoDestino(tr)}
-                        />
-                      </div>
-                    ) : (
-                      (tr.origin || tr.destination) && (
-                        <div style={{ borderRadius: 10, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
-                          <TripMap origin={tr.origin} destination={tr.destination} height={170} />
+                    {(() => {
+                      // Dirección registrada del lugar; el texto sólo si el
+                      // viaje no apunta a ningún lugar del catálogo.
+                      const cat = direcciones ?? { venues, hoteles: accommodations, comedores };
+                      const origenMapa = destinoDeNavegacion(tr, "pickup", cat)?.consulta ?? tr.origin ?? puntoOrigen(tr);
+                      const destinoMapa = destinoDeNavegacion(tr, "dropoff", cat)?.consulta ?? tr.destination ?? puntoDestino(tr);
+                      return EN_CURSO.has(norm(tr.status)) ? (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <TripLiveMap
+                            tripId={tr.id}
+                            status={tr.status}
+                            driverName={nombreChofer}
+                            vehiclePlate={tr.vehiclePlate}
+                            origin={origenMapa}
+                            destination={destinoMapa}
+                          />
                         </div>
-                      )
-                    )}
+                      ) : (
+                        (origenMapa || destinoMapa) && (
+                          <div style={{ borderRadius: 10, overflow: "hidden" }} onClick={(e) => e.stopPropagation()}>
+                            <TripMap origin={origenMapa} destination={destinoMapa} height={220} />
+                          </div>
+                        )
+                      );
+                    })()}
+
+                    {/* Clasificación: lo mismo que el detalle del panel, para
+                        que la app no diga menos que la web. */}
+                    {(() => {
+                      const genero = generoDeViaje(tr);
+                      const deporte = (() => {
+                        const porId = tr.disciplineId ? disciplines.find((d) => d.id === tr.disciplineId) : undefined;
+                        return porId && idConcuerdaConTexto(tr, porId)
+                          ? (labels.get(porId.id) ?? porId.name ?? null)
+                          : (deporteDeViaje(tr, disciplines) ?? tr.discipline ?? null);
+                      })();
+                      const region = tr.allDelegations
+                        ? t("Todas las regiones")
+                        : (nombreDelegacion?.(tr.delegationId) ?? (delegationName || null));
+                      const datos = [
+                        { label: t("Región"), valor: region },
+                        { label: t("Disciplina"), valor: deporte },
+                        { label: t("Género"), valor: genero || null },
+                        { label: t("Tramo"), valor: legTypeShort(tr.legType) ? t(legTypeShort(tr.legType)) : null },
+                        { label: t("Hora salida"), valor: tr.scheduledAt ? fechaHoraEvento(tr.scheduledAt) : null },
+                        { label: t("Presentación conductor"), valor: tr.presentationAt ? fechaHoraEvento(tr.presentationAt) : null },
+                      ].filter((d) => d.valor);
+                      if (datos.length === 0) return null;
+                      return (
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                          {datos.map((d) => (
+                            <div key={d.label} style={{ background: "rgba(33,208,179,0.06)", border: "1px solid rgba(33,208,179,0.2)", borderRadius: 10, padding: "7px 10px", minWidth: 0 }}>
+                              <p style={{ fontSize: 9, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: SURFACE.textFaint, margin: 0 }}>{d.label}</p>
+                              <p style={{ fontSize: 12.5, fontWeight: 700, color: SURFACE.text, margin: "2px 0 0", overflowWrap: "anywhere" }}>{d.valor}</p>
+                            </div>
+                          ))}
+                        </div>
+                      );
+                    })()}
                     <div>
                       <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.08em", color: SURFACE.textFaint, margin: 0 }}>{t("ORIGEN")}</p>
                       <p style={{ fontSize: 12, color: SURFACE.textStrong, margin: "1px 0 0" }}>{tr.origin || puntoOrigen(tr)}</p>
