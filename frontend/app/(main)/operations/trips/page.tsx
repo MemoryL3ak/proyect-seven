@@ -8,6 +8,7 @@ import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import StyledSelect from "@/components/StyledSelect";
+import { generoDeViaje as generoDeViajeCompartido } from "@/lib/genero-viaje";
 import TripMap from "@/components/TripMap";
 import { historialDeJornada, jornadasDelHistorial, SIN_FECHA as HISTORIAL_SIN_FECHA } from "@/lib/historial-viajes";
 import { etiquetaDiaEvento } from "@/lib/hora-evento";
@@ -479,9 +480,13 @@ const direccionParaMapa = (
   return texto?.trim() || null;
 };
 
-/** Género del grupo que viaja, como lo dejó la planilla en los metadatos. */
-const generoDeViaje = (trip: { metadata?: Record<string, unknown> | null }) =>
-  generoNormalizado(typeof trip.metadata?.gender === "string" ? trip.metadata.gender : "");
+/**
+ * Género del grupo que viaja: el de la planilla y, si no viene, el que dice la
+ * disciplina ("Voleibol Femenino"). Sólo la planilla dejaba 113 viajes de
+ * vóleibol fuera del filtro Género (25-09-2026). Regla en lib/genero-viaje.
+ */
+const generoDeViaje = (trip: { discipline?: string | null; metadata?: Record<string, unknown> | null }) =>
+  generoDeViajeCompartido(trip);
 
 const relativeMinutes = (value?: string | null) => {
   if (!value) return null;

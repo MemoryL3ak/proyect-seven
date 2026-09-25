@@ -10,7 +10,8 @@ export function generoNormalizado(valor?: string | null): "Masculino" | "Femenin
   const v = sinTildes(String(valor ?? "").toLowerCase()).replace(/\s+/g, " ").trim();
   if (!v) return "";
   const femenino = /femenin|damas|mujer|^f$|^fem$/.test(v);
-  const masculino = /masculin|varon|hombre|^m$|^masc$/.test(v);
+  // "maculino": errata real de la planilla (10 viajes de futsal el 25-09).
+  const masculino = /masculin|maculin|varon|hombre|^m$|^masc$/.test(v);
   if (/mixt|ambos|^x$/.test(v) || (femenino && masculino)) return "Mixto";
   if (femenino) return "Femenino";
   if (masculino) return "Masculino";
@@ -29,7 +30,9 @@ export type ViajeConGenero = {
  */
 export function generoDeViaje(viaje: ViajeConGenero): string {
   const meta = typeof viaje.metadata?.gender === "string" ? viaje.metadata.gender : "";
-  return generoNormalizado(meta) || generoNormalizado(String(viaje.discipline ?? "").split(/\s+/).slice(-1)[0]);
+  // El texto completo y no sólo la última palabra: "ATLETISMO DAMAS Y
+  // VARONES" terminaba en "varones" y salía Masculino.
+  return generoNormalizado(meta) || generoNormalizado(String(viaje.discipline ?? ""));
 }
 
 /** "Futsal" + Femenino → "Futsal · Femenino"; si la etiqueta ya lo dice, se deja. */

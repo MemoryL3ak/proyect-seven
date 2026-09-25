@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarIcon, ChevronDownIcon, PhoneIcon, WhatsappIcon } from "@/components/ui/Icons";
 import { apiFetch } from "@/lib/api";
 import { BRAND, SURFACE, tripStatusMeta } from "@/lib/design";
-import { buildDisciplineLabelMap, coincideDisciplinaPorNombre, deporteDeViaje, idConcuerdaConTexto, claveSinGenero, type DisciplineLike } from "@/lib/discipline-filters";
+import { buildDisciplineLabelMap, deporteDeViaje, idConcuerdaConTexto, viajeEsDeDisciplina, type DisciplineLike } from "@/lib/discipline-filters";
 import { claveDiaEvento, etiquetaDiaEvento, fechaCortaEvento, fechaHoraEvento, horaEvento } from "@/lib/hora-evento";
 import TripMap from "@/components/TripMap";
 import TripLiveMap from "@/components/portal/TripLiveMap";
@@ -330,8 +330,8 @@ export default function MissionTrips({
     if (!disciplinaExterna) return true;
     // El id vale sólo si concuerda con el texto del viaje (ver disciplinaDe):
     // un viaje de "PARATLETISMO" apuntando a Atletismo no es de Atletismo.
-    if (tr.disciplineId === disciplinaExterna) return !disciplinaElegida || idConcuerdaConTexto(tr, disciplinaElegida);
-    return disciplinaElegida ? coincideDisciplinaPorNombre(claveSinGenero(tr.discipline), disciplinaElegida) : false;
+    if (!disciplinaElegida) return tr.disciplineId === disciplinaExterna;
+    return viajeEsDeDisciplina(tr, disciplinaElegida);
   };
 
   const visibles = useMemo(() => {

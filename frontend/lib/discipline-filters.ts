@@ -3,6 +3,8 @@
 // El mismo deporte existe una vez por variante (p. ej. "Atletismo" Masculino /
 // Femenino / Paralímpico), así que mostrar solo `name` produce duplicados.
 
+import { generoDeViaje } from "./genero-viaje";
+
 export function normalizeGender(value?: string | null): string {
   const v = (value || "").trim().toUpperCase();
   if (v === "MALE" || v === "M") return "MALE";
@@ -95,10 +97,15 @@ export function coincideDisciplinaPorNombre(
   texto: string | null | undefined,
   disciplina: DisciplineLike,
 ): boolean {
-  const clave = claveDisciplina(texto);
+  const cruda = claveDisciplina(texto);
   const nombre = claveDisciplina(disciplina.name);
-  if (!clave || !nombre) return false;
+  if (!cruda || !nombre) return false;
   const paralimpica = normalizeCategory(disciplina.category) === "PARALYMPIC";
+  // "Atletismo Paralimpico": la categoría escrita al final (8 viajes el
+  // 25-09) es la misma que el prefijo "para".
+  const conSufijoPara = PARALIMPICA_AL_FINAL.test(cruda);
+  const clave = cruda.replace(PARALIMPICA_AL_FINAL, "");
+  if (conSufijoPara) return paralimpica && clave === nombre;
   if (clave === nombre) return !paralimpica || clave.startsWith("para");
   if (!paralimpica) return false;
   // "paratletismo": el "para" se come la "a" inicial del deporte.
@@ -106,8 +113,15 @@ export function coincideDisciplinaPorNombre(
   return variantes.includes(clave);
 }
 
-/** Palabras de género que la planilla a veces pega al deporte: "Voleibol Masculino". */
-const GENERO_AL_FINAL = /\s+(masculin[oa]s?|femenin[oa]s?|damas|varones|mixt[oa]s?|hombres|mujeres)$/;
+/**
+ * Palabras de género que la planilla a veces pega al deporte: "Voleibol
+ * Masculino", "ATLETISMO DAMAS Y VARONES", "Futsal Maculino" (errata real).
+ * Antes sólo se quitaba la última palabra y "atletismo damas y" no calzaba
+ * con Atletismo: 29 viajes quedaban fuera del filtro.
+ */
+const PALABRA_GENERO = "(?:masculin[oa]s?|maculin[oa]s?|femenin[oa]s?|damas|varones|mixt[oa]s?|hombres|mujeres)";
+const GENERO_AL_FINAL = new RegExp(`\\s+${PALABRA_GENERO}(?:\\s+y\\s+${PALABRA_GENERO})?$`);
+const PARALIMPICA_AL_FINAL = /\s+paralimpic[oa]s?$/;
 
 /** Clave comparable del texto de disciplina de un viaje, sin el género pegado. */
 export const claveSinGenero = (texto?: string | null) => claveDisciplina(texto).replace(GENERO_AL_FINAL, "");
@@ -118,6 +132,27 @@ export const claveSinGenero = (texto?: string | null) => claveDisciplina(texto).
  * apuntando a Atletismo; el texto es lo que la operación escribió y manda.
  * Sin texto, el id se toma como bueno.
  */
+/**
+ * ¿El viaje es de esta disciplina del catálogo? Nombre y categoría como
+ * coincideDisciplinaPorNombre, y además el género: Futsal · Femenino y
+ * Futsal · Masculino son dos disciplinas. Antes el filtro del coordinador
+ * comparaba sólo el nombre y al elegir "Futsal · Femenino" salían también
+ * los viajes de varones (25-09-2026). Un viaje sin género dicho o mixto
+ * entra en cualquiera de las dos.
+ */
+export function viajeEsDeDisciplina(
+  viaje: { discipline?: string | null; disciplineId?: string | null; metadata?: Record<string, unknown> | null },
+  disciplina: DisciplineLike,
+): boolean {
+  if (viaje.disciplineId === disciplina.id && idConcuerdaConTexto(viaje, disciplina)) return true;
+  if (!coincideDisciplinaPorNombre(claveSinGenero(viaje.discipline), disciplina)) return false;
+  const g = normalizeGender(disciplina.gender);
+  if (g !== "MALE" && g !== "FEMALE") return true;
+  const delViaje = generoDeViaje(viaje);
+  if (!delViaje || delViaje === "Mixto") return true;
+  return (g === "MALE") === (delViaje === "Masculino");
+}
+
 export function idConcuerdaConTexto(
   viaje: { discipline?: string | null },
   disciplina: DisciplineLike,
