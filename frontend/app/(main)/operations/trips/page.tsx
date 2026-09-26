@@ -8,6 +8,7 @@ import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import StyledSelect from "@/components/StyledSelect";
+import { openExternal, whatsappHref } from "@/lib/external-link";
 import { generoDeViaje as generoDeViajeCompartido } from "@/lib/genero-viaje";
 import TripMap from "@/components/TripMap";
 import { historialDeJornada, jornadasDelHistorial, SIN_FECHA as HISTORIAL_SIN_FECHA } from "@/lib/historial-viajes";
@@ -49,6 +50,8 @@ import {
   ArrowRightIcon,
   ChevronRightIcon,
   RefreshIcon,
+  PhoneIcon,
+  WhatsappIcon,
 } from "@/components/ui/Icons";
 
 // ── Trip bulk import ─────────────────────────────────────────────────────────
@@ -1435,6 +1438,28 @@ export default function TripsPage() {
     return driver?.fullName || t("Pendiente asignación");
   };
 
+  /** Teléfono del conductor del viaje, o null si no tiene. */
+  const telefonoChofer = (trip: Trip): string | null => {
+    const tel = trip.driverId ? String(drivers[trip.driverId]?.phone ?? "").trim() : "";
+    return tel || null;
+  };
+  /** WhatsApp al conductor con el traslado ya escrito en el mensaje. */
+  const escribirAlChofer = (trip: Trip) => {
+    const tel = telefonoChofer(trip);
+    if (!tel) return;
+    const nombre = String(drivers[trip.driverId ?? ""]?.fullName ?? "").trim().split(" ")[0];
+    const hora = trip.scheduledAt
+      ? new Date(trip.scheduledAt).toLocaleTimeString("es-CL", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "America/Santiago" })
+      : "";
+    const ruta = `${lugarDeExtremo(trip, "origin", nombreDeLugar) || "—"} → ${lugarDeExtremo(trip, "destination", nombreDeLugar) || "—"}`;
+    const texto = `${nombre ? `Hola ${nombre}` : "Hola"}, te escribe la coordinación de transporte. Es por el traslado${hora ? ` de las ${hora}` : ""} (${ruta}).`;
+    openExternal(whatsappHref(tel, texto));
+  };
+  const llamarAlChofer = (trip: Trip) => {
+    const tel = telefonoChofer(trip);
+    if (tel) openExternal(`tel:${tel.replace(/\s+/g, "")}`);
+  };
+
   // Bitácora: vuelve legibles los detalles que traen códigos crudos — UUIDs de
   // conductor/vehículo se resuelven a nombre/patente y los códigos internos de
   // estado y tipo de vehículo se traducen a su etiqueta.
@@ -2723,6 +2748,29 @@ export default function TripsPage() {
                             </div>
 
                             <span style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }} onClick={(e) => e.stopPropagation()}>
+                              {/* Contacto con el conductor, a un toque desde la
+                                  fila: en la app staff es lo primero que se
+                                  hace cuando un traslado se atrasa. */}
+                              {telefonoChofer(trip) && (
+                                <>
+                                  <button
+                                    type="button"
+                                    onClick={() => escribirAlChofer(trip)}
+                                    title={t("WhatsApp al conductor")}
+                                    style={{ ...ONGOING_ACTION_STYLE, color: "#128C7E", borderColor: "rgba(37,211,102,0.4)", background: "rgba(37,211,102,0.08)" }}
+                                  >
+                                    <WhatsappIcon size={13} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => llamarAlChofer(trip)}
+                                    title={t("Llamar al conductor")}
+                                    style={ONGOING_ACTION_STYLE}
+                                  >
+                                    <PhoneIcon size={13} strokeWidth={1.8} />
+                                  </button>
+                                </>
+                              )}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -3407,6 +3455,26 @@ export default function TripsPage() {
                   {infoTrip.passengerCount ? dato("Pasajeros", String(infoTrip.passengerCount)) : null}
                   {iparticipantes ? dato("Participantes", iparticipantes, !infoTrip.passengerCount) : null}
                 </div>
+                {/* Contacto con el conductor: WhatsApp con el traslado ya
+                    escrito, y llamada. Del mismo tamaño, para el pulgar. */}
+                {telefonoChofer(infoTrip) && (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+                    <button
+                      type="button"
+                      onClick={() => escribirAlChofer(infoTrip)}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "11px 12px", borderRadius: 12, border: "none", background: "linear-gradient(135deg, #25D366, #128C7E)", color: SURFACE.card, fontSize: 13, fontWeight: 800, cursor: "pointer", boxShadow: "0 6px 16px rgba(37,211,102,0.25)" }}
+                    >
+                      <WhatsappIcon size={15} /> WhatsApp
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => llamarAlChofer(infoTrip)}
+                      style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "11px 12px", borderRadius: 12, border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.text, fontSize: 13, fontWeight: 800, cursor: "pointer" }}
+                    >
+                      <PhoneIcon size={15} strokeWidth={2.2} /> {t("Llamar")} · {telefonoChofer(infoTrip)}
+                    </button>
+                  </div>
+                )}
 
                 {imasInfo.length > 0 && (
                   <>
