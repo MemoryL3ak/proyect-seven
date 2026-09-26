@@ -13,6 +13,9 @@ export const AUDIENCES: DocumentAudience[] = [
   'PARTICIPANTE',
   'VIP',
   'CONDUCTOR',
+  'COORDINADOR_TRANSPORTE',
+  'COORDINADOR_COMITE',
+  'JEFE_MISION',
 ];
 
 export class CreateEventDocumentDto {

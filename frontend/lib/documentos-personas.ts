@@ -132,3 +132,49 @@ export type FiltroTipoPersona = "" | TipoPersona;
 export function cumpleFiltroTipo(p: PersonaConDocumentos, filtro: FiltroTipoPersona): boolean {
   return !filtro || tipoDePersona(p) === filtro;
 }
+
+/**
+ * Planilla de la documentación recibida, tal como se ve con los filtros:
+ * una fila por persona y una columna por documento (Sí / No / No aplica),
+ * para mandársela al proveedor y que complete lo que falta (26-09-2026).
+ */
+export type FilaDocumentacion = {
+  nombre: string;
+  rut?: string | null;
+  telefono?: string | null;
+  proveedor?: string | null;
+  tipo: TipoPersona;
+  doc: Documentacion;
+};
+
+export function planillaDocumentacion(filas: FilaDocumentacion[]): { headers: string[]; rows: string[][] } {
+  const headers = [
+    "Persona",
+    "RUT",
+    "Teléfono",
+    "Proveedor",
+    "Tipo",
+    "Estado",
+    "Subidos",
+    "Faltan",
+    "Última subida",
+    ...DOCS_CONDUCTOR.map((d) => d.label),
+  ];
+  const rows = filas.map((f) => {
+    const requeridos = new Set(f.doc.requeridos.map((d) => d.key));
+    const subidos = new Set(f.doc.subidos.map((d) => d.key));
+    return [
+      f.nombre,
+      f.rut ?? "",
+      f.telefono ?? "",
+      f.proveedor ?? "",
+      TIPO_PERSONA_LABEL[f.tipo],
+      ESTADO_DOCUMENTACION_LABEL[f.doc.estado],
+      `${f.doc.subidos.length}/${f.doc.requeridos.length}`,
+      f.doc.faltantes.map((d) => d.label).join(", "),
+      f.doc.ultimaSubida ? f.doc.ultimaSubida.toLocaleDateString("es-CL") : "",
+      ...DOCS_CONDUCTOR.map((d) => (!requeridos.has(d.key) ? "No aplica" : subidos.has(d.key) ? "Sí" : "No")),
+    ];
+  });
+  return { headers, rows };
+}

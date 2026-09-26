@@ -4399,7 +4399,16 @@ export default function UserPortalPage() {
         {/* ─── Documentos tab ─── */}
         {activeTab === "documentos" && (
           <div style={{ display:"flex",flexDirection:"column",gap:12 }}>
-            <EventDocumentsSection audience="PARTICIPANTE" eventId={athlete.eventId} />
+            {/* Lo de participantes y, además, lo publicado para su perfil de
+                coordinación (Transporte, Comité o Jefe de Misión). */}
+            <EventDocumentsSection
+              audience={[
+                "PARTICIPANTE",
+                ...(puedeContactarChoferes ? (["COORDINADOR_TRANSPORTE"] as const) : isComite ? (["COORDINADOR_COMITE"] as const) : []),
+                ...(isChief ? (["JEFE_MISION"] as const) : []),
+              ]}
+              eventId={athlete.eventId}
+            />
           </div>
         )}
 

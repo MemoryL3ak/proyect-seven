@@ -19,7 +19,14 @@ import {
 
 type EventItem = { id: string; name?: string | null };
 
-const ALL_AUDIENCES: DocumentAudience[] = ["PARTICIPANTE", "VIP", "CONDUCTOR"];
+const ALL_AUDIENCES: DocumentAudience[] = [
+  "PARTICIPANTE",
+  "VIP",
+  "CONDUCTOR",
+  "COORDINADOR_TRANSPORTE",
+  "COORDINADOR_COMITE",
+  "JEFE_MISION",
+];
 
 type DocForm = {
   eventId: string;

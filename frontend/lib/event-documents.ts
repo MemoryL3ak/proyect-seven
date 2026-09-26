@@ -1,6 +1,12 @@
 import { apiFetch } from "@/lib/api";
 
-export type DocumentAudience = "PARTICIPANTE" | "VIP" | "CONDUCTOR";
+export type DocumentAudience =
+  | "PARTICIPANTE"
+  | "VIP"
+  | "CONDUCTOR"
+  | "COORDINADOR_TRANSPORTE"
+  | "COORDINADOR_COMITE"
+  | "JEFE_MISION";
 
 export type EventDocument = {
   id: string;
@@ -58,14 +64,18 @@ export const AUDIENCE_LABELS: Record<DocumentAudience, string> = {
   PARTICIPANTE: "Participantes",
   VIP: "VIP",
   CONDUCTOR: "Conductores",
+  COORDINADOR_TRANSPORTE: "Coordinadores de transporte (BVAN)",
+  COORDINADOR_COMITE: "Comité",
+  JEFE_MISION: "Jefes de Misión",
 };
 
 /** Documentos publicados para un público y evento concretos. */
 export async function fetchPortalDocuments(
-  audience: DocumentAudience,
+  audience: DocumentAudience | DocumentAudience[],
   eventId?: string | null,
 ): Promise<EventDocument[]> {
-  const params = new URLSearchParams({ audience });
+  // Varias audiencias: el coordinador ve lo de participantes y lo suyo.
+  const params = new URLSearchParams({ audience: Array.isArray(audience) ? audience.join(",") : audience });
   if (eventId) params.set("eventId", eventId);
   return apiFetch<EventDocument[]>(`/event-documents?${params.toString()}`);
 }

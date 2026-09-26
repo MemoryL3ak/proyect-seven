@@ -7,7 +7,18 @@ import {
 } from 'typeorm';
 
 /** Públicos que pueden ver un documento en los portales. */
-export type DocumentAudience = 'PARTICIPANTE' | 'VIP' | 'CONDUCTOR';
+/**
+ * Portales donde se publica un documento. Desde el 26-09-2026 también los
+ * perfiles de coordinación, que entran por el portal de participantes: un
+ * documento para ellos no lo ven los deportistas.
+ */
+export type DocumentAudience =
+  | 'PARTICIPANTE'
+  | 'VIP'
+  | 'CONDUCTOR'
+  | 'COORDINADOR_TRANSPORTE'
+  | 'COORDINADOR_COMITE'
+  | 'JEFE_MISION';
 
 @Entity({ name: 'event_documents', schema: 'core' })
 export class EventDocument {

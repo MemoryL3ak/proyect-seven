@@ -14,9 +14,11 @@ import {
   type FiltroDocumentacion,
   type FiltroTipoPersona,
   OPCIONES_FILTRO_DOCUMENTACION,
+  planillaDocumentacion,
   TIPO_PERSONA_LABEL,
   tipoDePersona,
 } from "@/lib/documentos-personas";
+import { DownloadIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 
@@ -33,6 +35,7 @@ type Persona = {
   providerId: string;
   fullName: string;
   rut?: string | null;
+  phone?: string | null;
   userType?: string | null;
   status?: string | null;
   metadata?: Record<string, unknown> | null;
@@ -118,6 +121,33 @@ export default function DocumentacionPersonas() {
       });
   }, [personas, proveedorPorId, busqueda, proveedor, tipo, documentos]);
 
+  /**
+   * Descarga lo que se ve: con los filtros aplicados, una fila por persona y
+   * una columna por documento. La librería de Excel se carga recién al tocar
+   * el botón.
+   */
+  const exportar = async () => {
+    if (filas.length === 0) return;
+    const { downloadExcel } = await import("@/lib/reports");
+    const { headers, rows } = planillaDocumentacion(
+      filas.map(({ p, prov, doc }) => ({
+        nombre: p.fullName,
+        rut: p.rut,
+        telefono: p.phone,
+        proveedor: prov?.name ?? null,
+        tipo: tipoDePersona(p),
+        doc,
+      })),
+    );
+    const partes = [
+      proveedor ? proveedorPorId.get(proveedor)?.name : null,
+      tipo === "CONDUCTOR" ? "conductores" : tipo === "OTRO" ? "otros" : null,
+      documentos === "PENDIENTE" ? "pendientes" : documentos ? documentos.toLowerCase() : null,
+    ].filter(Boolean);
+    const sufijo = [...partes, new Date().toISOString().slice(0, 10)].join("_").replace(/\s+/g, "-");
+    downloadExcel(`documentacion_${sufijo}`, [{ title: "Documentación", headers, rows }]);
+  };
+
   const resumen = useMemo(() => {
     const r = { total: 0, sin: 0, incompleta: 0, completa: 0 };
     for (const p of personas) {
@@ -158,7 +188,7 @@ export default function DocumentacionPersonas() {
           ))}
         </div>
 
-        <div style={{ display: "grid", gap: 10, marginTop: 14, gridTemplateColumns: isMobile ? "1fr" : "2fr repeat(3, minmax(160px, 1fr))" }}>
+        <div style={{ display: "grid", gap: 10, marginTop: 14, gridTemplateColumns: isMobile ? "1fr" : "2fr repeat(3, minmax(160px, 1fr)) auto", alignItems: "end" }}>
           <label className="text-sm block" style={{ minWidth: 0 }}>
             <span style={etiqueta}>{t("Buscar")}</span>
             <input className="input" style={{ width: "100%" }} placeholder={t("Nombre, RUT o proveedor…")} value={busqueda} onChange={(e) => setBusqueda(e.target.value)} />
@@ -184,6 +214,20 @@ export default function DocumentacionPersonas() {
               {OPCIONES_FILTRO_DOCUMENTACION.map((o) => <option key={o.value} value={o.value}>{t(o.label)}</option>)}
             </StyledSelect>
           </label>
+          <button
+            type="button"
+            onClick={() => void exportar()}
+            disabled={filas.length === 0}
+            title={t("Descarga la lista con los filtros aplicados")}
+            style={{
+              display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7,
+              height: 40, padding: "0 16px", borderRadius: 10, whiteSpace: "nowrap",
+              border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.textSecondary,
+              fontSize: 13, fontWeight: 700, cursor: filas.length === 0 ? "not-allowed" : "pointer", opacity: filas.length === 0 ? 0.5 : 1,
+            }}
+          >
+            <DownloadIcon size={14} /> {t("Exportar")} ({filas.length})
+          </button>
         </div>
       </div>
 

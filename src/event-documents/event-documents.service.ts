@@ -123,10 +123,18 @@ export class EventDocumentsService {
       .addOrderBy('doc.createdAt', 'DESC');
 
     if (params.audience) {
-      const audience = params.audience.toUpperCase();
+      // Una o varias audiencias separadas por coma: un Coordinador de
+      // Transporte pide "PARTICIPANTE,COORDINADOR_TRANSPORTE" y recibe lo de
+      // ambos.
+      const audiencias = params.audience
+        .split(',')
+        .map((a) => a.trim().toUpperCase())
+        .filter(Boolean);
       query
         .andWhere('doc.published = true')
-        .andWhere(':audience = ANY(doc.audiences)', { audience });
+        .andWhere('doc.audiences && ARRAY[:...audiencias]::text[]', {
+          audiencias,
+        });
       // Los documentos sin evento son transversales a todos los eventos.
       if (params.eventId) {
         query.andWhere('(doc.eventId = :eventId OR doc.eventId IS NULL)', {

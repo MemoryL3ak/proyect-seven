@@ -108,3 +108,26 @@ describe("filtros", () => {
     expect(cumpleFiltroTipo({ userType: null }, "")).toBe(true);
   });
 });
+
+/* ─── Planilla exportable (26-09-2026) ─── */
+import { planillaDocumentacion } from "./documentos-personas";
+
+describe("planillaDocumentacion", () => {
+  it("una fila por persona y una columna por documento", () => {
+    const conductor = documentacionDe({ userType: "conductor", metadata: { doc_licencia: URL("doc_licencia", 1_758_600_000_000) } }, "TRANSPORTE");
+    const otro = documentacionDe({ userType: "coordinador", metadata: {} }, "TRANSPORTE");
+    const { headers, rows } = planillaDocumentacion([
+      { nombre: "Ana", rut: "1-9", telefono: "+569", proveedor: "BVAN", tipo: "CONDUCTOR", doc: conductor },
+      { nombre: "Beto", tipo: "OTRO", doc: otro },
+    ]);
+    expect(headers.slice(0, 9)).toEqual(["Persona", "RUT", "Teléfono", "Proveedor", "Tipo", "Estado", "Subidos", "Faltan", "Última subida"]);
+    const col = (label: string) => headers.indexOf(label);
+    expect(rows[0][col("Estado")]).toBe("Incompleta");
+    expect(rows[0][col("Subidos")]).toBe("1/12");
+    expect(rows[0][col("Licencia de conducir")]).toBe("Sí");
+    expect(rows[0][col("SOAP")]).toBe("No");
+    expect(rows[1][col("SOAP")]).toBe("No aplica");
+    expect(rows[1][col("Fotocopia Carnet")]).toBe("No");
+    expect(rows[1][col("Estado")]).toBe("Sin documentos");
+  });
+});

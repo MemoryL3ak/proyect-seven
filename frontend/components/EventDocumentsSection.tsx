@@ -27,7 +27,7 @@ export default function EventDocumentsSection({
   title = "Documentos del evento",
   subtitle = "Información oficial para consultar o descargar",
 }: {
-  audience: DocumentAudience;
+  audience: DocumentAudience | DocumentAudience[];
   eventId?: string | null;
   title?: string;
   subtitle?: string;
@@ -42,7 +42,8 @@ export default function EventDocumentsSection({
       .then(list => { if (alive) setDocs(list); })
       .catch(() => { if (alive) { setDocs([]); setError("No se pudieron cargar los documentos."); } });
     return () => { alive = false; };
-  }, [audience, eventId]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Array.isArray(audience) ? audience.join(",") : audience, eventId]);
 
   const download = (doc: EventDocument) => {
     if (isNativeBridge()) {
