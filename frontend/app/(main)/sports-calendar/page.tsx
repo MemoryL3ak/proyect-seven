@@ -5,6 +5,7 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
@@ -25,7 +26,6 @@ import {
 } from "@/components/ui/Icons";
 import { delegationLabel } from "@/lib/delegations";
 
-type EventOption = { id: string; name: string };
 type VenueOption = { id: string; name: string; address?: string | null; eventId?: string | null };
 type ViajeDelDia = { id: string; eventId?: string | null; scheduledAt?: string | null; startedAt?: string | null };
 type DisciplineOption = {
@@ -360,7 +360,6 @@ export default function SportsCalendarPage() {
   const isMobile = useIsMobile();
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [entries, setEntries] = useState<SportsEvent[]>([]);
-  const [eventOptions, setEventOptions] = useState<EventOption[]>([]);
   const [disciplineOptions, setDisciplineOptions] = useState<DisciplineOption[]>([]);
   const [delegationOptions, setDelegationOptions] = useState<DelegationOption[]>([]);
   const [venueOptions, setVenueOptions] = useState<VenueOption[]>([]);
@@ -368,7 +367,8 @@ export default function SportsCalendarPage() {
   // la operación del día tanto como las competencias.
   const [viajes, setViajes] = useState<ViajeDelDia[]>([]);
   const [athletes, setAthletes] = useState<AthleteAndItem[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [selectedDelegationId, setSelectedDelegationId] = useState("");
   const [monthCursor, setMonthCursor] = useState(() => startOfMonth(new Date()));
   const [selectedDay, setSelectedDay] = useState(() => new Date());
@@ -396,15 +396,6 @@ export default function SportsCalendarPage() {
     source: "manual",
     metadata: {},
   });
-
-  const loadEventOptions = async () => {
-    try {
-      const data = await apiFetch<EventOption[]>("/events");
-      setEventOptions(Array.isArray(data) ? data : []);
-    } catch {
-      setEventOptions([]);
-    }
-  };
 
   const loadDelegations = async () => {
     try {
@@ -486,7 +477,6 @@ export default function SportsCalendarPage() {
   };
 
   useEffect(() => {
-    loadEventOptions();
     loadDisciplines();
     loadDelegations();
     loadVenues();
@@ -1155,19 +1145,14 @@ export default function SportsCalendarPage() {
           })}
         </div>
 
-        {/* Filtros avanzados (evento + delegación + estado) */}
+        {/* Filtros avanzados (delegación, disciplina, fase y estado; el
+            evento se elige arriba, en el selector del panel) */}
         <details className="text-xs">
           <summary className="cursor-pointer font-semibold inline-flex items-center gap-1.5"
             style={{ color: "var(--brand)" }}>
             <FilterIcon size={12} /> {t("Filtros avanzados")}
           </summary>
-          <div className="grid gap-2 mt-3 lg:grid-cols-6">
-            <StyledSelect wrapperClassName="lg:col-span-2" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-              <option value="">{t("Todos los eventos principales")}</option>
-              {eventOptions.map((item) => (
-                <option key={item.id} value={item.id}>{item.name}</option>
-              ))}
-            </StyledSelect>
+          <div className="grid gap-2 mt-3 lg:grid-cols-4">
             <StyledSelect wrapperClassName="lg:col-span-1" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
               <option value="">{t("Todas las delegaciones")}</option>
               {filteredDelegationOptions.map((item) => (
@@ -1891,7 +1876,7 @@ export default function SportsCalendarPage() {
                 <p style={{ marginTop: "2px", fontSize: "13px", fontWeight: 700, color: SURFACE.text }}>{dayLabel(selectedDay)}</p>
               </div>
               <Link
-                href={`/sports-calendar/day/${selectedDayKey}?eventId=${encodeURIComponent(selectedEventId || "")}&delegationId=${encodeURIComponent(selectedDelegationId || "")}`}
+                href={`/sports-calendar/day/${selectedDayKey}?delegationId=${encodeURIComponent(selectedDelegationId || "")}`}
                 className="btn btn-primary"
               >
                 {t("Ver detalle del dia")}
@@ -2090,7 +2075,7 @@ export default function SportsCalendarPage() {
             <div style={{ padding: "12px 16px", borderTop: `1px solid ${SURFACE.border}`, display: "flex", justifyContent: "space-between", gap: 10, background: SURFACE.bg }}>
               <button type="button" className="btn btn-ghost" onClick={() => setDayModalOpen(false)}>{t("Cerrar")}</button>
               <Link
-                href={`/sports-calendar/day/${selectedDayKey}?eventId=${encodeURIComponent(selectedEventId || "")}&delegationId=${encodeURIComponent(selectedDelegationId || "")}`}
+                href={`/sports-calendar/day/${selectedDayKey}?delegationId=${encodeURIComponent(selectedDelegationId || "")}`}
                 className="btn btn-primary"
               >
                 {t("Ver detalle del día")} →

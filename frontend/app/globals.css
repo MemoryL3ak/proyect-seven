@@ -1341,6 +1341,26 @@ label > *:first-child {
   .topbar-logo {
     display: none !important;
   }
+  /* Evento activo: en el teléfono sólo el icono (el nombre va en el menú), y
+     con un solo evento ni eso, porque no hay nada que elegir. */
+  .topbar-evento-texto {
+    display: none !important;
+  }
+  .topbar-evento > button {
+    height: 36px !important;
+    padding: 0 6px !important;
+    gap: 4px !important;
+  }
+  .topbar-evento-unico {
+    display: none !important;
+  }
+  .topbar-evento-menu {
+    position: fixed !important;
+    top: 64px !important;
+    left: 16px !important;
+    right: 16px !important;
+    width: auto !important;
+  }
 
   /* ── Aspecto de app (no de escritorio encogido) ──────────────
      Menos aire entre secciones, tarjetas planas sin sombra ni brillos,

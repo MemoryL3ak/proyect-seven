@@ -15,6 +15,7 @@ import {
   TrashIcon,
 } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { filterValidatedAthletes } from "@/lib/athletes";
 
@@ -173,7 +174,8 @@ export default function FlightsPage() {
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: selectedEventId } = useEventoActivo();
 
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -224,7 +226,6 @@ export default function FlightsPage() {
       );
       setDelegations(delegationData ?? []);
       setDisciplines(disciplineData ?? []);
-      if (!selectedEventId && eventData?.length) setSelectedEventId(eventData[0].id);
     } finally {
       setLoading(false);
     }
@@ -457,10 +458,6 @@ export default function FlightsPage() {
             <p style={{ fontSize: isMobile ? "12px" : "13px", color: pal.textMuted, marginTop: "4px" }}>{t("Seguimiento en tiempo real · AviationStack")}</p>
           </div>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", width: isMobile ? "100%" : undefined }}>
-            <select className="input" style={{ width: isMobile ? "100%" : "200px", borderRadius: "12px" }} value={selectedEventId} onChange={e => setSelectedEventId(e.target.value)}>
-              <option value="">{t("Todos los eventos")}</option>
-              {events.map(ev => <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>)}
-            </select>
             <button onClick={() => { setModal(true); setForm(EMPTY_FORM); setFormError(null); }}
               style={{ padding: "10px 20px", borderRadius: "12px", border: "none", background: `linear-gradient(135deg, ${BRAND.teal}, #14AE98)`, color: SURFACE.card, fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 2px 12px rgba(33,208,179,0.4)", display: "flex", alignItems: "center", gap: "6px" }}>
               <PlusIcon size={14} strokeWidth={2.5} />

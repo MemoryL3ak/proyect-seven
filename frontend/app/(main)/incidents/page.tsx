@@ -6,6 +6,8 @@ import { apiFetch, getStoredUser } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { STATE, SURFACE } from "@/lib/design";
 import { delegationLabel, type DelegationLike } from "@/lib/delegations";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 /**
  * Incidencias del evento. Operaciones ve todas; un Jefe de Misión (usuario con
@@ -31,7 +33,7 @@ type Incident = {
   createdAt: string;
 };
 
-type Option = { id: string; label: string };
+type Option = { id: string; label: string; eventId?: string | null };
 
 const CATEGORIES: Array<[string, string]> = [
   ["TRANSPORTE", "Transporte"],
@@ -96,15 +98,16 @@ const emptyForm = () => ({
 
 export default function IncidentsPage() {
   const { t } = useI18n();
+  const { eventoId } = useEventoActivo();
   const [scope, setScope] = useState<{ delegationId: string; delegationLabel: string } | null>(null);
   const [scopeReady, setScopeReady] = useState(false);
-  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [todasLasIncidencias, setIncidents] = useState<Incident[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("");
   const [delegationFilter, setDelegationFilter] = useState("");
-  const [venues, setVenues] = useState<Option[]>([]);
-  const [delegations, setDelegations] = useState<Option[]>([]);
+  const [todasLasSedes, setVenues] = useState<Option[]>([]);
+  const [todasLasDelegaciones, setDelegations] = useState<Option[]>([]);
   const [form, setForm] = useState(emptyForm());
   const [saving, setSaving] = useState(false);
   const [resolving, setResolving] = useState<{ id: string; text: string } | null>(null);
@@ -148,7 +151,11 @@ export default function IncidentsPage() {
       .then((rows) =>
         setVenues(
           (rows || [])
-            .map((v) => ({ id: String(v.id), label: typeof v.name === "string" ? v.name : "" }))
+            .map((v) => ({
+              id: String(v.id),
+              label: typeof v.name === "string" ? v.name : "",
+              eventId: typeof v.eventId === "string" ? v.eventId : null,
+            }))
             .sort((a, b) => a.label.localeCompare(b.label)),
         ),
       )
@@ -157,12 +164,42 @@ export default function IncidentsPage() {
       .then((rows) =>
         setDelegations(
           (rows || [])
-            .map((d) => ({ id: String(d.id), label: delegationLabel(d as DelegationLike) }))
+            .map((d) => ({
+              id: String(d.id),
+              label: delegationLabel(d as DelegationLike),
+              eventId: typeof d.eventId === "string" ? d.eventId : null,
+            }))
             .sort((a, b) => a.label.localeCompare(b.label)),
         ),
       )
       .catch(() => setDelegations([]));
   }, []);
+
+  // Sólo el evento activo: con dos eventos se mezclaban las incidencias, sedes
+  // y delegaciones de ambos. Las incidencias antiguas sin evento se ven en todos.
+  const incidents = useMemo(
+    () => todasLasIncidencias.filter((i) => esDelEvento(eventoId, i.eventId)),
+    [todasLasIncidencias, eventoId],
+  );
+  const venues = useMemo(
+    () => todasLasSedes.filter((v) => esDelEvento(eventoId, v.eventId)),
+    [todasLasSedes, eventoId],
+  );
+  const delegations = useMemo(
+    () => todasLasDelegaciones.filter((d) => esDelEvento(eventoId, d.eventId)),
+    [todasLasDelegaciones, eventoId],
+  );
+
+  // Al cambiar de evento se suelta lo elegido del otro: si no, el filtro
+  // dejaría la lista vacía y el formulario guardaría una sede ajena.
+  useEffect(() => {
+    if (delegationFilter && !delegations.some((d) => d.id === delegationFilter)) setDelegationFilter("");
+    setForm((f) => {
+      const venueId = venues.some((v) => v.id === f.venueId) ? f.venueId : "";
+      const delegationId = delegations.some((d) => d.id === f.delegationId) ? f.delegationId : "";
+      return venueId === f.venueId && delegationId === f.delegationId ? f : { ...f, venueId, delegationId };
+    });
+  }, [venues, delegations, delegationFilter]);
 
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -179,6 +216,8 @@ export default function IncidentsPage() {
           description: form.description.trim() || null,
           venueId: form.venueId || null,
           ...(scope ? {} : { delegationId: form.delegationId || null }),
+          // Queda en el evento activo; sin esto el backend usa el más nuevo.
+          ...(eventoId ? { eventId: eventoId } : {}),
         }),
       });
       setIncidents((prev) => [created, ...prev]);

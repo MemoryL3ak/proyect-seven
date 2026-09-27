@@ -5,6 +5,7 @@ import QRCode from "qrcode";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { buildCredentialHtml } from "@/lib/credential-template";
@@ -158,7 +159,8 @@ export default function AccreditationsPage() {
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [subjectFilter, setSubjectFilter] = useState<"ALL" | "PARTICIPANT" | "DRIVER">("ALL");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
   const [query, setQuery] = useState("");
@@ -220,7 +222,6 @@ export default function AccreditationsPage() {
       // y resuelve la foto probando las mismas claves que photoFromMetadata.
       setDrivers(Array.isArray(driverData) ? driverData : []);
       setAccreditations(Array.isArray(accreditationData) ? accreditationData : []);
-      if (!selectedEventId && eventData?.length) setSelectedEventId(eventData[0].id);
       setLastUpdated(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar acreditaciones."));
@@ -599,14 +600,7 @@ export default function AccreditationsPage() {
 
             {/* Filters + active view */}
             <div style={{ background: pal.innerBg, border: `1px solid ${pal.cardBorder}`, borderRadius: "16px", padding: "16px", marginBottom: "18px" }}>
-              <div className="grid gap-3 xl:grid-cols-[1.25fr_1.25fr_0.9fr]">
-                <div>
-                  <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.labelColor, marginBottom: "8px" }}>{t("Evento")}</p>
-                  <select className="input rounded-xl" style={sel} value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-                    <option value="">{t("Selecciona evento")}</option>
-                    {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
-                  </select>
-                </div>
+              <div className="grid gap-3 xl:grid-cols-[1.25fr_0.9fr]">
                 <div>
                   <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", color: pal.labelColor, marginBottom: "8px" }}>{t("Delegación AND")}</p>
                   <select className="input rounded-xl" style={sel} value={andKpiDelegationId} onChange={(e) => setAndKpiDelegationId(e.target.value)}>
@@ -698,10 +692,6 @@ export default function AccreditationsPage() {
       {/* ── Filter bar */}
       <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "20px", padding: "18px 20px", boxShadow: pal.cardShadow }}>
         <div className="grid gap-3 lg:grid-cols-12">
-          <select className="input rounded-xl lg:col-span-3" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-            <option value="">{t("Todos los eventos")}</option>
-            {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
-          </select>
           <select className="input rounded-xl lg:col-span-2" value={subjectFilter} onChange={(e) => setSubjectFilter(e.target.value as "ALL" | "PARTICIPANT" | "DRIVER")}>
             <option value="ALL">{t("Todos los sujetos")}</option>
             <option value="PARTICIPANT">{t("Participante")}</option>
@@ -710,7 +700,7 @@ export default function AccreditationsPage() {
           <select className="input rounded-xl lg:col-span-2" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}>
             {STATUS_OPTIONS.map((status) => <option key={status} value={status}>{t(statusFilterLabel(status))}</option>)}
           </select>
-          <input className="input rounded-xl lg:col-span-3" placeholder={t("Buscar por nombre, ID o codigo credencial")} value={query} onChange={(e) => setQuery(e.target.value)} />
+          <input className="input rounded-xl lg:col-span-6" placeholder={t("Buscar por nombre, ID o codigo credencial")} value={query} onChange={(e) => setQuery(e.target.value)} />
           <button type="button" className="lg:col-span-2" onClick={loadData} disabled={loading} style={{ border: `1px solid ${SURFACE.border}`, borderRadius: "12px", padding: "8px 14px", fontSize: "13px", fontWeight: 600, color: SURFACE.textSecondary, background: SURFACE.card, cursor: loading ? "default" : "pointer", opacity: loading ? 0.6 : 1 }}>{loading ? t("Actualizando...") : t("Refrescar")}</button>
         </div>
         {(error || message) ? (

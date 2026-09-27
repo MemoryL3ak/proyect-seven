@@ -6,6 +6,8 @@ import * as XLSX from "xlsx";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
 import Tabs from "@/components/ui/Tabs";
@@ -30,6 +32,7 @@ import {
 
 type Person = {
   id: string;
+  eventId?: string | null;
   fullName: string;
   rut?: string | null;
   email?: string | null;
@@ -48,6 +51,7 @@ type Person = {
 
 type Product = {
   id: string;
+  eventId?: string | null;
   name: string;
   description?: string | null;
   unitCost?: number | null;
@@ -103,16 +107,70 @@ const fmt$ = (n: number | null | undefined) =>
 const fmtDate = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleDateString("es-CL", { day: "2-digit", month: "short", year: "numeric" }) : "-";
 
+/**
+ * Resumen del tablero con las filas del evento activo. Es la misma cuenta de
+ * /workforce/dashboard, que sumaba todos los eventos juntos.
+ */
+function resumenWorkforce(persons: Person[], products: Product[], deliveries: Delivery[]): Dashboard {
+  const validated = deliveries.filter((d) => d.validatedAt).length;
+  const materials = deliveries.reduce((sum, d) => sum + Number(d.unitCost || 0) * Number(d.quantity || 0), 0);
+  const labor = persons.reduce((sum, p) => sum + Number(p.dailyRate || 0) * Number(p.daysCount || 0), 0);
+  return {
+    persons: {
+      total: persons.length,
+      staff: persons.filter((p) => p.personType === "STAFF").length,
+      volunteers: persons.filter((p) => p.personType === "VOLUNTEER").length,
+    },
+    products: {
+      total: products.length,
+      totalInventoryValue: products.reduce((sum, p) => sum + Number(p.unitCost || 0) * Number(p.stockQuantity || 0), 0),
+    },
+    deliveries: {
+      total: deliveries.length,
+      validated,
+      pending: deliveries.length - validated,
+      totalDeliveredValue: materials,
+    },
+    costs: { labor, materials, total: labor + materials },
+  };
+}
+
 export default function WorkforcePage() {
   const { t } = useI18n();
+  const { eventoId } = useEventoActivo();
   const [tab, setTab] = useState<"dashboard" | "persons" | "products" | "deliveries">("dashboard");
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
-  const [persons, setPersons] = useState<Person[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
-  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
-  const [dashboard, setDashboard] = useState<Dashboard | null>(null);
+  const [todasLasPersonas, setPersons] = useState<Person[]>([]);
+  const [todosLosProductos, setProducts] = useState<Product[]>([]);
+  const [todasLasEntregas, setDeliveries] = useState<Delivery[]>([]);
+  const [cargado, setCargado] = useState(false);
+
+  // Sólo el evento activo: con dos eventos se mezclaban el personal, el kit y
+  // las entregas de ambos. Lo que no tiene evento se ve en todos.
+  const persons = useMemo(
+    () => todasLasPersonas.filter((p) => esDelEvento(eventoId, p.eventId)),
+    [todasLasPersonas, eventoId],
+  );
+  const products = useMemo(
+    () => todosLosProductos.filter((p) => esDelEvento(eventoId, p.eventId)),
+    [todosLosProductos, eventoId],
+  );
+  // La entrega no guarda evento: lo toma de la persona y del producto.
+  const deliveries = useMemo(() => {
+    const eventoDePersona = new Map(todasLasPersonas.map((p) => [p.id, p.eventId]));
+    const eventoDeProducto = new Map(todosLosProductos.map((p) => [p.id, p.eventId]));
+    return todasLasEntregas.filter(
+      (d) =>
+        esDelEvento(eventoId, eventoDePersona.get(d.personId)) &&
+        esDelEvento(eventoId, eventoDeProducto.get(d.productId)),
+    );
+  }, [todasLasEntregas, todasLasPersonas, todosLosProductos, eventoId]);
+  const dashboard = useMemo(
+    () => (cargado ? resumenWorkforce(persons, products, deliveries) : null),
+    [cargado, persons, products, deliveries],
+  );
 
   // Modal estado: tipo + entidad en edición
   const [modal, setModal] = useState<
@@ -185,16 +243,15 @@ export default function WorkforcePage() {
 
   const loadAll = async () => {
     try {
-      const [p, pr, d, dash] = await Promise.all([
+      const [p, pr, d] = await Promise.all([
         apiFetch<Person[]>("/workforce/persons"),
         apiFetch<Product[]>("/workforce/products"),
         apiFetch<Delivery[]>("/workforce/deliveries"),
-        apiFetch<Dashboard>("/workforce/dashboard"),
       ]);
       setPersons(Array.isArray(p) ? p : []);
       setProducts(Array.isArray(pr) ? pr : []);
       setDeliveries(Array.isArray(d) ? d : []);
-      setDashboard(dash || null);
+      setCargado(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Error cargando datos"));
     }
@@ -219,6 +276,11 @@ export default function WorkforcePage() {
       const method = id ? "PATCH" : "POST";
       const payload = { ...(data || {}) };
       delete (payload as any).id;
+      // Persona o producto nuevo queda en el evento activo; al editar se
+      // respeta el suyo.
+      if (!id && type !== "delivery" && eventoId && !(payload as any).eventId) {
+        (payload as any).eventId = eventoId;
+      }
       await apiFetch(url, {
         method,
         headers: { "Content-Type": "application/json" },

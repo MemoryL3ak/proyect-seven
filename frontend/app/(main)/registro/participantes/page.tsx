@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import BulkImportPanel from "@/components/BulkImportPanel";
 import DelegationsRegistry from "@/components/DelegationsRegistry";
 import ResourceScreen from "@/components/ResourceScreen";
@@ -10,9 +10,12 @@ import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { UploadIcon, CheckIcon, AlertCircleIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 type Athlete = {
   id: string;
+  eventId?: string | null;
   fullName?: string | null;
   delegationId?: string | null;
   accreditationStatus?: string | null;
@@ -23,6 +26,7 @@ type Athlete = {
 
 type Delegation = {
   id: string;
+  eventId?: string | null;
   countryCode?: string | null;
 };
 
@@ -51,9 +55,24 @@ export default function RegistroParticipantesPage() {
   // "delegaciones": registro de las delegaciones del evento (región + jefe).
   const [tab, setTab] = useState<"form" | "table" | "delegaciones">("form");
   const [externalEditingId, setExternalEditingId] = useState<string | null>(null);
-  const [athletes, setAthletes] = useState<Athlete[]>([]);
-  const [delegations, setDelegations] = useState<Delegation[]>([]);
+  const { eventoId } = useEventoActivo();
+  const [todosLosAthletes, setAthletes] = useState<Athlete[]>([]);
+  const [todasLasDelegations, setDelegations] = useState<Delegation[]>([]);
   const [photoResult, setPhotoResult] = useState<{ matched: number; notFound: number; names: string[] } | null>(null);
+
+  // Sólo el evento activo: con dos eventos, los contadores sumaban los
+  // participantes de ambos y la carga de fotos podía calzar con alguien del
+  // otro evento. El participante sin evento toma el de su delegación.
+  const delegations = useMemo(
+    () => todasLasDelegations.filter((d) => esDelEvento(eventoId, d.eventId)),
+    [todasLasDelegations, eventoId],
+  );
+  const athletes = useMemo(() => {
+    const eventoDeDelegacion = new Map(todasLasDelegations.map((d) => [d.id, d.eventId ?? null]));
+    return todosLosAthletes.filter((a) =>
+      esDelEvento(eventoId, a.eventId ?? (a.delegationId ? eventoDeDelegacion.get(a.delegationId) : null)),
+    );
+  }, [todosLosAthletes, todasLasDelegations, eventoId]);
 
   useEffect(() => {
     Promise.all([

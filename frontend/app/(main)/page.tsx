@@ -11,6 +11,8 @@ import BarChart from "@/components/charts/BarChart";
 import { downloadExcel, downloadPDF } from "@/lib/reports";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import DetailRow from "@/components/ui/DetailRow";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { esDelEvento } from "@/lib/evento-activo";
 
 // ── Brand palette — Seven Arena (tokens compartidos) ───────────
 const TEAL       = BRAND.teal;
@@ -18,13 +20,13 @@ const TEAL_LIGHT = BRAND.tealLight;
 const BLUE       = BRAND.blue;
 const CHARCOAL   = BRAND.charcoal;
 
-type Trip = { id: string; status?: string | null };
-type HotelAssignment = { id: string; roomId?: string | null; status?: string | null };
-type HotelRoom = { id: string; status?: string | null };
+type Trip = { id: string; status?: string | null; eventId?: string | null };
+type HotelAssignment = { id: string; hotelId?: string | null; roomId?: string | null; status?: string | null };
+type HotelRoom = { id: string; hotelId?: string | null; status?: string | null };
 type Discipline = { id: string; name?: string | null; parentId?: string | null; category?: string | null; gender?: string | null };
 type EventData = { id: string; name?: string | null; expectedCapacities?: Array<{ disciplineId: string; delegationCode: string; expectedCount: number }> };
-type AthleteItem = { id: string; disciplineId?: string | null; status?: string | null };
-type AccommodationItem = { id: string; name?: string | null; city?: string | null };
+type AthleteItem = { id: string; disciplineId?: string | null; status?: string | null; eventId?: string | null };
+type AccommodationItem = { id: string; name?: string | null; city?: string | null; eventId?: string | null };
 
 const STATUS = {
   scheduled: new Set(["SCHEDULED", "PROGRAMADO", "PROGRAMADA", "PROGRAMMED"]),
@@ -83,20 +85,18 @@ function ProgressBar({ pct, color, height = 6 }: { pct: number; color: string; h
 
 export default function Page() {
   const { t } = useI18n();
+  const { eventoId, listo: eventoListo } = useEventoActivo();
   // null = ese indicador aún no llega (se muestra "—" solo en su tarjeta).
   const [eventsCount, setEventsCount] = useState<number | null>(null);
   const [eventsList, setEventsList] = useState<EventData[]>([]);
-  const [athletesCount, setAthletesCount] = useState<number | null>(null);
-  const [trips, setTrips] = useState<Trip[] | null>(null);
-  const [accommodationsCount, setAccommodationsCount] = useState<number | null>(null);
-  const [accommodationsList, setAccommodationsList] = useState<AccommodationItem[]>([]);
+  const [allAthletes, setAllAthletes] = useState<AthleteItem[] | null>(null);
+  const [allTrips, setAllTrips] = useState<Trip[] | null>(null);
+  const [allAccommodations, setAllAccommodations] = useState<AccommodationItem[] | null>(null);
   // KPI expandida: muestra su panel de detalle bajo la fila de indicadores.
   const [expandedKpi, setExpandedKpi] = useState<string | null>(null);
-  const [hotelRooms, setHotelRooms] = useState<HotelRoom[] | null>(null);
-  const [hotelAssignments, setHotelAssignments] = useState<HotelAssignment[] | null>(null);
+  const [allHotelRooms, setAllHotelRooms] = useState<HotelRoom[] | null>(null);
+  const [allHotelAssignments, setAllHotelAssignments] = useState<HotelAssignment[] | null>(null);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
-  const [capacityByDiscipline, setCapacityByDiscipline] = useState<Map<string, number>>(new Map());
-  const [athletesByDiscipline, setAthletesByDiscipline] = useState<Map<string, number>>(new Map());
   const [kmRecorridos, setKmRecorridos] = useState<number | null>(null);
 
   useEffect(() => {
@@ -116,50 +116,86 @@ export default function Page() {
       const list = Array.isArray(events) ? events : [];
       setEventsCount(list.length);
       setEventsList(list);
-      // Capacity by discipline (sum expectedCount across events/delegations)
-      const capMap = new Map<string, number>();
-      list.forEach((ev) => {
-        (ev.expectedCapacities || []).forEach((cap) => {
-          capMap.set(cap.disciplineId, (capMap.get(cap.disciplineId) || 0) + cap.expectedCount);
-        });
-      });
-      setCapacityByDiscipline(capMap);
     }, []);
 
-    load(apiFetch<AthleteItem[]>("/athletes"), (athletes) => {
-      const validAthletes = Array.isArray(athletes) ? filterValidatedAthletes(athletes) : [];
-      setAthletesCount(validAthletes.length);
-      // Validated athletes by discipline
-      const athMap = new Map<string, number>();
-      validAthletes.forEach((a: AthleteItem) => {
-        if (a.disciplineId) {
-          athMap.set(a.disciplineId, (athMap.get(a.disciplineId) || 0) + 1);
-        }
-      });
-      setAthletesByDiscipline(athMap);
-    }, []);
-
-    load(apiFetch<Trip[]>("/trips"), (list) => setTrips(Array.isArray(list) ? list : []), []);
-    load(apiFetch<AccommodationItem[]>("/accommodations"), (list) => {
-      const arr = Array.isArray(list) ? list : [];
-      setAccommodationsCount(arr.length);
-      setAccommodationsList(arr);
-    }, []);
-    load(apiFetch<HotelRoom[]>("/hotel-rooms"), (list) => setHotelRooms(Array.isArray(list) ? list : []), []);
-    load(apiFetch<HotelAssignment[]>("/hotel-assignments"), (list) => setHotelAssignments(Array.isArray(list) ? list : []), []);
+    load(apiFetch<AthleteItem[]>("/athletes"), (list) => setAllAthletes(Array.isArray(list) ? list : []), []);
+    load(apiFetch<Trip[]>("/trips"), (list) => setAllTrips(Array.isArray(list) ? list : []), []);
+    load(apiFetch<AccommodationItem[]>("/accommodations"), (list) => setAllAccommodations(Array.isArray(list) ? list : []), []);
+    load(apiFetch<HotelRoom[]>("/hotel-rooms"), (list) => setAllHotelRooms(Array.isArray(list) ? list : []), []);
+    load(apiFetch<HotelAssignment[]>("/hotel-assignments"), (list) => setAllHotelAssignments(Array.isArray(list) ? list : []), []);
     load(apiFetch<Discipline[]>("/disciplines"), (list) => setDisciplines(Array.isArray(list) ? list : []), []);
-    load(
-      apiFetch<{ totales?: { kmRecorridos?: number } }>("/trips/finance/summary"),
-      (r) => setKmRecorridos(r?.totales?.kmRecorridos ?? null),
-      { totales: {} },
-    );
 
     return () => { cancelled = true; };
   }, []);
 
+  // Km del evento activo (el resumen financiero filtra por evento). Se espera
+  // a saber cuál es para no pintar primero los km de todos y luego cambiarlos.
+  useEffect(() => {
+    if (!eventoId && !eventoListo) return;
+    let cancelled = false;
+    setKmRecorridos(null);
+    const qs = eventoId ? `?eventId=${encodeURIComponent(eventoId)}` : "";
+    apiFetch<{ totales?: { kmRecorridos?: number } }>(`/trips/finance/summary${qs}`).then(
+      (r) => { if (!cancelled) setKmRecorridos(r?.totales?.kmRecorridos ?? null); },
+      () => { if (!cancelled) setKmRecorridos(null); },
+    );
+    return () => { cancelled = true; };
+  }, [eventoId, eventoListo]);
+
+  // Sólo el evento activo: con dos eventos el inicio sumaba participantes,
+  // viajes, hoteles y cupos de ambos.
+  const trips = useMemo(
+    () => (allTrips === null ? null : allTrips.filter((tr) => esDelEvento(eventoId, tr.eventId))),
+    [allTrips, eventoId],
+  );
+  const validAthletes = useMemo(
+    () => (allAthletes === null ? null : filterValidatedAthletes(allAthletes).filter((a) => esDelEvento(eventoId, a.eventId))),
+    [allAthletes, eventoId],
+  );
+  const athletesCount = validAthletes === null ? null : validAthletes.length;
+  // Participantes validados por disciplina
+  const athletesByDiscipline = useMemo(() => {
+    const athMap = new Map<string, number>();
+    (validAthletes ?? []).forEach((a) => {
+      if (a.disciplineId) athMap.set(a.disciplineId, (athMap.get(a.disciplineId) || 0) + 1);
+    });
+    return athMap;
+  }, [validAthletes]);
+  // Cupos esperados por disciplina del evento activo (sin evento, los de todos).
+  const capacityByDiscipline = useMemo(() => {
+    const capMap = new Map<string, number>();
+    eventsList
+      .filter((ev) => !eventoId || ev.id === eventoId)
+      .forEach((ev) => {
+        (ev.expectedCapacities || []).forEach((cap) => {
+          capMap.set(cap.disciplineId, (capMap.get(cap.disciplineId) || 0) + cap.expectedCount);
+        });
+      });
+    return capMap;
+  }, [eventsList, eventoId]);
+  const accommodationsList = useMemo(
+    () => (allAccommodations ?? []).filter((h) => esDelEvento(eventoId, h.eventId)),
+    [allAccommodations, eventoId],
+  );
+  const accommodationsCount = allAccommodations === null ? null : accommodationsList.length;
+  // Habitaciones y asignaciones no traen evento: son del evento de su hotel.
+  const eventoDeHotel = useMemo(
+    () => new Map((allAccommodations ?? []).map((h) => [h.id, h.eventId ?? null])),
+    [allAccommodations],
+  );
+  const hotelRooms = useMemo(
+    () => (allHotelRooms === null ? null : allHotelRooms.filter((r) => esDelEvento(eventoId, r.hotelId ? eventoDeHotel.get(r.hotelId) : null))),
+    [allHotelRooms, eventoDeHotel, eventoId],
+  );
+  const hotelAssignments = useMemo(
+    () => (allHotelAssignments === null ? null : allHotelAssignments.filter((a) => esDelEvento(eventoId, a.hotelId ? eventoDeHotel.get(a.hotelId) : null))),
+    [allHotelAssignments, eventoDeHotel, eventoId],
+  );
+
   // Gates de carga por sección (cada una espera solo lo suyo).
   const disciplinesReady = eventsCount !== null && athletesCount !== null;
-  const hotelLoading = hotelRooms === null || hotelAssignments === null;
+  // Sin la lista de hoteles no se sabe de qué evento es cada habitación.
+  const hotelLoading = hotelRooms === null || hotelAssignments === null || allAccommodations === null;
 
   const tripStats = useMemo(() => {
     const s = { scheduled: 0, active: 0, completed: 0, cancelled: 0, other: 0 };

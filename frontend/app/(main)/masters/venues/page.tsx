@@ -12,6 +12,8 @@ import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 import { useI18n } from "@/lib/i18n";
 import { downloadCSV } from "@/lib/export";
 import { DownloadIcon } from "@/components/ui/Icons";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 type EventItem = {
   id: string;
@@ -123,7 +125,8 @@ async function fileToDataUrl(file: File): Promise<string> {
 
 export default function VenuesMasterPage() {
   const { t } = useI18n();
-  const [venues, setVenues] = useState<Venue[]>([]);
+  const { eventoId } = useEventoActivo();
+  const [todasLasSedes, setVenues] = useState<Venue[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [disciplines, setDisciplines] = useState<Discipline[]>([]);
   const [form, setForm] = useState<VenueForm>(initialForm);
@@ -136,6 +139,20 @@ export default function VenuesMasterPage() {
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Sólo el evento activo: con dos eventos se mezclaban las sedes de ambos.
+  const venues = useMemo(
+    () => todasLasSedes.filter((v) => esDelEvento(eventoId, v.eventId)),
+    [todasLasSedes, eventoId],
+  );
+
+  // Una sede nueva nace en el evento activo; al editar se respeta el suyo.
+  useEffect(() => {
+    if (editingId) return;
+    setForm((prev) =>
+      prev.eventId === eventoId ? prev : { ...prev, eventId: eventoId, disciplineIds: [], coordinatorId: "" },
+    );
+  }, [eventoId, editingId]);
 
   const communeOptions = useMemo(() => buildCommuneOptions(form.region), [form.region]);
   const currentMapsUrl = useMemo(() => mapsUrl(form), [form]);
@@ -187,7 +204,16 @@ export default function VenuesMasterPage() {
     downloadCSV(`sedes-${new Date().toISOString().slice(0, 10)}`, filas);
   };
 
-  const [coordinadores, setCoordinadores] = useState<Coordinador[]>([]);
+  const [todosLosCoordinadores, setCoordinadores] = useState<Coordinador[]>([]);
+  // Coordinadores del evento de la sede (el asignado se conserva aunque no
+  // lo sea, para no perderlo al editar).
+  const coordinadores = useMemo(
+    () =>
+      todosLosCoordinadores.filter(
+        (c) => c.id === form.coordinatorId || esDelEvento(form.eventId, c.eventId),
+      ),
+    [todosLosCoordinadores, form.eventId, form.coordinatorId],
+  );
 
   const loadData = async () => {
     setLoading(true);
@@ -224,7 +250,7 @@ export default function VenuesMasterPage() {
   useEffect(() => { loadData(); }, []);
 
   const resetForm = () => {
-    setForm(initialForm);
+    setForm({ ...initialForm, eventId: eventoId });
     setEditingId(null);
     setPhotoFile(null);
     setPhotoPreview(null);

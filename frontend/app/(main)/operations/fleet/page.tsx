@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import PageHeader from "@/components/ui/PageHeader";
 import {
   TruckIcon,
@@ -89,13 +90,10 @@ function initials(name: string): string {
   return name.split(/\s+/).filter(Boolean).slice(0, 2).map(w => w[0]?.toUpperCase() ?? "").join("") || "?";
 }
 
-type EventOption = { id: string; name: string };
 
 export default function FleetAvailabilityPage() {
   const { t } = useI18n();
   const [section, setSection] = useState<"availability" | "drivers" | "vehicles">("availability");
-  const [eventOptions, setEventOptions] = useState<EventOption[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState<string>("");
 
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,17 +102,6 @@ export default function FleetAvailabilityPage() {
   const [driverFilter, setDriverFilter] = useState<"" | DriverAvailability["availability"]>("");
   const [vehicleFilter, setVehicleFilter] = useState<"" | VehicleAvailability["availability"]>("");
   const [search, setSearch] = useState("");
-
-  // Cargar eventos al montar
-  useEffect(() => {
-    apiFetch<EventOption[]>("/events")
-      .then((data) => {
-        const list = Array.isArray(data) ? data : [];
-        setEventOptions(list);
-        if (list.length === 1) setSelectedEventId(list[0].id);
-      })
-      .catch(() => setEventOptions([]));
-  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -214,12 +201,7 @@ export default function FleetAvailabilityPage() {
       </section>
 
       {section !== "availability" && (
-        <CrudSection
-          section={section}
-          eventOptions={eventOptions}
-          selectedEventId={selectedEventId}
-          setSelectedEventId={setSelectedEventId}
-        />
+        <CrudSection section={section} />
       )}
 
       {section !== "availability" && <div className="hidden">
@@ -399,18 +381,11 @@ const VEHICLE_STATUS_OPTIONS = [
   { value: "OUT_OF_SERVICE", label: "Fuera de servicio" },
 ];
 
-function CrudSection({
-  section,
-  eventOptions,
-  selectedEventId,
-  setSelectedEventId,
-}: {
-  section: "drivers" | "vehicles";
-  eventOptions: EventOption[];
-  selectedEventId: string;
-  setSelectedEventId: (id: string) => void;
-}) {
+function CrudSection({ section }: { section: "drivers" | "vehicles" }) {
   const { t } = useI18n();
+  // Los conductores y vehículos nuevos quedan en el evento activo (el de la
+  // barra superior). Los listados no se filtran: la flota se comparte.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [drivers, setDrivers] = useState<DriverRow[]>([]);
   const [vehicles, setVehicles] = useState<VehicleRow[]>([]);
   const [loading, setLoading] = useState(false);
@@ -471,17 +446,6 @@ function CrudSection({
     <>
       <section className="surface rounded-2xl p-4">
         <div className="flex flex-wrap items-end gap-3">
-          {eventOptions.length > 1 && (
-            <label className="text-sm block">
-              <span className="block mb-1">{t("Evento")}</span>
-              <select className="input" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-                <option value="">{t("— Seleccionar evento —")}</option>
-                {eventOptions.map(ev => (
-                  <option key={ev.id} value={ev.id}>{ev.name}</option>
-                ))}
-              </select>
-            </label>
-          )}
           <label className="text-sm block" style={{ flex: 1, minWidth: 200 }}>
             <span className="block mb-1">{t("Buscar")}</span>
             <input className="input"

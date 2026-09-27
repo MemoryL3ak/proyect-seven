@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/Icons";
 import { normalizeClientType, clientTypeLabel } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { BRAND, TRIP_STATUS_META, STATE, SURFACE, ACCENT } from "@/lib/design";
 
 /**
@@ -202,13 +203,13 @@ function driverName(d: DriverItem): string {
 export default function TripRequestsPage() {
   const { t } = useI18n();
   const [trips, setTrips] = useState<Trip[]>([]);
-  const [events, setEvents] = useState<EventItem[]>([]);
   const [drivers, setDrivers] = useState<DriverItem[]>([]);
   const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [clientFilter, setClientFilter] = useState<"" | "T1" | "VIP">("");
   const [search, setSearch] = useState("");
@@ -251,12 +252,10 @@ export default function TripRequestsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [ev, dr, ve] = await Promise.all([
-          apiFetch<EventItem[]>("/events"),
+        const [dr, ve] = await Promise.all([
           apiFetch<DriverItem[]>("/drivers"),
           apiFetch<VehicleItem[]>("/transports"),
         ]);
-        setEvents(ev ?? []);
         // /drivers ya une flota propia y choferes de proveedor, sin duplicados.
         setDrivers(dr ?? []);
         setVehicles(ve ?? []);
@@ -503,10 +502,6 @@ export default function TripRequestsPage() {
       <section className="surface rounded-2xl p-4 flex flex-wrap items-center gap-3">
         {/* En el teléfono los filtros van a ancho completo; el tope de ancho
             es sólo para que en escritorio no se estiren. */}
-        <select className="input md:max-w-[220px]" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-          <option value="">{t("Todos los eventos")}</option>
-          {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name ?? ev.id}</option>)}
-        </select>
         <select className="input md:max-w-[170px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">{t("Todos los estados")}</option>
           <option value="REQUESTED">{t("Pendiente")}</option>

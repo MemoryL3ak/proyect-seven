@@ -3,6 +3,7 @@
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import KpiCard from "@/components/ui/KpiCard";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
@@ -120,7 +121,6 @@ type Detalle = {
   origenValor: string;
 };
 
-type EventItem = { id: string; name?: string | null };
 type ProviderItem = { id: string; name?: string | null };
 
 /** GET /trips/finance/jornadas: horas de jornada y extras (regla de 13 h). */
@@ -241,9 +241,10 @@ export default function TransportFinancePage() {
   const [resumen, setResumen] = useState<Resumen | null>(null);
   const [detalle, setDetalle] = useState<Detalle[]>([]);
   const [jornadas, setJornadas] = useState<Jornadas | null>(null);
-  const [eventos, setEventos] = useState<EventItem[]>([]);
   const [proveedores, setProveedores] = useState<ProviderItem[]>([]);
-  const [eventId, setEventId] = useState("");
+  // El evento lo elige el selector de la barra superior: antes el panel
+  // sumaba todos los eventos si no se elegía uno.
+  const { eventoId: eventId, evento: eventoActivo } = useEventoActivo();
   const [preset, setPreset] = useState<Preset>("todo");
   const [desde, setDesde] = useState("");
   const [hasta, setHasta] = useState("");
@@ -290,17 +291,13 @@ export default function TransportFinancePage() {
   }, [cargar]);
 
   useEffect(() => {
-    apiFetch<EventItem[]>("/events")
-      .then((e) => setEventos(Array.isArray(e) ? e : []))
-      .catch(() => setEventos([]));
     apiFetch<ProviderItem[]>("/providers")
       .then((p) => setProveedores(Array.isArray(p) ? p : []))
       .catch(() => setProveedores([]));
   }, []);
 
-  const hayFiltros = Boolean(eventId || desde || hasta || tipoCliente || flota || servicio || proveedorId);
+  const hayFiltros = Boolean(desde || hasta || tipoCliente || flota || servicio || proveedorId);
   const limpiarFiltros = () => {
-    setEventId("");
     setTipoCliente("");
     setFlota("");
     setServicio("");
@@ -359,7 +356,7 @@ export default function TransportFinancePage() {
     if (!resumen) return;
     const t = resumen.totales;
     const filtrosActivos = [
-      eventId ? `Evento: ${eventos.find((e) => e.id === eventId)?.name ?? eventId}` : null,
+      eventId ? `Evento: ${eventoActivo?.name ?? eventId}` : null,
       desde || hasta ? `Rango: ${desde || "inicio"} → ${hasta || "hoy"}` : null,
       tipoCliente ? `Tipo cliente: ${clientTypeLabel(tipoCliente)}` : null,
       flota ? `Flota: ${FLOTA_LABEL[flota] ?? flota}` : null,
@@ -499,22 +496,7 @@ export default function TransportFinancePage() {
 
       {/* ══ Filtros ══ */}
       <section className="surface rounded-2xl p-5 space-y-3">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3 items-end">
-          <label className="text-sm block">
-            <span className="block mb-1">{t("Evento")}</span>
-            <select
-              className="input"
-              value={eventId}
-              onChange={(e) => setEventId(e.target.value)}
-              style={{ borderColor: eventId ? "var(--brand)" : undefined, fontWeight: eventId ? 600 : 400 }}
-            >
-              <option value="">{t("Todos los eventos")}</option>
-              {eventos.map((ev) => (
-                <option key={ev.id} value={ev.id}>{ev.name || t("Evento sin nombre")}</option>
-              ))}
-            </select>
-          </label>
-
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
           <label className="text-sm block">
             <span className="block mb-1">{t("Tipo cliente")}</span>
             <select

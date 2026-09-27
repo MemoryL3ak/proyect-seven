@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { STATE, SURFACE, ACCENT } from "@/lib/design";
 import { XIcon } from "@/components/ui/Icons";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useI18n } from "@/lib/i18n";
 
 type Reservation = {
@@ -27,7 +29,13 @@ type Extra = {
 
 type Athlete = {
   id: string;
+  eventId?: string | null;
   fullName?: string | null;
+};
+
+type Hotel = {
+  id: string;
+  eventId?: string | null;
 };
 
 const STATUS_COLORS: Record<string, { bg: string; border: string; text: string }> = {
@@ -87,12 +95,15 @@ export default function HotelExtraReservationsCalendar({
   onDataChanged: () => void;
 }) {
   const { t } = useI18n();
+  const { eventoId } = useEventoActivo();
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [extras, setExtras] = useState<Record<string, Extra>>({});
   const [athletes, setAthletes] = useState<Record<string, Athlete>>({});
+  // Evento de cada hotel: los extras y sus reservas no traen evento propio.
+  const [eventoDeHotel, setEventoDeHotel] = useState<Record<string, string | null>>({});
   const [loading, setLoading] = useState(false);
   const [selectedDay, setSelectedDay] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -104,12 +115,19 @@ export default function HotelExtraReservationsCalendar({
   const loadData = async () => {
     setLoading(true);
     try {
-      const [resData, extraData, athleteData] = await Promise.all([
+      const [resData, extraData, athleteData, hotelData] = await Promise.all([
         apiFetch<Reservation[]>("/hotel-extra-reservations"),
         apiFetch<Extra[]>("/hotel-extras"),
         apiFetch<Athlete[]>("/athletes"),
+        apiFetch<Hotel[]>("/accommodations").catch(() => [] as Hotel[]),
       ]);
       setReservations(resData || []);
+      setEventoDeHotel(
+        (hotelData || []).reduce<Record<string, string | null>>((acc, h) => {
+          acc[h.id] = h.eventId ?? null;
+          return acc;
+        }, {})
+      );
       setExtras(
         (extraData || []).reduce<Record<string, Extra>>((acc, e) => {
           acc[e.id] = e;
@@ -134,6 +152,36 @@ export default function HotelExtraReservationsCalendar({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshKey]);
 
+  /**
+   * Sólo el evento activo: con dos eventos, el calendario mezclaba las
+   * reservas de ambos. Una reserva es del evento del hotel de su extra; si
+   * por ahí no se sabe, del evento del participante.
+   */
+  const eventoDeExtra = useMemo(() => {
+    const mapa: Record<string, string | null> = {};
+    for (const ex of Object.values(extras)) {
+      mapa[ex.id] = ex.hotelId ? eventoDeHotel[ex.hotelId] ?? null : null;
+    }
+    return mapa;
+  }, [extras, eventoDeHotel]);
+  const reservasDelEvento = useMemo(
+    () =>
+      reservations.filter((res) =>
+        esDelEvento(eventoId, eventoDeExtra[res.extraId] ?? athletes[res.participantId]?.eventId ?? null),
+      ),
+    [reservations, eventoDeExtra, athletes, eventoId]
+  );
+  // El formulario ofrece sólo extras y participantes del evento; lo ya
+  // elegido se conserva al editar.
+  const extrasDelEvento = useMemo(
+    () => Object.values(extras).filter((ex) => ex.id === form.extraId || esDelEvento(eventoId, eventoDeExtra[ex.id])),
+    [extras, eventoDeExtra, eventoId, form.extraId]
+  );
+  const participantesDelEvento = useMemo(
+    () => Object.values(athletes).filter((a) => a.id === form.participantId || esDelEvento(eventoId, a.eventId)),
+    [athletes, eventoId, form.participantId]
+  );
+
   // Build calendar grid for current month
   const calendarDays = useMemo(() => {
     const firstDay = new Date(year, month, 1).getDay(); // 0=Sun
@@ -147,7 +195,7 @@ export default function HotelExtraReservationsCalendar({
   // Map: "YYYY-MM-DD" -> reservations active on that day
   const dayMap = useMemo(() => {
     const map: Record<string, Reservation[]> = {};
-    for (const res of reservations) {
+    for (const res of reservasDelEvento) {
       if (!res.startDate || !res.endDate) {
         // no date range: show on createdAt date only
         const day = res.createdAt?.slice(0, 10);
@@ -168,7 +216,7 @@ export default function HotelExtraReservationsCalendar({
       }
     }
     return map;
-  }, [reservations]);
+  }, [reservasDelEvento]);
 
   const selectedDayReservations = useMemo(
     () => (selectedDay ? dayMap[selectedDay] || [] : []),
@@ -479,7 +527,7 @@ export default function HotelExtraReservationsCalendar({
 
       {/* All reservations without dates */}
       {(() => {
-        const noDates = reservations.filter((r) => !r.startDate && !r.endDate);
+        const noDates = reservasDelEvento.filter((r) => !r.startDate && !r.endDate);
         if (noDates.length === 0) return null;
         return (
           <div className="surface rounded-2xl p-4">
@@ -565,7 +613,7 @@ export default function HotelExtraReservationsCalendar({
                 <label className="label-sm">{t("Extra *")}</label>
                 <select className="input w-full" value={form.extraId} onChange={(e) => setForm((f) => ({ ...f, extraId: e.target.value }))}>
                   <option value="">{t("Seleccionar extra…")}</option>
-                  {Object.values(extras).map((ex) => (
+                  {extrasDelEvento.map((ex) => (
                     <option key={ex.id} value={ex.id}>{ex.name || ex.id}</option>
                   ))}
                 </select>
@@ -575,7 +623,7 @@ export default function HotelExtraReservationsCalendar({
                 <label className="label-sm">{t("Participante *")}</label>
                 <select className="input w-full" value={form.participantId} onChange={(e) => setForm((f) => ({ ...f, participantId: e.target.value }))}>
                   <option value="">{t("Seleccionar participante…")}</option>
-                  {Object.values(athletes).map((a) => (
+                  {participantesDelEvento.map((a) => (
                     <option key={a.id} value={a.id}>{a.fullName || a.id}</option>
                   ))}
                 </select>

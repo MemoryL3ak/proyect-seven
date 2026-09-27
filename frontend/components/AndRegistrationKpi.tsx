@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { AlertIcon, GlobeIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { delegationLabel } from "@/lib/delegations";
 
@@ -155,9 +156,15 @@ export default function AndRegistrationKpi({
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
   const [athletes, setAthletes] = useState<AthleteItem[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [selectedDelegationId, setSelectedDelegationId] = useState("");
   const [selectedDisciplineId, setSelectedDisciplineId] = useState("");
+  // Delegación y disciplina son del evento: al cambiarlo se sueltan.
+  useEffect(() => {
+    setSelectedDelegationId("");
+    setSelectedDisciplineId("");
+  }, [selectedEventId]);
   const [maxRows, setMaxRows] = useState(100);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -177,7 +184,6 @@ export default function AndRegistrationKpi({
       setDisciplines(Array.isArray(disciplineData) ? disciplineData : []);
       setDelegations(Array.isArray(delegationData) ? delegationData : []);
       setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
-      if (!selectedEventId && safeEvents.length) setSelectedEventId(safeEvents[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar KPI AND."));
     } finally {
@@ -441,13 +447,7 @@ export default function AndRegistrationKpi({
       </div>
 
       {/* ── Filters */}
-      <div className="mt-4 grid gap-3 sm:grid-cols-3">
-        <select className="input" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-          <option value="">{t("Selecciona evento")}</option>
-          {events.map((event) => (
-            <option key={event.id} value={event.id}>{event.name || event.id}</option>
-          ))}
-        </select>
+      <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <select className="input" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
           <option value="">{t("Todas las delegaciones")}</option>
           {filteredDelegations.map((delegation) => (

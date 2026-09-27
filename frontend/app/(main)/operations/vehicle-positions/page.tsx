@@ -28,6 +28,8 @@ import { getSupabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
 import { BRAND, TRIP_STATUS_META, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { esDelEvento } from "@/lib/evento-activo";
 import type {
   DestinationPin,
   RoutePath,
@@ -232,7 +234,17 @@ const formatTripType = (value?: string | null) => {
 export default function VehiclePositionsPage() {
   const { t } = useI18n();
   const isMobile = useIsMobile();
-  const [trips, setTrips] = useState<Trip[]>([]);
+  const { eventoId } = useEventoActivo();
+  // loadData corre en un intervalo armado al montar: lee el evento de aquí.
+  const eventoIdRef = useRef(eventoId);
+  eventoIdRef.current = eventoId;
+  const [allTrips, setAllTrips] = useState<Trip[]>([]);
+  // Sólo los viajes del evento activo: mapa, indicadores, filtros y tabla
+  // salen de aquí. La presencia GPS de los conductores no es por evento.
+  const trips = useMemo(
+    () => allTrips.filter((trip) => esDelEvento(eventoId, trip.eventId)),
+    [allTrips, eventoId],
+  );
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [drivers, setDrivers] = useState<Record<string, DriverItem>>({});
   const [vehicles, setVehicles] = useState<Record<string, VehicleItem>>({});
@@ -295,6 +307,19 @@ export default function VehiclePositionsPage() {
     title: string;
   } | null>(null);
 
+  // Al cambiar de evento, la sede, el hotel, el viaje elegido y los avisos de
+  // viajes terminados eran del otro.
+  useEffect(() => {
+    setCompletedAlerts([]);
+    setTableVenue("");
+    setTableHotel("");
+    setSelectedTripId(null);
+    setDetailTrip(null);
+    setDetailPositions([]);
+    setDetailRouteKm(null);
+    setRouteExpanded(false);
+  }, [eventoId]);
+
   const loadData = async () => {
     setLoading(true);
     setError(null);
@@ -321,8 +346,10 @@ export default function VehiclePositionsPage() {
       if (knownActiveIdsRef.current.size > 0) {
         const driverArr = driverData || [];
         const venueArr = venueData || [];
+        // Avisos sólo de viajes del evento activo.
         const newlyCompleted = nextTrips.filter(
           (t) =>
+            esDelEvento(eventoIdRef.current, t.eventId) &&
             knownActiveIdsRef.current.has(t.id) &&
             !nextActiveIds.has(t.id) &&
             ["COMPLETED", "DROPPED_OFF"].includes(t.status ?? "")
@@ -351,7 +378,7 @@ export default function VehiclePositionsPage() {
         (hotelData || []).reduce<Record<string, HotelItem>>((acc, h) => { acc[h.id] = h; return acc; }, {})
       );
 
-      setTrips(nextTrips);
+      setAllTrips(nextTrips);
 
       setEvents(
         (eventData || []).reduce<Record<string, EventItem>>((acc, event) => {

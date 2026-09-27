@@ -7,6 +7,7 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
 import { CalendarIcon, AlertIcon, SearchIcon, RefreshIcon, PlaneIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 
 /* ────────────────────────────────────────────────────────────
@@ -29,8 +30,7 @@ type Athlete = {
   metadata?: Record<string, unknown> | null;
 };
 
-type Delegation = { id: string; countryCode?: string | null; name?: string | null };
-type EventItem = { id: string; name?: string | null };
+type Delegation = { id: string; eventId?: string | null; countryCode?: string | null; name?: string | null };
 type Trip = {
   id: string;
   eventId?: string | null;
@@ -90,8 +90,8 @@ export default function DepartureMonitoringPage() {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [transferOutTrips, setTransferOutTrips] = useState<Trip[]>([]);
   const [delegations, setDelegations] = useState<Record<string, Delegation>>({});
-  const [eventos, setEventos] = useState<EventItem[]>([]);
-  const [eventId, setEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: eventId } = useEventoActivo();
   const [fecha, setFecha] = useState("");
   const [delegacionId, setDelegacionId] = useState("");
   const [busqueda, setBusqueda] = useState("");
@@ -101,10 +101,9 @@ export default function DepartureMonitoringPage() {
   const cargar = async () => {
     setError(null);
     try {
-      const [ath, dels, evs, trips] = await Promise.all([
+      const [ath, dels, trips] = await Promise.all([
         apiFetch<Athlete[]>("/athletes"),
         apiFetch<Delegation[]>("/delegations").catch(() => []),
-        apiFetch<EventItem[]>("/events").catch(() => []),
         apiFetch<Trip[]>("/trips").catch(() => []),
       ]);
       setAthletes(filterValidatedAthletes(Array.isArray(ath) ? ath : []));
@@ -117,7 +116,6 @@ export default function DepartureMonitoringPage() {
       const delMap: Record<string, Delegation> = {};
       (Array.isArray(dels) ? dels : []).forEach((d) => { delMap[d.id] = d; });
       setDelegations(delMap);
-      setEventos(Array.isArray(evs) ? evs : []);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("No se pudo cargar la información de salidas."));
     } finally {
@@ -216,10 +214,12 @@ export default function DepartureMonitoringPage() {
 
   const delegacionesOrdenadas = useMemo(
     () =>
-      Object.values(delegations).sort((a, b) =>
-        String(a.countryCode || a.name || "").localeCompare(String(b.countryCode || b.name || ""), "es"),
-      ),
-    [delegations],
+      Object.values(delegations)
+        .filter((d) => !eventId || !d.eventId || d.eventId === eventId)
+        .sort((a, b) =>
+          String(a.countryCode || a.name || "").localeCompare(String(b.countryCode || b.name || ""), "es"),
+        ),
+    [delegations, eventId],
   );
 
   const vueloDe = (a: Athlete) => {
@@ -292,16 +292,7 @@ export default function DepartureMonitoringPage() {
 
       {/* Filtros */}
       <section className="surface rounded-2xl p-5">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 items-end">
-          <label className="text-sm block">
-            <span className="block mb-1">{t("Evento")}</span>
-            <select className="input" value={eventId} onChange={(e) => setEventId(e.target.value)}>
-              <option value="">{t("Todos los eventos")}</option>
-              {eventos.map((ev) => (
-                <option key={ev.id} value={ev.id}>{ev.name || t("Evento sin nombre")}</option>
-              ))}
-            </select>
-          </label>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
           <label className="text-sm block">
             <span className="block mb-1">{t("Fecha de salida")}</span>
             <input type="date" className="input" value={fecha} onChange={(e) => setFecha(e.target.value)} />

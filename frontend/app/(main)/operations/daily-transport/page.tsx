@@ -10,6 +10,7 @@ import EmptyStateBox from "@/components/ui/EmptyState";
 import KpiCard from "@/components/ui/KpiCard";
 import { clientTypeLabel } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { BRAND, TRIP_STATUS_META, STATE, SURFACE } from "@/lib/design";
 import {
   TruckIcon,
@@ -54,14 +55,6 @@ const LEG_TYPE_LABEL: Record<string, string> = {
 const legTypeLabel = (v?: string | null) =>
   LEG_TYPE_LABEL[String(v || "").toUpperCase()] ?? (v || "—");
 
-type Event = {
-  id: string;
-  name?: string | null;
-  startDate?: string | null;
-  start_date?: string | null;
-  endDate?: string | null;
-  end_date?: string | null;
-};
 type Driver = {
   id: string;
   fullName: string;
@@ -137,6 +130,7 @@ type AssignResult = {
 };
 type Trip = {
   id: string;
+  eventId?: string | null;
   scheduledAt?: string | null;
   scheduled_at?: string | null;
   presentationAt?: string | null;
@@ -225,8 +219,10 @@ function isoToDisplay(iso: string): string {
 export default function DailyTransportPage() {
   const { t } = useI18n();
   const [tab, setTab] = useState<"import" | "assign" | "view">("import");
-  const [events, setEvents] = useState<Event[]>([]);
-  const [eventId, setEventId] = useState("");
+  // El evento lo elige el selector de la barra superior. Antes esta pantalla
+  // abría el más nuevo: con un segundo evento creado, la planilla del día se
+  // habría importado en él.
+  const { eventoId: eventId, evento: eventoActivo } = useEventoActivo();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -255,14 +251,14 @@ export default function DailyTransportPage() {
 
   // Año por defecto = año de inicio del evento seleccionado
   const defaultYear = useMemo(() => {
-    const ev = events.find((e) => e.id === eventId);
-    const raw = ev?.startDate || ev?.start_date || ev?.endDate || ev?.end_date;
+    const ev = eventoActivo;
+    const raw = ev?.startDate || ev?.endDate;
     if (raw) {
       const m = String(raw).match(/^(\d{4})/);
       if (m) return m[1];
     }
     return String(new Date().getFullYear());
-  }, [events, eventId]);
+  }, [eventoActivo]);
 
   // ── Assign tab ─────────────────────────────────────────────────
   // La fecha operativa es única y compartida (viewDate): se fija al importar,
@@ -289,11 +285,6 @@ export default function DailyTransportPage() {
   const [viewLoading, setViewLoading] = useState(false);
 
   useEffect(() => {
-    apiFetch<Event[]>("/events").then((rows) => {
-      const safe = Array.isArray(rows) ? rows : [];
-      setEvents(safe);
-      if (!eventId && safe[0]?.id) setEventId(safe[0].id);
-    }).catch(() => setEvents([]));
     // /drivers ya devuelve flota propia + choferes de proveedor, sin duplicados.
     apiFetch<Driver[]>("/drivers")
       .then((list) => setDrivers(list || []))
@@ -459,6 +450,7 @@ export default function DailyTransportPage() {
       const rows = await apiFetch<Trip[]>(`/trips`);
       const safe = Array.isArray(rows) ? rows : [];
       const filtered = safe.filter((t) => {
+        if (eventId && t.eventId && t.eventId !== eventId) return false;
         const d = t.tripDate || t.trip_date || eventDayKey(t.scheduledAt || t.scheduled_at);
         return d === viewDate;
       });
@@ -472,7 +464,7 @@ export default function DailyTransportPage() {
 
   useEffect(() => {
     if (tab === "view") loadView();
-  }, [tab, viewDate]);
+  }, [tab, viewDate, eventId]);
 
   const driverNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -509,15 +501,14 @@ export default function DailyTransportPage() {
         description={t("Importa horarios desde planilla, auto-asigna conductores respetando restricciones, y revisa el día operativo completo.")}
         icon={<TruckIcon size={24} />}
         meta={
-          <div className="flex flex-wrap items-center gap-2">
-            <label className="text-xs font-medium uppercase tracking-wide"
-              style={{ color: "var(--text-muted)" }}>{t("Evento:")}</label>
-            {/* Sin ancho mínimo en el teléfono: 240 px junto a la etiqueta
-                se salían de la cabecera. */}
-            <select className="input min-w-0 md:min-w-[240px]"
-              value={eventId} onChange={(e) => setEventId(e.target.value)}>
-              {events.map((e) => <option key={e.id} value={e.id}>{e.name || e.id}</option>)}
-            </select>
+          // Sólo lectura: a qué evento entra la planilla. Se cambia arriba,
+          // en el selector de evento del panel.
+          <div className="flex flex-wrap items-center gap-2 min-w-0">
+            <span className="text-xs font-medium uppercase tracking-wide"
+              style={{ color: "var(--text-muted)" }}>{t("Evento:")}</span>
+            <span className="min-w-0" style={{ fontSize: 13, fontWeight: 700, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {eventoActivo?.name || t("Sin evento")}
+            </span>
           </div>
         }
       />

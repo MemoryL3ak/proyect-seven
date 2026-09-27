@@ -939,16 +939,8 @@ export const resources: Record<string, ResourceConfig> = {
     description: "Asignación de participantes a hotel y habitación.",
     endpoint: "/hotel-assignments",
     fields: [
-      // El evento va primero: acota el participante y el hotel que se ofrecen.
-      // Sin él, la lista mezclaba los participantes y los alojamientos de
-      // todos los eventos cargados en la plataforma.
-      {
-        key: "eventFilter",
-        label: "Evento",
-        type: "select",
-        transient: true,
-        optionsSource: "events",
-      },
+      // El participante y el hotel que se ofrecen son los del evento activo
+      // (selector de la barra superior); antes había aquí un "Evento" propio.
       {
         key: "clientTypeFilter",
         label: "Filtrar por tipo de cliente",

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { delegationLabel } from "@/lib/delegations";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 type EventItem = {
   id: string;
@@ -61,7 +62,9 @@ export default function EventAndCapacityPlanner() {
   const [events, setEvents] = useState<EventItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // Se planifica el evento activo del panel; antes abría siempre el primero
+  // de la lista aunque arriba estuviera elegido otro.
+  const { eventoId: selectedEventId, evento: eventoActivo } = useEventoActivo();
   const [selectedDisciplineId, setSelectedDisciplineId] = useState("");
   const [disciplineTotals, setDisciplineTotals] = useState<NumericStringMap>({});
   const [delegationMatrix, setDelegationMatrix] = useState<MatrixStringMap>({});
@@ -83,7 +86,6 @@ export default function EventAndCapacityPlanner() {
       setEvents(safeEvents);
       setDisciplines(Array.isArray(disciplineData) ? disciplineData : []);
       setDelegations(Array.isArray(delegationData) ? delegationData : []);
-      if (!selectedEventId && safeEvents.length) setSelectedEventId(safeEvents[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar planificacion AND del evento."));
     } finally {
@@ -94,6 +96,12 @@ export default function EventAndCapacityPlanner() {
   useEffect(() => {
     load();
   }, []);
+
+  // Los avisos de guardado eran del evento anterior.
+  useEffect(() => {
+    setMessage(null);
+    setError(null);
+  }, [selectedEventId]);
 
   const selectedEvent = useMemo(
     () => events.find((item) => item.id === selectedEventId) ?? null,
@@ -235,20 +243,11 @@ export default function EventAndCapacityPlanner() {
       </div>
 
       <div className="mt-4 grid gap-3 lg:grid-cols-[2fr_1fr_1fr_1fr]">
-        <select
-          className="input lg:col-span-2"
-          value={selectedEventId}
-          onChange={(e) => {
-            setSelectedEventId(e.target.value);
-            setMessage(null);
-            setError(null);
-          }}
-        >
-          <option value="">{t("Selecciona un evento")}</option>
-          {events.map((event) => (
-            <option key={event.id} value={event.id}>{event.name || event.id}</option>
-          ))}
-        </select>
+        {/* El evento se elige arriba, en la barra del panel. */}
+        <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2 lg:col-span-2">
+          <div className="text-xs text-white/50">{t("Evento")}</div>
+          <div className="text-lg font-semibold text-white">{selectedEvent?.name || eventoActivo?.name || t("Sin evento")}</div>
+        </div>
         <div className="rounded-xl border border-white/10 bg-white/5 px-3 py-2">
           <div className="text-xs text-white/50">{t("Total esperado")}</div>
           <div className="text-lg font-semibold text-white">{totalExpected}</div>

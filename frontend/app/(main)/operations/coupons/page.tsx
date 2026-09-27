@@ -20,9 +20,12 @@ import {
 } from "@/components/ui/Icons";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel, normalizeClientType } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 type Coupon = {
   id: string;
+  eventId?: string | null;
   code: string;
   title: string;
   description?: string | null;
@@ -44,6 +47,7 @@ type Coupon = {
 
 type Partner = {
   id: string;
+  eventId?: string | null;
   code: string;
   name: string;
   address?: string | null;
@@ -176,28 +180,60 @@ function discountDisplay(c: Coupon) {
 
 export default function CouponsAdminPage() {
   const { t } = useI18n();
+  const { eventoId } = useEventoActivo();
   const [tab, setTab] = useState<"catalog" | "partners" | "claims">("catalog");
 
-  const [coupons, setCoupons] = useState<Coupon[]>([]);
-  const [partners, setPartners] = useState<Partner[]>([]);
-  const [claims, setClaims] = useState<Claim[]>([]);
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [todosLosCupones, setCoupons] = useState<Coupon[]>([]);
+  const [todosLosPartners, setPartners] = useState<Partner[]>([]);
+  const [todosLosClaims, setClaims] = useState<Claim[]>([]);
+  const [cargado, setCargado] = useState(false);
+
+  // Sólo el evento activo: con dos eventos se mezclaban los beneficios y
+  // comercios de ambos. Los que no tienen evento se ven en todos.
+  const coupons = useMemo(
+    () => todosLosCupones.filter((c) => esDelEvento(eventoId, c.eventId)),
+    [todosLosCupones, eventoId],
+  );
+  const partners = useMemo(
+    () => todosLosPartners.filter((p) => esDelEvento(eventoId, p.eventId)),
+    [todosLosPartners, eventoId],
+  );
+  // El claim no guarda evento: lo toma de su beneficio.
+  const claims = useMemo(() => {
+    const eventoDelCupon = new Map(todosLosCupones.map((c) => [c.id, c.eventId]));
+    return todosLosClaims.filter((c) => esDelEvento(eventoId, eventoDelCupon.get(c.couponId)));
+  }, [todosLosClaims, todosLosCupones, eventoId]);
+  // Los indicadores se cuentan aquí con lo del evento activo: /coupons/stats
+  // sumaba los claims de todos los eventos.
+  const stats = useMemo<Stats | null>(
+    () =>
+      cargado
+        ? {
+            totalCoupons: coupons.length,
+            activeCoupons: coupons.filter((c) => c.status === "ACTIVE").length,
+            totalClaims: claims.length,
+            activeClaims: claims.filter((c) => c.status === "CLAIMED").length,
+            totalRedemptions: claims.filter((c) => c.status === "REDEEMED").length,
+            expiredClaims: claims.filter((c) => c.status === "EXPIRED").length,
+          }
+        : null,
+    [cargado, coupons, claims],
+  );
 
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
 
   const loadAll = async () => {
     try {
-      const [list, prt, cl, st] = await Promise.all([
+      const [list, prt, cl] = await Promise.all([
         apiFetch<Coupon[]>("/coupons"),
         apiFetch<Partner[]>("/coupon-partners"),
         apiFetch<Claim[]>("/coupons/claims"),
-        apiFetch<Stats>("/coupons/stats"),
       ]);
       setCoupons(Array.isArray(list) ? list : []);
       setPartners(Array.isArray(prt) ? prt : []);
       setClaims(Array.isArray(cl) ? cl : []);
-      setStats(st || null);
+      setCargado(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Error cargando datos"));
     }
@@ -285,6 +321,7 @@ function CatalogTab({
   setMessage: (s: string | null) => void;
 }) {
   const { t } = useI18n();
+  const { eventoId } = useEventoActivo();
   const [categoryFilter, setCategoryFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
@@ -308,6 +345,8 @@ function CatalogTab({
       : {
           category: "COMIDA", discountType: "PERCENTAGE", perUserLimit: 1,
           audience: [], status: "ACTIVE",
+          // Un beneficio nuevo nace en el evento activo.
+          eventId: eventoId || undefined,
         });
     setModalOpen(true);
   };
@@ -632,12 +671,14 @@ function PartnersTab({
   setMessage: (s: string | null) => void;
 }) {
   const { t } = useI18n();
+  const { eventoId } = useEventoActivo();
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState<Partial<Partner> & { pin?: string }>({});
   const [saving, setSaving] = useState(false);
 
   const openModal = (p?: Partner) => {
-    setForm(p ? { ...p, pin: "" } : { active: true, allowedCouponIds: [] });
+    // Un comercio nuevo nace en el evento activo; al editar se respeta el suyo.
+    setForm(p ? { ...p, pin: "" } : { active: true, allowedCouponIds: [], eventId: eventoId || undefined });
     setModalOpen(true);
   };
 
@@ -872,6 +913,11 @@ function ClaimsTab({
     .filter((c) => statusFilter ? c.status === statusFilter : true)
     .filter((c) => couponFilter ? c.couponId === couponFilter : true),
     [claims, statusFilter, couponFilter]);
+
+  // Un beneficio de otro evento no puede quedar como filtro (la lista saldría vacía).
+  useEffect(() => {
+    if (couponFilter && !coupons.some((c) => c.id === couponFilter)) setCouponFilter("");
+  }, [coupons, couponFilter]);
 
   const couponLabel = (id: string) => {
     const c = coupons.find((x) => x.id === id);

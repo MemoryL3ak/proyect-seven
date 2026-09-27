@@ -8,6 +8,8 @@ import { apiFetch } from "@/lib/api";
 import { CHILE_REGIONS, delegationLabel } from "@/lib/delegations";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -16,7 +18,9 @@ import { useI18n } from "@/lib/i18n";
  * Delegación: un participante inscrito (no un usuario del panel), que entra al
  * portal con su código. Sólo tres campos, por decisión de producto: evento,
  * región y jefe. La flota se asigna desde Conductores/Vehículos y los hoteles
- * se derivan de la asignación hotelera de los participantes.
+ * se derivan de la asignación hotelera de los participantes. El evento es el
+ * activo de la barra superior (27-09-2026): la pantalla ya no tiene selector
+ * propio.
  */
 type EventRow = { id: string; name: string; disciplineIds?: string[] };
 type DisciplineRow = { id: string; name?: string | null; gender?: string | null; category?: string | null };
@@ -56,13 +60,14 @@ const regionName = (code: string) => CHILE_REGIONS.find((r) => r.value === code)
 
 export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { refreshKey?: number; onChanged?: () => void }) {
   const { t } = useI18n();
+  const { eventoId } = useEventoActivo();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [delegations, setDelegations] = useState<DelegationRow[]>([]);
   const [athletes, setAthletes] = useState<AthleteRow[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<Form>(emptyForm());
+  const [form, setForm] = useState<Form>(() => emptyForm(eventoId));
   const [saving, setSaving] = useState(false);
   const [toDelete, setToDelete] = useState<DelegationRow | null>(null);
 
@@ -78,8 +83,6 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
       setDelegations(dl ?? []);
       setAthletes((at ?? []).filter((a) => a.status !== "DELETED"));
       setDisciplines(di ?? []);
-      // El evento vigente es el más reciente (GET /events ordena por creación).
-      setForm((f) => (f.eventId ? f : emptyForm(ev?.[0]?.id ?? "")));
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudieron cargar las delegaciones."));
@@ -92,12 +95,19 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
     void load();
   }, [load, refreshKey]);
 
+  // Al cambiar el evento arriba, el alta pasa a ese evento y una edición a
+  // medias del evento anterior se descarta (su fila ya no está en la lista).
+  useEffect(() => {
+    setForm((f) => (f.eventId === eventoId ? f : emptyForm(eventoId)));
+  }, [eventoId]);
+
+  // Sólo las delegaciones del evento activo.
   const rows = useMemo(
     () =>
       delegations
-        .filter((d) => !form.eventId || d.eventId === form.eventId)
+        .filter((d) => esDelEvento(eventoId, d.eventId))
         .sort((a, b) => delegationLabel(a).localeCompare(delegationLabel(b))),
-    [delegations, form.eventId],
+    [delegations, eventoId],
   );
   const membersOf = useMemo(() => {
     const map = new Map<string, number>();
@@ -146,7 +156,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
     });
     setError(null);
   };
-  const cancel = () => setForm(emptyForm(form.eventId));
+  const cancel = () => setForm(emptyForm(eventoId));
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -165,7 +175,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
-      setForm(emptyForm(form.eventId));
+      setForm(emptyForm(eventoId));
       await load();
       onChanged?.();
     } catch (err) {
@@ -179,7 +189,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
     if (!toDelete) return;
     try {
       await apiFetch(`/delegations/${toDelete.id}`, { method: "DELETE" });
-      if (form.id === toDelete.id) setForm(emptyForm(form.eventId));
+      if (form.id === toDelete.id) setForm(emptyForm(eventoId));
       await load();
       onChanged?.();
     } catch (err) {
@@ -207,16 +217,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
           </div>
         )}
 
-        <form onSubmit={(e) => void submit(e)} className="grid gap-4 md:grid-cols-3">
-          <label>
-            <span style={labelStyle}>{t("Evento")}</span>
-            <StyledSelect value={form.eventId} onChange={(e) => setForm((f) => ({ ...f, eventId: e.target.value, missionHeadId: "" }))} disabled={Boolean(form.id)}>
-              <option value="">{t("Selecciona un evento")}</option>
-              {events.map((ev) => (
-                <option key={ev.id} value={ev.id}>{ev.name}</option>
-              ))}
-            </StyledSelect>
-          </label>
+        <form onSubmit={(e) => void submit(e)} className="grid gap-4 md:grid-cols-2">
           <label>
             <span style={labelStyle}>{t("Región")}</span>
             <StyledSelect value={form.countryCode} onChange={(e) => setForm((f) => ({ ...f, countryCode: e.target.value }))}>
@@ -240,7 +241,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
               {t("Participante inscrito en el evento; queda como jefe y asociado a esta región.")}
             </span>
           </label>
-          <div className="md:col-span-3">
+          <div className="md:col-span-2">
             <span style={labelStyle}>{t("Disciplinas de la delegación")}</span>
             {disciplineOptions.length === 0 ? (
               <p style={{ fontSize: 12.5, color: SURFACE.textFaint, margin: 0 }}>
@@ -284,7 +285,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
               {t("Los viajes de esta delegación se asignan a una de estas disciplinas.")}
             </span>
           </div>
-          <div className="md:col-span-3 flex flex-wrap gap-2">
+          <div className="md:col-span-2 flex flex-wrap gap-2">
             <button type="submit" className="btn btn-primary" disabled={saving || !form.eventId || !form.countryCode}>
               {saving ? t("Guardando…") : form.id ? t("Guardar cambios") : t("Crear delegación")}
             </button>

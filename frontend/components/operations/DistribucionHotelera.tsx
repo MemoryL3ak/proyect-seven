@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -14,10 +16,11 @@ import { useI18n } from "@/lib/i18n";
  *
  * Asignar aquí no mueve todavía a nadie: cuando la planilla está lista, el
  * botón de abajo la baja a la ficha de cada participante.
+ *
+ * El evento es el activo de la barra superior (antes tenía selector propio).
  */
 type Rama = "DAMAS" | "VARONES";
 
-type Evento = { id: string; name?: string | null };
 type Delegacion = { id: string; eventId?: string | null; countryCode?: string | null; name?: string | null };
 type Disciplina = {
   id: string;
@@ -27,7 +30,7 @@ type Disciplina = {
   category?: string | null;
   parentId?: string | null;
 };
-type Hotel = { id: string; name?: string | null };
+type Hotel = { id: string; eventId?: string | null; name?: string | null };
 type Celda = {
   delegationId: string;
   disciplineId: string;
@@ -101,8 +104,7 @@ const nombreCorto = (v: string) => v.replace(/^regi[oó]n\s+(de\s+la\s+|del\s+|d
 
 export default function DistribucionHotelera() {
   const { t } = useI18n();
-  const [eventos, setEventos] = useState<Evento[]>([]);
-  const [eventoId, setEventoId] = useState("");
+  const { eventoId } = useEventoActivo();
   const [rama, setRama] = useState<Rama>("DAMAS");
   const [delegaciones, setDelegaciones] = useState<Delegacion[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
@@ -119,17 +121,14 @@ export default function DistribucionHotelera() {
   useEffect(() => {
     void (async () => {
       try {
-        const [ev, del, dis, hot] = await Promise.all([
-          apiFetch<Evento[]>("/events").catch(() => [] as Evento[]),
+        const [del, dis, hot] = await Promise.all([
           apiFetch<Delegacion[]>("/delegations").catch(() => [] as Delegacion[]),
           apiFetch<Disciplina[]>("/disciplines").catch(() => [] as Disciplina[]),
           apiFetch<Hotel[]>("/accommodations").catch(() => [] as Hotel[]),
         ]);
-        setEventos(Array.isArray(ev) ? ev : []);
         setDelegaciones(Array.isArray(del) ? del : []);
         setDisciplinas(Array.isArray(dis) ? dis : []);
         setHoteles(Array.isArray(hot) ? hot : []);
-        if (Array.isArray(ev) && ev.length && !eventoId) setEventoId(ev[0].id);
       } catch (e) {
         setError(e instanceof Error ? e.message : t("No se pudieron cargar los catálogos."));
       }
@@ -180,9 +179,14 @@ export default function DistribucionHotelera() {
       .sort((a, b) => ordenDe(a) - ordenDe(b) || etiquetaDisciplina(a).localeCompare(etiquetaDisciplina(b)));
   }, [disciplinas, eventoId, rama]);
 
+  // Cada celda ofrece sólo los hoteles del evento: con dos eventos se podía
+  // mandar una región a un hotel del otro.
   const hotelesOrdenados = useMemo(
-    () => [...hoteles].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")),
-    [hoteles],
+    () =>
+      hoteles
+        .filter((h) => esDelEvento(eventoId, h.eventId))
+        .sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")),
+    [hoteles, eventoId],
   );
 
   const valorDe = (delegationId: string, disciplineId: string) => {
@@ -265,16 +269,6 @@ export default function DistribucionHotelera() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-xs text-white/60">
-          {t("Evento")}
-          <select className="input" value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
-            <option value="">{t("Selecciona un evento")}</option>
-            {eventos.map((ev) => (
-              <option key={ev.id} value={ev.id}>{ev.name ?? ev.id}</option>
-            ))}
-          </select>
-        </label>
-
         <div className="flex gap-2">
           {(["DAMAS", "VARONES"] as Rama[]).map((r) => (
             <button
@@ -318,7 +312,7 @@ export default function DistribucionHotelera() {
       {error && <p className="text-sm text-rose-400">{error}</p>}
 
       {!eventoId ? (
-        <p className="text-sm text-white/50">{t("Elige un evento para ver su distribución.")}</p>
+        <p className="text-sm text-white/50">{t("Elige un evento en la barra superior para ver su distribución.")}</p>
       ) : cargando ? (
         <p className="text-sm text-white/50">{t("Cargando...")}</p>
       ) : filas.length === 0 ? (

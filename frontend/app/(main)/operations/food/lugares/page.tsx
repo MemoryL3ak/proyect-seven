@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 
@@ -26,10 +27,10 @@ type FoodLocation = {
 
 type Accommodation = {
   id: string;
+  eventId?: string | null;
   name?: string | null;
 };
 
-type Evento = { id: string; name?: string | null };
 type Delegacion = { id: string; eventId?: string | null; countryCode?: string | null; name?: string | null };
 type Disciplina = { id: string; eventId?: string | null; name?: string | null; parentId?: string | null; category?: string | null; gender?: string | null };
 
@@ -186,8 +187,8 @@ export default function FoodLocationsPage() {
   // Las regiones y los deportes existen una vez por evento. Sin acotar, el
   // formulario ofrecía las 20 delegaciones y las 59 disciplinas de los dos
   // eventos juntos: siete fichas "Atletismo" y regiones de otro campeonato.
-  const [eventos, setEventos] = useState<Evento[]>([]);
-  const [eventoId, setEventoId] = useState<string>("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId } = useEventoActivo();
   const [loading, setLoading] = useState(false);
   const [selectedClientType, setSelectedClientType] = useState<string>("");
   const [showForm, setShowForm] = useState(false);
@@ -199,16 +200,12 @@ export default function FoodLocationsPage() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [locData, accData, delData, discData, evData] = await Promise.all([
+      const [locData, accData, delData, discData] = await Promise.all([
         apiFetch<FoodLocation[]>("/food-locations"),
         apiFetch<Accommodation[]>("/accommodations"),
         apiFetch<Delegacion[]>("/delegations").catch(() => [] as Delegacion[]),
         apiFetch<Disciplina[]>("/disciplines").catch(() => [] as Disciplina[]),
-        apiFetch<Evento[]>("/events").catch(() => [] as Evento[]),
       ]);
-      const listaEventos = [...(evData || [])].sort((a, b) => (a.name ?? "").localeCompare(b.name ?? ""));
-      setEventos(listaEventos);
-      setEventoId((actual) => actual || listaEventos[0]?.id || "");
       setLocations(locData || []);
       setDelegaciones(
         [...(delData || [])].sort((a, b) => {
@@ -374,18 +371,6 @@ export default function FoodLocationsPage() {
             + {t("Nuevo lugar")}
           </button>
         </div>
-
-        {/* Un evento a la vez: sus regiones y sus deportes. */}
-        {eventos.length > 1 && (
-          <div style={{ marginTop: "14px", maxWidth: "420px" }}>
-            <label style={labelStyle}>{t("Evento")}</label>
-            <select style={fieldStyle} value={eventoId} onChange={(e) => setEventoId(e.target.value)}>
-              {eventos.map((ev) => (
-                <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>
-              ))}
-            </select>
-          </div>
-        )}
 
         {/* Client type filter chips */}
         <div style={{ marginTop: "16px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
@@ -611,7 +596,7 @@ export default function FoodLocationsPage() {
                   onChange={(e) => setForm((f) => ({ ...f, accommodationId: e.target.value }))}
                 >
                   <option value="">{t("Sin asignar")}</option>
-                  {Object.values(accommodations).map((acc) => (
+                  {Object.values(accommodations).filter((acc) => !eventoId || !acc.eventId || acc.eventId === eventoId).map((acc) => (
                     <option key={acc.id} value={acc.id}>{acc.name || acc.id}</option>
                   ))}
                 </select>

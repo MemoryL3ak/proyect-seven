@@ -1,12 +1,14 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useCallback, useEffect, useState } from "react";
+import { ChangeEvent, FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import DocumentacionPersonas from "@/components/DocumentacionPersonas";
 import StyledSelect from "@/components/StyledSelect";
 import { apiFetch } from "@/lib/api";
 import { STATE, SURFACE, BRAND, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import {
   AUDIENCE_LABELS,
   CATEGORY_LABELS,
@@ -68,7 +70,8 @@ const pal = {
 
 export default function EventDocumentsPage() {
   const { t } = useI18n();
-  const [docs, setDocs] = useState<EventDocument[]>([]);
+  const { eventoId } = useEventoActivo();
+  const [todosLosDocs, setDocs] = useState<EventDocument[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [form, setForm] = useState<DocForm>(emptyForm);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -99,8 +102,21 @@ export default function EventDocumentsPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  // Sólo el evento activo y los generales (sin evento), que valen para todos:
+  // con dos eventos se mezclaban los documentos de ambos.
+  const docs = useMemo(
+    () => todosLosDocs.filter(doc => esDelEvento(eventoId, doc.eventId)),
+    [todosLosDocs, eventoId],
+  );
+
+  // Un documento nuevo nace en el evento activo; al editar se respeta el suyo.
+  useEffect(() => {
+    if (editingId) return;
+    setForm(f => (f.eventId === eventoId ? f : { ...f, eventId: eventoId }));
+  }, [eventoId, editingId]);
+
   const resetForm = () => {
-    setForm(emptyForm);
+    setForm({ ...emptyForm, eventId: eventoId });
     setEditingId(null);
     setFile(null);
   };

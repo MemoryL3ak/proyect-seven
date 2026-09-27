@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { esDelEvento } from "@/lib/evento-activo";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { TruckIcon, HomeIcon, CoffeeIcon, XIcon, FileTextIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
@@ -14,7 +16,7 @@ const formatCurrency = (value: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(value);
 
 type ProviderItem = { id: string; type?: string | null; bidAmount?: number | null; bidTripCount?: number | null };
-type TripItem = { id: string; tripCost?: number | null; status?: string | null; scheduledAt?: string | null; clientType?: string | null };
+type TripItem = { id: string; tripCost?: number | null; status?: string | null; scheduledAt?: string | null; clientType?: string | null; eventId?: string | null };
 
 const TEAL     = BRAND.teal;
 const BLUE     = BRAND.blue;
@@ -41,74 +43,78 @@ export default function CommercialDashboardPage() {
   // Las tarjetas llevan el padding en estilos inline; en teléfono se achica.
   const isMobile = useIsMobile();
   const cardPad = isMobile ? "16px 14px" : "22px 20px";
-  const [buckets, setBuckets] = useState<BucketData[]>([
-    { key: "transport",   label: "Transporte",   awarded: 0, consumed: 0, forecast: 0, accentIndex: 0 },
-    { key: "hospitality", label: "Hotelería",    awarded: 0, consumed: 0, forecast: 0, accentIndex: 1 },
-    { key: "food",        label: "Alimentación", awarded: 0, consumed: 0, forecast: 0, accentIndex: 2 },
-  ]);
-  const [tripCounts, setTripCounts] = useState({ bid: 0, completed: 0, total: 0 });
-  const [clientTypeBreakdown, setClientTypeBreakdown] = useState<{ clientType: string; count: number; cost: number }[]>([]);
-  const [weeklySpend, setWeeklySpend] = useState<{ label: string; amount: number }[]>([]);
-  const [dailySpend, setDailySpend] = useState<{ date: string; amount: number; count: number }[]>([]);
+  const { eventoId } = useEventoActivo();
+  const [providers, setProviders] = useState<ProviderItem[]>([]);
+  const [allTrips, setAllTrips] = useState<TripItem[]>([]);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
     Promise.all([
       apiFetch<ProviderItem[]>("/providers"),
       apiFetch<TripItem[]>("/trips"),
-    ]).then(([providers, trips]) => {
-      const done = new Set(["COMPLETED", "DROPPED_OFF"]);
-      const awardedByType = (type: string) => (providers || []).filter((p) => p.type === type).reduce((s, p) => s + (Number(p.bidAmount) || 0), 0);
-      const tripConsumed = (trips || []).filter((t) => done.has(t.status || "")).reduce((s, t) => s + (Number(t.tripCost) || 0), 0);
-      const tripForecast = (trips || []).filter((t) => t.status !== "CANCELLED").reduce((s, t) => s + (Number(t.tripCost) || 0), 0);
-      const bidTrips = (providers || []).filter((p) => p.type === "TRANSPORTE").reduce((s, p) => s + (Number(p.bidTripCount) || 0), 0);
-      const completedCount = (trips || []).filter((t) => done.has(t.status || "")).length;
-      const totalCount = (trips || []).filter((t) => t.status !== "CANCELLED").length;
-      setTripCounts({ bid: bidTrips, completed: completedCount, total: totalCount });
-
-      const ctMap = new Map<string, { count: number; cost: number }>();
-      (trips || []).filter((t) => done.has(t.status || "")).forEach((t) => {
-        const ct = t.clientType || "SIN_TIPO";
-        const prev = ctMap.get(ct) || { count: 0, cost: 0 };
-        ctMap.set(ct, { count: prev.count + 1, cost: prev.cost + (Number(t.tripCost) || 0) });
-      });
-      setClientTypeBreakdown(Array.from(ctMap.entries()).map(([clientType, data]) => ({ clientType, ...data })).filter((item) => item.cost > 0).sort((a, b) => b.cost - a.cost));
-
-      setBuckets([
-        { key: "transport",   label: "Transporte",   awarded: awardedByType("TRANSPORTE"),   consumed: tripConsumed, forecast: tripForecast, accentIndex: 0 },
-        { key: "hospitality", label: "Hotelería",    awarded: awardedByType("HOTELERIA"),    consumed: 0, forecast: 0, accentIndex: 1 },
-        { key: "food",        label: "Alimentación", awarded: awardedByType("ALIMENTACION"), consumed: 0, forecast: 0, accentIndex: 2 },
-      ]);
-
-      const weekMap = new Map<string, number>();
-      (trips || []).filter((t) => done.has(t.status || "") && t.scheduledAt).forEach((t) => {
-        const d = new Date(t.scheduledAt!);
-        const ws = new Date(d); ws.setDate(d.getDate() - d.getDay());
-        const key = ws.toISOString().slice(0, 10);
-        weekMap.set(key, (weekMap.get(key) || 0) + (Number(t.tripCost) || 0));
-      });
-      setWeeklySpend(Array.from(weekMap.entries()).sort(([a], [b]) => a.localeCompare(b)).slice(-6).map(([, amount], i) => ({ label: `Sem ${i + 1}`, amount })));
-
-      // Daily spend (last 14 days)
-      const dayMap = new Map<string, { amount: number; count: number }>();
-      (trips || []).filter((t) => done.has(t.status || "") && t.scheduledAt).forEach((t) => {
-        const key = new Date(t.scheduledAt!).toISOString().slice(0, 10);
-        const prev = dayMap.get(key) || { amount: 0, count: 0 };
-        dayMap.set(key, { amount: prev.amount + (Number(t.tripCost) || 0), count: prev.count + 1 });
-      });
-      setDailySpend(
-        Array.from(dayMap.entries())
-          .sort(([a], [b]) => a.localeCompare(b))
-          .slice(-14)
-          .map(([date, data]) => ({
-            date: new Date(date).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }),
-            ...data,
-          })),
-      );
-
+    ]).then(([providerList, tripList]) => {
+      setProviders(Array.isArray(providerList) ? providerList : []);
+      setAllTrips(Array.isArray(tripList) ? tripList : []);
       setLoaded(true);
     }).catch(() => setLoaded(true));
   }, []);
+
+  // Lo adjudicado es de los proveedores (compartidos entre eventos); lo
+  // consumido sale sólo de los viajes del evento activo: con dos eventos
+  // el consumo sumaba los viajes de ambos.
+  const { buckets, tripCounts, clientTypeBreakdown, weeklySpend, dailySpend } = useMemo(() => {
+    const trips = allTrips.filter((tr) => esDelEvento(eventoId, tr.eventId));
+    const done = new Set(["COMPLETED", "DROPPED_OFF"]);
+    const awardedByType = (type: string) => providers.filter((p) => p.type === type).reduce((s, p) => s + (Number(p.bidAmount) || 0), 0);
+    const tripConsumed = trips.filter((t) => done.has(t.status || "")).reduce((s, t) => s + (Number(t.tripCost) || 0), 0);
+    const tripForecast = trips.filter((t) => t.status !== "CANCELLED").reduce((s, t) => s + (Number(t.tripCost) || 0), 0);
+    const bidTrips = providers.filter((p) => p.type === "TRANSPORTE").reduce((s, p) => s + (Number(p.bidTripCount) || 0), 0);
+    const completedCount = trips.filter((t) => done.has(t.status || "")).length;
+    const totalCount = trips.filter((t) => t.status !== "CANCELLED").length;
+
+    const ctMap = new Map<string, { count: number; cost: number }>();
+    trips.filter((t) => done.has(t.status || "")).forEach((t) => {
+      const ct = t.clientType || "SIN_TIPO";
+      const prev = ctMap.get(ct) || { count: 0, cost: 0 };
+      ctMap.set(ct, { count: prev.count + 1, cost: prev.cost + (Number(t.tripCost) || 0) });
+    });
+
+    const bucketList: BucketData[] = [
+      { key: "transport",   label: "Transporte",   awarded: awardedByType("TRANSPORTE"),   consumed: tripConsumed, forecast: tripForecast, accentIndex: 0 },
+      { key: "hospitality", label: "Hotelería",    awarded: awardedByType("HOTELERIA"),    consumed: 0, forecast: 0, accentIndex: 1 },
+      { key: "food",        label: "Alimentación", awarded: awardedByType("ALIMENTACION"), consumed: 0, forecast: 0, accentIndex: 2 },
+    ];
+
+    const weekMap = new Map<string, number>();
+    trips.filter((t) => done.has(t.status || "") && t.scheduledAt).forEach((t) => {
+      const d = new Date(t.scheduledAt!);
+      const ws = new Date(d); ws.setDate(d.getDate() - d.getDay());
+      const key = ws.toISOString().slice(0, 10);
+      weekMap.set(key, (weekMap.get(key) || 0) + (Number(t.tripCost) || 0));
+    });
+
+    // Daily spend (last 14 days)
+    const dayMap = new Map<string, { amount: number; count: number }>();
+    trips.filter((t) => done.has(t.status || "") && t.scheduledAt).forEach((t) => {
+      const key = new Date(t.scheduledAt!).toISOString().slice(0, 10);
+      const prev = dayMap.get(key) || { amount: 0, count: 0 };
+      dayMap.set(key, { amount: prev.amount + (Number(t.tripCost) || 0), count: prev.count + 1 });
+    });
+
+    return {
+      buckets: bucketList,
+      tripCounts: { bid: bidTrips, completed: completedCount, total: totalCount },
+      clientTypeBreakdown: Array.from(ctMap.entries()).map(([clientType, data]) => ({ clientType, ...data })).filter((item) => item.cost > 0).sort((a, b) => b.cost - a.cost),
+      weeklySpend: Array.from(weekMap.entries()).sort(([a], [b]) => a.localeCompare(b)).slice(-6).map(([, amount], i) => ({ label: `Sem ${i + 1}`, amount })),
+      dailySpend: Array.from(dayMap.entries())
+        .sort(([a], [b]) => a.localeCompare(b))
+        .slice(-14)
+        .map(([date, data]) => ({
+          date: new Date(date).toLocaleDateString("es-CL", { day: "2-digit", month: "short" }),
+          ...data,
+        })),
+    };
+  }, [providers, allTrips, eventoId]);
 
   const totals = buckets.reduce((a, b) => ({ awarded: a.awarded + b.awarded, consumed: a.consumed + b.consumed, forecast: a.forecast + b.forecast }), { awarded: 0, consumed: 0, forecast: 0 });
   const usePct = totals.awarded > 0 ? Math.round((totals.consumed / totals.awarded) * 100) : 0;

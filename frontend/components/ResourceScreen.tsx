@@ -29,8 +29,19 @@ import {
   type FiltrosParticipantes,
 } from "@/lib/filtroParticipantes";
 import { horaRegresoDeViaje } from "@/lib/viajeRegreso";
+import { esDelEvento } from "@/lib/evento-activo";
+import { avisarEventosCambiaron, useEventoActivo } from "@/lib/evento-activo-provider";
 
 type Option = { label: string; value: string };
+
+/** Catálogos compartidos por todos los eventos: no se acotan al evento activo. */
+const ENDPOINTS_SIN_EVENTO = new Set(["/events", "/providers", "/drivers"]);
+
+/**
+ * Desplegables del formulario que se acotan al evento. Habitaciones y extras
+ * no traen evento: se ubican por su hotel.
+ */
+const FUENTES_POR_EVENTO = new Set(["accommodations", "athletes", "delegations", "hotelRooms", "hotelExtras"]);
 
 // disciplineIds: el selector de Disciplina de un viaje se acota a las del evento.
 type EventOption = Option & { disciplineIds?: string[] };
@@ -275,7 +286,10 @@ export default function ResourceScreen({
       </section>
     );
   }
-  const [items, setItems] = useState<Record<string, any>[]>([]);
+  // Evento activo de la barra superior: la lista, sus contadores y los
+  // desplegables del formulario muestran sólo lo de ese evento.
+  const { eventoId } = useEventoActivo();
+  const [itemsCargados, setItems] = useState<Record<string, any>[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
@@ -349,6 +363,82 @@ export default function ResourceScreen({
    * igual que la matriz de cupos de un evento.
    */
   const [hotelCoordinadores, setHotelCoordinadores] = useState<ContactoHotel[]>([]);
+
+  /**
+   * Lo que muestra la pantalla: sólo lo del evento activo. Con dos eventos,
+   * AND, Participantes y Hoteles mezclaban las filas de ambos. Lo que no trae
+   * evento se ubica por aquello de lo que cuelga: participante → delegación;
+   * habitación, extra y comedor → hotel; cama → habitación → hotel;
+   * asignación → hotel o participante; reserva de extra → extra → hotel o
+   * participante. Se filtra en memoria: cambiar de evento no vuelve a pedir
+   * la lista.
+   */
+  const items = useMemo(() => {
+    if (!eventoId || ENDPOINTS_SIN_EVENTO.has(config.endpoint)) return itemsCargados;
+    const eventoDeHotel = new Map(
+      (accommodationOptions as Array<Option & { eventId?: string | null }>).map((o) => [String(o.value), o.eventId ?? null]),
+    );
+    const hotelDeHabitacion = new Map(hotelRooms.map((room) => [String(room.id), room.hotelId ?? null]));
+    const hotelDeExtra = new Map(
+      (hotelExtraOptions as Array<Option & { hotelId?: string | null }>).map((o) => [String(o.value), o.hotelId ?? null]),
+    );
+    const eventoDeParticipante = new Map(
+      (athleteOptions as Array<Option & { eventId?: string | null }>).map((o) => [String(o.value), o.eventId ?? null]),
+    );
+    const eventoDeDelegacion = new Map(
+      (delegationOptions as Array<Option & { eventId?: string | null }>).map((o) => [String(o.value), o.eventId ?? null]),
+    );
+    const deHotel = (hotelId: unknown) => (hotelId ? eventoDeHotel.get(String(hotelId)) ?? null : null);
+    const deParticipante = (id: unknown) => (id ? eventoDeParticipante.get(String(id)) ?? null : null);
+    const eventoDeFila = (item: Record<string, any>): string | null => {
+      if (item.eventId) return String(item.eventId);
+      switch (config.endpoint) {
+        case "/athletes":
+          return item.delegationId ? eventoDeDelegacion.get(String(item.delegationId)) ?? null : null;
+        case "/hotel-rooms":
+        case "/hotel-extras":
+          return deHotel(item.hotelId);
+        case "/food-locations":
+          return deHotel(item.accommodationId);
+        case "/hotel-beds":
+          return deHotel(hotelDeHabitacion.get(String(item.roomId)));
+        case "/hotel-assignments":
+          return deHotel(item.hotelId) ?? deParticipante(item.participantId);
+        case "/hotel-extra-reservations":
+          return deHotel(hotelDeExtra.get(String(item.extraId))) ?? deParticipante(item.participantId);
+        default:
+          return null;
+      }
+    };
+    return itemsCargados.filter((item) => esDelEvento(eventoId, eventoDeFila(item)));
+  }, [itemsCargados, eventoId, config.endpoint, accommodationOptions, hotelRooms, hotelExtraOptions, athleteOptions, delegationOptions]);
+
+  const tieneCampoEvento = useMemo(
+    () => config.fields.some((field) => field.key === "eventId"),
+    [config.fields],
+  );
+  /** Formulario vacío: un registro nuevo nace en el evento activo. */
+  const formularioNuevo = (): FormState => {
+    const inicial = buildInitial(config.fields);
+    if (tieneCampoEvento && eventoId) inicial.eventId = eventoId;
+    return inicial;
+  };
+  // El evento activo llega después del primer render (y puede cambiar arriba):
+  // el formulario de alta lo sigue. Al editar manda el evento del registro.
+  useEffect(() => {
+    if (!tieneCampoEvento || !eventoId || editingId || participantEditingId) return;
+    setForm((prev) => (prev.eventId === eventoId ? prev : { ...prev, eventId: eventoId }));
+  }, [tieneCampoEvento, eventoId, editingId, participantEditingId]);
+  // La delegación o disciplina elegida en los filtros de Participantes y la
+  // selección para enviar códigos eran del evento anterior: se sueltan, para
+  // no dejar la lista vacía ni mandar códigos a gente que ya no se ve.
+  useEffect(() => {
+    setFiltrosParticipantes((actual) =>
+      actual.delegationId || actual.disciplineId ? { ...actual, delegationId: "", disciplineId: "" } : actual,
+    );
+    setCodigosSeleccionados((actual) => (actual.size > 0 ? new Set() : actual));
+  }, [eventoId]);
+
   const flightLookupTimerRef = useRef<number | null>(null);
   const lastFlightLookupRef = useRef<string>("");
   const plateLookupTimerRef = useRef<number | null>(null);
@@ -451,8 +541,13 @@ export default function ResourceScreen({
     [config.fields]
   );
   const needsAccommodations = useMemo(
-    () => config.fields.some((field) => field.optionsSource === "accommodations" || field.optionsSource === "accommodationTowers"),
-    [config.fields]
+    () =>
+      config.fields.some((field) => field.optionsSource === "accommodations" || field.optionsSource === "accommodationTowers") ||
+      // Camas y reservas de extras no eligen hotel, pero se ubican en el
+      // evento por el hotel del que cuelgan.
+      config.endpoint === "/hotel-beds" ||
+      config.endpoint === "/hotel-extra-reservations",
+    [config.fields, config.endpoint]
   );
   const needsHotelExtras = useMemo(
     () => config.fields.some((field) => field.optionsSource === "hotelExtras"),
@@ -1627,7 +1722,7 @@ export default function ResourceScreen({
         setEditingId(null);
         setParticipantEditingId(null);
         loadItems();
-        setForm(buildInitial(config.fields));
+        setForm(formularioNuevo());
         return;
       }
 
@@ -1880,10 +1975,12 @@ export default function ResourceScreen({
       }
 
       const wasEditing = !!editingId;
-      setForm(buildInitial(config.fields));
+      setForm(formularioNuevo());
       setEditingId(null);
       onEditCancelled?.();
       if (config.endpoint === "/events") {
+        // El selector de evento de la barra superior recarga su lista.
+        avisarEventosCambiaron();
         setEventCapacityTotals({});
         setEventCapacityMatrix({});
         setEventPlannerDisciplineId("");
@@ -2171,6 +2268,7 @@ export default function ResourceScreen({
         return;
       }
       await apiFetch(`${config.endpoint}/${id}`, { method: "DELETE" });
+      if (config.endpoint === "/events") avisarEventosCambiaron();
       loadItems();
       onDataChanged?.();
     } catch (err) {
@@ -2508,7 +2606,10 @@ export default function ResourceScreen({
     if (source === "disciplines") return disciplineOptions;
     if (source === "delegations") return delegationOptions;
     if (source === "accommodationTowers") {
-      const villas = (accommodationOptions as any[]).filter((opt) => opt.accommodationType === "VILLA");
+      // Sólo las torres de las villas del evento activo.
+      const villas = (accommodationOptions as any[]).filter(
+        (opt) => opt.accommodationType === "VILLA" && esDelEvento(eventoId, opt.eventId),
+      );
       const seen = new Set<string>();
       const towers: Option[] = [{ label: "Todas", value: "" }];
       for (const opt of villas) {
@@ -2522,11 +2623,11 @@ export default function ResourceScreen({
     }
     if (source === "accommodations") {
       if (config.endpoint === "/hotel-assignments") {
-        const eventFilter = (form.eventFilter as string | undefined) ?? "";
         const typeFilter = (form.accommodationTypeFilter as string | undefined) ?? "";
         const towerFilter = (form.towerFilter as string | undefined) ?? "";
-        let opts = accommodationOptions as any[];
-        if (eventFilter) opts = opts.filter((opt) => opt.eventId === eventFilter);
+        // El evento es el activo de la barra superior (antes, un "Evento"
+        // propio del formulario).
+        let opts = (accommodationOptions as any[]).filter((opt) => esDelEvento(eventoId, opt.eventId));
         if (typeFilter) opts = opts.filter((opt) => opt.accommodationType === typeFilter.toUpperCase());
         if (towerFilter) opts = opts.filter((opt) => opt.tower === towerFilter);
         return opts;
@@ -2593,10 +2694,8 @@ export default function ResourceScreen({
         }
       }
       if (config.endpoint === "/hotel-assignments") {
-        const eventFilter = (form.eventFilter as string | undefined) ?? "";
         const clientTypeFilter = (form.clientTypeFilter as string | undefined) ?? "";
-        let opts = athleteOptions as any[];
-        if (eventFilter) opts = opts.filter((option) => option.eventId === eventFilter);
+        let opts = (athleteOptions as any[]).filter((option) => esDelEvento(eventoId, option.eventId));
         if (clientTypeFilter) {
           opts = opts.filter((option) => option.userType === clientTypeFilter.toUpperCase());
         }
@@ -2605,6 +2704,30 @@ export default function ResourceScreen({
       return athleteOptions;
     }
     return [];
+  };
+
+  /**
+   * Desplegables del formulario: sólo hoteles, habitaciones, extras,
+   * delegaciones y participantes del evento. Con dos eventos se ofrecían los
+   * de ambos. Se acota al evento del registro si el formulario lo pide (al
+   * editar, el suyo) o al activo si no. Lo ya elegido se conserva aunque sea
+   * de otro evento, para no vaciarlo al abrir una ficha.
+   */
+  const opcionesParaFormulario = (field: FieldDef): Option[] => {
+    const opciones = getOptionsForField(field);
+    const fuente = field.optionsSource;
+    const evento = (typeof form.eventId === "string" && form.eventId) || eventoId;
+    if (!evento || !fuente || !FUENTES_POR_EVENTO.has(fuente)) return opciones;
+    const eventoDeHotel = new Map(
+      (accommodationOptions as Array<Option & { eventId?: string | null }>).map((o) => [o.value, o.eventId ?? null]),
+    );
+    const eventoDeOpcion = (opcion: Option & { eventId?: string | null; hotelId?: string | null }) =>
+      fuente === "hotelRooms" || fuente === "hotelExtras"
+        ? (opcion.hotelId ? eventoDeHotel.get(opcion.hotelId) ?? null : null)
+        : opcion.eventId ?? null;
+    const elegido = form[field.key];
+    const elegidos = new Set(Array.isArray(elegido) ? elegido : elegido ? [elegido] : []);
+    return opciones.filter((opcion) => elegidos.has(opcion.value) || esDelEvento(evento, eventoDeOpcion(opcion)));
   };
 
   const setDelegationLead = async (
@@ -2816,7 +2939,7 @@ export default function ResourceScreen({
               className="btn btn-ghost"
               onClick={() => {
                 setEditingId(null);
-                setForm(buildInitial(config.fields));
+                setForm(formularioNuevo());
                 onEditCancelled?.();
                 if (config.endpoint === "/events") {
                   setEventCapacityTotals({});
@@ -3129,7 +3252,7 @@ export default function ResourceScreen({
                       }}
                     >
                       <option value="">{t("Selecciona una opcion")}</option>
-                      {getOptionsForField(field).map((option) => (
+                      {opcionesParaFormulario(field).map((option) => (
                         <option key={option.value} value={option.value}>
                           {t(option.label)}
                         </option>
@@ -3146,7 +3269,7 @@ export default function ResourceScreen({
                             type="button"
                             className="btn btn-ghost"
                             onClick={() => {
-                              const all = getOptionsForField(field).map((option) => option.value);
+                              const all = opcionesParaFormulario(field).map((option) => option.value);
                               setForm({ ...form, [field.key]: all });
                             }}
                           >
@@ -3161,7 +3284,7 @@ export default function ResourceScreen({
                           </button>
                         </div>
                       )}
-                      {getOptionsForField(field).map((option) => {
+                      {opcionesParaFormulario(field).map((option) => {
                         const current = (form[field.key] as string[]) || [];
                         const checked = current.includes(option.value);
                           const isLead =

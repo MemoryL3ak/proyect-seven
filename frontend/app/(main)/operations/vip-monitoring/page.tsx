@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { BRAND, SURFACE, STATE } from "@/lib/design";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
@@ -49,7 +50,6 @@ type Snapshot = {
   vips: VipRow[];
 };
 
-type EventItem = { id: string; name?: string | null };
 
 const countryLabels: Record<string, string> = {
   ARG: "Argentina",
@@ -102,8 +102,8 @@ function ago(iso?: string | null) {
 
 export default function VipMonitoringPage() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
-  const [eventos, setEventos] = useState<EventItem[]>([]);
-  const [eventId, setEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: eventId } = useEventoActivo();
   const [search, setSearch] = useState("");
   const [soloEnViaje, setSoloEnViaje] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -128,12 +128,6 @@ export default function VipMonitoringPage() {
     const timer = setInterval(() => void cargar(), 10_000);
     return () => clearInterval(timer);
   }, [cargar]);
-
-  useEffect(() => {
-    apiFetch<EventItem[]>("/events")
-      .then((e) => setEventos(Array.isArray(e) ? e : []))
-      .catch(() => setEventos([]));
-  }, []);
 
   const visibles = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -280,12 +274,6 @@ export default function VipMonitoringPage() {
           <input className="input" style={{ paddingLeft: 36 }} placeholder="Buscar VIP por nombre o teléfono…"
             value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        {eventos.length > 0 && (
-          <select className="input" style={{ maxWidth: 240 }} value={eventId} onChange={(e) => setEventId(e.target.value)}>
-            <option value="">Todos los eventos</option>
-            {eventos.map((ev) => <option key={ev.id} value={ev.id}>{ev.name || "Evento sin nombre"}</option>)}
-          </select>
-        )}
         <button type="button" onClick={() => setSoloEnViaje((v) => !v)}
           className="text-xs font-bold px-3 py-2 rounded-lg"
           style={{

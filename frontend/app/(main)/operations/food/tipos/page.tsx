@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { SURFACE } from "@/lib/design";
 import { Icon, type IconName } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { delegationLabel } from "@/lib/delegations";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 // All possible types — always show every one
 const ALL_TYPES = [
@@ -23,12 +25,13 @@ const ALL_TYPES = [
 ] as const;
 
 type DietaryKey = typeof ALL_TYPES[number]["key"];
-type Athlete = { id: string; fullName: string; dietaryNeeds?: string; delegationId?: string };
+type Athlete = { id: string; fullName: string; dietaryNeeds?: string; delegationId?: string; eventId?: string | null };
 type Delegation = { id: string; countryCode: string };
 
 export default function TiposAlimentacionPage() {
   const { t } = useI18n();
-  const [athletes, setAthletes] = useState<Athlete[]>([]);
+  const { eventoId } = useEventoActivo();
+  const [todos, setAthletes] = useState<Athlete[]>([]);
   const [delegations, setDelegations] = useState<Delegation[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -42,6 +45,9 @@ export default function TiposAlimentacionPage() {
       setLoading(false);
     });
   }, []);
+
+  // Sólo el evento activo: con dos eventos se sumaban los participantes de ambos.
+  const athletes = useMemo(() => todos.filter((a) => esDelEvento(eventoId, a.eventId)), [todos, eventoId]);
 
   // Count per dietary type (key → number)
   const typeCounts = athletes.reduce<Record<string, number>>((acc, a) => {

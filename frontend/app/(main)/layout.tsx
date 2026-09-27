@@ -5,6 +5,7 @@ import SideNav from "@/components/SideNav";
 import TopBar from "@/components/TopBar";
 import SofiaWidget from "@/components/SofiaWidget";
 import MobileTabBar from "@/components/MobileTabBar";
+import { EventoActivoProvider } from "@/lib/evento-activo-provider";
 
 function MobileOverlay({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   if (!visible) return null;
@@ -26,6 +27,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
+    // El evento activo es uno para todo el panel: lo elige el selector de la
+    // barra superior y cada sección lo lee de aquí.
+    <EventoActivoProvider>
     <div className="dark-layout-root min-h-screen flex">
       <MobileOverlay visible={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className={`sidebar-wrapper${sidebarOpen ? " open" : ""}`} style={{ zIndex: 50 }}>
@@ -40,5 +44,6 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <MobileTabBar onMenuOpen={() => setSidebarOpen(true)} />
       <SofiaWidget />
     </div>
+    </EventoActivoProvider>
   );
 }

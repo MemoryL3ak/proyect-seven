@@ -7,6 +7,7 @@ import { apiFetch } from "@/lib/api";
 import { CLIENT_TYPE_OPTIONS, isEventCoordinator } from "@/lib/clientTypes";
 import { BRAND } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 type ImportType = "athletes" | "drivers" | "hospitality";
 type ParseMode = "template" | "and-itinerary";
@@ -640,7 +641,10 @@ export default function BulkImportPanel({
   const [validationStatus, setValidationStatus] = useState<"ok" | "error" | null>(null);
   const [parseMode, setParseMode] = useState<ParseMode>("template");
   const [events, setEvents] = useState<EventOption[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // Las filas sin evento van al evento activo del panel (barra superior).
+  // Antes se tomaba el más nuevo: con un segundo evento creado, la carga de
+  // participantes habría caído en él.
+  const { eventoId: selectedEventId, evento: eventoActivo } = useEventoActivo();
 
   const headers =
     type === "athletes"
@@ -667,7 +671,6 @@ export default function BulkImportPanel({
           name: String(event.name || event.id)
         }));
         setEvents(next);
-        setSelectedEventId((prev) => prev || next[0]?.id || "");
       })
       .catch(() => {
         if (ignore) return;
@@ -1342,17 +1345,12 @@ export default function BulkImportPanel({
       {type === "athletes" && athleteMode === "and" && (
         <div style={{ borderRadius: "14px", border: "1px solid var(--border)", background: "var(--elevated)", padding: "16px" }}>
           <div className="grid gap-4 md:grid-cols-[1fr_auto] md:items-end">
-            <label className="flex flex-col gap-2" style={{ fontSize: "13px", color: "var(--text-muted)" }}>
+            <div className="flex flex-col gap-2" style={{ fontSize: "13px", color: "var(--text-muted)" }}>
               {t("Evento para la carga")}
-              <select className="input" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
-                <option value="">{t("Selecciona un evento")}</option>
-                {events.map((option) => (
-                  <option key={option.id} value={option.id}>
-                    {option.name}
-                  </option>
-                ))}
-              </select>
-            </label>
+              <div style={{ borderRadius: "10px", border: "1px solid var(--border)", padding: "10px 14px", fontWeight: 700, color: "var(--text)" }}>
+                {eventoActivo?.name || t("Elige un evento arriba, en la barra superior")}
+              </div>
+            </div>
             <div style={{ borderRadius: "10px", border: "1px solid var(--border)", padding: "12px 16px", fontSize: "13px", color: "var(--text-muted)" }}>
               {t("Formato detectado")}: <span style={{ fontWeight: 600, color: "var(--text)" }}>{parseMode === "and-itinerary" ? t("Itinerario AND real") : t("Plantilla normalizada")}</span>
             </div>

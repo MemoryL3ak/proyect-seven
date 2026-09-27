@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useI18n } from "@/lib/i18n";
 
 /**
@@ -11,9 +12,8 @@ import { useI18n } from "@/lib/i18n";
  * del evento no se decide así: se decide por región y deporte, como en la
  * planilla de damas y varones. Esto hace ese movimiento en un paso y además
  * deja la celda guardada en la planilla, para que las dos vistas digan lo
- * mismo.
+ * mismo. El evento es el activo de la barra superior.
  */
-type Evento = { id: string; name?: string | null };
 type Delegacion = { id: string; eventId?: string | null; countryCode?: string | null; name?: string | null };
 type Disciplina = {
   id: string;
@@ -38,12 +38,13 @@ const nombreCorto = (v: string) => v.replace(/^regi[oó]n\s+(de\s+la\s+|del\s+|d
 
 export default function AsignarPorGrupo({ onAsignado }: { onAsignado?: () => void }) {
   const { t } = useI18n();
-  const [eventos, setEventos] = useState<Evento[]>([]);
+  // Antes tenía su propio selector de evento y abría solo el primero de la
+  // lista; ahora manda el evento activo del panel.
+  const { eventoId } = useEventoActivo();
   const [delegaciones, setDelegaciones] = useState<Delegacion[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
   const [hoteles, setHoteles] = useState<Hotel[]>([]);
 
-  const [eventoId, setEventoId] = useState("");
   const [delegacionId, setDelegacionId] = useState("");
   const [disciplinaId, setDisciplinaId] = useState("");
   const [hotelId, setHotelId] = useState("");
@@ -56,19 +57,23 @@ export default function AsignarPorGrupo({ onAsignado }: { onAsignado?: () => voi
 
   useEffect(() => {
     void (async () => {
-      const [ev, del, dis, hot] = await Promise.all([
-        apiFetch<Evento[]>("/events").catch(() => [] as Evento[]),
+      const [del, dis, hot] = await Promise.all([
         apiFetch<Delegacion[]>("/delegations").catch(() => [] as Delegacion[]),
         apiFetch<Disciplina[]>("/disciplines").catch(() => [] as Disciplina[]),
         apiFetch<Hotel[]>("/accommodations").catch(() => [] as Hotel[]),
       ]);
-      setEventos(Array.isArray(ev) ? ev : []);
       setDelegaciones(Array.isArray(del) ? del : []);
       setDisciplinas(Array.isArray(dis) ? dis : []);
       setHoteles(Array.isArray(hot) ? hot : []);
-      if (Array.isArray(ev) && ev.length) setEventoId((v) => v || ev[0].id);
     })();
   }, []);
+
+  // Región, disciplina y hotel elegidos eran del evento anterior: se sueltan.
+  useEffect(() => {
+    setDelegacionId("");
+    setDisciplinaId("");
+    setHotelId("");
+  }, [eventoId]);
 
   const regiones = useMemo(
     () =>
@@ -157,15 +162,8 @@ export default function AsignarPorGrupo({ onAsignado }: { onAsignado?: () => voi
         </p>
       </div>
 
+      {/* Tres columnas: la cuarta queda para "Rama" cuando el deporte es mixto. */}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
-        <label className="flex flex-col gap-1 text-xs text-white/60">
-          {t("Evento")}
-          <select className="input" value={eventoId} onChange={(e) => { setEventoId(e.target.value); setDelegacionId(""); setDisciplinaId(""); setHotelId(""); }}>
-            <option value="">{t("Selecciona una opción")}</option>
-            {eventos.map((ev) => <option key={ev.id} value={ev.id}>{ev.name ?? ev.id}</option>)}
-          </select>
-        </label>
-
         <label className="flex flex-col gap-1 text-xs text-white/60">
           {t("Región")}
           <select className="input" value={delegacionId} onChange={(e) => setDelegacionId(e.target.value)}>

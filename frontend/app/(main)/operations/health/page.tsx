@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 import StyledSelect from "@/components/StyledSelect";
 
@@ -523,7 +524,8 @@ export default function HealthPage() {
   const [delegations, setDelegations] = useState<DelegationItem[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineItem[]>([]);
   const [athletes, setAthletes] = useState<AthleteItem[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [selectedDelegationId, setSelectedDelegationId] = useState("");
   const [selectedAthleteId, setSelectedAthleteId] = useState("");
   const [athleteSearch, setAthleteSearch] = useState("");
@@ -562,7 +564,6 @@ export default function HealthPage() {
       setDelegations(safeDelegations);
       setDisciplines(safeDisciplines);
       setAthletes(safeAthletes);
-      if (!selectedEventId && safeEvents.length > 0) setSelectedEventId(safeEvents[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cargar sección salud.");
     } finally {
@@ -1106,19 +1107,13 @@ export default function HealthPage() {
 
       <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "16px", padding: "20px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
         <div className="grid gap-3 lg:grid-cols-12">
-          <StyledSelect wrapperClassName="lg:col-span-4" value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-            <option value="">{t("Selecciona evento")}</option>
-            {events.map((item) => (
-              <option key={item.id} value={item.id}>{item.name || item.id}</option>
-            ))}
-          </StyledSelect>
-          <StyledSelect wrapperClassName="lg:col-span-3" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
+          <StyledSelect wrapperClassName="lg:col-span-4" value={selectedDelegationId} onChange={(e) => setSelectedDelegationId(e.target.value)}>
             <option value="">{t("Todas las delegaciones")}</option>
             {filteredDelegations.map((item) => (
               <option key={item.id} value={item.id}>{item.countryCode || item.id}</option>
             ))}
           </StyledSelect>
-          <div className="relative lg:col-span-5">
+          <div className="relative lg:col-span-8">
             <input
               style={{ width: "100%", paddingRight: "36px", padding: "8px 36px 8px 12px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, fontSize: "14px", color: SURFACE.text, outline: "none" }}
               value={athleteSearch}

@@ -6,6 +6,8 @@ import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { XIcon, PencilIcon, UsersIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -36,7 +38,7 @@ type Reservation = {
   notes?: string | null;
 };
 
-type Hotel = { id: string; name?: string | null };
+type Hotel = { id: string; name?: string | null; eventId?: string | null };
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -150,6 +152,7 @@ const emptyResForm = (salonId = "", date = "") => ({
 export default function SalonesPage() {
   const { locale, t } = useI18n();
   const isMobile = useIsMobile();
+  const { eventoId } = useEventoActivo();
   const dateLocale = locale === "en" ? "en-US" : locale === "pt" ? "pt-BR" : "es-CL";
 
   // ── Palette ─────────────────────────────────────────────────────────────────
@@ -164,9 +167,9 @@ export default function SalonesPage() {
   };
 
   // ── State ────────────────────────────────────────────────────────────────────
-  const [salones, setSalones] = useState<Salon[]>([]);
-  const [reservations, setReservations] = useState<Reservation[]>([]);
-  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [todosLosSalones, setSalones] = useState<Salon[]>([]);
+  const [todasLasReservas, setReservations] = useState<Reservation[]>([]);
+  const [todosLosHoteles, setHotels] = useState<Hotel[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -197,17 +200,38 @@ export default function SalonesPage() {
       setSalones(Array.isArray(salonData) ? salonData : []);
       setReservations(Array.isArray(resData) ? resData : []);
       setHotels(Array.isArray(hotelData) ? hotelData : []);
-      if (!selectedSalonId && Array.isArray(salonData) && salonData.length > 0) {
-        setSelectedSalonId(salonData[0].id);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("Error cargando datos"));
     } finally {
       setLoading(false);
     }
-  }, [selectedSalonId]);
+  }, []);
 
   useEffect(() => { loadData(); }, []);
+
+  // ── Evento activo ─────────────────────────────────────────────────────────────
+  // Sólo el evento activo: con dos eventos se mezclaban los salones de ambos.
+  // El salón no guarda evento; lo toma de su hotel, que sí lo tiene.
+  const hotels = useMemo(
+    () => todosLosHoteles.filter((h) => esDelEvento(eventoId, h.eventId)),
+    [todosLosHoteles, eventoId],
+  );
+  const salones = useMemo(() => {
+    const eventoDelHotel = new Map(todosLosHoteles.map((h) => [h.id, h.eventId]));
+    return todosLosSalones.filter((s) => esDelEvento(eventoId, eventoDelHotel.get(s.hotelId)));
+  }, [todosLosSalones, todosLosHoteles, eventoId]);
+  // Las reservas llevan su evento; las antiguas sin evento se ven en todos.
+  const reservations = useMemo(
+    () => todasLasReservas.filter((r) => esDelEvento(eventoId, r.eventId)),
+    [todasLasReservas, eventoId],
+  );
+
+  // El salón abierto tiene que ser del evento activo: al cambiar de evento (o
+  // borrar el salón) se abre el primero de la lista.
+  useEffect(() => {
+    if (salones.some((s) => s.id === selectedSalonId)) return;
+    setSelectedSalonId(salones[0]?.id ?? "");
+  }, [salones, selectedSalonId]);
 
   // ── Derived data ──────────────────────────────────────────────────────────────
   const selectedSalon = salones.find((s) => s.id === selectedSalonId) ?? null;
@@ -343,7 +367,8 @@ export default function SalonesPage() {
       if (editingRes) {
         await apiFetch(`/salones/reservations/${editingRes.id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
       } else {
-        await apiFetch("/salones/reservations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+        // La reserva nueva queda en el evento activo; al editar se respeta el suyo.
+        await apiFetch("/salones/reservations", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, eventId: eventoId || undefined }) });
       }
       setShowResModal(false);
       await loadData();

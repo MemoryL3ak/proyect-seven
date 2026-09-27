@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
@@ -13,6 +13,8 @@ import {
   TrophyIcon,
 } from "@/components/ui/Icons";
 import { iconoDeDisciplina } from "@/lib/disciplina-icono";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 type Discipline = {
   id: string;
@@ -51,7 +53,8 @@ const etiquetaCampo = "flex flex-col gap-1 text-xs uppercase tracking-widest";
 
 export default function DisciplinesPage() {
   const { t } = useI18n();
-  const [disciplines, setDisciplines] = useState<Discipline[]>([]);
+  const { eventoId } = useEventoActivo();
+  const [todas, setDisciplines] = useState<Discipline[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
@@ -82,18 +85,24 @@ export default function DisciplinesPage() {
 
   useEffect(() => { load(); }, []);
 
+  // Sólo el evento activo (las sin evento son de todos): con dos eventos se
+  // mezclaban los deportes de ambos.
+  const disciplines = useMemo(() => todas.filter(d => esDelEvento(eventoId, d.eventId)), [todas, eventoId]);
   const sports = disciplines.filter(d => !d.parentId);
   const subsOf = (sportId: string) => disciplines.filter(d => d.parentId === sportId);
-  const orphans = disciplines.filter(d => d.parentId && !disciplines.find(s => s.id === d.parentId));
+  // Huérfana es la que no tiene deporte en ningún evento; la prueba de un
+  // deporte de otro evento es de ese evento y no se muestra aquí.
+  const orphans = disciplines.filter(d => d.parentId && !todas.find(s => s.id === d.parentId));
 
   const openAddSport = () => {
-    setForm(EMPTY_FORM);
+    // Lo nuevo nace en el evento activo.
+    setForm({ ...EMPTY_FORM, eventId: eventoId });
     setError(null);
     setModal({ mode: "sport" });
   };
 
   const openAddSub = (parentId: string) => {
-    setForm({ ...EMPTY_FORM, parentId });
+    setForm({ ...EMPTY_FORM, parentId, eventId: eventoId });
     setError(null);
     setModal({ mode: "sub", parentId });
   };

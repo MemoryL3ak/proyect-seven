@@ -17,6 +17,7 @@ import { filterValidatedAthletes } from "@/lib/athletes";
 import { delegationLabel } from "@/lib/delegations";
 import { nombreCortoRegion, pruebaVisiblePara } from "@/lib/pruebas";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 import StyledSelect from "@/components/StyledSelect";
 
@@ -206,7 +207,8 @@ export default function DeportesPage() {
 
   // ── UI state
   const [tab, setTab] = useState<"cupos" | "pruebas" | "calendario">("cupos");
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [selectedDelegationId, setSelectedDelegationId] = useState("");
   const [selectedDisciplineId, setSelectedDisciplineId] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -263,7 +265,6 @@ export default function DeportesPage() {
       setDelegations(Array.isArray(delegationData) ? delegationData : []);
       setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
       setVenueOptions(Array.isArray(venueData) ? venueData : []);
-      if (!selectedEventId && safeEvents.length > 0) setSelectedEventId(safeEvents[0].id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo cargar planificación deportiva");
     } finally {
@@ -664,15 +665,6 @@ export default function DeportesPage() {
           <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: SURFACE.textFaint }}>{t("Deportes")}</span>
         </div>
         <h1 style={{ fontSize: "22px", fontWeight: 800, color: pal.titleColor, margin: "0 0 16px" }}>{t("Planificación deportiva")}</h1>
-
-        {/* Event selector */}
-        <div className="grid gap-3 lg:grid-cols-5" style={{ marginBottom: "16px" }}>
-          <StyledSelect wrapperStyle={{ gridColumn: "span 2" }}
-            value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-            <option value="">{t("Selecciona evento")}</option>
-            {events.map((ev) => <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>)}
-          </StyledSelect>
-        </div>
 
         {/* Tabs */}
         <div style={{ background: SURFACE.borderMuted, borderRadius: "12px", padding: "4px", width: "fit-content", display: "flex", gap: "4px" }}>

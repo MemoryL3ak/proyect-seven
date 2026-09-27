@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { UsersIcon, UserIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -53,7 +54,8 @@ export default function ClientesPage() {
   const [delegations, setDelegations] = useState<Record<string, Delegation>>({});
   const [disciplines, setDisciplines] = useState<Record<string, Discipline>>({});
   const [selectedType, setSelectedType] = useState("");
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -83,9 +85,13 @@ export default function ClientesPage() {
   }, []);
 
   const typeOptions = useMemo(() => {
-    const set = new Set(athletes.map((item) => normalizeType(item.userType)));
+    const set = new Set(
+      athletes
+        .filter((item) => (selectedEventId ? item.eventId === selectedEventId : true))
+        .map((item) => normalizeType(item.userType)),
+    );
     return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [athletes]);
+  }, [athletes, selectedEventId]);
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -135,12 +141,8 @@ export default function ClientesPage() {
             <option value="">Todos los tipos de cliente</option>
             {typeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
           </StyledSelect>
-          <StyledSelect value={selectedEventId} onChange={(e) => setSelectedEventId(e.target.value)}>
-            <option value="">Todos los eventos</option>
-            {Object.values(events).map((ev) => <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>)}
-          </StyledSelect>
           <input
-            className="lg:col-span-2"
+            className="lg:col-span-3"
             style={fieldStyle}
             placeholder="Buscar por nombre, email, tipo o delegación"
             value={search}

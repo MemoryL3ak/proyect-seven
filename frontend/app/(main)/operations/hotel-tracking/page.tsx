@@ -6,6 +6,7 @@ import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { UsersIcon, CheckIcon, ClockIcon, BuildingIcon, BedIcon, RefreshIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 
 type Accommodation = {
@@ -87,7 +88,8 @@ export default function HotelTrackingPage() {
   const [hotelAssignments, setHotelAssignments] = useState<HotelAssignment[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [events, setEvents] = useState<Record<string, EventItem>>({});
-  const [selectedEventId, setSelectedEventId] = useState<string>("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
@@ -116,9 +118,6 @@ export default function HotelTrackingPage() {
           return acc;
         }, {})
       );
-      if (!selectedEventId && eventData && eventData.length > 0) {
-        setSelectedEventId(eventData[0].id);
-      }
       setLastUpdated(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar"));
@@ -271,19 +270,6 @@ export default function HotelTrackingPage() {
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-              <label style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>Evento</label>
-              <select
-                style={{ minWidth: "220px", height: "38px", padding: "0 12px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.card, color: SURFACE.text, fontSize: "13px", fontWeight: 500, outline: "none" }}
-                value={selectedEventId}
-                onChange={(e) => setSelectedEventId(e.target.value)}
-              >
-                <option value="">{t("Todos")}</option>
-                {Object.values(events).map((ev) => (
-                  <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>
-                ))}
-              </select>
-            </div>
             <button
               onClick={loadData}
               disabled={loading}

@@ -16,6 +16,8 @@ import { StarIcon, MedalIcon, RefreshIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { nombrePropio } from "@/lib/nombres";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { esDelEvento } from "@/lib/evento-activo";
 
 /* ─── Types ─── */
 /** Estados en los que un viaje ya no le exige nada al conductor. */
@@ -51,6 +53,7 @@ function horaCorta(fecha: Date | null): string {
 
 type Trip = {
   id: string;
+  eventId?: string | null;
   driverId?: string | null;
   status?: string | null;
   scheduledAt?: string | null;
@@ -125,7 +128,14 @@ function toLocalDate(d: Date): string {
 export default function DriverHeatmapPage() {
   const { t } = useI18n();
   const isMobile = useIsMobile();
-  const [trips, setTrips] = useState<Trip[]>([]);
+  const { eventoId } = useEventoActivo();
+  const [allTrips, setAllTrips] = useState<Trip[]>([]);
+  // Los conductores son compartidos entre eventos; sus viajes, jornadas,
+  // mapa de calor y ranking cuentan sólo los viajes del evento activo.
+  const trips = useMemo(
+    () => allTrips.filter((tr) => esDelEvento(eventoId, tr.eventId)),
+    [allTrips, eventoId],
+  );
   const [drivers, setDrivers] = useState<Record<string, DriverItem>>({});
   const [selectedDate, setSelectedDate] = useState(toLocalDate(new Date()));
   /** Control de jornada: conductor elegido ("" = todos). */
@@ -144,7 +154,7 @@ export default function DriverHeatmapPage() {
         apiFetch<Trip[]>("/trips"),
         apiFetch<DriverItem[]>("/drivers"),
       ]);
-      setTrips(tripsData || []);
+      setAllTrips(tripsData || []);
       const lookup: Record<string, DriverItem> = {};
       for (const d of driversData || []) {
         if (d.id) lookup[d.id] = d;

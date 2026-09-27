@@ -6,6 +6,7 @@ import { clearTokens, getStoredUser } from "@/lib/api";
 import { BRAND, SURFACE } from "@/lib/design";
 import { humanizePath } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
+import SelectorEvento from "@/components/SelectorEvento";
 
 export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
   const pathname = usePathname();
@@ -176,8 +177,9 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
         </div>
       </div>
 
-      {/* Right: profile + logout */}
+      {/* Right: evento activo + profile + logout */}
       <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+        <SelectorEvento />
         {/* Profile badge */}
         <div className="topbar-profile" style={{
           display: "flex",

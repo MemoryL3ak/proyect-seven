@@ -6,6 +6,7 @@ import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { PercentIcon, CheckIcon, WrenchIcon, AlertCircleIcon, RefreshIcon, TrashIcon } from "@/components/ui/Icons";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 
 type HotelKeyStatus = "AVAILABLE" | "ASSIGNED" | "LOST" | "MAINTENANCE" | string;
@@ -106,8 +107,11 @@ export default function HotelKeysPage() {
   const [rooms, setRooms] = useState<HotelRoom[]>([]);
   const [beds, setBeds] = useState<HotelBed[]>([]);
   const [athletes, setAthletes] = useState<Athlete[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [selectedHotelId, setSelectedHotelId] = useState("");
+  // Al cambiar de evento, el hotel elegido ya no es de este evento.
+  useEffect(() => { setSelectedHotelId(""); }, [selectedEventId]);
   const [selectedStatus, setSelectedStatus] = useState("");
   const [search, setSearch] = useState("");
   const [selectedKeyId, setSelectedKeyId] = useState<string | null>(null);
@@ -141,9 +145,6 @@ export default function HotelKeysPage() {
       setRooms(roomData || []);
       setBeds(bedData || []);
       setAthletes(filterValidatedAthletes(athleteData || []));
-      if (!selectedEventId && (eventData || []).length > 0) {
-        setSelectedEventId((eventData || [])[0].id);
-      }
       setLastUpdated(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar gestión de llaves"));
@@ -310,10 +311,6 @@ export default function HotelKeysPage() {
           </div>
 
           <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
-            <select style={selectStyle} value={selectedEventId} onChange={(e) => { setSelectedEventId(e.target.value); setSelectedHotelId(""); }}>
-              <option value="">{t("Todos los eventos")}</option>
-              {events.map((item) => <option key={item.id} value={item.id}>{item.name || item.id}</option>)}
-            </select>
             <select style={selectStyle} value={selectedHotelId} onChange={(e) => setSelectedHotelId(e.target.value)}>
               <option value="">{t("Todos los hoteles")}</option>
               {filteredHotels.map((hotel) => <option key={hotel.id} value={hotel.id}>{hotel.name || hotel.id}</option>)}

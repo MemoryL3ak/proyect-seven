@@ -5,9 +5,13 @@ import { apiFetch, getStoredUser } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { ChevronLeftIcon } from "@/components/ui/Icons";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 type Chat = {
   id: string;
+  /** La API devuelve la fila tal cual (snake_case). */
+  event_id?: string | null;
   origin_type: string;
   origin_id: string;
   origin_name: string;
@@ -84,7 +88,8 @@ export default function SupportChatsPage() {
   // Móvil: bandeja y chat no caben lado a lado (la columna fija de 380px ya
   // superaba el viewport) — se muestra una vista a la vez, con botón volver.
   const isMobile = useIsMobile();
-  const [chats, setChats] = useState<Chat[]>([]);
+  const { eventoId } = useEventoActivo();
+  const [todosLosChats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState<string>("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -122,6 +127,15 @@ export default function SupportChatsPage() {
     }, 8000);
     return () => clearInterval(t);
   }, [selectedId, filter]);
+
+  // Sólo el evento activo: con dos eventos la bandeja mezclaba los chats de
+  // ambos. Los chats sin evento se ven en todos.
+  const chats = useMemo(
+    () => todosLosChats.filter((c) => esDelEvento(eventoId, c.event_id)),
+    [todosLosChats, eventoId],
+  );
+  // Al cambiar de evento se cierra el chat abierto, que puede ser del otro.
+  useEffect(() => { setSelectedId(null); }, [eventoId]);
 
   const selected = chats.find((c) => c.id === selectedId) || null;
   useEffect(() => {

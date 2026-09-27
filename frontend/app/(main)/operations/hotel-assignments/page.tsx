@@ -6,13 +6,15 @@ import ResourceScreen from "@/components/ResourceScreen";
 import { apiFetch } from "@/lib/api";
 import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import DistribucionHotelera from "@/components/operations/DistribucionHotelera";
 import AsignarPorGrupo from "@/components/operations/AsignarPorGrupo";
 
 type BulkRow = { participant_id: string; hotel_id: string; room_number?: string; checkin_at?: string; checkout_at?: string };
 type BulkResult = { participantId: string; status: "created" | "error"; message?: string };
 
-type Hotel = { id: string; name?: string | null; accommodationType?: string | null; tower?: string | null };
+type Hotel = { id: string; eventId?: string | null; name?: string | null; accommodationType?: string | null; tower?: string | null };
 type CapacityRow = {
   roomType: string;
   rooms: number;
@@ -23,8 +25,9 @@ type CapacityRow = {
 
 export default function HotelAssignmentsPage() {
   const { t } = useI18n();
+  const { eventoId } = useEventoActivo();
   const [tab, setTab] = useState<"manual" | "auto" | "distribucion">("manual");
-  const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [todosLosHoteles, setHotels] = useState<Hotel[]>([]);
   const [accommodationTypeFilter, setAccommodationTypeFilter] = useState("");
   const [selectedHotelId, setSelectedHotelId] = useState("");
   const [roomType, setRoomType] = useState("DOUBLE");
@@ -117,12 +120,12 @@ const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
         if (ignore) return;
         const safe = (Array.isArray(rows) ? rows : []).map((r: any) => ({
           id: r.id,
+          eventId: r.eventId ?? null,
           name: r.name ?? null,
           accommodationType: String(r.accommodationType || "HOTEL").toUpperCase(),
           tower: r.tower ?? null,
         }));
         setHotels(safe);
-        if (!selectedHotelId && safe[0]?.id) setSelectedHotelId(safe[0].id);
       })
       .catch(() => {
         if (ignore) return;
@@ -150,6 +153,24 @@ const [bulkRows, setBulkRows] = useState<BulkRow[]>([]);
       setLoading(false);
     }
   };
+
+  // Autoasignación: sólo los hoteles del evento activo. Con dos eventos se
+  // ofrecían los de ambos y el que se abría solo podía ser del otro evento.
+  const hotels = useMemo(
+    () => todosLosHoteles.filter((h) => esDelEvento(eventoId, h.eventId)),
+    [todosLosHoteles, eventoId],
+  );
+
+  // Al llegar la lista o cambiar de evento, si el hotel elegido no es de este
+  // evento se abre el primero que sí lo es (respetando Hotel / Villa).
+  useEffect(() => {
+    const candidatos = accommodationTypeFilter
+      ? hotels.filter((h) => h.accommodationType === accommodationTypeFilter)
+      : hotels;
+    setSelectedHotelId((actual) =>
+      actual && candidatos.some((h) => h.id === actual) ? actual : (candidatos[0]?.id ?? ""),
+    );
+  }, [hotels]);
 
   useEffect(() => {
     loadCapacity(selectedHotelId);

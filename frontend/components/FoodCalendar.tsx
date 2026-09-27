@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { apiFetch } from "@/lib/api";
 import { PinIcon, ClockIcon, ChevronLeftIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { esDelEvento } from "@/lib/evento-activo";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 type MealType = "DESAYUNO" | "ALMUERZO" | "CENA";
 
@@ -23,8 +25,8 @@ type FoodMenu = {
   locationDetail?: string;
 };
 
-type Accommodation = { id: string; name: string };
-type Venue = { id: string; name: string };
+type Accommodation = { id: string; name: string; eventId?: string | null };
+type Venue = { id: string; name: string; eventId?: string | null };
 
 const MEAL_META: Record<MealType, { label: string; icon: React.ReactNode }> = {
   DESAYUNO: { label: "Desayuno", icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg> },
@@ -193,10 +195,37 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
   })();
 
   const [currentDate, setCurrentDate] = useState(() => new Date());
-  const [menus, setMenus] = useState<FoodMenu[]>([]);
-  const [accommodations, setAccommodations] = useState<Accommodation[]>([]);
-  const [venues, setVenues] = useState<Venue[]>([]);
+  const { eventoId } = useEventoActivo();
+  const [todosLosMenus, setMenus] = useState<FoodMenu[]>([]);
+  const [todosLosHoteles, setAccommodations] = useState<Accommodation[]>([]);
+  const [todasLasSedes, setVenues] = useState<Venue[]>([]);
   const [filterAccomm, setFilterAccomm] = useState("");
+
+  // Sólo el evento activo: con dos eventos las listas ofrecían los hoteles y
+  // sedes de ambos.
+  const accommodations = useMemo(
+    () => todosLosHoteles.filter((a) => esDelEvento(eventoId, a.eventId)),
+    [todosLosHoteles, eventoId],
+  );
+  const venues = useMemo(
+    () => todasLasSedes.filter((v) => esDelEvento(eventoId, v.eventId)),
+    [todasLasSedes, eventoId],
+  );
+  // El menú no guarda evento: lo toma de su hotel y de su sede. Sin ninguno
+  // de los dos es general y se ve en todos los eventos.
+  const menus = useMemo(() => {
+    const eventoDelHotel = new Map(todosLosHoteles.map((a) => [a.id, a.eventId]));
+    const eventoDeLaSede = new Map(todasLasSedes.map((v) => [v.id, v.eventId]));
+    return todosLosMenus.filter(
+      (m) =>
+        (!m.accommodationId || esDelEvento(eventoId, eventoDelHotel.get(m.accommodationId))) &&
+        (!m.venueId || esDelEvento(eventoId, eventoDeLaSede.get(m.venueId))),
+    );
+  }, [todosLosMenus, todosLosHoteles, todasLasSedes, eventoId]);
+  // Un hotel de otro evento no puede quedar como filtro.
+  useEffect(() => {
+    if (filterAccomm && !accommodations.some((a) => a.id === filterAccomm)) setFilterAccomm("");
+  }, [accommodations, filterAccomm]);
 
   // Calendar panel
   const [selectedDay, setSelectedDay] = useState<string | null>(null);

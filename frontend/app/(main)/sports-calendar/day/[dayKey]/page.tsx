@@ -10,6 +10,7 @@ import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { delegationLabel as delegationDisplayName } from "@/lib/delegations";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 
 type SportsEvent = {
   id: string;
@@ -26,7 +27,6 @@ type SportsEvent = {
   metadata?: Record<string, unknown>;
 };
 
-type EventOption = { id: string; name?: string | null };
 type DelegationOption = { id: string; countryCode?: string | null; eventId?: string | null };
 type DisciplineOption = { id: string; name?: string | null };
 type FlightOption = {
@@ -211,11 +211,12 @@ export default function SportsCalendarDayDetailPage() {
   const params = useParams<{ dayKey: string }>();
   const searchParams = useSearchParams();
   const dayKey = params.dayKey;
-  const eventId = searchParams.get("eventId") || "";
+  // El evento es el activo del panel, no el de la URL: el enlace guardado o
+  // compartido con otro ?eventId= mostraba un evento distinto al de arriba.
+  const { eventoId: eventId, evento: selectedEvent, listo: eventoListo } = useEventoActivo();
   const delegationId = searchParams.get("delegationId") || "";
 
   const [entries, setEntries] = useState<SportsEvent[]>([]);
-  const [events, setEvents] = useState<EventOption[]>([]);
   const [delegations, setDelegations] = useState<DelegationOption[]>([]);
   const [disciplines, setDisciplines] = useState<DisciplineOption[]>([]);
   const [athletes, setAthletes] = useState<AthleteDetail[]>([]);
@@ -229,6 +230,8 @@ export default function SportsCalendarDayDetailPage() {
   const [validating, setValidating] = useState(false);
 
   useEffect(() => {
+    // Se espera a saber el evento activo para no pedir primero la agenda de todos.
+    if (!eventId && !eventoListo) return;
     const load = async () => {
       setLoading(true);
       setError(null);
@@ -240,9 +243,8 @@ export default function SportsCalendarDayDetailPage() {
         });
         if (eventId) params.set("eventId", eventId);
 
-        const [entryData, eventData, delegationData, disciplineData, athleteData, flightData, tripData, driverData, vehicleData] = await Promise.all([
+        const [entryData, delegationData, disciplineData, athleteData, flightData, tripData, driverData, vehicleData] = await Promise.all([
           apiFetch<SportsEvent[]>(`/sports-calendar/events?${params.toString()}`),
-          apiFetch<EventOption[]>("/events"),
           apiFetch<DelegationOption[]>("/delegations"),
           apiFetch<DisciplineOption[]>("/disciplines"),
           apiFetch<AthleteDetail[]>("/athletes"),
@@ -253,7 +255,6 @@ export default function SportsCalendarDayDetailPage() {
         ]);
 
         setEntries(Array.isArray(entryData) ? entryData : []);
-        setEvents(Array.isArray(eventData) ? eventData : []);
         setDelegations(Array.isArray(delegationData) ? delegationData : []);
         setDisciplines(Array.isArray(disciplineData) ? disciplineData : []);
         setAthletes(filterValidatedAthletes(Array.isArray(athleteData) ? athleteData : []));
@@ -270,9 +271,8 @@ export default function SportsCalendarDayDetailPage() {
     };
 
     load();
-  }, [dayKey, eventId]);
+  }, [dayKey, eventId, eventoListo]);
 
-  const selectedEvent = useMemo(() => events.find((item) => item.id === eventId), [events, eventId]);
   const disciplineMap = useMemo(
     () => disciplines.reduce<Record<string, string>>((acc, item) => ({ ...acc, [item.id]: item.name || item.id }), {}),
     [disciplines],
@@ -489,11 +489,7 @@ export default function SportsCalendarDayDetailPage() {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
-          href={
-            eventId || delegationId
-              ? `/sports-calendar?eventId=${encodeURIComponent(eventId)}&delegationId=${encodeURIComponent(delegationId)}`
-              : "/sports-calendar"
-          }
+          href={delegationId ? `/sports-calendar?delegationId=${encodeURIComponent(delegationId)}` : "/sports-calendar"}
           className="btn btn-ghost"
         >
           {t("Volver al calendario")}

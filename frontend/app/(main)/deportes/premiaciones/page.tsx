@@ -5,6 +5,8 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { esDelEvento } from "@/lib/evento-activo";
 import PageHeader from "@/components/ui/PageHeader";
 import KpiCard from "@/components/ui/KpiCard";
 import StyledSelect from "@/components/StyledSelect";
@@ -43,9 +45,9 @@ type Premiacion = {
   notes?: string | null;
   awarders?: Awarder[] | null;
 };
-type Athlete = { id: string; fullName?: string | null; userType?: string | null };
+type Athlete = { id: string; eventId?: string | null; fullName?: string | null; userType?: string | null };
 type EventItem = { id: string; name: string };
-type Venue = { id: string; name: string; address?: string | null };
+type Venue = { id: string; eventId?: string | null; name: string; address?: string | null };
 
 type AwarderState = "CONFIRMED" | "DECLINED" | "PENDING";
 const awarderState = (a: Awarder): AwarderState =>
@@ -109,7 +111,8 @@ export default function PremiacionesPage() {
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [events, setEvents] = useState<EventItem[]>([]);
   const [venues, setVenues] = useState<Venue[]>([]);
-  const [eventFilter, setEventFilter] = useState("");
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId: eventFilter } = useEventoActivo();
   const [statusFilter, setStatusFilter] = useState("");
   const [disciplineFilter, setDisciplineFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -154,17 +157,22 @@ export default function PremiacionesPage() {
     return (id: string) => map.get(id) || id.slice(0, 8);
   }, [athletes]);
 
+  // Sólo las del evento activo: también los contadores y las disciplinas.
+  const delEvento = useMemo(
+    () => premiaciones.filter((p) => esDelEvento(eventFilter, p.eventId)),
+    [premiaciones, eventFilter],
+  );
+
   const disciplineOptions = useMemo(
-    () => Array.from(new Set(premiaciones.map((p) => (p.discipline || "").trim()).filter(Boolean))).sort(),
-    [premiaciones],
+    () => Array.from(new Set(delEvento.map((p) => (p.discipline || "").trim()).filter(Boolean))).sort(),
+    [delEvento],
   );
 
   // La próxima ceremonia siempre primero: próximas ascendente, pasadas después
   // (la más reciente primero).
   const { upcoming, past } = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const filtered = premiaciones
-      .filter((p) => (eventFilter ? p.eventId === eventFilter : true))
+    const filtered = delEvento
       .filter((p) => (statusFilter ? p.status === statusFilter : true))
       .filter((p) => (disciplineFilter ? (p.discipline || "") === disciplineFilter : true))
       .filter((p) => {
@@ -181,25 +189,26 @@ export default function PremiacionesPage() {
       .filter((p) => time(p) < now || p.status === "REALIZADA")
       .sort((a, b) => time(b) - time(a));
     return { upcoming, past };
-  }, [premiaciones, eventFilter, statusFilter, disciplineFilter, search]);
+  }, [delEvento, statusFilter, disciplineFilter, search]);
 
   const kpis = useMemo(() => {
     let programadas = 0, realizadas = 0, pendientes = 0;
-    premiaciones.forEach((p) => {
+    delEvento.forEach((p) => {
       if (p.status === "REALIZADA") realizadas++; else programadas++;
       (p.awarders || []).forEach((a) => {
         if (awarderState(a) === "PENDING") pendientes++;
       });
     });
-    return { total: premiaciones.length, programadas, realizadas, pendientes };
-  }, [premiaciones]);
+    return { total: delEvento.length, programadas, realizadas, pendientes };
+  }, [delEvento]);
 
   // Candidatos a entregadores: VIP primero; si no hay VIP marcados, todos.
   const awarderCandidates = useMemo(() => {
-    const vips = athletes.filter((a) => String(a.userType ?? "").toUpperCase() === "VIP");
-    const base = vips.length > 0 ? vips : athletes;
+    const delEventoActivo = athletes.filter((a) => esDelEvento(eventFilter, a.eventId));
+    const vips = delEventoActivo.filter((a) => String(a.userType ?? "").toUpperCase() === "VIP");
+    const base = vips.length > 0 ? vips : delEventoActivo;
     return [...base].sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
-  }, [athletes]);
+  }, [athletes, eventFilter]);
 
   const openCreate = () => {
     setFormEditingId(null);
@@ -459,12 +468,6 @@ export default function PremiacionesPage() {
             placeholder={t("Buscar por prueba, disciplina o sede…")}
             value={search} onChange={(e) => setSearch(e.target.value)} />
         </div>
-        {events.length > 0 && (
-          <StyledSelect wrapperClassName="md:max-w-[220px]" value={eventFilter} onChange={(e) => setEventFilter(e.target.value)}>
-            <option value="">{t("Todos los eventos")}</option>
-            {events.map((e) => <option key={e.id} value={e.id}>{e.name}</option>)}
-          </StyledSelect>
-        )}
         {disciplineOptions.length > 0 && (
           <StyledSelect wrapperClassName="md:max-w-[200px]" value={disciplineFilter} onChange={(e) => setDisciplineFilter(e.target.value)}>
             <option value="">{t("Todas las disciplinas")}</option>
@@ -687,7 +690,7 @@ export default function PremiacionesPage() {
                   <label className="text-[11px] font-bold uppercase tracking-wider" style={{ color: SURFACE.textMuted }}>{t("Sede")}</label>
                   <StyledSelect value={form.venueId} onChange={(e) => setForm((f) => ({ ...f, venueId: e.target.value }))}>
                     <option value="">{t("Sin sede")}</option>
-                    {venues.map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
+                    {venues.filter((v) => esDelEvento(form.eventId || eventFilter, v.eventId)).map((v) => <option key={v.id} value={v.id}>{v.name}</option>)}
                   </StyledSelect>
                 </div>
               </div>

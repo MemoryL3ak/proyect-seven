@@ -13,6 +13,7 @@ import { generoDeViaje as generoDeViajeCompartido } from "@/lib/genero-viaje";
 import TripMap from "@/components/TripMap";
 import { historialDeJornada, jornadasDelHistorial, SIN_FECHA as HISTORIAL_SIN_FECHA } from "@/lib/historial-viajes";
 import { etiquetaDiaEvento } from "@/lib/hora-evento";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -525,7 +526,11 @@ export default function TripsPage() {
   const [disciplinas, setDisciplinas] = useState<DisciplineLike[]>([]);
   /** Comedores de Alimentación: un viaje puede apuntar a ellos por id. */
   const [comedores, setComedores] = useState<HotelItem[]>([]);
-  const [selectedEventId, setSelectedEventId] = useState("");
+  // El evento lo elige el selector de la barra superior. Antes era un estado
+  // de esta pantalla y la recarga de cada 8 s (que corre con el valor del
+  // primer render, "") lo devolvía al evento más nuevo: con dos eventos, el
+  // que se eligiera saltaba al otro.
+  const { eventoId: selectedEventId } = useEventoActivo();
   const [selectedClientType, setSelectedClientType] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -539,7 +544,7 @@ export default function TripsPage() {
   const [tripSource, setTripSource] = useState<"" | "PORTAL" | "DAILY" | "MANUAL">("");
   // Filtro por conductor (solicitado)
   const [selectedDriverId, setSelectedDriverId] = useState<string>("");
-  const filtrosArribaActivos = [selectedEventId, selectedClientType, selectedDriverId].filter(Boolean).length;
+  const filtrosArribaActivos = [selectedClientType, selectedDriverId].filter(Boolean).length;
 
   // Si el usuario aterriza en una tab obsoleta (portal/editor) la mando a dispatch
   useEffect(() => {
@@ -585,7 +590,8 @@ export default function TripsPage() {
     const errs: string[] = [];
     for (let i = 0; i < importRows.length; i++) {
       const row = importRows[i];
-      const eventId = row.event_id || (eventOptions[0]?.id ?? "");
+      // Sin event_id en la planilla, al evento activo (antes: al más nuevo).
+      const eventId = row.event_id || selectedEventId;
       if (!eventId) { errs.push(`Fila ${i + 2}: falta event_id`); continue; }
       const scheduledAt = toIsoDateTime(row.scheduled_date, row.scheduled_time);
       const body: Record<string, unknown> = {
@@ -752,10 +758,6 @@ export default function TripsPage() {
         }, {})
       );
 
-      if (!selectedEventId && eventData && eventData.length > 0) {
-        setSelectedEventId(eventData[0].id);
-      }
-
       setLastUpdated(new Date());
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar"));
@@ -830,7 +832,6 @@ export default function TripsPage() {
     return () => clearTimeout(timer);
   }, [freshRequestIds]);
 
-  const eventOptions = useMemo(() => Object.values(events), [events]);
 
   const filteredTrips = useMemo(() => {
     const term = search.trim().toLowerCase();
@@ -1915,16 +1916,7 @@ export default function TripsPage() {
             </button>
           </div>
         )}
-        <div className="grid gap-3 grid-cols-1 md:grid-cols-2 xl:grid-cols-4" style={{ display: isMobile && !filtrosArribaAbiertos ? "none" : undefined }}>
-          <label className="text-sm block">
-            <span className="block mb-1">{t("Evento")}</span>
-            <select className="input" value={selectedEventId} onChange={(event) => setSelectedEventId(event.target.value)}>
-              <option value="">{t("Todos los eventos")}</option>
-              {eventOptions.map((eventItem) => (
-                <option key={eventItem.id} value={eventItem.id}>{eventItem.name || eventItem.id}</option>
-              ))}
-            </select>
-          </label>
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-3" style={{ display: isMobile && !filtrosArribaAbiertos ? "none" : undefined }}>
           <label className="text-sm block">
             <span className="block mb-1">{t("Tipo de cliente")}</span>
             <select className="input" value={selectedClientType} onChange={(event) => setSelectedClientType(event.target.value)}>
