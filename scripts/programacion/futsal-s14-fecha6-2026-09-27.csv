@@ -1,0 +1,17 @@
+deporte;genero;jornada;partido;grupo;delegacion_1;delegacion_2;dia;salida_hotel;hora;retorno_hotel;recinto
+Futsal;Femenino;6;41;15° - 16°;Aysén;Arica;27-sep;7:45;9:00;10:30;UVM
+Futsal;Femenino;6;42;13° - 14°;Antofagasta;Atacama;27-sep;9:00;10:30;12:00;UVM
+Futsal;Femenino;6;43;11° - 12°;Araucanía;Valparaíso;27-sep;7:45;9:00;10:30;Polideportivo Viña
+Futsal;Femenino;6;44;9° - 10°;Metropolitana;Los Lagos;27-sep;9:00;10:30;12:00;Polideportivo Viña
+Futsal;Femenino;6;45;7° - 8°;Coquimbo;Magallanes;27-sep;10:30;12:00;13:30;UVM
+Futsal;Femenino;6;46;5° - 6°;Biobío;Maule;27-sep;12:00;13:30;15:00;UVM
+Futsal;Femenino;6;47;3° - 4°;Ñuble;O'Higgins;27-sep;13:00;15:00;21:30;Nicolás Massu
+Futsal;Femenino;6;48;Final;Tarapacá;Los Ríos;27-sep;16:00;18:00;21:30;Nicolás Massu
+Futsal;Masculino;6;41;15° - 16°;Ñuble;Aysén;27-sep;7:45;9:00;10:30;Nicolás Massu
+Futsal;Masculino;6;42;13° - 14°;Atacama;Antofagasta;27-sep;8:45;10:30;12:00;Nicolás Massu
+Futsal;Masculino;6;43;11° - 12°;Araucanía;Biobío;27-sep;10:30;12:00;13:30;Polideportivo Viña
+Futsal;Masculino;6;44;9° - 10°;Tarapacá;Maule;27-sep;12:00;13:30;15:00;Polideportivo Viña
+Futsal;Masculino;6;45;7° - 8°;Arica;Los Lagos;27-sep;10:15;12:00;13:30;Nicolás Massu
+Futsal;Masculino;6;46;5° - 6°;Los Ríos;Valparaíso;27-sep;11:45;13:30;15:00;Nicolás Massu
+Futsal;Masculino;6;47;3° - 4°;Coquimbo;Metropolitana;27-sep;14:30;16:30;21:30;Nicolás Massu
+Futsal;Masculino;6;48;Final;Magallanes;O'Higgins;27-sep;17:30;19:30;21:30;Nicolás Massu

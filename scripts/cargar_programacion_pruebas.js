@@ -45,7 +45,30 @@ const ALIAS_RECINTO = {
   'utfsm vina': 'utfsm',
   'polideportivo vina': 'polideportivo vina del mar',
   'nicolas massu': 'nicolas massu',
+  'esc naval': 'escuela naval',
+  'renato raggio': 'polideportivo renato raggio',
 };
+
+/**
+ * "Esc. Naval 1", "Renato Raggio 2": el número final es la cancha dentro del
+ * recinto (vóleibol juega damas y varones a la vez en el mismo lugar).
+ */
+function recintoYCancha(texto) {
+  const m = norm(texto).match(/^(.*\D)\s+(\d{1,2})$/);
+  return m ? { recinto: m[1].trim(), cancha: m[2] } : { recinto: norm(texto), cancha: null };
+}
+
+/**
+ * "A" → "Grupo A"; "15° - 16°" → "15°-16° lugar"; "Final" → "Final". Las
+ * últimas fechas se juegan por puesto, no por grupo.
+ */
+function etiquetaGrupo(grupo) {
+  const g = String(grupo ?? '').trim();
+  const puesto = g.match(/^(\d+)\s*°?\s*-\s*(\d+)\s*°?$/);
+  if (puesto) return `${puesto[1]}°-${puesto[2]}° lugar`;
+  if (norm(g) === 'final') return 'Final';
+  return `Grupo ${g}`;
+}
 
 const GENERO = { femenino: 'FEMALE', masculino: 'MALE', mixto: 'MIXED', f: 'FEMALE', m: 'MALE' };
 const MESES = { ene: 0, feb: 1, mar: 2, abr: 3, may: 4, jun: 5, jul: 6, ago: 7, sep: 8, sept: 8, oct: 9, nov: 10, dic: 11 };
@@ -130,10 +153,13 @@ function unico(lista, que, texto) {
           return aUtc(anio, mes, +diaTxt, +m[1], +m[2]);
         };
 
-        const claveRecinto = norm(f.recinto);
+        const { recinto: claveRecinto, cancha } = recintoYCancha(f.recinto);
         const buscado = ALIAS_RECINTO[claveRecinto] || claveRecinto;
         const candidatas = sedes.filter((v) => (!v.event_id || v.event_id === evento.id) && norm(v.name).includes(buscado));
-        const sede = unico(candidatas, 'Sede', f.recinto);
+        // "Polideportivo Renato Raggio" también está dentro de "Piscina
+        // Polideportivo Renato Raggio": si calza exacto con una, es esa.
+        const exactas = candidatas.filter((v) => norm(v.name) === buscado);
+        const sede = unico(exactas.length === 1 ? exactas : candidatas, 'Sede', f.recinto);
 
         const delegacionDe = (texto) => {
           // "Arica y P." → "arica"; "Los Lagos" se busca entero (no por palabra:
@@ -154,13 +180,14 @@ function unico(lista, que, texto) {
           d1,
           d2,
           fixtureKey,
-          name: `Fecha ${f.jornada} · P${f.partido} · Grupo ${f.grupo} · ${nombreCortoRegion(d1.nombre)} vs ${nombreCortoRegion(d2.nombre)}`,
+          name: `Fecha ${f.jornada} · P${f.partido} · ${etiquetaGrupo(f.grupo)} · ${nombreCortoRegion(d1.nombre)} vs ${nombreCortoRegion(d2.nombre)}${cancha ? ` · Cancha ${cancha}` : ''}`,
           scheduledAt: hhmm(f.hora),
           metadata: {
             fixtureKey,
             round: Number(f.jornada),
             matchNumber: Number(f.partido),
             group: f.grupo,
+            court: cancha,
             hotelDepartureAt: f.salida_hotel ? hhmm(f.salida_hotel) : null,
             hotelReturnAt: f.retorno_hotel ? hhmm(f.retorno_hotel) : null,
             source: path.basename(archivo),

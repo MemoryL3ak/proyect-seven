@@ -1,0 +1,17 @@
+deporte;genero;jornada;partido;grupo;delegacion_1;delegacion_2;dia;salida_hotel;hora;retorno_hotel;recinto
+Vóleibol;Femenino;6;41;15° - 16°;Tarapacá;Aysén;27-sep;7:45;9:00;10:15;Esc. Naval 1
+Vóleibol;Femenino;6;42;13° - 14°;Magallanes;Maule;27-sep;8:45;10:15;11:30;Esc. Naval 1
+Vóleibol;Femenino;6;43;11° - 12°;Los Ríos;O'Higgins;27-sep;10:00;11:30;12:45;Esc. Naval 1
+Vóleibol;Femenino;6;44;9° - 10°;Arica;Los Lagos;27-sep;11:15;12:45;14:00;Esc. Naval 1
+Vóleibol;Femenino;6;45;7° - 8°;Ñuble;Antofagasta;27-sep;7:45;9:00;10:30;Renato Raggio 1
+Vóleibol;Femenino;6;46;5° - 6°;Atacama;Biobío;27-sep;9:00;10:30;12:00;Renato Raggio 1
+Vóleibol;Femenino;6;47;3° - 4°;Araucanía;Valparaíso;27-sep;10:30;12:00;13:30;Renato Raggio 1
+Vóleibol;Femenino;6;48;Final;Metropolitana;Coquimbo;27-sep;12:00;14:00;17:00;Renato Raggio
+Vóleibol;Masculino;6;41;15° - 16°;Tarapacá;Aysén;27-sep;7:45;9:00;10:15;Esc. Naval 2
+Vóleibol;Masculino;6;42;13° - 14°;Arica;Maule;27-sep;8:45;10:15;11:30;Esc. Naval 2
+Vóleibol;Masculino;6;43;11° - 12°;Antofagasta;Araucanía;27-sep;10:00;11:30;12:45;Esc. Naval 2
+Vóleibol;Masculino;6;44;9° - 10°;Atacama;Ñuble;27-sep;11:15;12:45;14:00;Esc. Naval 2
+Vóleibol;Masculino;6;45;7° - 8°;O'Higgins;Magallanes;27-sep;7:45;9:00;10:30;Renato Raggio 2
+Vóleibol;Masculino;6;46;5° - 6°;Metropolitana;Los Ríos;27-sep;9:00;10:30;12:00;Renato Raggio 2
+Vóleibol;Masculino;6;47;3° - 4°;Coquimbo;Valparaíso;27-sep;10:30;12:00;13:30;Renato Raggio 2
+Vóleibol;Masculino;6;48;Final;Biobío;Los Lagos;27-sep;13:30;15:30;17:00;Renato Raggio
