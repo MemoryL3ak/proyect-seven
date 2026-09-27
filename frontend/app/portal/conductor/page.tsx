@@ -56,6 +56,7 @@ import {
   send as nativeSend,
 } from "@/lib/native-bridge";
 import PushTokenSync from "@/components/PushTokenSync";
+import { appYaRastrea, clasificarErrorUbicacionNativa } from "@/lib/ubicacion-conductor";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
@@ -783,7 +784,30 @@ export default function DriverPortalPage() {
   const [credentialPdf, setCredentialPdf] = useState<CredentialPdfData | null>(null);
   const [credentialPdfView, setCredentialPdfView] = useState<string | null>(null);
 
-  const requestLocationPermission = (): Promise<boolean> => {
+  const requestLocationPermission = async (): Promise<boolean> => {
+    // Dentro de la app se le pregunta a la app, que es la que tiene el permiso
+    // y manda el GPS. En iOS el navegador interno tiene su propio permiso: con
+    // ese en "No permitir", Héctor Silva veía "Ubicación no disponible" en
+    // cada botón del viaje mientras su GPS llegaba sin cortes (27-09).
+    if (isNativeAvailable()) {
+      if (appYaRastrea(shellTracking)) {
+        setLocationPermission("granted");
+        return true;
+      }
+      try {
+        await nativeRequest("location.current", undefined, { timeoutMs: 15_000 });
+        setLocationPermission("granted");
+        return true;
+      } catch (err) {
+        const resultado = clasificarErrorUbicacionNativa(err instanceof Error ? err.message : String(err));
+        if (resultado !== "SIN_RESPUESTA") {
+          setLocationPermission("denied");
+          setShowLocationBlockedModal(true);
+          return false;
+        }
+        // App antigua o sin respuesta: se prueba con el navegador.
+      }
+    }
     return new Promise((resolve) => {
       if (!navigator.geolocation) {
         driverNotify.push("Tu navegador no soporta geolocalización", "warning");
@@ -3598,6 +3622,32 @@ export default function DriverPortalPage() {
               </svg>
             </div>
             <h3 style={{ fontSize:"18px",fontWeight:800,color:SURFACE.text,margin:"0 0 8px" }}>Ubicación no disponible</h3>
+            {isNativeAvailable() ? (
+              <>
+                {/* En la app no hay barra de dirección: el permiso se da en
+                    los Ajustes del teléfono. */}
+                <p style={{ fontSize:"13px",color:SURFACE.textMuted,lineHeight:1.5,margin:"0 0 8px" }}>
+                  Seven Arena necesita tu ubicación para iniciar y cerrar viajes.
+                </p>
+                <div style={{ background:SURFACE.bg,borderRadius:"12px",padding:"12px 16px",margin:"0 0 20px",textAlign:"left" }}>
+                  <p style={{ fontSize:"12px",fontWeight:700,color:SURFACE.textStrong,margin:"0 0 6px" }}>Cómo activarla:</p>
+                  <p style={{ fontSize:"11px",color:SURFACE.textMuted,margin:"0 0 4px",lineHeight:1.4 }}>1. Toca &quot;Abrir Ajustes&quot;</p>
+                  <p style={{ fontSize:"11px",color:SURFACE.textMuted,margin:"0 0 4px",lineHeight:1.4 }}>2. Entra a &quot;Ubicación&quot;</p>
+                  <p style={{ fontSize:"11px",color:SURFACE.textMuted,margin:0,lineHeight:1.4 }}>3. Elige &quot;Siempre&quot; y vuelve a la app</p>
+                </div>
+                <div style={{ display:"flex",gap:"10px" }}>
+                  <button type="button" onClick={() => setShowLocationBlockedModal(false)}
+                    style={{ flex:1,padding:"12px",borderRadius:"14px",border:`1px solid ${SURFACE.border}`,background:SURFACE.bg,color:SURFACE.textSecondary,fontSize:"13px",fontWeight:700,cursor:"pointer" }}>
+                    Cerrar
+                  </button>
+                  <button type="button" onClick={() => { setShowLocationBlockedModal(false); nativeSend("device.open-settings"); }}
+                    style={{ flex:1,padding:"12px",borderRadius:"14px",border:"none",background:`linear-gradient(135deg,${BRAND.teal},#14AE98)`,color:SURFACE.card,fontSize:"13px",fontWeight:700,cursor:"pointer",boxShadow:"0 2px 10px rgba(33,208,179,0.3)" }}>
+                    Abrir Ajustes
+                  </button>
+                </div>
+              </>
+            ) : (
+            <>
             <p style={{ fontSize:"13px",color:SURFACE.textMuted,lineHeight:1.5,margin:"0 0 8px" }}>
               Para continuar necesitas activar la ubicación en tu navegador.
             </p>
@@ -3617,6 +3667,8 @@ export default function DriverPortalPage() {
                 Recargar página
               </button>
             </div>
+            </>
+            )}
           </div>
         </div>
       )}
