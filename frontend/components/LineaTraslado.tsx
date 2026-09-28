@@ -9,16 +9,67 @@ import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { horaEvento } from "@/lib/hora-evento";
 import { useI18n } from "@/lib/i18n";
 import { lineaDeTraslado, pasoSiguiente, type ViajeConBitacora } from "@/lib/linea-traslado";
+import { trasladoRealizado } from "@/lib/marcar-traslado";
+
+/**
+ * "Marcar realizado" en un traslado sin terminar; "Marcar pendiente" en uno
+ * terminado (por si se marcó por error).
+ */
+export function BotonMarcar({
+  realizado,
+  marcando,
+  onClick,
+}: {
+  realizado: boolean;
+  marcando?: boolean;
+  onClick: () => void;
+}) {
+  const { t } = useI18n();
+  return (
+    <button
+      type="button"
+      disabled={marcando}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      style={{
+        marginLeft: "auto",
+        flexShrink: 0,
+        fontSize: 10,
+        fontWeight: 700,
+        padding: "3px 10px",
+        borderRadius: 99,
+        cursor: marcando ? "wait" : "pointer",
+        opacity: marcando ? 0.6 : 1,
+        border: `1px solid ${realizado ? SURFACE.border : BRAND.teal}`,
+        background: realizado ? SURFACE.card : BRAND.teal,
+        color: realizado ? SURFACE.textMuted : "#fff",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {marcando ? t("Guardando…") : realizado ? t("Marcar pendiente") : t("Marcar realizado")}
+    </button>
+  );
+}
 
 export default function LineaTraslado({
   viaje,
   conductor,
   ahora,
+  onMarcar,
+  marcando = false,
 }: {
   viaje: ViajeConBitacora;
   /** Nombre del conductor asignado; null = sin conductor. */
   conductor?: string | null;
   ahora?: Date;
+  /**
+   * Botón Realizado / Pendiente: cambia el estado del viaje, el mismo que ve
+   * el conductor en su app. Sin esta función no se muestra.
+   */
+  onMarcar?: () => void;
+  marcando?: boolean;
 }) {
   const { t } = useI18n();
   const cancelado = String(viaje.status ?? "").toUpperCase() === "CANCELLED";
@@ -39,6 +90,9 @@ export default function LineaTraslado({
           <span style={{ fontWeight: 700, color: STATE.warningText, background: STATE.warningSoft, border: `1px solid ${STATE.warningBorder}`, borderRadius: 99, padding: "1px 8px" }}>
             {t("Sin conductor")}
           </span>
+        )}
+        {onMarcar && !cancelado && (
+          <BotonMarcar realizado={trasladoRealizado(viaje)} marcando={marcando} onClick={onMarcar} />
         )}
       </div>
       <ol style={{ display: "flex", alignItems: "flex-start", listStyle: "none", margin: 0, padding: 0, opacity: cancelado ? 0.45 : 1 }}>

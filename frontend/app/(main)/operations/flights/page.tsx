@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AirlineLogo from "@/components/AirlineLogo";
 import { apiFetch } from "@/lib/api";
-import LineaTraslado from "@/components/LineaTraslado";
+import LineaTraslado, { BotonMarcar } from "@/components/LineaTraslado";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { estadoAlMarcar, resumenTraslados, trasladoRealizado, trasladosDelVuelo } from "@/lib/marcar-traslado";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   RefreshIcon,
@@ -211,6 +213,10 @@ export default function FlightsPage() {
   // Hora de referencia de la línea de tiempo; avanza con cada refresco.
   const [ahora, setAhora] = useState(() => new Date());
   const [deleteConfirm, setDeleteConfirm] = useState<Flight | null>(null);
+  // Traslados que esperan confirmación para marcarse realizados o pendientes.
+  const [porMarcar, setPorMarcar] = useState<{ viajes: TripItem[]; realizar: boolean; que: string } | null>(null);
+  const [marcando, setMarcando] = useState<string | null>(null);
+  const [errorMarcar, setErrorMarcar] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -243,24 +249,52 @@ export default function FlightsPage() {
 
   useEffect(() => { load(); }, []);
 
+  const recargarViajes = () =>
+    apiFetch<TripItem[]>("/trips")
+      .then((tripData) => {
+        setTransferInTrips(
+          (tripData ?? []).filter(
+            (t) => String(t.tripType || "").toUpperCase() === "TRANSFER_IN" && t.status !== "CANCELLED",
+          ),
+        );
+        setAhora(new Date());
+      })
+      .catch(() => undefined);
+
   // La línea de tiempo de cada traslado avanza sola: cada 30 s se vuelven a
   // leer los viajes (sólo los viajes, sin recargar la pantalla), y así se ve
   // cuando el conductor toca Iniciar, Recoger o Finalizar.
   useEffect(() => {
-    const timer = setInterval(() => {
-      apiFetch<TripItem[]>("/trips")
-        .then((tripData) => {
-          setTransferInTrips(
-            (tripData ?? []).filter(
-              (t) => String(t.tripType || "").toUpperCase() === "TRANSFER_IN" && t.status !== "CANCELLED",
-            ),
-          );
-          setAhora(new Date());
-        })
-        .catch(() => undefined);
-    }, 30_000);
+    const timer = setInterval(() => void recargarViajes(), 30_000);
     return () => clearInterval(timer);
   }, []);
+
+  /**
+   * Realizado / Pendiente desde el monitor: cambia el estado de los viajes,
+   * el mismo que ve el conductor (su app deja de mostrarlo como pendiente) y
+   * el tracking de Viajes. Sólo toca los que cambian.
+   */
+  const marcarTraslados = async (viajes: TripItem[], realizar: boolean) => {
+    const aCambiar = viajes.filter((v) => trasladoRealizado(v) !== realizar);
+    setMarcando(viajes.map((v) => v.id).join(","));
+    setErrorMarcar(null);
+    let fallidos = 0;
+    for (const viaje of aCambiar) {
+      try {
+        await apiFetch(`/trips/${viaje.id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: estadoAlMarcar(viaje) }),
+        });
+      } catch {
+        fallidos += 1;
+      }
+    }
+    await recargarViajes();
+    setMarcando(null);
+    setPorMarcar(null);
+    if (fallidos) setErrorMarcar(`${t("No se pudieron actualizar")} ${fallidos} ${fallidos === 1 ? t("traslado") : t("traslados")}.`);
+  };
 
   useEffect(() => {
     if (refreshTimer.current) clearInterval(refreshTimer.current);
@@ -675,10 +709,10 @@ export default function FlightsPage() {
           {/* overflow hidden del card recortaba columnas en móvil: la tabla
               scrollea horizontal dentro de su propio contenedor. */}
           <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
-          <table style={{ width: "100%", minWidth: "820px", borderCollapse: "collapse", fontSize: "13px" }}>
+          <table style={{ width: "100%", minWidth: "940px", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: SURFACE.bg }}>
-                {["", "Vuelo", "Aerolínea", "Ruta", "Llegada", "Estado", "Delegaciones", "Pax", "Acciones"].map(h => (
+                {["", "Vuelo", "Aerolínea", "Ruta", "Llegada", "Estado", "Delegaciones", "Pax", "Traslado", "Acciones"].map(h => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{h ? t(h) : h}</th>
                 ))}
               </tr>
@@ -689,6 +723,10 @@ export default function FlightsPage() {
                 const delegationCodes = getPassengerDelegations(passengers);
                 const discNames = getPassengerDisciplines(passengers);
                 const isExpanded = expandedFlightId === flight.id;
+                const traslados = trasladosDelVuelo(flight, passengers.map((p) => p.id), transferInTrips);
+                const resumen = resumenTraslados(traslados);
+                const todosRealizados = resumen.estado === "REALIZADO";
+                const claveMarcar = traslados.map((v) => v.id).join(",");
                 return (
                   <>
                   <tr key={flight.id} style={{ borderBottom: isExpanded ? "none" : `1px solid ${SURFACE.borderMuted}`, cursor: "pointer", transition: "background 0.1s" }}
@@ -733,6 +771,32 @@ export default function FlightsPage() {
                     <td style={{ padding: "10px 14px" }}>
                       <span style={{ fontSize: "13px", fontWeight: 700, color: passengers.length > 0 ? BRAND.teal : SURFACE.borderStrong }}>{passengers.length}</span>
                     </td>
+                    {/* Traslado del aeropuerto: Pendiente / En curso / Realizado,
+                        sincronizado con la app del conductor. */}
+                    <td style={{ padding: "10px 14px" }} onClick={e => e.stopPropagation()}>
+                      {resumen.total === 0 ? (
+                        <span style={{ fontSize: "10px", color: SURFACE.textFaint }}>{t("Sin traslado")}</span>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px" }}>
+                          <span style={{
+                            fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", whiteSpace: "nowrap",
+                            ...(todosRealizados
+                              ? { background: STATE.successSoft, color: STATE.successText, border: `1px solid ${STATE.successBorder}` }
+                              : resumen.estado === "EN_CURSO"
+                                ? { background: STATE.infoSoft, color: STATE.infoText, border: `1px solid ${STATE.infoBorder}` }
+                                : { background: STATE.warningSoft, color: STATE.warningText, border: `1px solid ${STATE.warningBorder}` }),
+                          }}>
+                            {todosRealizados ? t("Realizado") : resumen.estado === "EN_CURSO" ? t("En curso") : t("Pendiente")}
+                            {resumen.total > 1 ? ` · ${resumen.realizados}/${resumen.total}` : ""}
+                          </span>
+                          <BotonMarcar
+                            realizado={todosRealizados}
+                            marcando={marcando === claveMarcar}
+                            onClick={() => setPorMarcar({ viajes: traslados, realizar: !todosRealizados, que: `${t("el vuelo")} ${flight.flightNumber}` })}
+                          />
+                        </div>
+                      )}
+                    </td>
                     <td style={{ padding: "10px 14px" }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: "flex", gap: "5px" }}>
                         <button onClick={() => openTrack(flight)} style={{ padding: "5px 12px", borderRadius: "8px", border: "none", background: `linear-gradient(135deg,${BRAND.teal},#14AE98)`, color: SURFACE.card, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>{t("Rastrear")}</button>
@@ -745,7 +809,7 @@ export default function FlightsPage() {
                   {/* Expanded detail row */}
                   {isExpanded && (
                     <tr key={`${flight.id}-detail`}>
-                      <td colSpan={9} style={{ padding: "0 14px 14px", background: SURFACE.bg, borderBottom: `1px solid ${SURFACE.border}` }}>
+                      <td colSpan={10} style={{ padding: "0 14px 14px", background: SURFACE.bg, borderBottom: `1px solid ${SURFACE.border}` }}>
                         {/* En teléfono el detalle se apila y queda pegado (sticky) al borde
                             izquierdo del scroll horizontal: así se lee sin desplazar la
                             tabla de 820 px. */}
@@ -879,6 +943,8 @@ export default function FlightsPage() {
                           viaje={trip}
                           conductor={trip.driverId ? conductores[trip.driverId] || t("Conductor asignado") : null}
                           ahora={ahora}
+                          marcando={marcando === trip.id}
+                          onMarcar={() => setPorMarcar({ viajes: [trip], realizar: !trasladoRealizado(trip), que: `${t("el traslado de")} ${requester?.fullName || t("este pasajero")}` })}
                         />
                       </td>
                     </tr>
@@ -1067,6 +1133,28 @@ export default function FlightsPage() {
       )}
 
       {/* Delete confirmation modal */}
+      <ConfirmDialog
+        open={Boolean(porMarcar)}
+        danger={false}
+        title={porMarcar?.realizar ? t("Marcar traslado realizado") : t("Marcar traslado pendiente")}
+        message={
+          porMarcar
+            ? porMarcar.realizar
+              ? `${t("Se marcará como realizado")} ${porMarcar.que}${porMarcar.viajes.length > 1 ? ` (${porMarcar.viajes.length} ${t("traslados")})` : ""}. ${t("El conductor lo verá cerrado en su app y en Viajes queda Completado.")}`
+              : `${t("Se marcará como pendiente")} ${porMarcar.que}. ${t("Vuelve a Programado en la app del conductor y se borran sus horas de inicio y cierre.")}`
+            : ""
+        }
+        confirmLabel={porMarcar?.realizar ? t("Marcar realizado") : t("Marcar pendiente")}
+        onConfirm={() => { if (porMarcar && !marcando) void marcarTraslados(porMarcar.viajes, porMarcar.realizar); }}
+        onCancel={() => { if (!marcando) setPorMarcar(null); }}
+      />
+      {errorMarcar && (
+        <div role="alert" style={{ position: "fixed", bottom: 20, right: 20, zIndex: 60, padding: "10px 16px", borderRadius: 12, background: STATE.dangerSoft, color: STATE.dangerText, border: `1px solid ${STATE.dangerBorder}`, fontSize: 12, fontWeight: 600 }}>
+          {errorMarcar}
+          <button type="button" onClick={() => setErrorMarcar(null)} style={{ marginLeft: 10, background: "none", border: "none", color: STATE.dangerText, cursor: "pointer", fontWeight: 800 }}>×</button>
+        </div>
+      )}
+
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div style={{ background: SURFACE.card, borderRadius: "20px", width: "100%", maxWidth: "380px", padding: isMobile ? "20px" : "28px", boxShadow: "0 8px 40px rgba(15,23,42,0.2)", textAlign: "center" }}>

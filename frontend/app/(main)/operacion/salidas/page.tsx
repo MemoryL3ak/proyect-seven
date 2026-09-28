@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import LineaTraslado from "@/components/LineaTraslado";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { estadoAlMarcar, trasladoRealizado } from "@/lib/marcar-traslado";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
@@ -106,6 +108,9 @@ export default function DepartureMonitoringPage() {
   const [ahora, setAhora] = useState(() => new Date());
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Traslado que espera confirmación para marcarse realizado o pendiente.
+  const [porMarcar, setPorMarcar] = useState<{ viaje: Trip; nombre: string } | null>(null);
+  const [marcando, setMarcando] = useState<string | null>(null);
 
   const cargar = async () => {
     setError(null);
@@ -136,6 +141,28 @@ export default function DepartureMonitoringPage() {
   };
 
   useEffect(() => { void cargar(); }, []);
+
+  /**
+   * Realizado / Pendiente desde el monitor: cambia el estado del viaje, el
+   * mismo que ve el conductor en su app y el tracking de Viajes.
+   */
+  const marcarTraslado = async (viaje: Trip) => {
+    setMarcando(viaje.id);
+    setError(null);
+    try {
+      await apiFetch(`/trips/${viaje.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: estadoAlMarcar(viaje) }),
+      });
+      await cargar();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("No se pudo actualizar el traslado."));
+    } finally {
+      setMarcando(null);
+      setPorMarcar(null);
+    }
+  };
 
   // La línea de tiempo avanza sola: cada 30 s se vuelve a leer, y así se ve
   // cuando el conductor toca Iniciar, Recoger o Finalizar.
@@ -448,6 +475,8 @@ export default function DepartureMonitoringPage() {
                               viaje={a.traslado}
                               conductor={a.traslado.driverId ? conductores[a.traslado.driverId] || t("Conductor asignado") : null}
                               ahora={ahora}
+                              marcando={marcando === a.traslado.id}
+                              onMarcar={() => a.traslado && setPorMarcar({ viaje: a.traslado, nombre: a.fullName || t("este pasajero") })}
                             />
                           ) : (
                             <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t("Sin traslado")}</span>
@@ -462,6 +491,21 @@ export default function DepartureMonitoringPage() {
           </section>
         ))
       )}
+      <ConfirmDialog
+        open={Boolean(porMarcar)}
+        danger={false}
+        title={porMarcar && !trasladoRealizado(porMarcar.viaje) ? t("Marcar traslado realizado") : t("Marcar traslado pendiente")}
+        message={
+          porMarcar
+            ? !trasladoRealizado(porMarcar.viaje)
+              ? `${t("Se marcará como realizado")} ${t("el traslado de")} ${porMarcar.nombre}. ${t("El conductor lo verá cerrado en su app y en Viajes queda Completado.")}`
+              : `${t("Se marcará como pendiente")} ${t("el traslado de")} ${porMarcar.nombre}. ${t("Vuelve a Programado en la app del conductor y se borran sus horas de inicio y cierre.")}`
+            : ""
+        }
+        confirmLabel={porMarcar && !trasladoRealizado(porMarcar.viaje) ? t("Marcar realizado") : t("Marcar pendiente")}
+        onConfirm={() => { if (porMarcar && !marcando) void marcarTraslado(porMarcar.viaje); }}
+        onCancel={() => { if (!marcando) setPorMarcar(null); }}
+      />
     </div>
   );
 }
