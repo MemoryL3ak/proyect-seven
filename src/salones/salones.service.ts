@@ -147,9 +147,11 @@ export class SalonesService {
 
   async removeSalon(id: string) {
     try {
-      const rows = (await this.dataSource.query(
-        `delete from logistics.salones where id = $1 returning *`, [id],
-      )) as SalonRow[];
+      const rows = filasDe<SalonRow>(
+        await this.dataSource.query(
+          `delete from logistics.salones where id = $1 returning *`, [id],
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Salon ${id} not found`);
       return this.toSalon(rows[0]);
     } catch (error) {
@@ -235,9 +237,11 @@ export class SalonesService {
 
   async removeReservation(id: string) {
     try {
-      const rows = (await this.dataSource.query(
-        `delete from logistics.salon_reservations where id = $1 returning *`, [id],
-      )) as ReservationRow[];
+      const rows = filasDe<ReservationRow>(
+        await this.dataSource.query(
+          `delete from logistics.salon_reservations where id = $1 returning *`, [id],
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Reservation ${id} not found`);
       return this.toReservation(rows[0]);
     } catch (error) {

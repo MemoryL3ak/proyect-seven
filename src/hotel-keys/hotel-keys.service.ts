@@ -448,14 +448,16 @@ export class HotelKeysService {
   async remove(id: string) {
     let data: HotelKeyRow | null = null;
     try {
-      const rows = (await this.dataSource.query(
-        `
+      const rows = filasDe<HotelKeyRow>(
+        await this.dataSource.query(
+          `
           delete from logistics.hotel_keys
           where id = $1
           returning *
         `,
-        [id],
-      )) as HotelKeyRow[];
+          [id],
+        ),
+      );
       data = rows[0] ?? null;
     } catch (error) {
       throw new InternalServerErrorException(

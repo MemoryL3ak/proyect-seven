@@ -135,10 +135,12 @@ export class MealTimeBlocksService {
   }
 
   async remove(id: string) {
-    const rows = (await this.dataSource.query(
-      `delete from logistics.meal_time_blocks where id = $1 returning ${COLUMNAS}`,
-      [id],
-    )) as MealTimeBlockRow[];
+    const rows = filasDe<MealTimeBlockRow>(
+      await this.dataSource.query(
+        `delete from logistics.meal_time_blocks where id = $1 returning ${COLUMNAS}`,
+        [id],
+      ),
+    );
     if (!rows[0]) throw new NotFoundException(`Meal time block ${id} not found`);
     return this.toEntity(rows[0]);
   }

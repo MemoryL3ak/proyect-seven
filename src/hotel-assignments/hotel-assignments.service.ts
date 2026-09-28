@@ -307,14 +307,16 @@ export class HotelAssignmentsService {
 
   async remove(id: string) {
     try {
-      const rows = (await this.dataSource.query(
-        `
+      const rows = filasDe<HotelAssignmentRow>(
+        await this.dataSource.query(
+          `
         delete from logistics.hotel_assignments
         where id = $1
         returning *
       `,
-        [id],
-      )) as HotelAssignmentRow[];
+          [id],
+        ),
+      );
 
       if (!rows[0]) {
         throw new NotFoundException(`Hotel assignment with id ${id} not found`);

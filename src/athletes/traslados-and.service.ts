@@ -6,6 +6,7 @@ import { UpdateTripDto } from '../trips/dto/update-trip.dto';
 import {
   AEROPUERTO,
   cambiosDeTraslado,
+  claveTrasladoAnd,
   FichaAnd,
   TramoAnd,
   tramosAnd,
@@ -55,6 +56,55 @@ export class TrasladosAndService {
     } catch (err) {
       this.logger.warn(
         `No se pudieron generar los traslados de AND de la ficha ${fichaId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  }
+
+  /**
+   * Al borrar una ficha: sus traslados de AND que no han partido se borran
+   * (si no, quedaban asignados al conductor sin pasajero) y el vuelo de
+   * llegada se borra si ya nadie lo usa. Los traslados iniciados o terminados
+   * quedan como historial. Se llama antes y después de borrar la ficha.
+   */
+  async antesDeBorrarFicha(fichaId: string): Promise<string | null> {
+    try {
+      await this.dataSource.query(
+        `delete from transport.trips
+          where metadata->>'andKey' in ($1, $2)
+            and status in ('REQUESTED', 'SCHEDULED')`,
+        [
+          claveTrasladoAnd(fichaId, 'LLEGADA'),
+          claveTrasladoAnd(fichaId, 'SALIDA'),
+        ],
+      );
+      const filas = await this.dataSource.query<
+        Array<{ arrival_flight_id: string | null }>
+      >(`select arrival_flight_id from core.athletes where id = $1`, [fichaId]);
+      return filas[0]?.arrival_flight_id ?? null;
+    } catch (err) {
+      this.logger.warn(
+        `No se pudieron borrar los traslados de la ficha ${fichaId}: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+      return null;
+    }
+  }
+
+  async despuesDeBorrarFicha(vueloId: string | null): Promise<void> {
+    if (!vueloId) return;
+    try {
+      await this.dataSource.query(
+        `delete from transport.flights f
+          where f.id = $1
+            and not exists (select 1 from core.athletes a where a.arrival_flight_id = f.id)`,
+        [vueloId],
+      );
+    } catch (err) {
+      this.logger.warn(
+        `No se pudo borrar el vuelo ${vueloId}: ${
           err instanceof Error ? err.message : String(err)
         }`,
       );

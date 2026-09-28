@@ -130,10 +130,12 @@ export class HotelExtraReservationsService {
 
   async remove(id: string) {
     try {
-      const rows = (await this.dataSource.query(
-        `delete from logistics.hotel_extra_reservations where id = $1 returning *`,
-        [id],
-      )) as HotelExtraReservationRow[];
+      const rows = filasDe<HotelExtraReservationRow>(
+        await this.dataSource.query(
+          `delete from logistics.hotel_extra_reservations where id = $1 returning *`,
+          [id],
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Reservation ${id} not found`);
       return this.toEntity(rows[0]);
     } catch (error) {

@@ -175,10 +175,12 @@ export class FoodMenusService {
 
   async remove(id: string) {
     try {
-      const rows = (await this.dataSource.query(
-        `delete from logistics.food_menus where id = $1 returning ${SELECT_COLS}`,
-        [id],
-      )) as FoodMenuRow[];
+      const rows = filasDe<FoodMenuRow>(
+        await this.dataSource.query(
+          `delete from logistics.food_menus where id = $1 returning ${SELECT_COLS}`,
+          [id],
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Food menu ${id} not found`);
       return this.toEntity(rows[0]);
     } catch (error) {

@@ -158,14 +158,16 @@ export class HotelRoomsService {
 
   async remove(id: string) {
     try {
-      const rows = (await this.dataSource.query(
-        `
+      const rows = filasDe<HotelRoomRow>(
+        await this.dataSource.query(
+          `
         delete from logistics.hotel_rooms
         where id = $1
         returning *
       `,
-        [id],
-      )) as HotelRoomRow[];
+          [id],
+        ),
+      );
 
       if (!rows[0]) throw new NotFoundException(`Hotel room with id ${id} not found`);
       return this.toEntity(rows[0]);

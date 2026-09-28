@@ -610,19 +610,24 @@ export class AthletesService {
   }
 
     async remove(id: string) {
-    const rows = (await this.dataSource.query(
-      `
+    // Sus traslados pendientes se van con la ficha; su vuelo, si queda vacío.
+    const vueloId = await this.trasladosAnd.antesDeBorrarFicha(id);
+    const rows = filasDe<AthleteRow>(
+      await this.dataSource.query(
+        `
       delete from core.athletes
       where id = $1
       returning *
     `,
-      [id],
-    )) as AthleteRow[];
+        [id],
+      ),
+    );
 
     if (!rows[0]) {
       throw new NotFoundException(`Athlete with id ${id} not found`);
     }
 
+    await this.trasladosAnd.despuesDeBorrarFicha(vueloId);
     return this.toEntity(rows[0]);
   }
   async requestAccess(email: string) {

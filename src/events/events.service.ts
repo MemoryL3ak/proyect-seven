@@ -375,14 +375,16 @@ export class EventsService {
   }
 
   async remove(id: string) {
-    const rows = (await this.dataSource.query(
-      `
+    const rows = filasDe<EventRow>(
+      await this.dataSource.query(
+        `
       delete from core.events
       where id = $1
       returning *
     `,
-      [id],
-    )) as EventRow[];
+        [id],
+      ),
+    );
 
     if (!rows[0]) {
       throw new NotFoundException(`Event with id ${id} not found`);
