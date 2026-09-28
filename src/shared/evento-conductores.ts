@@ -8,6 +8,10 @@
  * No se usa el evento del punto GPS: el shell nativo transmite sin evento y
  * ese filtro dejaba el mapa vacío (ver DriverPresenceService.list).
  *
+ * Una persona quitada del evento (metadata.eventosExcluidos, ver
+ * provider-participants/eventos-persona.ts) no cuenta, salvo que tenga un
+ * viaje en él.
+ *
  * `param` es el marcador del uuid del evento ('$3'); `columna`, el id del
  * chofer en la consulta que lo usa.
  */
@@ -15,9 +19,10 @@ export const eventoDriversCondition = (param: string, columna: string) => `(
   ${columna} in (
     select pp.id from core.provider_participants pp
       left join core.providers p on p.id = pp.provider_id
-     where p.id is null
+     where (p.id is null
         or coalesce(cardinality(p.event_ids), 0) = 0
         or ${param} = any(p.event_ids))
+       and not coalesce(pp.metadata->'eventosExcluidos', '[]'::jsonb) @> jsonb_build_array(${param}::text))
   or ${columna} in (
     select t.driver_id from transport.trips t
      where t.event_id = ${param}

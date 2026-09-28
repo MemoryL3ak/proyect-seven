@@ -15,6 +15,7 @@ import { Repository } from 'typeorm';
 import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import { Driver } from './entities/driver.entity';
+import { eventosDePersona } from '../provider-participants/eventos-persona';
 
 type DriverRow = {
   id: string;
@@ -403,8 +404,12 @@ export class DriversService {
           email: row.email ?? null,
           phone: row.phone ?? null,
           providerId: row.provider_id ?? null,
+          // Los de su proveedor menos los eventos de los que se la quitó.
           eventIds: row.provider_id
-            ? (eventosDeProveedor.get(row.provider_id as string) ?? [])
+            ? eventosDePersona(
+                eventosDeProveedor.get(row.provider_id as string) ?? [],
+                meta,
+              )
             : [],
           delegationId: (row.delegation_id as string | null) ?? null,
           userId: null,

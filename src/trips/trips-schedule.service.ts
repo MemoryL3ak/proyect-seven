@@ -20,6 +20,7 @@ import {
   esDeProveedorDelEvento,
   proveedoresDelEvento,
 } from '../providers/proveedores-del-evento';
+import { excluidaDelEvento } from '../provider-participants/eventos-persona';
 
 const MONTHS_ES: Record<string, number> = {
   ene: 0,
@@ -678,8 +679,12 @@ export class TripsScheduleService {
 
     ((ppRows as Array<Record<string, unknown>>) ?? []).forEach((p) => {
       if (knownIds.has(p.id as string)) return;
-      // Sólo conductores de los proveedores del evento de la planilla.
-      if (!esDeProveedorDelEvento(proveedores, p.provider_id as string | null))
+      // Sólo conductores de los proveedores del evento de la planilla, y no
+      // los que se quitaron de él.
+      if (
+        !esDeProveedorDelEvento(proveedores, p.provider_id as string | null) ||
+        excluidaDelEvento(p.metadata as Record<string, unknown> | null, eventId)
+      )
         return;
       const meta =
         p.metadata && typeof p.metadata === 'object'
@@ -1517,9 +1522,11 @@ export class TripsScheduleService {
       const knownIds = new Set(profiles.map((p) => p.id));
       (ppRows as Array<Record<string, unknown>>).forEach((p) => {
         if (knownIds.has(p.id as string)) return;
-        // Candidatos: sólo conductores de los proveedores del evento.
+        // Candidatos: sólo conductores de los proveedores del evento, menos
+        // los que se quitaron de él.
         if (
-          !esDeProveedorDelEvento(proveedores, p.provider_id as string | null)
+          !esDeProveedorDelEvento(proveedores, p.provider_id as string | null) ||
+          excluidaDelEvento(p.metadata as Record<string, unknown> | null, eventId)
         )
           return;
         const meta =

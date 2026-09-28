@@ -37,11 +37,32 @@ export function proveedoresDelEvento<T extends ProveedorConEventos>(proveedores:
 }
 
 /**
- * Participantes (y conductores) del evento: los de un proveedor que trabaja
- * en él. Uno cuyo proveedor no está en la lista (no se sabe de qué evento
- * es) se muestra, igual que un proveedor sin eventos.
+ * Personas quitadas de un evento sin borrarlas (28-09-2026): al traer a ALEX
+ * AREVALO de los Juegos Escolares a World Rugby venían sus 11 conductores, y
+ * para dejar a dos Ariel borró a los otros con la papelera; salieron también
+ * de los Juegos Escolares, con 22 viajes hechos. Una persona trabaja en los
+ * eventos de su proveedor menos los de metadata.eventosExcluidos. Misma regla
+ * que src/provider-participants/eventos-persona.ts.
  */
-export function participantesDelEvento<P extends { providerId?: string | null }>(
+export type PersonaConEventos = { providerId?: string | null; metadata?: Record<string, unknown> | null };
+
+export function eventosExcluidos(metadata: Record<string, unknown> | null | undefined): string[] {
+  const valor = metadata?.eventosExcluidos;
+  return Array.isArray(valor) ? valor.filter((v): v is string => typeof v === "string" && !!v) : [];
+}
+
+/** ¿Se quitó a la persona de este evento? */
+export function personaQuitadaDelEvento(persona: PersonaConEventos, eventoId: string | null | undefined): boolean {
+  return !!eventoId && eventosExcluidos(persona.metadata).includes(eventoId);
+}
+
+/**
+ * Participantes (y conductores) del evento: los de un proveedor que trabaja
+ * en él, menos los quitados del evento. Uno cuyo proveedor no está en la
+ * lista (no se sabe de qué evento es) se muestra, igual que un proveedor sin
+ * eventos.
+ */
+export function participantesDelEvento<P extends PersonaConEventos>(
   participantes: P[],
   proveedores: ProveedorConEventos[],
   eventoId: string | null | undefined,
@@ -49,9 +70,41 @@ export function participantesDelEvento<P extends { providerId?: string | null }>
   if (!eventoId) return participantes;
   const porId = new Map(proveedores.map((p) => [p.id, p]));
   return participantes.filter((pa) => {
+    if (personaQuitadaDelEvento(pa, eventoId)) return false;
     const prov = pa.providerId ? porId.get(pa.providerId) : undefined;
     return !prov || proveedorEnEvento(prov.eventIds, eventoId);
   });
+}
+
+/** Los quitados de este evento cuyo proveedor sigue en él (para devolverlos). */
+export function quitadosDelEvento<P extends PersonaConEventos>(
+  participantes: P[],
+  proveedores: ProveedorConEventos[],
+  eventoId: string | null | undefined,
+): P[] {
+  if (!eventoId) return [];
+  const porId = new Map(proveedores.map((p) => [p.id, p]));
+  return participantes.filter((pa) => {
+    if (!personaQuitadaDelEvento(pa, eventoId)) return false;
+    const prov = pa.providerId ? porId.get(pa.providerId) : undefined;
+    return !prov || proveedorEnEvento(prov.eventIds, eventoId);
+  });
+}
+
+/**
+ * Qué hace la papelera con una persona: si además trabaja en otro evento de
+ * su proveedor sólo sale de éste; si éste es el único (o el proveedor no
+ * tiene eventos) se elimina como siempre.
+ */
+export function accionAlQuitarPersona(
+  eventosProveedor: string[] | null | undefined,
+  metadata: Record<string, unknown> | null | undefined,
+  eventoId: string | null | undefined,
+): "QUITAR_DEL_EVENTO" | "ELIMINAR" {
+  const fuera = new Set(eventosExcluidos(metadata));
+  const suyos = eventosDe(eventosProveedor).filter((e) => !fuera.has(e));
+  if (eventoId && suyos.includes(eventoId) && suyos.length > 1) return "QUITAR_DEL_EVENTO";
+  return "ELIMINAR";
 }
 
 export type ProveedorParaTraer<T> = { proveedor: T; subproveedores: T[] };
@@ -157,4 +210,33 @@ export function nombresDeEventos(
 export function recortar(nombre: string, max = 28): string {
   const limpio = nombre.trim();
   return limpio.length > max ? `${limpio.slice(0, max - 1).trimEnd()}…` : limpio;
+}
+
+/**
+ * Selección masiva de la nómina: quiénes pueden salir sólo de este evento
+ * (siguen en otro de su proveedor) y quiénes son sólo de éste y únicamente
+ * se pueden eliminar. `otros` son los demás eventos de los que se quitan.
+ */
+export function repartirSeleccion<P extends PersonaConEventos>(
+  personas: P[],
+  proveedores: ProveedorConEventos[],
+  eventoId: string | null | undefined,
+): { quitables: P[]; soloDeEste: P[]; otros: string[] } {
+  const porId = new Map(proveedores.map((p) => [p.id, p]));
+  const quitables: P[] = [];
+  const soloDeEste: P[] = [];
+  const otros = new Set<string>();
+  for (const persona of personas) {
+    const eventosProv = persona.providerId ? porId.get(persona.providerId)?.eventIds : undefined;
+    if (accionAlQuitarPersona(eventosProv, persona.metadata, eventoId) === "QUITAR_DEL_EVENTO") {
+      quitables.push(persona);
+      const fuera = new Set(eventosExcluidos(persona.metadata));
+      eventosDe(eventosProv).forEach((e) => {
+        if (e !== eventoId && !fuera.has(e)) otros.add(e);
+      });
+    } else {
+      soloDeEste.push(persona);
+    }
+  }
+  return { quitables, soloDeEste, otros: Array.from(otros) };
 }

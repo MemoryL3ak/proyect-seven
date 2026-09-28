@@ -13,7 +13,10 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
+import { consultarPorLotes } from '../supabase/en-lotes';
+import { CambiarEventoDto } from './dto/cambiar-evento.dto';
 import { CreateProviderParticipantDto } from './dto/create-provider-participant.dto';
+import { devolverPersonaAlEvento, quitarPersonaDelEvento } from './eventos-persona';
 import { UpdateProviderParticipantDto } from './dto/update-provider-participant.dto';
 import { ProviderParticipant } from './entities/provider-participant.entity';
 
@@ -312,6 +315,92 @@ export class ProviderParticipantsService {
     if (!data) throw new NotFoundException(`Participant ${id} not found`);
 
     return this.toEntity(data as ParticipantRow);
+  }
+
+  /**
+   * Quita personas de un evento, o las devuelve, sin borrarlas (28-09-2026):
+   * la papelera las borraba de todos los eventos de su proveedor. Cada una se
+   * revisa por separado; las que no se pueden cambiar vuelven con su motivo.
+   */
+  async cambiarEvento(dto: CambiarEventoDto, accion: 'QUITAR' | 'DEVOLVER') {
+    const ids = Array.isArray(dto?.ids)
+      ? Array.from(new Set(dto.ids.filter((id) => typeof id === 'string' && !!id)))
+      : [];
+    const eventId = typeof dto?.eventId === 'string' ? dto.eventId.trim() : '';
+    if (!eventId) throw new BadRequestException('Falta el evento');
+    if (ids.length === 0) throw new BadRequestException('No se eligió a nadie');
+
+    const { data: filas, error } = await consultarPorLotes(ids, (lote) =>
+      this.supabase
+        .schema('core')
+        .from('provider_participants')
+        .select('id, full_name, provider_id, metadata')
+        .in('id', lote),
+    );
+    if (error) {
+      throw new InternalServerErrorException(error.message || 'Error leyendo personas');
+    }
+    const personas = filas as Array<{
+      id: string;
+      full_name: string;
+      provider_id: string | null;
+      metadata: Record<string, unknown> | null;
+    }>;
+    const provIds = Array.from(
+      new Set(personas.map((p) => p.provider_id).filter((id): id is string => !!id)),
+    );
+    const { data: provs, error: provError } = await consultarPorLotes(provIds, (lote) =>
+      this.supabase.schema('core').from('providers').select('id, event_ids').in('id', lote),
+    );
+    if (provError) {
+      throw new InternalServerErrorException(provError.message || 'Error leyendo proveedores');
+    }
+    const eventosProveedor = new Map(
+      (provs as Array<{ id: string; event_ids: string[] | null }>).map((p) => [
+        p.id,
+        p.event_ids ?? [],
+      ]),
+    );
+
+    const omitidos: Array<{ id: string; nombre: string; motivo: string }> = [];
+    let cambiados = 0;
+    for (const id of ids) {
+      const persona = personas.find((p) => p.id === id);
+      if (!persona) {
+        omitidos.push({ id, nombre: '', motivo: 'No existe' });
+        continue;
+      }
+      let metadata: Record<string, unknown> | null;
+      if (accion === 'QUITAR') {
+        const r = quitarPersonaDelEvento(
+          persona.provider_id ? eventosProveedor.get(persona.provider_id) : [],
+          persona.metadata,
+          eventId,
+        );
+        if (!r.ok) {
+          omitidos.push({ id, nombre: persona.full_name, motivo: r.motivo });
+          continue;
+        }
+        metadata = r.metadata;
+      } else {
+        metadata = devolverPersonaAlEvento(persona.metadata, eventId);
+        if (!metadata) {
+          omitidos.push({ id, nombre: persona.full_name, motivo: 'No estaba quitada de este evento' });
+          continue;
+        }
+      }
+      const { error: updError } = await this.supabase
+        .schema('core')
+        .from('provider_participants')
+        .update({ metadata: normalizeStorageUrlsDeep(metadata) })
+        .eq('id', id);
+      if (updError) {
+        omitidos.push({ id, nombre: persona.full_name, motivo: updError.message || 'No se pudo guardar' });
+        continue;
+      }
+      cambiados += 1;
+    }
+    return { cambiados, omitidos };
   }
 
   async remove(id: string) {

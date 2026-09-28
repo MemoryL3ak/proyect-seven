@@ -39,6 +39,7 @@ import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import {
   accionAlQuitar,
+  accionAlQuitarPersona,
   agregarEvento,
   eventosParaNuevo,
   nombresDeEventos,
@@ -46,8 +47,10 @@ import {
   participantesDelEvento,
   proveedoresDelEvento,
   proveedoresParaTraer,
+  quitadosDelEvento,
   quitarEvento,
   recortar,
+  repartirSeleccion,
 } from "@/lib/proveedores-evento";
 
 // ── Type/subtype catalogue ──────────────────────────────────────────────────
@@ -340,6 +343,13 @@ export default function ProveedoresPage() {
   const [participantDocFiles, setParticipantDocFiles] = useState<Record<string, File | null>>({});
   const [savingParticipant, setSavingParticipant] = useState(false);
   const [participantError, setParticipantError] = useState<string | null>(null);
+  // Selección masiva de la nómina (28-09-2026): al traer un proveedor de otro
+  // evento vienen todas sus personas, y sacarlas una por una con la papelera
+  // las borraba también del otro evento.
+  const [seleccion, setSeleccion] = useState<Set<string>>(() => new Set());
+  const [procesandoLote, setProcesandoLote] = useState(false);
+  /** Mostrar a las personas quitadas de este evento, para devolverlas. */
+  const [verQuitados, setVerQuitados] = useState(false);
   // Envío manual del correo de bienvenida con el código de acceso
   const [sendingMailId, setSendingMailId] = useState<string | null>(null);
   /** Participante cuyo código se acaba de copiar, para confirmarlo en pantalla. */
@@ -775,6 +785,123 @@ export default function ProveedoresPage() {
     });
   }, [participantesEvento, participantSearch, participantTipo, participantDocs, providers]);
 
+  /** Quitadas de este evento (su proveedor sigue en él): se pueden devolver. */
+  const quitadosEvento = useMemo(
+    () => quitadosDelEvento(participants, providers, eventoId),
+    [participants, providers, eventoId],
+  );
+
+  // Otro evento, otro proveedor u otra pestaña: no queda nadie elegido que ya
+  // no se ve.
+  useEffect(() => {
+    setSeleccion(new Set());
+    setVerQuitados(false);
+  }, [eventoId, providerFilter, activeTab]);
+
+  /** Lo elegido que está a la vista (un filtro nuevo no arrastra ocultos). */
+  const seleccionados = useMemo(
+    () => filteredParticipants.filter(p => seleccion.has(p.id)),
+    [filteredParticipants, seleccion],
+  );
+  const todosElegidos = filteredParticipants.length > 0 && seleccionados.length === filteredParticipants.length;
+
+  const alternarSeleccion = (id: string) =>
+    setSeleccion(prev => {
+      const nueva = new Set(prev);
+      if (nueva.has(id)) nueva.delete(id);
+      else nueva.add(id);
+      return nueva;
+    });
+  const alternarTodos = () =>
+    setSeleccion(todosElegidos ? new Set() : new Set(filteredParticipants.map(p => p.id)));
+
+  const cambiarEventoPersonas = async (personas: Participant[], ruta: "quitar-del-evento" | "devolver-al-evento") => {
+    if (!eventoId || personas.length === 0) return;
+    setProcesandoLote(true);
+    try {
+      const r = await apiFetch<{ cambiados: number; omitidos: Array<{ nombre: string; motivo: string }> }>(
+        `/provider-participants/${ruta}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: personas.map(p => p.id), eventId: eventoId }),
+        },
+      );
+      const hecho = ruta === "quitar-del-evento" ? t("quitadas de") : t("de vuelta en");
+      const omitidos = r.omitidos?.length
+        ? ` · ${r.omitidos.length} ${t("sin cambio")}: ${r.omitidos.slice(0, 3).map(o => `${o.nombre} (${o.motivo})`).join(", ")}`
+        : "";
+      setMailToast({
+        ok: (r.omitidos?.length ?? 0) === 0,
+        msg: `${r.cambiados} ${r.cambiados === 1 ? t("persona") : t("personas")} ${hecho} ${evento?.name ?? t("este evento")}${omitidos}`,
+      });
+      setSeleccion(new Set());
+      await loadParticipants();
+    } catch (e) {
+      setMailToast({ ok: false, msg: e instanceof Error ? e.message : t("No se pudo cambiar el evento") });
+    } finally {
+      setProcesandoLote(false);
+    }
+  };
+
+  const eliminarPersonas = async (personas: Participant[]) => {
+    setProcesandoLote(true);
+    const fallidos: string[] = [];
+    try {
+      for (const p of personas) {
+        try {
+          await apiFetch(`/provider-participants/${p.id}`, { method: "DELETE" });
+        } catch {
+          fallidos.push(p.fullName);
+        }
+      }
+      const hechos = personas.length - fallidos.length;
+      setMailToast({
+        ok: fallidos.length === 0,
+        msg: `${hechos} ${hechos === 1 ? t("persona eliminada") : t("personas eliminadas")}${fallidos.length ? ` · ${t("no se pudo con")} ${fallidos.slice(0, 3).join(", ")}` : ""}`,
+      });
+      setSeleccion(new Set());
+      await loadParticipants();
+    } finally {
+      setProcesandoLote(false);
+    }
+  };
+
+  const nombreEvento = evento?.name ?? t("este evento");
+
+  /** "Quitar de este evento" en lote: sólo quienes siguen en otro evento. */
+  const quitarSeleccionados = () => {
+    const { quitables, soloDeEste, otros } = repartirSeleccion(seleccionados, providers, eventoId);
+    if (quitables.length === 0) return;
+    const enOtros = nombresDeEventos(otros, eventos).join(", ") || t("su otro evento");
+    setConfirmDialog({
+      title: t("Quitar de este evento"),
+      confirmLabel: `${t("Quitar")} ${quitables.length}`,
+      danger: false,
+      message: `${quitables.length} ${quitables.length === 1 ? t("persona deja") : t("personas dejan")} ${t("de verse en")} ${nombreEvento}. ${t("No se eliminan: siguen en")} ${enOtros} ${t("con sus viajes y su código de app.")}${soloDeEste.length > 0 ? ` ${soloDeEste.length} ${t("de la selección son sólo de este evento y quedan igual: para sacarlas hay que eliminarlas.")}` : ""}`,
+      onConfirm: () => {
+        setConfirmDialog(null);
+        void cambiarEventoPersonas(quitables, "quitar-del-evento");
+      },
+    });
+  };
+
+  /** Eliminar en lote: las borra de todos los eventos; se avisa quién estaba en otro. */
+  const eliminarSeleccionados = () => {
+    if (seleccionados.length === 0) return;
+    const { quitables, otros } = repartirSeleccion(seleccionados, providers, eventoId);
+    const enOtros = nombresDeEventos(otros, eventos).join(", ") || t("otro evento");
+    setConfirmDialog({
+      title: t("Eliminar personas"),
+      confirmLabel: `${t("Eliminar")} ${seleccionados.length}`,
+      message: `${t("Se eliminan")} ${seleccionados.length} ${seleccionados.length === 1 ? t("persona") : t("personas")} ${t("de todos los eventos, con su código de app. No se puede deshacer.")}${quitables.length > 0 ? ` ${quitables.length} ${t("también trabajan en")} ${enOtros}: ${t("para sacarlas sólo de aquí usa «Quitar de este evento».")}` : ""}`,
+      onConfirm: () => {
+        setConfirmDialog(null);
+        void eliminarPersonas(seleccionados);
+      },
+    });
+  };
+
   const openAddParticipant = () => {
     setParticipantForm({ ...EMPTY_PARTICIPANT_FORM, providerId: providerFilter });
     setParticipantDocFiles({});
@@ -917,6 +1044,23 @@ export default function ProveedoresPage() {
   };
 
   const removeParticipant = (p: Participant) => {
+    // Si además trabaja en otro evento de su proveedor, la papelera sólo la
+    // saca de éste: borrarla se la llevaba también del otro, con sus viajes.
+    const eventosProv = providers.find(pr => pr.id === p.providerId)?.eventIds;
+    if (accionAlQuitarPersona(eventosProv, p.metadata, eventoId) === "QUITAR_DEL_EVENTO") {
+      const { otros } = repartirSeleccion([p], providers, eventoId);
+      setConfirmDialog({
+        title: t("Quitar de este evento"),
+        confirmLabel: t("Quitar de este evento"),
+        danger: false,
+        message: `"${p.fullName}" ${t("deja de verse en")} ${nombreEvento}. ${t("No se elimina: sigue en")} ${nombresDeEventos(otros, eventos).join(", ") || t("su otro evento")} ${t("con sus viajes y su código de app.")}`,
+        onConfirm: () => {
+          setConfirmDialog(null);
+          void cambiarEventoPersonas([p], "quitar-del-evento");
+        },
+      });
+      return;
+    }
     setConfirmDialog({
       message: `${t("¿Eliminar participante")} "${p.fullName}"? ${t("Esta acción no se puede deshacer.")}`,
       onConfirm: async () => {
@@ -1482,6 +1626,26 @@ export default function ProveedoresPage() {
             </div>
           ) : (
             <div className="surface rounded-2xl overflow-hidden" style={{ boxShadow: "0 1px 4px rgba(15,23,42,0.05)" }}>
+              {/* Selección masiva: elegir a varios y quitarlos de este evento
+                  (siguen en el otro) o eliminarlos. Las acciones van en una
+                  barra fija abajo para no volver arriba en una lista larga. */}
+              <div
+                className="flex flex-wrap items-center gap-3 px-4 md:px-5 py-2.5"
+                style={{ borderBottom: "1px solid var(--border)", background: seleccionados.length > 0 ? "rgba(33,208,179,0.06)" : SURFACE.bg }}
+              >
+                <label className="flex items-center gap-2" style={{ cursor: "pointer", fontSize: "12px", fontWeight: 600, color: "var(--text-muted)" }}>
+                  <input
+                    type="checkbox"
+                    checked={todosElegidos}
+                    ref={el => { if (el) el.indeterminate = seleccionados.length > 0 && !todosElegidos; }}
+                    onChange={alternarTodos}
+                    style={{ width: 16, height: 16, accentColor: BRAND.teal, cursor: "pointer" }}
+                  />
+                  {seleccionados.length > 0
+                    ? `${seleccionados.length} ${seleccionados.length === 1 ? t("elegida") : t("elegidas")}`
+                    : `${t("Elegir todas")} (${filteredParticipants.length})`}
+                </label>
+              </div>
               {filteredParticipants.map((p, i) => {
                 const provider = providers.find(pr => pr.id === p.providerId);
                 const isTransporte = provider?.type === "TRANSPORTE";
@@ -1492,8 +1656,18 @@ export default function ProveedoresPage() {
                   <div
                     key={p.id}
                     className="flex flex-wrap items-center gap-3 md:gap-4 px-4 md:px-5 py-3"
-                    style={{ borderBottom: i < filteredParticipants.length - 1 ? "1px solid var(--border)" : "none" }}
+                    style={{
+                      borderBottom: i < filteredParticipants.length - 1 ? "1px solid var(--border)" : "none",
+                      background: seleccion.has(p.id) ? "rgba(33,208,179,0.05)" : undefined,
+                    }}
                   >
+                    <input
+                      type="checkbox"
+                      checked={seleccion.has(p.id)}
+                      onChange={() => alternarSeleccion(p.id)}
+                      aria-label={`${t("Elegir")} ${p.fullName}`}
+                      style={{ width: 16, height: 16, accentColor: BRAND.teal, cursor: "pointer", flexShrink: 0 }}
+                    />
                     {/* Photo */}
                     {(() => {
                       const photo = (p.metadata as any)?.photoUrl;
@@ -1647,8 +1821,92 @@ export default function ProveedoresPage() {
               })}
             </div>
           )}
+
+          {/* Quitadas de este evento: no se borraron, siguen en el otro evento
+              de su proveedor. Desde aquí se devuelven. */}
+          {!loadingParticipants && quitadosEvento.length > 0 && (
+            <section className="surface rounded-2xl" style={{ padding: "12px 16px", boxShadow: "0 1px 4px rgba(15,23,42,0.05)" }}>
+              <div className="flex flex-wrap items-center gap-3">
+                <span style={{ fontSize: "12px", color: "var(--text-muted)" }}>
+                  {quitadosEvento.length} {quitadosEvento.length === 1 ? t("persona quitada de") : t("personas quitadas de")} {nombreEvento}
+                </span>
+                <button type="button" onClick={() => setVerQuitados(v => !v)}
+                  style={{ fontSize: "12px", fontWeight: 600, color: BRAND.teal, background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                  {verQuitados ? t("Ocultar") : t("Ver")}
+                </button>
+                {verQuitados && quitadosEvento.length > 1 && (
+                  <button type="button" disabled={procesandoLote}
+                    onClick={() => void cambiarEventoPersonas(quitadosEvento, "devolver-al-evento")}
+                    style={{ marginLeft: "auto", fontSize: "12px", fontWeight: 700, padding: "5px 12px", borderRadius: "10px", border: `1px solid ${BRAND.teal}`, background: "rgba(33,208,179,0.1)", color: BRAND.teal, cursor: "pointer" }}>
+                    {t("Devolver todas")}
+                  </button>
+                )}
+              </div>
+              {verQuitados && (
+                <div style={{ marginTop: 8 }}>
+                  {quitadosEvento.map(p => (
+                    <div key={p.id} className="flex items-center gap-3" style={{ padding: "6px 0", borderTop: "1px solid var(--border)" }}>
+                      <span className="truncate" style={{ fontSize: "13px", color: "var(--text)", flex: "1 1 auto", minWidth: 0 }}>
+                        {p.fullName}
+                        <span style={{ fontSize: "11px", color: "var(--text-faint)", marginLeft: 8 }}>
+                          {providers.find(pr => pr.id === p.providerId)?.name ?? ""}
+                        </span>
+                      </span>
+                      <button type="button" disabled={procesandoLote}
+                        onClick={() => void cambiarEventoPersonas([p], "devolver-al-evento")}
+                        style={{ fontSize: "12px", fontWeight: 600, color: BRAND.teal, background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>
+                        {t("Devolver a este evento")}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </section>
+          )}
         </>
       )}
+
+      {activeTab === "participantes" && seleccionados.length > 0 && (() => {
+        const { quitables } = repartirSeleccion(seleccionados, providers, eventoId);
+        const botonLote = (color: string, fondo: string): React.CSSProperties => ({
+          fontSize: "12px", fontWeight: 700, padding: "7px 12px", borderRadius: "10px",
+          border: `1px solid ${color}`, background: fondo, color,
+          cursor: procesandoLote ? "wait" : "pointer", opacity: procesandoLote ? 0.6 : 1, whiteSpace: "nowrap",
+        });
+        return (
+          <div
+            role="toolbar"
+            aria-label={t("Acciones para las personas elegidas")}
+            className="flex flex-wrap items-center justify-center gap-2"
+            style={{
+              position: "fixed", left: "50%", transform: "translateX(-50%)", bottom: "20px", zIndex: 55,
+              background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: "14px",
+              padding: "10px 14px", boxShadow: "0 8px 28px rgba(15,23,42,0.18)",
+              maxWidth: "calc(100vw - 32px)",
+            }}
+          >
+            <span style={{ fontSize: "12px", fontWeight: 700, color: "var(--text)", marginRight: 4 }}>
+              {procesandoLote ? t("Procesando…") : `${seleccionados.length} ${seleccionados.length === 1 ? t("elegida") : t("elegidas")}`}
+            </span>
+            {quitables.length > 0 && (
+              <button type="button" disabled={procesandoLote} onClick={quitarSeleccionados}
+                style={botonLote(BRAND.teal, "rgba(33,208,179,0.1)")}
+                title={t("Dejan de verse en este evento y siguen en el otro, con sus viajes")}>
+                {t("Quitar de este evento")} ({quitables.length})
+              </button>
+            )}
+            <button type="button" disabled={procesandoLote} onClick={eliminarSeleccionados}
+              style={botonLote(STATE.danger, "rgba(239,68,68,0.06)")}
+              title={t("Se borran de todos los eventos")}>
+              {t("Eliminar")} ({seleccionados.length})
+            </button>
+            <button type="button" disabled={procesandoLote} onClick={() => setSeleccion(new Set())}
+              style={botonLote(SURFACE.textFaint, "transparent")}>
+              {t("Cancelar")}
+            </button>
+          </div>
+        );
+      })()}
 
       {/* ── MODAL: PROVEEDOR ─────────────────────────────────────────────── */}
       {mailToast && (

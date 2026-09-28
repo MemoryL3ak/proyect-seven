@@ -1,16 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
   accionAlQuitar,
+  accionAlQuitarPersona,
   agregarEvento,
   eventosParaNuevo,
   nombresDeEventos,
   otrosEventos,
   participantesDelEvento,
+  personaQuitadaDelEvento,
   proveedorEnEvento,
   proveedoresDelEvento,
   proveedoresParaTraer,
+  quitadosDelEvento,
   quitarEvento,
   recortar,
+  repartirSeleccion,
 } from "./proveedores-evento";
 
 /**
@@ -149,5 +153,45 @@ describe("otrosEventos y nombres", () => {
   });
   it("un evento borrado no deja un nombre vacío", () => {
     expect(nombresDeEventos(["no-existe", JDE], EVENTOS)).toEqual([EVENTOS[0].name]);
+  });
+});
+
+/**
+ * 28-09-2026: ALEX AREVALO se trajo de los Juegos Escolares a World Rugby con
+ * sus 11 conductores. Para dejar a dos, Ariel borró a los otros con la
+ * papelera y salieron también de los Juegos Escolares, con 22 viajes hechos.
+ * Y con JDE elegido, el Monitoreo mostraba a Juan Fernandez, que es de Rugby.
+ */
+describe("personas quitadas de un evento", () => {
+  const JDE = "0e168c10-a7d1-47ae-9784-265a5fc25d9d";
+  const RUGBY = "8bbd6a39-a788-4588-9c15-7aec86080dba";
+  const proveedores = [
+    { id: "arevalo", name: "ALEX AREVALO", eventIds: [JDE, RUGBY] },
+    { id: "beltour", name: "BELTOUR", eventIds: [RUGBY] },
+  ];
+  const armando = { id: "armando", providerId: "arevalo", metadata: { isDriver: true } };
+  const juan = { id: "juan", providerId: "arevalo", metadata: { isDriver: true, eventosExcluidos: [JDE] } };
+  const luis = { id: "luis", providerId: "beltour", metadata: { isDriver: true } };
+
+  it("Juan Fernandez, quitado de JDE, no sale en JDE y sí en Rugby", () => {
+    expect(participantesDelEvento([armando, juan, luis], proveedores, JDE).map((p) => p.id)).toEqual(["armando"]);
+    expect(participantesDelEvento([armando, juan, luis], proveedores, RUGBY).map((p) => p.id)).toEqual(["armando", "juan", "luis"]);
+    expect(quitadosDelEvento([armando, juan, luis], proveedores, JDE).map((p) => p.id)).toEqual(["juan"]);
+    expect(personaQuitadaDelEvento(juan, RUGBY)).toBe(false);
+  });
+
+  it("la papelera de Armando en Rugby lo quita del evento, no lo borra", () => {
+    expect(accionAlQuitarPersona([JDE, RUGBY], armando.metadata, RUGBY)).toBe("QUITAR_DEL_EVENTO");
+    // Luis es sólo de Rugby: sacarlo es eliminarlo.
+    expect(accionAlQuitarPersona([RUGBY], luis.metadata, RUGBY)).toBe("ELIMINAR");
+    // Juan ya salió de JDE: en Rugby es lo último que le queda.
+    expect(accionAlQuitarPersona([JDE, RUGBY], juan.metadata, RUGBY)).toBe("ELIMINAR");
+  });
+
+  it("la selección masiva separa a quienes siguen en otro evento", () => {
+    const r = repartirSeleccion([armando, juan, luis], proveedores, RUGBY);
+    expect(r.quitables.map((p) => p.id)).toEqual(["armando"]);
+    expect(r.soloDeEste.map((p) => p.id)).toEqual(["juan", "luis"]);
+    expect(r.otros).toEqual([JDE]);
   });
 });

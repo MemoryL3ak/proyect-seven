@@ -9,6 +9,7 @@ import {
   Query,
 } from '@nestjs/common';
 import { StaffOnly } from '../auth/staff-only.decorator';
+import { CambiarEventoDto } from './dto/cambiar-evento.dto';
 import { CreateProviderParticipantDto } from './dto/create-provider-participant.dto';
 import { UpdateProviderParticipantDto } from './dto/update-provider-participant.dto';
 import { ProviderParticipantsService } from './provider-participants.service';
@@ -20,6 +21,23 @@ export class ProviderParticipantsController {
   @Post()
   create(@Body() dto: CreateProviderParticipantDto) {
     return this.service.create(dto);
+  }
+
+  /**
+   * Quita personas del evento activo sin borrarlas: siguen en los otros
+   * eventos de su proveedor, con sus viajes (28-09-2026).
+   */
+  @StaffOnly()
+  @Post('quitar-del-evento')
+  quitarDelEvento(@Body() dto: CambiarEventoDto) {
+    return this.service.cambiarEvento(dto, 'QUITAR');
+  }
+
+  /** Devuelve al evento a personas quitadas antes. */
+  @StaffOnly()
+  @Post('devolver-al-evento')
+  devolverAlEvento(@Body() dto: CambiarEventoDto) {
+    return this.service.cambiarEvento(dto, 'DEVOLVER');
   }
 
   @Get()

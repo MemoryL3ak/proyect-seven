@@ -23,6 +23,7 @@ import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { proveedorEnEvento } from "@/lib/conductores-del-evento";
+import { personaQuitadaDelEvento } from "@/lib/proveedores-evento";
 
 /**
  * Documentación recibida de las personas de los proveedores: quién subió qué
@@ -110,9 +111,12 @@ export default function DocumentacionPersonas() {
     [proveedores, proveedor, eventoId],
   );
 
-  /** La gente de los proveedores del evento activo. */
+  /** La gente de los proveedores del evento activo, menos la quitada de él. */
   const personasDelEvento = useMemo(
-    () => personas.filter((p) => proveedorEnEvento(proveedorPorId.get(p.providerId), eventoId)),
+    () =>
+      personas.filter(
+        (p) => proveedorEnEvento(proveedorPorId.get(p.providerId), eventoId) && !personaQuitadaDelEvento(p, eventoId),
+      ),
     [personas, proveedorPorId, eventoId],
   );
 
