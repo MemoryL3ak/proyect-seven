@@ -11,7 +11,7 @@ import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { accessCodeEmailHtml } from '../shared/email-templates';
 import { MAX_CORREOS_POR_LOTE, sendResendBatch, sendResendEmail } from '../shared/resend';
 import { ConfigService } from '@nestjs/config';
-import { DataSource, Repository } from 'typeorm';
+import { DataSource, In, Repository } from 'typeorm';
 import { StaffScopeService } from '../auth/staff-scope.service';
 import { TrasladosAndService } from './traslados-and.service';
 import { horaChileAIso } from './hora-sin-zona';
@@ -382,6 +382,36 @@ export class AthletesService {
     await this.trasladosAnd.sincronizarSinFallar(athlete.id);
     return athlete;
   }
+  /**
+   * Pasajeros de los viajes de un conductor (los que pidieron el viaje y los
+   * que van a bordo): lo que la app del conductor necesita para mostrar sus
+   * vuelos, sin entregarle la nómina completa del evento.
+   */
+  async pasajerosDeConductor(driverId: string) {
+    const ids = await this.dataSource.query<Array<{ id: string }>>(
+      `select distinct x.id
+         from (
+           select t.requester_athlete_id as id
+             from transport.trips t
+            where t.driver_id = $1
+              and t.requester_athlete_id is not null
+              and t.status <> 'CANCELLED'
+           union
+           select ta.athlete_id as id
+             from transport.trip_athletes ta
+             join transport.trips t on t.id = ta.trip_id
+            where t.driver_id = $1
+              and t.status <> 'CANCELLED'
+         ) x`,
+      [driverId],
+    );
+    if (ids.length === 0) return [];
+    const athletes = await this.athleteRepository.find({
+      where: { id: In(ids.map((r) => r.id)) },
+    });
+    return athletes.map((athlete) => this.withDerivedFields(athlete));
+  }
+
   async findAll(filters?: { delegationId?: string; eventId?: string }) {
     try {
       const where: Record<string, string> = {};

@@ -75,10 +75,18 @@ export class AthletesController {
     const alcance = await this.scope.forRequest(req);
     // El Coordinador de Comité queda fuera a propósito: ve la nómina
     // completa del evento, que es lo que coordina.
+    // El conductor ve a los pasajeros de SUS viajes, no a una delegación:
+    // antes recibía la lista vacía (los choferes de proveedor no tienen
+    // delegación) y la pestaña Vuelos de su app nunca mostraba un vuelo
+    // (28-09-2026, Transfer In de Sergio Alvarenga).
+    if (alcance?.kind === 'driver') {
+      const pasajeros = await this.athletesService.pasajerosDeConductor(
+        alcance.userId,
+      );
+      return pasajeros.map(({ credentialCode: _omit, ...rest }) => rest);
+    }
     const acotado =
-      alcance?.kind === 'mission_head' ||
-      alcance?.kind === 'participant' ||
-      alcance?.kind === 'driver';
+      alcance?.kind === 'mission_head' || alcance?.kind === 'participant';
     if (acotado && !alcance?.delegationId) return [];
     const athletes = await this.athletesService.findAll({
       delegationId: acotado ? alcance!.delegationId! : delegationId,
