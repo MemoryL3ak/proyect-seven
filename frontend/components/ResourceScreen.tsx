@@ -13,6 +13,7 @@ import type { FieldDef, ResourceConfig } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import StyledSelect from "@/components/StyledSelect";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import CoordinadoresHotel, {
   leerContactosHotel,
@@ -360,6 +361,10 @@ export default function ResourceScreen({
   const [andEstadoFilter, setAndEstadoFilter] = useState<FiltroEstadoAnd>("");
   // "<id>:LLEGADA" mientras se guarda el conductor elegido en una tarjeta.
   const [asignandoConductor, setAsignandoConductor] = useState<string | null>(null);
+  // Fichas de AND marcadas para eliminar, y las que esperan confirmación.
+  const [andSeleccion, setAndSeleccion] = useState<Set<string>>(new Set());
+  const [andPorEliminar, setAndPorEliminar] = useState<Array<{ id: string; nombre: string }> | null>(null);
+  const [andEliminando, setAndEliminando] = useState(false);
   // Filtros de AND: día, conductor, país o región, vuelo, aerolínea y tipo de
   // cliente (ver lib/and-listado).
   const FILTROS_AND_VACIOS = { dia: "", conductor: "", pais: "", vuelo: "", aerolinea: "", tipoCliente: "" };
@@ -463,6 +468,7 @@ export default function ResourceScreen({
     setCodigosSeleccionados((actual) => (actual.size > 0 ? new Set() : actual));
     // Los filtros de AND también eran del evento anterior.
     setAndFiltros({ dia: "", conductor: "", pais: "", vuelo: "", aerolinea: "", tipoCliente: "" });
+    setAndSeleccion(new Set());
   }, [eventoId]);
 
   const flightLookupTimerRef = useRef<number | null>(null);
@@ -2328,6 +2334,34 @@ export default function ResourceScreen({
       cancelled = true;
     };
   }, [config.endpoint, editingId, externalEditingId, t]);
+
+  /**
+   * Elimina las fichas de AND confirmadas. El servidor borra con cada ficha
+   * sus traslados que no han partido y su vuelo si queda vacío.
+   */
+  const eliminarFichasAnd = async (fichas: Array<{ id: string; nombre: string }>) => {
+    setAndEliminando(true);
+    setError(null);
+    const fallidas: string[] = [];
+    for (const ficha of fichas) {
+      try {
+        await apiFetch(`/athletes/${ficha.id}`, { method: "DELETE" });
+      } catch {
+        fallidas.push(ficha.nombre);
+      }
+    }
+    setAndEliminando(false);
+    setAndPorEliminar(null);
+    setAndSeleccion(new Set());
+    const eliminadas = fichas.length - fallidas.length;
+    if (eliminadas > 0) {
+      setSuccessMsg(`${eliminadas} ${eliminadas === 1 ? t("ficha eliminada") : t("fichas eliminadas")}`);
+      setTimeout(() => setSuccessMsg(null), 5000);
+    }
+    if (fallidas.length) setError(`${t("No se pudieron eliminar")}: ${fallidas.join(", ")}`);
+    await loadItems();
+    onDataChanged?.();
+  };
 
   const handleDelete = async (id: string) => {
     setError(null);
@@ -4371,6 +4405,55 @@ export default function ResourceScreen({
                   </button>
                 )}
               </div>
+              {/* Selección para eliminar: todas las filtradas o una por una. */}
+              {filtered.length > 0 && (() => {
+                const idsFiltrados = filtered.map((i) => String(i.id)).filter(Boolean);
+                const marcadas = filtered.filter((i) => andSeleccion.has(String(i.id)));
+                const todas = marcadas.length === idsFiltrados.length;
+                return (
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", padding: "8px 12px", marginBottom: "8px", borderRadius: "10px", background: marcadas.length ? STATE.dangerSoft : "var(--elevated)", border: `1px solid ${marcadas.length ? STATE.dangerBorder : "var(--border)"}` }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: "8px", fontSize: "12px", fontWeight: 600, color: "var(--text)", cursor: "pointer" }}>
+                      <input
+                        type="checkbox"
+                        checked={todas}
+                        ref={(el) => { if (el) el.indeterminate = marcadas.length > 0 && !todas; }}
+                        onChange={() => setAndSeleccion(todas ? new Set() : new Set(idsFiltrados))}
+                        style={{ width: 16, height: 16, accentColor: BRAND.teal }}
+                      />
+                      {todas ? t("Quitar selección") : `${t("Seleccionar las")} ${idsFiltrados.length} ${t("fichas filtradas")}`}
+                    </label>
+                    {marcadas.length > 0 && (
+                      <>
+                        <span style={{ fontSize: "12px", color: STATE.dangerText, fontWeight: 700 }}>
+                          {marcadas.length} {marcadas.length === 1 ? t("seleccionada") : t("seleccionadas")}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setAndPorEliminar(marcadas.map((i) => ({ id: String(i.id), nombre: String(i.participantFullName ?? "") })))}
+                          style={{ marginLeft: "auto", fontSize: "12px", fontWeight: 700, padding: "6px 14px", borderRadius: "8px", border: "none", background: STATE.danger, color: "#fff", cursor: "pointer" }}
+                        >
+                          {t("Eliminar seleccionadas")} ({marcadas.length})
+                        </button>
+                      </>
+                    )}
+                  </div>
+                );
+              })()}
+              <ConfirmDialog
+                open={Boolean(andPorEliminar)}
+                danger
+                title={andPorEliminar && andPorEliminar.length > 1 ? `${t("Eliminar")} ${andPorEliminar.length} ${t("fichas")}` : t("Eliminar ficha")}
+                message={
+                  andPorEliminar
+                    ? `${andPorEliminar.length > 1
+                        ? `${t("Se eliminarán")} ${andPorEliminar.length} ${t("fichas de AND")}: ${andPorEliminar.slice(0, 5).map((f) => f.nombre).join(", ")}${andPorEliminar.length > 5 ? "…" : ""}.`
+                        : `${t("Se eliminará la ficha de")} ${andPorEliminar[0]?.nombre ?? ""}.`} ${t("También se borran sus traslados que no han partido y su vuelo si nadie más lo usa. No se puede deshacer.")}`
+                    : ""
+                }
+                confirmLabel={andEliminando ? t("Eliminando…") : t("Eliminar")}
+                onConfirm={() => { if (andPorEliminar && !andEliminando) void eliminarFichasAnd(andPorEliminar); }}
+                onCancel={() => { if (!andEliminando) setAndPorEliminar(null); }}
+              />
               {/* Cards */}
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "65vh", overflowY: "auto" }}>
                 {filtered.length === 0 && (
@@ -4418,6 +4501,22 @@ export default function ResourceScreen({
                       padding: "12px 14px",
                       display: "flex", alignItems: "flex-start", gap: "12px",
                     }}>
+                      {/* Casilla para eliminar varias a la vez */}
+                      <input
+                        type="checkbox"
+                        aria-label={`${t("Seleccionar")} ${item.participantFullName ?? ""}`}
+                        checked={andSeleccion.has(String(item.id))}
+                        onChange={() =>
+                          setAndSeleccion((actual) => {
+                            const next = new Set(actual);
+                            const id = String(item.id);
+                            if (next.has(id)) next.delete(id);
+                            else next.add(id);
+                            return next;
+                          })
+                        }
+                        style={{ width: 16, height: 16, marginTop: 12, flexShrink: 0, accentColor: BRAND.teal, cursor: "pointer" }}
+                      />
                       {/* Avatar */}
                       <div style={{ width: "40px", height: "40px", borderRadius: "50%", flexShrink: 0, background: avatarBg, display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", fontWeight: 700, color: avatarColor }}>
                         {initials}
@@ -4555,7 +4654,7 @@ export default function ResourceScreen({
                           {t("Editar")}
                         </button>
                         {item.id && (
-                          <button className="btn btn-ghost" style={{ fontSize: "11px", padding: "4px 10px", color: STATE.danger }} onClick={() => handleDelete(item.id)}>
+                          <button className="btn btn-ghost" style={{ fontSize: "11px", padding: "4px 10px", color: STATE.danger }} onClick={() => setAndPorEliminar([{ id: String(item.id), nombre: String(item.participantFullName ?? "") }])}>
                             {t("Eliminar")}
                           </button>
                         )}
