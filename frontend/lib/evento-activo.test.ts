@@ -57,6 +57,12 @@ describe("eventoPorDefecto", () => {
     // /events los devuelve del más nuevo al más viejo: antes se abría el primero.
     expect(eventoPorDefecto([NUEVO, JDE], "2026-09-27")).toBe("jde");
   });
+  it("con dos en curso, el activo antes que el borrador (World Rugby creado el 27-09)", () => {
+    const RUGBY = { id: "rugby", name: "WORLD RUGBY U20 CHALLENGER CUP CHILE", startDate: "2026-09-27T00:00:00.000Z", endDate: "2026-10-18T00:00:00.000Z", status: "DRAFT" };
+    expect(eventoPorDefecto([RUGBY, JDE], "2026-09-27")).toBe("jde");
+    // Cuando Rugby pase a activo y los Juegos terminen, abre Rugby.
+    expect(eventoPorDefecto([{ ...RUGBY, status: "ACTIVE" }, JDE], "2026-10-06")).toBe("rugby");
+  });
   it("terminado el evento, abre el próximo", () => {
     expect(eventoPorDefecto([NUEVO, JDE, VIEJO], "2026-10-06")).toBe("nuevo");
   });

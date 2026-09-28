@@ -58,8 +58,10 @@ const finDe = (e: EventoResumen) => diaDeFechaEvento(e.endDate) ?? diaDeFechaEve
 /**
  * Orden del selector: los que están en curso, luego los próximos (el más
  * cercano primero), los sin fechas y al final los terminados (el más
- * reciente primero). Dentro de "en curso", el que empezó último va primero
- * y, a igual fecha, el marcado como activo.
+ * reciente primero). Dentro de "en curso" va primero el marcado como activo
+ * y, entre iguales, el que empezó último: el 27-09 se creó World Rugby
+ * (borrador, del 27-09 al 18-10) en plena operación de los Juegos Escolares
+ * (activo) y el panel abría el de Rugby, vacío.
  */
 export function ordenarEventos<T extends EventoResumen>(eventos: T[], hoy: string): T[] {
   const rango: Record<EtapaEvento, number> = { EN_CURSO: 0, PROXIMO: 1, SIN_FECHAS: 2, FINALIZADO: 3 };
@@ -67,6 +69,7 @@ export function ordenarEventos<T extends EventoResumen>(eventos: T[], hoy: strin
     const ea = etapaEvento(a, hoy);
     const eb = etapaEvento(b, hoy);
     if (ea !== eb) return rango[ea] - rango[eb];
+    if (ea === "EN_CURSO" && esActivo(a) !== esActivo(b)) return esActivo(a) ? -1 : 1;
     if (ea === "EN_CURSO" && inicioDe(a) !== inicioDe(b)) return inicioDe(b).localeCompare(inicioDe(a));
     if (ea === "PROXIMO" && inicioDe(a) !== inicioDe(b)) return inicioDe(a).localeCompare(inicioDe(b));
     if (ea === "FINALIZADO" && finDe(a) !== finDe(b)) return finDe(b).localeCompare(finDe(a));
