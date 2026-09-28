@@ -7,6 +7,7 @@ import { VENTANA_CONECTADO_MS, useRelojServidor } from "@/lib/presencia";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { getSupabase } from "@/lib/supabase";
 import { downloadCSV } from "@/lib/export";
 import PageHeader from "@/components/ui/PageHeader";
@@ -180,6 +181,8 @@ export default function DriverMonitoringPage() {
   // Filters
   const today = useMemo(() => todayChile(), []);
   const [selectedDate, setSelectedDate] = useState<string>(today);
+  // El evento lo elige el selector de la barra superior.
+  const { eventoId } = useEventoActivo();
   const [clientTypeFilter, setClientTypeFilter] = useState<string>("");
   const [occupancyFilter, setOccupancyFilter] = useState<OccupancyFilter>("");
   const [disciplineFilter, setDisciplineFilter] = useState<string>("");
@@ -210,7 +213,9 @@ export default function DriverMonitoringPage() {
 
   const load = useCallback(async () => {
     try {
-      const url = `/driver-presence/snapshot?date=${encodeURIComponent(selectedDate)}`;
+      // Sólo los choferes del evento elegido arriba (por su proveedor o
+      // por sus viajes): con World Rugby salían los 81 de Valparaíso.
+      const url = `/driver-presence/snapshot?date=${encodeURIComponent(selectedDate)}${eventoId ? `&eventId=${encodeURIComponent(eventoId)}` : ""}`;
       const data = await apiFetch<Snapshot>(url);
       setSnapshot(data);
       setError(null);
@@ -219,7 +224,7 @@ export default function DriverMonitoringPage() {
     } finally {
       setLoading(false);
     }
-  }, [selectedDate, t]);
+  }, [selectedDate, eventoId, t]);
 
   useEffect(() => {
     setLoading(true);

@@ -3,6 +3,7 @@ import { DataSource } from 'typeorm';
 import { Subject } from 'rxjs';
 import { HeartbeatDto } from './dto/heartbeat.dto';
 import { delegationDriversCondition } from '../shared/delegation-fleet';
+import { eventoDriversCondition, eventoValido } from '../shared/evento-conductores';
 
 /**
  * Ventana de inactividad tras la cual una sesión se considera offline /
@@ -105,8 +106,10 @@ export class DriverPresenceService {
   /**
    * Lista todos los conductores con su estado de presencia.
    *
-   * `eventId` se acepta por compatibilidad pero NO filtra, igual que en
-   * stats(). Un chofer no pertenece a un evento: core.provider_participants no
+   * `eventId` filtra desde el 28-09-2026 por el PROVEEDOR del chofer (sus
+   * eventos) o por sus viajes en el evento: ver shared/evento-conductores.
+   * Antes no filtraba, y esta es la historia de por qué no se usa el evento
+   * del GPS. Un chofer no pertenece a un evento: core.provider_participants no
    * tiene event_id. La consulta suplía esa falta con el evento del último fix
    * GPS, y ahí estaba la trampa: el shell nativo transmite sin eventId (lo
    * manda sólo el portal web, y sólo si el viaje lo trae), así que casi todas
@@ -124,7 +127,7 @@ export class DriverPresenceService {
     date?: string,
     delegationId?: string | null,
   ): Promise<DriverPresenceRow[]> {
-    void eventId;
+    const evento = eventoValido(eventId);
     // Validación de formato YYYY-MM-DD; si es inválido se usa "hoy" en zona Chile.
     const safeDate = date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : null;
     const rows = (await this.dataSource.query(
@@ -233,8 +236,10 @@ export class DriverPresenceService {
          -- Jefe de Misión: los choferes de su región y los que conducen
          -- viajes de su delegación (la asignación diaria es por viaje).
          and ($2::uuid is null or ${delegationDriversCondition('$2', 'd.id')})
+         -- Evento elegido arriba en el panel: los choferes que trabajan en él.
+         and ($3::uuid is null or ${eventoDriversCondition('$3', 'd.id')})
        order by online desc nulls last, s.last_seen_at desc nulls last, d.full_name asc`,
-      [safeDate, delegationId ?? null],
+      [safeDate, delegationId ?? null, evento],
     )) as Array<Record<string, any>>;
 
     return rows.map((r) => ({
@@ -283,11 +288,13 @@ export class DriverPresenceService {
        select
          (select count(*)::int from core.provider_participants
             where metadata->>'isDriver' = 'true'
-              and ($1::uuid is null or ${delegationDriversCondition('$1', 'id')})) as total_drivers,
+              and ($1::uuid is null or ${delegationDriversCondition('$1', 'id')})
+              and ($2::uuid is null or ${eventoDriversCondition('$2', 'id')})) as total_drivers,
          -- Online = fresh heartbeat OR fresh GPS fix (see list()).
          (select count(*)::int from core.provider_participants d
             where d.metadata->>'isDriver' = 'true'
               and ($1::uuid is null or ${delegationDriversCondition('$1', 'd.id')})
+              and ($2::uuid is null or ${eventoDriversCondition('$2', 'd.id')})
               and (
                 exists (select 1 from transport.driver_sessions ds
                          where ds.driver_id = d.id and ds.ended_at is null
@@ -300,6 +307,7 @@ export class DriverPresenceService {
          (select count(*)::int from core.provider_participants d
             where d.metadata->>'isDriver' = 'true'
               and ($1::uuid is null or ${delegationDriversCondition('$1', 'd.id')})
+              and ($2::uuid is null or ${eventoDriversCondition('$2', 'd.id')})
               and (
                 exists (select 1 from transport.driver_sessions ds, hoy
                          where ds.driver_id = d.id and ds.started_at >= hoy.desde)
@@ -308,8 +316,9 @@ export class DriverPresenceService {
               )) as drivers_today,
          (select count(*)::int from transport.driver_sessions, hoy
             where started_at >= hoy.desde
-              and ($1::uuid is null or ${delegationDriversCondition('$1', 'driver_id')})) as sessions_today`,
-      [delegationId ?? null],
+              and ($1::uuid is null or ${delegationDriversCondition('$1', 'driver_id')})
+              and ($2::uuid is null or ${eventoDriversCondition('$2', 'driver_id')})) as sessions_today`,
+      [delegationId ?? null, eventoValido(eventId)],
     )) as Array<Record<string, any>>;
     const r = rows[0] || {};
     return {

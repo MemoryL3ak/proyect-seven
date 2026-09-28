@@ -91,14 +91,18 @@ describe('DriverPresenceService.list', () => {
     expect(sql).not.toMatch(/g\.event_id\s*=/);
   });
 
-  it('devuelve los mismos conductores con y sin eventId', async () => {
-    const [conEvento] = await sqlDe(
+  it('la consulta es la misma con y sin eventId: el evento va como parámetro', async () => {
+    // Desde el 28-09-2026 el evento filtra por el proveedor del chofer (o sus
+    // viajes), nunca por el GPS: sin evento el parámetro va en null.
+    const [conEvento, pConEvento] = await sqlDe(
       '0e168c10-a7d1-47ae-9784-265a5fc25d9d',
       undefined,
       null,
     );
-    const [sinEvento] = await sqlDe(undefined, undefined, null);
+    const [sinEvento, pSinEvento] = await sqlDe(undefined, undefined, null);
     expect(conEvento).toBe(sinEvento);
+    expect(pConEvento[2]).toBe('0e168c10-a7d1-47ae-9784-265a5fc25d9d');
+    expect(pSinEvento[2]).toBeNull();
   });
 
   it('los parámetros enviados calzan con los placeholders de la consulta', async () => {
@@ -115,6 +119,45 @@ describe('DriverPresenceService.list', () => {
     expect(params).toEqual([
       '2026-09-22',
       '8c247a7b-ed52-44db-8558-b27969da24e1',
+      '0e168c10-a7d1-47ae-9784-265a5fc25d9d',
+    ]);
+  });
+});
+
+/**
+ * 28-09-2026: con World Rugby elegido, Monitoreo de Conductores mostraba a
+ * los 81 choferes de los Juegos Escolares. El evento ahora filtra por el
+ * proveedor del chofer (o sus viajes del evento), nunca por el GPS.
+ */
+describe('DriverPresenceService por evento', () => {
+  const RUGBY = '8bbd6a39-a788-4588-9c15-7aec86080dba';
+
+  function build() {
+    const query = jest.fn(async () => [] as unknown[]);
+    const service = new DriverPresenceService({ query } as unknown as DataSource);
+    return { service, query };
+  }
+
+  it('con evento, la lista y los contadores se acotan a los choferes del evento', async () => {
+    const { service, query } = build();
+    await service.snapshot(RUGBY, '2026-09-28');
+    const [lista, stats] = query.mock.calls as unknown as Array<[string, unknown[]]>;
+    expect(lista[0]).toContain('event_ids');
+    expect(lista[1]).toEqual(['2026-09-28', null, RUGBY]);
+    expect(stats[0]).toContain('event_ids');
+    expect(stats[1]).toEqual([null, RUGBY]);
+  });
+
+  it('sin evento (o con uno inválido) no filtra', async () => {
+    const { service, query } = build();
+    await service.snapshot(undefined, '2026-09-28');
+    await service.snapshot('no-es-uuid', '2026-09-28');
+    const params = (query.mock.calls as unknown as Array<[string, unknown[]]>).map((c) => c[1]);
+    expect(params).toEqual([
+      ['2026-09-28', null, null],
+      [null, null],
+      ['2026-09-28', null, null],
+      [null, null],
     ]);
   });
 });
