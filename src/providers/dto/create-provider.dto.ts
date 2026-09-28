@@ -1,4 +1,13 @@
-import { IsEmail, IsNotEmpty, IsNumber, IsObject, IsOptional, IsString } from 'class-validator';
+import {
+  IsArray,
+  IsEmail,
+  IsNotEmpty,
+  IsNumber,
+  IsObject,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreateProviderDto {
   @IsString()
@@ -60,4 +69,10 @@ export class CreateProviderDto {
   @IsObject()
   @IsOptional()
   metadata?: Record<string, unknown>;
+
+  /** Eventos en que trabaja (28-09-2026). Uno puede estar en varios. */
+  @IsArray()
+  @IsUUID('all', { each: true })
+  @IsOptional()
+  eventIds?: string[];
 }

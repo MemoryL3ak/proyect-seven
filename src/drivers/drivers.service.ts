@@ -367,11 +367,21 @@ export class DriversService {
    * planos igual que hace el portal del conductor.
    */
   private async providerDrivers(): Promise<Record<string, unknown>[]> {
-    const { data, error } = await this.supabase
-      .schema('core')
-      .from('provider_participants')
-      .select('id, provider_id, delegation_id, full_name, rut, email, phone, status, metadata')
-      .neq('status', 'DELETED');
+    const [{ data, error }, { data: proveedores }] = await Promise.all([
+      this.supabase
+        .schema('core')
+        .from('provider_participants')
+        .select('id, provider_id, delegation_id, full_name, rut, email, phone, status, metadata')
+        .neq('status', 'DELETED'),
+      // Eventos de cada proveedor: el panel ofrece sólo los conductores del
+      // evento activo (28-09-2026).
+      this.supabase.schema('core').from('providers').select('id, event_ids'),
+    ]);
+    const eventosDeProveedor = new Map(
+      (
+        (proveedores ?? []) as Array<{ id: string; event_ids: string[] | null }>
+      ).map((p) => [p.id, p.event_ids ?? []]),
+    );
     if (error) {
       // Que falle esta fuente no puede dejar sin conductores a la plataforma:
       // se registra y se devuelve al menos la flota propia.
@@ -393,6 +403,9 @@ export class DriversService {
           email: row.email ?? null,
           phone: row.phone ?? null,
           providerId: row.provider_id ?? null,
+          eventIds: row.provider_id
+            ? (eventosDeProveedor.get(row.provider_id as string) ?? [])
+            : [],
           delegationId: (row.delegation_id as string | null) ?? null,
           userId: null,
           vehicleId: null,

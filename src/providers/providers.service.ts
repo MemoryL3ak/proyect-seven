@@ -32,6 +32,7 @@ type ProviderRow = {
   bid_trip_count: number | null;
   status: string | null;
   metadata: Record<string, unknown> | null;
+  event_ids: string[] | null;
   created_at: string;
   updated_at: string;
 };
@@ -72,6 +73,9 @@ export class ProvidersService {
     if (dto.bidTripCount !== undefined) row.bid_trip_count = dto.bidTripCount ?? null;
     if (dto.status !== undefined) row.status = dto.status ?? null;
     if (dto.metadata !== undefined) row.metadata = dto.metadata ?? {};
+    if (dto.eventIds !== undefined) {
+      row.event_ids = Array.from(new Set(dto.eventIds ?? []));
+    }
 
     return row;
   }
@@ -94,16 +98,33 @@ export class ProvidersService {
       bidTripCount: row.bid_trip_count != null ? Number(row.bid_trip_count) : null,
       status: row.status,
       metadata: row.metadata ?? {},
+      eventIds: row.event_ids ?? [],
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at),
     };
   }
 
   async create(createProviderDto: CreateProviderDto) {
+    const row = this.toRow(createProviderDto);
+    // Un subproveedor trabaja en los mismos eventos que su proveedor.
+    if (
+      !createProviderDto.eventIds?.length &&
+      createProviderDto.parentProviderId
+    ) {
+      const { data: padre } = await this.supabase
+        .schema('core')
+        .from('providers')
+        .select('event_ids')
+        .eq('id', createProviderDto.parentProviderId)
+        .maybeSingle();
+      const eventos = (padre as { event_ids?: string[] | null } | null)
+        ?.event_ids;
+      if (eventos?.length) row.event_ids = eventos;
+    }
     const { data, error } = await this.supabase
       .schema('core')
       .from('providers')
-      .insert(this.toRow(createProviderDto))
+      .insert(row)
       .select('*')
       .single();
 

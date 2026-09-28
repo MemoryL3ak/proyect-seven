@@ -56,6 +56,15 @@ export class Provider {
   @Column({ type: 'jsonb', default: () => "'{}'::jsonb" })
   metadata: Record<string, unknown>;
 
+  /** Eventos en que trabaja el proveedor (y sus conductores). */
+  @Column({
+    name: 'event_ids',
+    type: 'uuid',
+    array: true,
+    default: () => "'{}'::uuid[]",
+  })
+  eventIds: string[];
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

@@ -16,6 +16,10 @@ import {
   LugarResuelto,
   resolverLugar as resolverLugarPorNombre,
 } from './lugar-por-nombre';
+import {
+  esDeProveedorDelEvento,
+  proveedoresDelEvento,
+} from '../providers/proveedores-del-evento';
 
 const MONTHS_ES: Record<string, number> = {
   ene: 0,
@@ -663,14 +667,20 @@ export class TripsScheduleService {
     // Una persona puede existir en ambas tablas con el MISMO id; el de Flota
     // manda y el de proveedor se omite, igual que en fetchDriverProfiles.
     const knownIds = new Set(drivers.map((d) => d.id));
-    const { data: ppRows } = await this.supabase
-      .schema('core')
-      .from('provider_participants')
-      .select('id, full_name, metadata')
-      .eq('metadata->>isDriver', 'true');
+    const [{ data: ppRows }, proveedores] = await Promise.all([
+      this.supabase
+        .schema('core')
+        .from('provider_participants')
+        .select('id, provider_id, full_name, metadata')
+        .eq('metadata->>isDriver', 'true'),
+      proveedoresDelEvento(this.supabase, eventId),
+    ]);
 
     ((ppRows as Array<Record<string, unknown>>) ?? []).forEach((p) => {
       if (knownIds.has(p.id as string)) return;
+      // Sólo conductores de los proveedores del evento de la planilla.
+      if (!esDeProveedorDelEvento(proveedores, p.provider_id as string | null))
+        return;
       const meta =
         p.metadata && typeof p.metadata === 'object'
           ? (p.metadata as Record<string, unknown>)
@@ -1495,15 +1505,23 @@ export class TripsScheduleService {
     // Los choferes operativos del día a día son los participantes de proveedor
     // marcados como conductores (la tabla transport.drivers es la Flota propia,
     // exclusiva VIP/T1). Sin este pool la auto-asignación no tenía candidatos.
-    const { data: ppRows, error: ppError } = await this.supabase
-      .schema('core')
-      .from('provider_participants')
-      .select('id, full_name, metadata')
-      .eq('metadata->>isDriver', 'true');
+    const [{ data: ppRows, error: ppError }, proveedores] = await Promise.all([
+      this.supabase
+        .schema('core')
+        .from('provider_participants')
+        .select('id, provider_id, full_name, metadata')
+        .eq('metadata->>isDriver', 'true'),
+      proveedoresDelEvento(this.supabase, eventId),
+    ]);
     if (!ppError && Array.isArray(ppRows)) {
       const knownIds = new Set(profiles.map((p) => p.id));
       (ppRows as Array<Record<string, unknown>>).forEach((p) => {
         if (knownIds.has(p.id as string)) return;
+        // Candidatos: sólo conductores de los proveedores del evento.
+        if (
+          !esDeProveedorDelEvento(proveedores, p.provider_id as string | null)
+        )
+          return;
         const meta =
           p.metadata && typeof p.metadata === 'object'
             ? (p.metadata as Record<string, unknown>)
