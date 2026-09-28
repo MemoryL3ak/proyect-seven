@@ -29,6 +29,7 @@ import {
   type FiltrosParticipantes,
 } from "@/lib/filtroParticipantes";
 import { horaRegresoDeViaje } from "@/lib/viajeRegreso";
+import { opcionesDeConductores, sinConductoresRepetidos } from "@/lib/opciones-conductores";
 import { esDelEvento } from "@/lib/evento-activo";
 import { avisarEventosCambiaron, useEventoActivo } from "@/lib/evento-activo-provider";
 
@@ -951,12 +952,10 @@ export default function ResourceScreen({
         const meta = (p.metadata ?? {}) as Record<string, unknown>;
         return meta.isDriver === true || meta.isDriver === "true";
       });
-      const allDrivers = [...(data || []), ...participantDrivers];
-      const options = allDrivers.map((driver) => ({
-        label: driver.fullName ?? driver.id,
-        value: driver.id
-      }));
-      setDriverOptions(options);
+      // /drivers ya trae a los conductores de proveedor: sin esto salían dos
+      // veces en el desplegable, y sin orden.
+      const allDrivers = sinConductoresRepetidos([data || [], participantDrivers]);
+      setDriverOptions(opcionesDeConductores(allDrivers));
       const lookup = allDrivers.reduce<Record<string, any>>((acc, driver) => {
         if (driver.userId) acc[driver.userId] = driver;
         acc[driver.id] = driver;
