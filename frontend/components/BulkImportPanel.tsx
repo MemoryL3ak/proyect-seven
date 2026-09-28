@@ -9,7 +9,14 @@ import { BRAND } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { claveDeColumna, tituloDeColumna } from "@/lib/columnas-carga";
-import { columnasConductor, conductorPorTexto, type ConductorBuscable } from "@/lib/conductor-por-texto";
+import {
+  columnasConductor,
+  columnasExtraTraslado,
+  conductorDelTramo,
+  flotaDeTexto,
+  patenteNormal,
+  type ConductorBuscable,
+} from "@/lib/conductor-por-texto";
 
 type ImportType = "athletes" | "drivers" | "hospitality";
 type ParseMode = "template" | "and-itinerary";
@@ -46,6 +53,11 @@ const athleteHeaders = [
   // Conductor del traslado de llegada / salida: nombre, RUT o teléfono de un
   // conductor de los proveedores del evento (vacío o 0 = sin asignar).
   "conductor_llegada",
+  // Teléfono y patente ayudan a encontrar al conductor; el tipo de flota
+  // queda como vehículo pedido del traslado (28-09-2026).
+  "telefono_conductor_llegada",
+  "patente_llegada",
+  "flota_llegada",
   "retiro_equipaje_llegada",
   "llegada_bolso_count",
   "llegada_maleta_8_count",
@@ -58,6 +70,9 @@ const athleteHeaders = [
   "aerolinea_salida",
   "vuelo_salida",
   "conductor_salida",
+  "telefono_conductor_salida",
+  "patente_salida",
+  "flota_salida",
   "puerta_embarque_salida",
   "salida_bolso_count",
   "salida_maleta_8_count",
@@ -538,6 +553,7 @@ const parseAndWorkbookRows = (rows: unknown[][]) => {
   // El itinerario oficial no trae conductor: si se le agregan columnas
   // "Conductor llegada" / "Conductor salida", se leen por su título.
   const conductor = columnasConductor(rows);
+  const extra = columnasExtraTraslado(rows);
   const celda = (row: unknown[], i: number | null) => (i === null ? "" : String(row[i] ?? "").trim());
   return rows
     .slice(2)
@@ -563,6 +579,9 @@ const parseAndWorkbookRows = (rows: unknown[][]) => {
         aerolinea_llegada: String(row[14] ?? "").trim(),
         vuelo_llegada: String(row[15] ?? "").trim(),
         conductor_llegada: celda(row, conductor.llegada),
+        telefono_conductor_llegada: celda(row, extra.telefono.llegada),
+        patente_llegada: celda(row, extra.patente.llegada),
+        flota_llegada: celda(row, extra.flota.llegada),
         retiro_equipaje_llegada: "",
         llegada_bolso_count: String(toNumber(row[17])),
         llegada_maleta_8_count: String(toNumber(row[18])),
@@ -575,6 +594,9 @@ const parseAndWorkbookRows = (rows: unknown[][]) => {
         aerolinea_salida: String(row[25] ?? "").trim(),
         vuelo_salida: String(row[26] ?? "").trim(),
         conductor_salida: celda(row, conductor.salida),
+        telefono_conductor_salida: celda(row, extra.telefono.salida),
+        patente_salida: celda(row, extra.patente.salida),
+        flota_salida: celda(row, extra.flota.salida),
         puerta_embarque_salida: "",
         salida_bolso_count: String(toNumber(row[28])),
         salida_maleta_8_count: String(toNumber(row[29])),
@@ -777,11 +799,11 @@ export default function BulkImportPanel({
         if (rowValue(row, "fecha_hora_salida", "departure_time") && !toDateTime(rowValue(row, "fecha_hora_salida", "departure_time"))) {
           nextErrors.push({ row: rowNumber, field: "fecha_hora_salida", message: "Fecha/hora de salida invalida" });
         }
-        for (const [campo, texto] of [
-          ["conductor_llegada", row.conductor_llegada],
-          ["conductor_salida", row.conductor_salida],
+        for (const [campo, celdas] of [
+          ["conductor_llegada", { conductor: row.conductor_llegada, telefono: row.telefono_conductor_llegada, patente: row.patente_llegada }],
+          ["conductor_salida", { conductor: row.conductor_salida, telefono: row.telefono_conductor_salida, patente: row.patente_salida }],
         ] as const) {
-          const r = conductorPorTexto(texto, conductores, effectiveEventId);
+          const r = conductorDelTramo(celdas, conductores, effectiveEventId);
           if (r && "error" in r) nextErrors.push({ row: rowNumber, field: campo, message: r.error });
         }
         if (row.trip_type && !tripTypes.has(normalizeTripTypeValue(row.trip_type))) {
@@ -970,14 +992,29 @@ export default function BulkImportPanel({
         // Conductor de cada traslado. Si la planilla no lo trae, se conserva el
         // que ya tenía la ficha (volver a cargar no borra lo asignado a mano).
         const metaPrevia = (existing?.metadata && typeof existing.metadata === "object" ? existing.metadata : {}) as Record<string, any>;
-        const conductorDe = (texto: unknown, previo: unknown) => {
-          const r = conductorPorTexto(texto, conductores || [], eventId);
+        const conductorDe = (celdas: { conductor?: unknown; telefono?: unknown; patente?: unknown }, previo: unknown) => {
+          const r = conductorDelTramo(celdas, conductores || [], eventId);
           if (r && "id" in r) return r.id;
           if (r && "error" in r) rowErrors.push({ row: rowNumber, message: `Conductor sin asignar: ${r.error}` });
           return typeof previo === "string" && previo ? previo : null;
         };
-        const conductorLlegada = conductorDe(row.conductor_llegada, metaPrevia.arrival?.driverId);
-        const conductorSalida = conductorDe(row.conductor_salida, metaPrevia.departure?.driverId);
+        const conductorLlegada = conductorDe(
+          { conductor: row.conductor_llegada, telefono: row.telefono_conductor_llegada, patente: row.patente_llegada },
+          metaPrevia.arrival?.driverId,
+        );
+        const conductorSalida = conductorDe(
+          { conductor: row.conductor_salida, telefono: row.telefono_conductor_salida, patente: row.patente_salida },
+          metaPrevia.departure?.driverId,
+        );
+        // Patente y tipo de flota de cada traslado; vacío conserva lo que tenía.
+        const patenteDe = (texto: unknown, previo: unknown) =>
+          patenteNormal(texto) || (typeof previo === "string" && previo ? previo : null);
+        const flotaDe = (texto: unknown, previo: unknown) =>
+          flotaDeTexto(texto) ?? (typeof previo === "string" && previo ? previo : null);
+        const patenteLlegada = patenteDe(row.patente_llegada, metaPrevia.arrival?.vehiclePlate);
+        const patenteSalida = patenteDe(row.patente_salida, metaPrevia.departure?.vehiclePlate);
+        const flotaLlegada = flotaDe(row.flota_llegada, metaPrevia.arrival?.fleetType);
+        const flotaSalida = flotaDe(row.flota_salida, metaPrevia.departure?.fleetType);
 
         const arrivalTime = rowValue(row, "fecha_hora_llegada", "arrival_time");
         const arrivalAirline = rowValue(row, "aerolinea_llegada", "airline");
@@ -1061,7 +1098,9 @@ export default function BulkImportPanel({
               baggageClaim: arrivalBaggageClaim || null,
               time: arrivalTime ? toDateTime(arrivalTime) : null,
               luggage: arrivalLuggage,
-              driverId: conductorLlegada
+              driverId: conductorLlegada,
+              vehiclePlate: patenteLlegada,
+              fleetType: flotaLlegada
             },
             departure: {
               flightNumber: departureFlightNumber || null,
@@ -1069,7 +1108,9 @@ export default function BulkImportPanel({
               gate: departureGate || null,
               time: departureTime ? toDateTime(departureTime) : null,
               luggage: departureLuggage,
-              driverId: conductorSalida
+              driverId: conductorSalida,
+              vehiclePlate: patenteSalida,
+              fleetType: flotaSalida
             }
           },
           roomType: row.room_type || undefined,

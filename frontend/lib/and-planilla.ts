@@ -38,6 +38,8 @@ export function trasladosPorClave(viajes: ViajeAnd[]): Map<string, ViajeAnd> {
   return mapa;
 }
 
+const textoMeta = (valor: unknown) => (typeof valor === "string" ? valor : "");
+
 const flotaLegible = (valor?: string | null) => {
   const crudo = String(valor ?? "").trim();
   return crudo ? TIPO_VEHICULO[crudo.toUpperCase()] ?? crudo : "";
@@ -60,7 +62,11 @@ export function datosDelTramo(
   return {
     conductor: conductor?.fullName ? nombrePropio(conductor.fullName) : "",
     telefono: String(conductor?.phone ?? "").trim(),
-    patente: String(delViaje?.plate || suVehiculo.patente || "").trim().toUpperCase(),
+    // Vehículo asignado en Viajes, luego la patente de la plantilla de AND y
+    // al final la del vehículo registrado del conductor.
+    patente: String(delViaje?.plate || textoMeta(viaje?.metadata?.andPatente) || suVehiculo.patente || "")
+      .trim()
+      .toUpperCase(),
     flota: flotaDelViaje || suVehiculo.tipo || "",
   };
 }

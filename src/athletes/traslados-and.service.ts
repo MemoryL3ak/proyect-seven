@@ -33,6 +33,8 @@ type FilaViaje = {
   origin: string | null;
   destination: string | null;
   flight_number: string | null;
+  requested_vehicle_type: string | null;
+  and_patente: string | null;
 };
 
 /**
@@ -249,7 +251,9 @@ export class TrasladosAndService {
     const actuales = await this.dataSource.query<FilaViaje[]>(
       `select id, status, scheduled_at, driver_id, origin, destination,
               metadata->>'flightNumber' as flight_number,
-              metadata->>'andDriverId' as and_driver_id
+              metadata->>'andDriverId' as and_driver_id,
+              requested_vehicle_type,
+              metadata->>'andPatente' as and_patente
          from transport.trips
         where metadata->>'andKey' = $1
         order by created_at
@@ -274,9 +278,11 @@ export class TrasladosAndService {
         clientType: ficha.user_type ?? undefined,
         passengerCount: 1,
         flightNumber: tramo.vuelo,
+        ...(tramo.flota ? { requestedVehicleType: tramo.flota } : {}),
         metadata: {
           andKey: tramo.clave,
           andDriverId: tramo.conductorId,
+          ...(tramo.patente ? { andPatente: tramo.patente } : {}),
           source: 'AND',
           flightTime: tramo.horaVuelo,
           airline: tramo.aerolinea,
@@ -295,6 +301,8 @@ export class TrasladosAndService {
         origin: actual.origin,
         destination: actual.destination,
         flightNumber: actual.flight_number,
+        requestedVehicleType: actual.requested_vehicle_type,
+        andPatente: actual.and_patente,
       },
       {
         scheduledAt: tramo.horaViaje,
@@ -302,11 +310,14 @@ export class TrasladosAndService {
         origin: origen,
         destination: destino,
         flightNumber: tramo.vuelo,
+        flota: tramo.flota,
+        patente: tramo.patente,
       },
     );
     if (Object.keys(cambios).length === 0) return;
     // driverId puede venir en null (quitar el conductor que puso AND).
-    const ajuste: Record<string, unknown> = { ...cambios };
+    const { andPatente, ...delViaje } = cambios;
+    const ajuste: Record<string, unknown> = { ...delViaje };
     if (cambios.origin !== undefined || cambios.destination !== undefined) {
       if (llegada) ajuste.destinationHotelId = hotelId;
       else ajuste.originHotelId = hotelId ?? null;
@@ -315,6 +326,7 @@ export class TrasladosAndService {
     if (cambios.scheduledAt) metadata.flightTime = tramo.horaVuelo;
     // Se anota qué conductor puso AND, para poder quitarlo después.
     if (cambios.driverId !== undefined) metadata.andDriverId = cambios.driverId;
+    if (andPatente) metadata.andPatente = andPatente;
     if (Object.keys(metadata).length) ajuste.metadata = metadata;
     await this.trips.update(actual.id, ajuste as UpdateTripDto, null);
   }

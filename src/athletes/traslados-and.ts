@@ -53,6 +53,10 @@ export type TramoAnd = {
   /** Hora del traslado: al aterrizar, o la anticipación antes del despegue. */
   horaViaje: string;
   conductorId: string | null;
+  /** Tipo de flota de la plantilla de AND: vehículo pedido del traslado. */
+  flota: string | null;
+  /** Patente que trae la plantilla (queda en la metadata del viaje). */
+  patente: string | null;
 };
 
 const registro = (v: unknown): Record<string, unknown> =>
@@ -117,6 +121,8 @@ export function tramosAnd(ficha: FichaAnd): TramoAnd[] {
       horaVuelo: horaLlegada,
       horaViaje: horaLlegada,
       conductorId: texto(llegada.driverId),
+      flota: texto(llegada.fleetType),
+      patente: texto(llegada.vehiclePlate),
     });
   }
 
@@ -137,6 +143,8 @@ export function tramosAnd(ficha: FichaAnd): TramoAnd[] {
         new Date(horaSalida).getTime() - ANTICIPACION_SALIDA_MIN * 60_000,
       ).toISOString(),
       conductorId: texto(salida.driverId),
+      flota: texto(salida.fleetType),
+      patente: texto(salida.vehiclePlate),
     });
   }
   return tramos;
@@ -225,6 +233,9 @@ export type ViajeAnd = {
   origin: string | null;
   destination: string | null;
   flightNumber: string | null;
+  requestedVehicleType?: string | null;
+  /** Patente que puso AND (metadata.andPatente). */
+  andPatente?: string | null;
 };
 
 export type CambiosTraslado = Partial<{
@@ -234,6 +245,8 @@ export type CambiosTraslado = Partial<{
   origin: string;
   destination: string;
   flightNumber: string;
+  requestedVehicleType: string;
+  andPatente: string;
 }>;
 
 /**
@@ -249,6 +262,8 @@ export function cambiosDeTraslado(
     origin: string;
     destination: string;
     flightNumber: string;
+    flota?: string | null;
+    patente?: string | null;
   },
 ): CambiosTraslado {
   if (!ESTADOS_SIN_INICIAR.has(actual.status)) return {};
@@ -272,5 +287,11 @@ export function cambiosDeTraslado(
     cambios.destination = deseado.destination;
   if (normalizarVuelo(actual.flightNumber ?? '') !== deseado.flightNumber)
     cambios.flightNumber = deseado.flightNumber;
+  // Flota y patente de la plantilla: se ponen o se cambian; una ficha sin
+  // ellas no borra lo que dejó despacho.
+  if (deseado.flota && actual.requestedVehicleType !== deseado.flota)
+    cambios.requestedVehicleType = deseado.flota;
+  if (deseado.patente && actual.andPatente !== deseado.patente)
+    cambios.andPatente = deseado.patente;
   return cambios;
 }

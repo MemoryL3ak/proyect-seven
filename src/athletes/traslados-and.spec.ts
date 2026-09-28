@@ -255,3 +255,65 @@ describe('utilidades', () => {
     expect(claveTrasladoAnd('abc', 'SALIDA')).toBe('and:abc:SALIDA');
   });
 });
+
+/**
+ * 28-09-2026: la plantilla de AND trae, por tramo, teléfono del conductor,
+ * patente y tipo de flota además del conductor. La flota queda como vehículo
+ * pedido del traslado y la patente en su metadata.
+ */
+describe('flota y patente de la plantilla', () => {
+  const conFlota = {
+    ...SERGIO,
+    metadata: {
+      ...SERGIO.metadata,
+      arrival: {
+        ...SERGIO.metadata.arrival,
+        fleetType: 'SUV',
+        vehiclePlate: 'TRSB84',
+      },
+    },
+  };
+
+  it('el tramo lleva la flota y la patente de la ficha', () => {
+    const [llegada, salida] = tramosAnd(conFlota);
+    expect(llegada).toMatchObject({ flota: 'SUV', patente: 'TRSB84' });
+    expect(salida).toMatchObject({ flota: null, patente: null });
+  });
+
+  const actual = {
+    status: 'SCHEDULED',
+    scheduledAt: '2026-09-28T17:15:00.000Z',
+    driverId: 'carlos',
+    origin: AEROPUERTO,
+    destination: 'Hotel Sheraton',
+    flightNumber: 'LA1324',
+    requestedVehicleType: null,
+    andPatente: null,
+  };
+  const deseado = {
+    scheduledAt: '2026-09-28T17:15:00.000Z',
+    driverId: 'carlos',
+    origin: AEROPUERTO,
+    destination: 'Hotel Sheraton',
+    flightNumber: 'LA1324',
+  };
+
+  it('pone la flota y la patente en un traslado ya creado', () => {
+    expect(
+      cambiosDeTraslado(actual, {
+        ...deseado,
+        flota: 'SUV',
+        patente: 'TRSB84',
+      }),
+    ).toEqual({ requestedVehicleType: 'SUV', andPatente: 'TRSB84' });
+  });
+
+  it('una plantilla sin flota no borra la que dejó despacho', () => {
+    expect(
+      cambiosDeTraslado(
+        { ...actual, requestedVehicleType: 'Van 15-17' },
+        { ...deseado, flota: null, patente: null },
+      ),
+    ).toEqual({});
+  });
+});
