@@ -884,10 +884,12 @@ function FichaSaludContent() {
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("RUT")}</span>
                   <input className="input" value={p.rut} onChange={(ev) => setP({ rut: ev.target.value })} placeholder="12.345.678-9" />
                 </label>
-                <label className="space-y-2">
+                {/* <div>: día, mes y año son tres listas; dentro de un <label>,
+                    en el iPhone tocar "Mes" o "Año" abría la lista del día. */}
+                <div className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Fecha de nacimiento")}</span>
                   <SpanishDateField value={p.birthDate} onChange={(v) => setP({ birthDate: v })} />
-                </label>
+                </div>
                 <label className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Talla (cm)")}</span>
                   <input className="input" type="number" value={p.height} onChange={(ev) => setP({ height: ev.target.value })} placeholder="170" />

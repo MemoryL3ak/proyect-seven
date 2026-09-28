@@ -3087,11 +3087,15 @@ export default function ResourceScreen({
                 }
               }
 
-              // El teléfono tiene dos controles (país y número). Dentro de un
-              // <label>, Safari y la app del iPhone mandan cualquier toque al
-              // primero, el botón del país: tocar el número abría la lista y
-              // no dejaba escribir (28-09-2026). Por eso va en un <div>.
-              const Contenedor = field.type === "phone" ? "div" : "label";
+              // Dentro de un <label>, Safari y la app del iPhone mandan
+              // cualquier toque al primer control de la etiqueta. En los campos
+              // de varios controles eso rompe: en el teléfono, tocar el número
+              // abría la lista de países y no dejaba escribir (28-09-2026); en
+              // la selección múltiple, tocar a una persona podía activar
+              // "Seleccionar todos"; en la foto, "Subir foto" abría el archivo
+              // dos veces. Esos campos van en un <div>; los de un solo control
+              // siguen en <label>, que hace clicable el título.
+              const Contenedor = ["phone", "multiselect", "file", "places"].includes(field.type) ? "div" : "label";
               return (
                 <Contenedor key={field.key} className="flex flex-col gap-2 text-sm">
                   {t(field.label)}
@@ -3379,14 +3383,17 @@ export default function ResourceScreen({
                               <button
                                 type="button"
                                 className="btn btn-ghost"
-                                onClick={() =>
+                                onClick={(event) => {
+                                  // Sin esto, en Safari el toque también
+                                  // marcaba o desmarcaba la casilla de la fila.
+                                  event.preventDefault();
                                   setDelegationLead(
                                     option.value,
                                     (athleteOptions as any[]).find(
                                       (athlete) => athlete.value === option.value
                                     )?.delegationId
-                                  )
-                                }
+                                  );
+                                }}
                               >
                                 {t("Marcar encargado")}
                               </button>

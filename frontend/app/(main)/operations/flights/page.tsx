@@ -875,7 +875,9 @@ export default function FlightsPage() {
                   {events.map(ev => <option key={ev.id} value={ev.id}>{ev.name || ev.id}</option>)}
                 </select>
               </label>
-              <label style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.labelColor, display: "flex", flexDirection: "column", gap: "4px" }}>
+              {/* <div>: número y botón "Auto" juntos; dentro de un <label>,
+                  Safari manda los toques del botón a la casilla. */}
+              <div style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.labelColor, display: "flex", flexDirection: "column", gap: "4px" }}>
                 {t("Número de vuelo *")}
                 <div style={{ display: "flex", gap: "8px" }}>
                   <input className="input flex-1" style={{ borderRadius: "10px" }} value={form.flightNumber} placeholder={t("ej: LA180")}
@@ -885,7 +887,7 @@ export default function FlightsPage() {
                     {lookingUp ? "..." : "Auto"}
                   </button>
                 </div>
-              </label>
+              </div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? "12px" : "8px" }}>
                 <label style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.labelColor, display: "flex", flexDirection: "column", gap: "4px" }}>
                   {t("Aerolínea *")}
