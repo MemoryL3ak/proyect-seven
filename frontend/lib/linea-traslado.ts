@@ -8,6 +8,8 @@
  * Llegada (Transfer In): En camino → Aterrizado → Recogido → Completado.
  * Salida (Transfer Out): En camino → Recogido → Completado → Despegó.
  */
+import { esLlegada, esSalida } from "@/lib/tramos-traslado";
+
 export type ClavePaso = "EN_CAMINO" | "ATERRIZADO" | "RECOGIDO" | "COMPLETADO" | "DESPEGO";
 
 export type PasoTraslado = {
@@ -21,6 +23,8 @@ export type PasoTraslado = {
 };
 
 export type ViajeConBitacora = {
+  legType?: string | null;
+  parentTripId?: string | null;
   tripType?: string | null;
   status?: string | null;
   startedAt?: string | null;
@@ -62,8 +66,8 @@ export function horaDelVuelo(viaje: ViajeConBitacora): string | null {
   const meta = viaje.metadata ?? {};
   const delVuelo = typeof meta.flightTime === "string" ? meta.flightTime : null;
   if (delVuelo) return delVuelo;
-  // Un Transfer In sin AND se programa a la hora del aterrizaje.
-  return String(viaje.tripType ?? "").toUpperCase() === "TRANSFER_IN" ? viaje.scheduledAt ?? null : null;
+  // Una llegada sin AND se programa a la hora del aterrizaje.
+  return esLlegada(viaje) ? viaje.scheduledAt ?? null : null;
 }
 
 export function lineaDeTraslado(viaje: ViajeConBitacora, ahora: Date = new Date()): PasoTraslado[] {
@@ -72,23 +76,23 @@ export function lineaDeTraslado(viaje: ViajeConBitacora, ahora: Date = new Date(
   const recogido = horaDeEstado(viaje, ["PICKED_UP"]) ?? (rango >= 2 && !horaDeEstado(viaje, ["EN_ROUTE"]) ? viaje.startedAt ?? null : null);
   const completado = horaDeEstado(viaje, ["DROPPED_OFF", "COMPLETED"]) ?? (rango >= 3 ? viaje.completedAt ?? null : null);
   const vuelo = horaDelVuelo(viaje);
-  const esSalida = String(viaje.tripType ?? "").toUpperCase() === "TRANSFER_OUT";
+  const salida = esSalida(viaje);
 
   const pasoEnCamino: PasoTraslado = { clave: "EN_CAMINO", etiqueta: "En camino", hecho: rango >= 1, hora: enCamino };
   const pasoRecogido: PasoTraslado = {
     clave: "RECOGIDO",
-    etiqueta: esSalida ? "Recogido en hotel" : "Recogido",
+    etiqueta: salida ? "Recogido en hotel" : "Recogido",
     hecho: rango >= 2,
     hora: recogido,
   };
   const pasoCompletado: PasoTraslado = {
     clave: "COMPLETADO",
-    etiqueta: esSalida ? "En el aeropuerto" : "Completado",
+    etiqueta: salida ? "En el aeropuerto" : "Completado",
     hecho: rango >= 3,
     hora: completado,
   };
 
-  if (esSalida) {
+  if (salida) {
     const despego = yaPaso(vuelo, ahora);
     return [
       pasoEnCamino,

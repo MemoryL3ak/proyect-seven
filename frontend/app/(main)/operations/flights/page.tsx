@@ -5,6 +5,7 @@ import AirlineLogo from "@/components/AirlineLogo";
 import { apiFetch } from "@/lib/api";
 import LineaTraslado, { BotonMarcar } from "@/components/LineaTraslado";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { aplanarTramos, esLlegada } from "@/lib/tramos-traslado";
 import { estadoAlMarcar, resumenTraslados, trasladoRealizado, trasladosDelVuelo } from "@/lib/marcar-traslado";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
@@ -48,6 +49,9 @@ type AthleteItem = {
 
 type TripItem = {
   id: string;
+  legType?: string | null;
+  parentTripId?: string | null;
+  childTrips?: TripItem[] | null;
   eventId?: string | null;
   tripType?: string | null;
   clientType?: string | null;
@@ -169,6 +173,10 @@ function fmtDate(iso?: string | null) {
 
 const EMPTY_FORM = { flightNumber: "", airline: "", arrivalTime: "", origin: "", terminal: "", eventId: "" };
 
+/** Tramos de llegada: los Transfer In y la ida de cada Transfer In Out. */
+const llegadasDe = (viajes: TripItem[]) =>
+  aplanarTramos(viajes).filter((t) => esLlegada(t) && t.status !== "CANCELLED");
+
 export default function FlightsPage() {
   const { t } = useI18n();
   // Layout inline: en teléfono se apilan las grillas y se achican los paddings.
@@ -234,12 +242,9 @@ export default function FlightsPage() {
       setFlights(flightData ?? []);
       setEvents(eventData ?? []);
       setAthletes(filterValidatedAthletes(athleteData ?? []));
-      // Viajes Transfer In (aeropuerto → hotel/sede): son llegadas a monitorear.
-      setTransferInTrips(
-        (tripData ?? []).filter(
-          (t) => String(t.tripType || "").toUpperCase() === "TRANSFER_IN" && t.status !== "CANCELLED",
-        ),
-      );
+      // Llegadas a monitorear (aeropuerto → hotel/sede): los Transfer In y la
+      // ida de cada Transfer In Out, que trae su salida anidada.
+      setTransferInTrips(llegadasDe(tripData ?? []));
       setDelegations(delegationData ?? []);
       setDisciplines(disciplineData ?? []);
     } finally {
@@ -252,11 +257,7 @@ export default function FlightsPage() {
   const recargarViajes = () =>
     apiFetch<TripItem[]>("/trips")
       .then((tripData) => {
-        setTransferInTrips(
-          (tripData ?? []).filter(
-            (t) => String(t.tripType || "").toUpperCase() === "TRANSFER_IN" && t.status !== "CANCELLED",
-          ),
-        );
+        setTransferInTrips(llegadasDe(tripData ?? []));
         setAhora(new Date());
       })
       .catch(() => undefined);

@@ -5,10 +5,12 @@ import { CreateTripDto } from '../trips/dto/create-trip.dto';
 import { UpdateTripDto } from '../trips/dto/update-trip.dto';
 import {
   AEROPUERTO,
+  arregloTransferInOut,
   cambiosDeTraslado,
   claveTrasladoAnd,
   FichaAnd,
   TramoAnd,
+  TramoGuardado,
   tramosAnd,
 } from './traslados-and';
 
@@ -128,6 +130,64 @@ export class TrasladosAndService {
     for (const tramo of tramosAnd(ficha)) {
       if (tramo.sentido === 'LLEGADA') await this.vueloDeLlegada(ficha, tramo);
       await this.traslado(ficha, tramo);
+    }
+    await this.unirTramos(ficha.id);
+  }
+
+  /**
+   * Un solo Transfer In Out por persona (28-09-2026, pedido de Ariel): la
+   * salida queda como tramo de regreso de la llegada. En Viajes se ve como un
+   * viaje con su "Tramo de regreso"; la app del conductor muestra cada tramo
+   * como una actividad. Los cambios de forma van directo a la tabla: pasar
+   * por TripsService.update crearía otro regreso.
+   */
+  private async unirTramos(fichaId: string): Promise<void> {
+    const filas = await this.dataSource.query<
+      Array<{
+        id: string;
+        clave: string;
+        trip_type: string | null;
+        parent_trip_id: string | null;
+        leg_type: string | null;
+        is_round_trip: boolean | null;
+        return_at: string | null;
+        scheduled_at: string | null;
+      }>
+    >(
+      `select id, metadata->>'andKey' as clave, trip_type, parent_trip_id,
+              leg_type, is_round_trip, return_at, scheduled_at
+         from transport.trips
+        where metadata->>'andKey' in ($1, $2)
+          and status <> 'CANCELLED'
+        order by created_at`,
+      [claveTrasladoAnd(fichaId, 'LLEGADA'), claveTrasladoAnd(fichaId, 'SALIDA')],
+    );
+    const tramo = (clave: string): TramoGuardado | null => {
+      const f = filas.find((x) => x.clave === clave);
+      return f
+        ? {
+            id: f.id,
+            tripType: f.trip_type,
+            parentTripId: f.parent_trip_id,
+            legType: f.leg_type,
+            isRoundTrip: f.is_round_trip,
+            returnAt: f.return_at,
+            scheduledAt: f.scheduled_at,
+          }
+        : null;
+    };
+    const arreglos = arregloTransferInOut(
+      tramo(claveTrasladoAnd(fichaId, 'LLEGADA')),
+      tramo(claveTrasladoAnd(fichaId, 'SALIDA')),
+    );
+    for (const a of arreglos) {
+      await this.dataSource.query(
+        `update transport.trips
+            set trip_type = $2, parent_trip_id = $3, leg_type = $4,
+                is_round_trip = $5, return_at = $6, updated_at = now()
+          where id = $1`,
+        [a.id, a.tripType, a.parentTripId, a.legType, a.isRoundTrip, a.returnAt],
+      );
     }
   }
 

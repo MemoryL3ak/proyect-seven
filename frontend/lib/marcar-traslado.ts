@@ -5,10 +5,13 @@
  * finaliza aparece acá como realizado en el siguiente refresco.
  */
 import { claveDiaEvento } from '@/lib/hora-evento';
+import { esLlegada } from '@/lib/tramos-traslado';
 
 export type TrasladoMarcable = {
   id: string;
   tripType?: string | null;
+  legType?: string | null;
+  parentTripId?: string | null;
   status?: string | null;
   driverId?: string | null;
   requesterAthleteId?: string | null;
@@ -92,7 +95,7 @@ export function trasladosDelVuelo<T extends TrasladoMarcable>(
   const numero = normalizarVuelo(vuelo.flightNumber);
   const dia = vuelo.arrivalTime ? claveDiaEvento(vuelo.arrivalTime) : '';
   return viajes.filter((v) => {
-    if (String(v.tripType ?? '').toUpperCase() !== 'TRANSFER_IN') return false;
+    if (!esLlegada(v)) return false;
     if (estadoDe(v) === 'CANCELLED') return false;
     if (v.requesterAthleteId && ids.has(v.requesterAthleteId)) return true;
     const meta = v.metadata ?? {};

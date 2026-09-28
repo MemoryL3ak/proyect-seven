@@ -1,10 +1,13 @@
 /**
  * Traslados que genera una ficha de AND (27-09-2026, pedido de Ariel para
  * World Rugby U20): al guardar un participante con su vuelo, el vuelo de
- * llegada aparece en el Monitor de Vuelos y se crean sus traslados, el de
- * llegada (Transfer In: aeropuerto → hotel) y el de salida (Transfer Out:
- * hotel → aeropuerto), asignados al conductor elegido en la ficha para que
- * lo vea en sus actividades.
+ * llegada aparece en el Monitor de Vuelos y se crea su traslado, asignado al
+ * conductor elegido en la ficha para que lo vea en sus actividades.
+ *
+ * Desde el 28-09-2026 es UN solo viaje "Transfer In Out" por persona: la
+ * llegada (aeropuerto → hotel) es el viaje y la salida (hotel → aeropuerto)
+ * su tramo de regreso, igual que cualquier viaje de ida y vuelta. Cada tramo
+ * conserva su conductor y su propio Iniciar / Finalizar en la app.
  *
  * Aquí va la regla sin base de datos: qué tramos corresponden a una ficha.
  */
@@ -34,10 +37,13 @@ export type FichaAnd = {
   metadata?: Record<string, unknown> | null;
 };
 
+/** Tipo de servicio de los dos tramos: el de la tarifa del proveedor. */
+export const TIPO_TRANSFER_IN_OUT = 'TRANSFER_IN_OUT';
+
 export type TramoAnd = {
   sentido: SentidoAnd;
-  /** TRANSFER_IN (llegada) o TRANSFER_OUT (salida). */
-  tipoViaje: 'TRANSFER_IN' | 'TRANSFER_OUT';
+  /** Transfer In Out: la llegada es el viaje y la salida su regreso. */
+  tipoViaje: typeof TIPO_TRANSFER_IN_OUT;
   /** Clave del viaje en su metadata: una ficha tiene a lo más uno por sentido. */
   clave: string;
   vuelo: string;
@@ -104,7 +110,7 @@ export function tramosAnd(ficha: FichaAnd): TramoAnd[] {
   if (vueloLlegada && horaLlegada) {
     tramos.push({
       sentido: 'LLEGADA',
-      tipoViaje: 'TRANSFER_IN',
+      tipoViaje: TIPO_TRANSFER_IN_OUT,
       clave: claveTrasladoAnd(ficha.id, 'LLEGADA'),
       vuelo: normalizarVuelo(vueloLlegada),
       aerolinea: texto(llegada.airline) ?? texto(ficha.airline),
@@ -121,7 +127,7 @@ export function tramosAnd(ficha: FichaAnd): TramoAnd[] {
   if (vueloSalida && horaSalida) {
     tramos.push({
       sentido: 'SALIDA',
-      tipoViaje: 'TRANSFER_OUT',
+      tipoViaje: TIPO_TRANSFER_IN_OUT,
       clave: claveTrasladoAnd(ficha.id, 'SALIDA'),
       vuelo: normalizarVuelo(vueloSalida),
       aerolinea:
@@ -134,6 +140,77 @@ export function tramosAnd(ficha: FichaAnd): TramoAnd[] {
     });
   }
   return tramos;
+}
+
+/** Un tramo de AND tal como está guardado en transport.trips. */
+export type TramoGuardado = {
+  id: string;
+  tripType: string | null;
+  parentTripId: string | null;
+  legType: string | null;
+  isRoundTrip: boolean | null;
+  returnAt: string | Date | null;
+  scheduledAt: string | Date | null;
+};
+
+export type ArregloTramo = {
+  id: string;
+  tripType: string;
+  parentTripId: string | null;
+  legType: string | null;
+  isRoundTrip: boolean;
+  returnAt: string | null;
+};
+
+/**
+ * Cómo tienen que quedar los tramos de una ficha para ser un solo Transfer
+ * In Out: con llegada y salida, la llegada es la ida (OUTBOUND, guarda la
+ * hora de regreso) y la salida su regreso (RETURN, colgada de la llegada).
+ * Con un solo tramo, ése es el viaje, sin regreso. Devuelve sólo los tramos
+ * que hay que cambiar; los traslados de antes (Transfer In y Transfer Out
+ * separados) también se unen, aunque ya hayan partido: es la forma del
+ * viaje, no lo que pasó en la calle.
+ */
+export function arregloTransferInOut(
+  llegada: TramoGuardado | null,
+  salida: TramoGuardado | null,
+): ArregloTramo[] {
+  const deseados: ArregloTramo[] = [];
+  if (llegada) {
+    deseados.push({
+      id: llegada.id,
+      tripType: TIPO_TRANSFER_IN_OUT,
+      parentTripId: null,
+      legType: salida ? 'OUTBOUND' : null,
+      isRoundTrip: Boolean(salida),
+      returnAt: salida ? iso(salida.scheduledAt) : null,
+    });
+  }
+  if (salida) {
+    deseados.push({
+      id: salida.id,
+      tripType: TIPO_TRANSFER_IN_OUT,
+      parentTripId: llegada ? llegada.id : null,
+      legType: llegada ? 'RETURN' : null,
+      isRoundTrip: Boolean(llegada),
+      returnAt: null,
+    });
+  }
+  const actuales = new Map(
+    [llegada, salida]
+      .filter((t): t is TramoGuardado => Boolean(t))
+      .map((t) => [t.id, t] as const),
+  );
+  return deseados.filter((d) => {
+    const a = actuales.get(d.id)!;
+    return (
+      a.tripType !== d.tripType ||
+      (a.parentTripId ?? null) !== d.parentTripId ||
+      (a.legType ?? null) !== d.legType ||
+      Boolean(a.isRoundTrip) !== d.isRoundTrip ||
+      iso(a.returnAt) !== d.returnAt
+    );
+  });
 }
 
 /** Estados en los que el traslado todavía se puede reprogramar solo. */

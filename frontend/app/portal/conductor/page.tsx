@@ -57,6 +57,7 @@ import {
 } from "@/lib/native-bridge";
 import PushTokenSync from "@/components/PushTokenSync";
 import { enEventosDelConductor, eventosDelConductor } from "@/lib/eventos-conductor";
+import { esSalida } from "@/lib/tramos-traslado";
 import { appYaRastrea, clasificarErrorUbicacionNativa } from "@/lib/ubicacion-conductor";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
@@ -3134,7 +3135,7 @@ export default function DriverPortalPage() {
                       saber a qué vuelo lleva al pasajero (28-09-2026). */}
                   {(() => {
                     const salidas = trips
-                      .filter(tr => String(tr.tripType || "").toUpperCase() === "TRANSFER_OUT" && !["CANCELLED", "COMPLETED", "DROPPED_OFF"].includes(tr.status || ""))
+                      .filter(tr => esSalida(tr) && !["CANCELLED", "COMPLETED", "DROPPED_OFF"].includes(tr.status || ""))
                       .map(tr => {
                         const meta = (tr.metadata ?? {}) as Record<string, unknown>;
                         const pasajero = tr.requesterAthleteId ? allAthletes[tr.requesterAthleteId] : undefined;

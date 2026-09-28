@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import LineaTraslado from "@/components/LineaTraslado";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { estadoAlMarcar, trasladoRealizado } from "@/lib/marcar-traslado";
+import { aplanarTramos, esSalida } from "@/lib/tramos-traslado";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
@@ -40,6 +41,9 @@ type Trip = {
   id: string;
   eventId?: string | null;
   tripType?: string | null;
+  legType?: string | null;
+  parentTripId?: string | null;
+  childTrips?: Trip[] | null;
   clientType?: string | null;
   requesterAthleteId?: string | null;
   origin?: string | null;
@@ -124,10 +128,11 @@ export default function DepartureMonitoringPage() {
       setConductores(Object.fromEntries((conductoresData ?? []).map((d) => [d.id, d.fullName ?? ""])));
       setAhora(new Date());
       setAthletes(filterValidatedAthletes(Array.isArray(ath) ? ath : []));
-      // Viajes Transfer Out: también son salidas a monitorear.
+      // Salidas a monitorear: los Transfer Out y el regreso de cada Transfer
+      // In Out, que /trips entrega anidado en su llegada.
       setTransferOutTrips(
-        (Array.isArray(trips) ? trips : []).filter(
-          (t) => String(t.tripType || "").toUpperCase() === "TRANSFER_OUT" && t.status !== "CANCELLED",
+        aplanarTramos(Array.isArray(trips) ? trips : []).filter(
+          (t) => esSalida(t) && t.status !== "CANCELLED",
         ),
       );
       const delMap: Record<string, Delegation> = {};

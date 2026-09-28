@@ -59,6 +59,10 @@ export class TripsFinanceService {
    *   tarifa de mercado (promedio del catálogo) para no dejar el viaje sin
    *   valorizar, marcándolo como `REFERENCIA` para que el panel lo advierta.
    */
+  /** Tramo de regreso de un Transfer In Out: va incluido en la llegada. */
+  private static readonly TRAMO_INCLUIDO =
+    "c.parent_trip_id is not null and c.trip_type_norm = 'TRANSFER_IN_OUT'";
+
   private baseCte(): string {
     return `
       with filtrado as (
@@ -149,10 +153,15 @@ export class TripsFinanceService {
           -- lo ejecutaba en las 9 consultas del resumen y saturaba el pool.
           coalesce(st_length(c.route_geometry::geography) / 1000.0, 0) as km_recorridos,
           -- INGRESO: valor pactado del viaje; si no hay, tarifa del proveedor;
-          -- si tampoco, tarifa de referencia.
-          coalesce(nullif(c.trip_cost, 0), pr.client_price, tm.client_price) as ingreso,
-          coalesce(pr.provider_price, tm.provider_price)                     as costo,
+          -- si tampoco, tarifa de referencia. El tramo de salida de un
+          -- Transfer In Out va incluido en la tarifa de la llegada: el
+          -- servicio se cobra y se paga una vez (28-09-2026).
+          case when ${TripsFinanceService.TRAMO_INCLUIDO} then 0
+               else coalesce(nullif(c.trip_cost, 0), pr.client_price, tm.client_price) end as ingreso,
+          case when ${TripsFinanceService.TRAMO_INCLUIDO} then 0
+               else coalesce(pr.provider_price, tm.provider_price) end                     as costo,
           case
+            when ${TripsFinanceService.TRAMO_INCLUIDO} then 'INCLUIDO_EN_IDA'
             when nullif(c.trip_cost, 0) is not null and pr.client_price is not null then 'PACTADO'
             when pr.client_price is not null then 'TARIFA'
             when nullif(c.trip_cost, 0) is not null then 'PACTADO_SIN_TARIFA'

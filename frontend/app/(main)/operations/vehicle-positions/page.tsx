@@ -31,6 +31,7 @@ import { useIsMobile } from "@/lib/useIsMobile";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { esDelEvento } from "@/lib/evento-activo";
 import { conductorEnTracking } from "@/lib/conductores-del-evento";
+import { aplanarTramos } from "@/lib/tramos-traslado";
 import type {
   DestinationPin,
   RoutePath,
@@ -54,6 +55,7 @@ const TripRouteMap = dynamic(() => import("@/components/TripRouteMap"), { ssr: f
 
 type Trip = {
   id: string;
+  childTrips?: Trip[] | null;
   eventId?: string | null;
   driverId: string;
   vehicleId: string;
@@ -346,7 +348,10 @@ export default function VehiclePositionsPage() {
           apiFetch<HotelItem[]>("/accommodations"),
         ]);
 
-      const nextTrips = tripData || [];
+      // Los tramos de regreso vienen anidados en su ida (childTrips): se
+      // despliegan, o un regreso en curso —la salida de un Transfer In Out—
+      // no salía en el mapa ni en la lista.
+      const nextTrips = aplanarTramos(tripData || []);
 
       // Track active → completed for alerts
       const nextActiveIds = new Set(

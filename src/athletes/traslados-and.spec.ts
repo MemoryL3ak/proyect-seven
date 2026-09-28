@@ -1,5 +1,6 @@
 import {
   AEROPUERTO,
+  arregloTransferInOut,
   cambiosDeTraslado,
   claveTrasladoAnd,
   normalizarVuelo,
@@ -35,11 +36,11 @@ const SERGIO = {
 };
 
 describe('tramosAnd', () => {
-  it('una ficha con llegada y salida da un Transfer In y un Transfer Out', () => {
+  it('una ficha con llegada y salida da los dos tramos de un Transfer In Out', () => {
     const [llegada, salida] = tramosAnd(SERGIO);
     expect(llegada).toMatchObject({
       sentido: 'LLEGADA',
-      tipoViaje: 'TRANSFER_IN',
+      tipoViaje: 'TRANSFER_IN_OUT',
       vuelo: 'LA1324',
       horaViaje: '2026-09-28T17:15:00.000Z',
       conductorId: 'hector',
@@ -47,7 +48,7 @@ describe('tramosAnd', () => {
     });
     expect(salida).toMatchObject({
       sentido: 'SALIDA',
-      tipoViaje: 'TRANSFER_OUT',
+      tipoViaje: 'TRANSFER_IN_OUT',
       vuelo: 'LA1325',
       horaVuelo: '2026-10-18T18:05:00.000Z',
       conductorId: null,
@@ -83,7 +84,7 @@ describe('tramosAnd', () => {
     });
     expect(soloSalida).toHaveLength(1);
     expect(soloSalida[0]).toMatchObject({
-      tipoViaje: 'TRANSFER_OUT',
+      tipoViaje: 'TRANSFER_IN_OUT',
       vuelo: 'LA714',
       conductorId: 'patricia',
     });
@@ -163,6 +164,88 @@ describe('cambiosDeTraslado', () => {
         { ...deseado, driverId: 'otro' },
       ),
     ).toEqual({});
+  });
+});
+
+/**
+ * 28-09-2026: Ariel quiere un solo viaje Transfer In Out por persona, no un
+ * Transfer In y un Transfer Out sueltos. Los de Sergio Alvarenga eran dos.
+ */
+describe('arregloTransferInOut', () => {
+  const llegadaSergio = {
+    id: 'in-sergio',
+    tripType: 'TRANSFER_IN',
+    parentTripId: null,
+    legType: null,
+    isRoundTrip: false,
+    returnAt: null,
+    scheduledAt: '2026-09-28T17:15:00.000Z',
+  };
+  const salidaSergio = {
+    id: 'out-sergio',
+    tripType: 'TRANSFER_OUT',
+    parentTripId: null,
+    legType: null,
+    isRoundTrip: false,
+    returnAt: null,
+    scheduledAt: new Date('2026-10-18T15:05:00.000Z'),
+  };
+
+  it('une el Transfer In y el Transfer Out de antes en un Transfer In Out con su regreso', () => {
+    expect(arregloTransferInOut(llegadaSergio, salidaSergio)).toEqual([
+      {
+        id: 'in-sergio',
+        tripType: 'TRANSFER_IN_OUT',
+        parentTripId: null,
+        legType: 'OUTBOUND',
+        isRoundTrip: true,
+        returnAt: '2026-10-18T15:05:00.000Z',
+      },
+      {
+        id: 'out-sergio',
+        tripType: 'TRANSFER_IN_OUT',
+        parentTripId: 'in-sergio',
+        legType: 'RETURN',
+        isRoundTrip: true,
+        returnAt: null,
+      },
+    ]);
+  });
+
+  it('si ya están unidos no toca nada', () => {
+    const [ida, regreso] = arregloTransferInOut(llegadaSergio, salidaSergio);
+    expect(
+      arregloTransferInOut(
+        { ...llegadaSergio, ...ida },
+        { ...salidaSergio, ...regreso },
+      ),
+    ).toEqual([]);
+  });
+
+  it('si la salida cambia de hora, la llegada guarda la nueva hora de regreso', () => {
+    const [ida, regreso] = arregloTransferInOut(llegadaSergio, salidaSergio);
+    const arreglos = arregloTransferInOut(
+      { ...llegadaSergio, ...ida },
+      { ...salidaSergio, ...regreso, scheduledAt: '2026-10-18T16:00:00.000Z' },
+    );
+    expect(arreglos).toHaveLength(1);
+    expect(arreglos[0]).toMatchObject({
+      id: 'in-sergio',
+      returnAt: '2026-10-18T16:00:00.000Z',
+    });
+  });
+
+  it('con un solo tramo, ése es el viaje, sin regreso', () => {
+    expect(arregloTransferInOut(null, salidaSergio)).toEqual([
+      {
+        id: 'out-sergio',
+        tripType: 'TRANSFER_IN_OUT',
+        parentTripId: null,
+        legType: null,
+        isRoundTrip: false,
+        returnAt: null,
+      },
+    ]);
   });
 });
 

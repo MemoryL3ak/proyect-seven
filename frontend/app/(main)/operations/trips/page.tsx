@@ -2185,6 +2185,13 @@ export default function TripsPage() {
                       <p style={{ fontSize: "11px", color: pal.labelColor }}>
                         {trip.destinationVenueId ? venues[trip.destinationVenueId]?.name : trip.destination || t("Destino pendiente")}
                       </p>
+                      {/* El regreso del mismo viaje (la salida de un Transfer
+                          In Out): una sola tarjeta con el flujo completo. */}
+                      {(trip.childTrips ?? []).slice(0, 1).map((regreso) => (
+                        <p key={regreso.id} style={{ fontSize: "10px", fontWeight: 600, color: pal.textMuted, marginTop: "4px", paddingTop: "4px", borderTop: `1px dashed ${pal.cardBorder}`, fontVariantNumeric: "tabular-nums" }}>
+                          {t("Regreso")}: {regreso.scheduledAt ? `${etiquetaDiaEvento(claveDiaEvento(regreso.scheduledAt))} · ${horaEvento(regreso.scheduledAt)}` : t("sin hora")} · {t(statusTone(regreso.status).label)}
+                        </p>
+                      ))}
                     </button>
                   ))}
                   {items.length === 0 && (

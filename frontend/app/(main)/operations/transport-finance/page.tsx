@@ -203,6 +203,8 @@ const ORIGEN_VALOR_META: Record<string, { label: string; tone: string; bg: strin
   PACTADO_SIN_TARIFA: { label: "Pactado sin tarifa", tone: STATE.warningText, bg: STATE.warningSoft, border: STATE.warningBorder },
   REFERENCIA: { label: "Tarifa de referencia", tone: "#c2410c", bg: "#fff7ed", border: "#fed7aa" },
   SIN_VALORIZAR: { label: "Sin valorizar", tone: STATE.dangerText, bg: STATE.dangerSoft, border: STATE.dangerBorder },
+  // Salida de un Transfer In Out: la tarifa se cobra una vez, en la llegada.
+  INCLUIDO_EN_IDA: { label: "Incluido en la llegada", tone: SURFACE.textMuted, bg: SURFACE.bg, border: SURFACE.border },
 };
 
 // Labels de estado: base canónica (TRIP_STATUS_META en lib/design) + fraseo
