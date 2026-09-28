@@ -151,6 +151,17 @@ export class AthletesController {
     return this.athletesService.uploadPhoto(id, payload.dataUrl);
   }
 
+  /**
+   * Crea (o ajusta) los traslados de AND de una ficha desde el Monitoreo de
+   * Llegadas: las fichas cargadas antes del 27-09-2026 no tenían su Transfer
+   * In Out hasta volver a guardarlas (28-09-2026, vuelo H2 1811).
+   */
+  @StaffOnly()
+  @Post(':id/traslados')
+  crearTraslados(@Param('id') id: string) {
+    return this.athletesService.crearTraslados(id);
+  }
+
   /** Reactiva una cuenta dada de baja desde el portal (status DELETED). */
   @Post(':id/reactivate')
   reactivate(@Param('id') id: string) {

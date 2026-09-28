@@ -3561,6 +3561,8 @@ export default function TripsPage() {
                   SCHEDULE_CHANGED: { label: "Horario modificado", color: "#0ea5e9" },
                   VEHICLE_TYPE_CHANGED: { label: "Tipo vehículo cambiado", color: STATE.warning },
                   PASSENGER_COUNT_CHANGED: { label: "Pasajeros modificados", color: STATE.warning },
+                  // Traslado marcado realizado a mano desde un monitor, con sus horas reales.
+                  REGISTRO_MANUAL: { label: "Registrado a mano", color: BRAND.teal },
                 };
                 if (log.length === 0) {
                   return (

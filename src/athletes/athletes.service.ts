@@ -639,6 +639,30 @@ export class AthletesService {
     return this.toEntity(data as AthleteRow);
   }
 
+  /**
+   * Traslados de AND de una ficha, creados a pedido (ver el controlador).
+   * Falla con un motivo si la ficha no genera traslado: sin vuelo con hora de
+   * llegada o salida, o si llega en bus.
+   */
+  async crearTraslados(id: string) {
+    await this.trasladosAnd.sincronizar(id);
+    const viajes = await this.dataSource.query<
+      Array<{ id: string; clave: string; status: string }>
+    >(
+      `select id, metadata->>'andKey' as clave, status
+         from transport.trips
+        where metadata->>'andKey' like $1
+        order by scheduled_at`,
+      [`and:${id}:%`],
+    );
+    if (viajes.length === 0) {
+      throw new BadRequestException(
+        'La ficha no tiene un vuelo con número y hora de llegada o salida: complétalo en AND para crear el traslado.',
+      );
+    }
+    return viajes;
+  }
+
     async remove(id: string) {
     // Sus traslados pendientes se van con la ficha; su vuelo, si queda vacío.
     const vueloId = await this.trasladosAnd.antesDeBorrarFicha(id);

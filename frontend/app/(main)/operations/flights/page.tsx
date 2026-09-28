@@ -5,6 +5,10 @@ import AirlineLogo from "@/components/AirlineLogo";
 import { apiFetch } from "@/lib/api";
 import LineaTraslado, { BotonMarcar } from "@/components/LineaTraslado";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import RegistrarTrasladoDialog, { type DatosRegistro } from "@/components/RegistrarTrasladoDialog";
+import { cuerpoRegistro } from "@/lib/registro-traslado";
+import { conductorEnEvento } from "@/lib/conductores-del-evento";
+import { opcionesDeConductores } from "@/lib/opciones-conductores";
 import { aplanarTramos, esLlegada } from "@/lib/tramos-traslado";
 import { estadoVuelo, type EstadoVuelo } from "@/lib/estado-vuelo";
 import { estadoAlMarcar, resumenTraslados, trasladoRealizado, trasladosDelVuelo } from "@/lib/marcar-traslado";
@@ -47,6 +51,8 @@ type AthleteItem = {
   flightNumber?: string | null;
   metadata?: Record<string, unknown> | null;
 };
+
+type ConductorItem = { id: string; fullName?: string | null; eventIds?: string[] | null; eventId?: string | null };
 
 type TripItem = {
   id: string;
@@ -223,7 +229,11 @@ export default function FlightsPage() {
   const [ahora, setAhora] = useState(() => new Date());
   const [deleteConfirm, setDeleteConfirm] = useState<Flight | null>(null);
   // Traslados que esperan confirmación para marcarse realizados o pendientes.
-  const [porMarcar, setPorMarcar] = useState<{ viajes: TripItem[]; realizar: boolean; que: string } | null>(null);
+  // `quien`: pasajeros y vuelo, para el formulario de registro manual.
+  const [porMarcar, setPorMarcar] = useState<{ viajes: TripItem[]; realizar: boolean; que: string; quien: string } | null>(null);
+  // Conductores con sus eventos, para elegir quién hizo el traslado.
+  const [listaConductores, setListaConductores] = useState<ConductorItem[]>([]);
+  const [creandoTraslado, setCreandoTraslado] = useState<string | null>(null);
   const [marcando, setMarcando] = useState<string | null>(null);
   const [errorMarcar, setErrorMarcar] = useState<string | null>(null);
 
@@ -237,9 +247,10 @@ export default function FlightsPage() {
         apiFetch<DelegationItem[]>("/delegations"),
         apiFetch<DisciplineItem[]>("/disciplines"),
         apiFetch<TripItem[]>("/trips").catch(() => []),
-        apiFetch<Array<{ id: string; fullName?: string | null }>>("/drivers").catch(() => []),
+        apiFetch<ConductorItem[]>("/drivers").catch(() => []),
       ]);
       setConductores(Object.fromEntries((driverData ?? []).map((d) => [d.id, d.fullName ?? ""])));
+      setListaConductores(driverData ?? []);
       setFlights(flightData ?? []);
       setEvents(eventData ?? []);
       setAthletes(filterValidatedAthletes(athleteData ?? []));
@@ -276,17 +287,23 @@ export default function FlightsPage() {
    * el mismo que ve el conductor (su app deja de mostrarlo como pendiente) y
    * el tracking de Viajes. Sólo toca los que cambian.
    */
-  const marcarTraslados = async (viajes: TripItem[], realizar: boolean) => {
+  const marcarTraslados = async (viajes: TripItem[], realizar: boolean, registro?: DatosRegistro) => {
     const aCambiar = viajes.filter((v) => trasladoRealizado(v) !== realizar);
     setMarcando(viajes.map((v) => v.id).join(","));
     setErrorMarcar(null);
     let fallidos = 0;
     for (const viaje of aCambiar) {
       try {
+        // Realizado: con el conductor y las horas reales que se anotaron
+        // (lib/registro-traslado); pendiente: sólo vuelve el estado.
+        const cuerpo =
+          realizar && registro
+            ? cuerpoRegistro({ ...registro, donde: t("Monitoreo de Llegadas") }, new Date())
+            : { status: estadoAlMarcar(viaje) };
         await apiFetch(`/trips/${viaje.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: estadoAlMarcar(viaje) }),
+          body: JSON.stringify(cuerpo),
         });
       } catch {
         fallidos += 1;
@@ -297,6 +314,33 @@ export default function FlightsPage() {
     setPorMarcar(null);
     if (fallidos) setErrorMarcar(`${t("No se pudieron actualizar")} ${fallidos} ${fallidos === 1 ? t("traslado") : t("traslados")}.`);
   };
+
+  /**
+   * "Sin traslado": crea el Transfer In Out de cada pasajero desde su ficha
+   * de AND (las cargadas antes del 27-09 no lo tenían hasta volver a
+   * guardarlas). Después se puede marcar realizado con sus horas.
+   */
+  const crearTraslados = async (clave: string, pasajeros: AthleteItem[]) => {
+    setCreandoTraslado(clave);
+    setErrorMarcar(null);
+    const fallas: string[] = [];
+    for (const p of pasajeros) {
+      try {
+        await apiFetch(`/athletes/${p.id}/traslados`, { method: "POST" });
+      } catch (err) {
+        fallas.push(`${p.fullName || p.id}: ${err instanceof Error ? err.message : t("error")}`);
+      }
+    }
+    await recargarViajes();
+    setCreandoTraslado(null);
+    if (fallas.length) setErrorMarcar(fallas.join(" · "));
+  };
+
+  // Conductores del evento para el registro manual, por nombre.
+  const opcionesConductor = useMemo(
+    () => opcionesDeConductores(listaConductores.filter((c) => conductorEnEvento(c, selectedEventId))),
+    [listaConductores, selectedEventId],
+  );
 
   useEffect(() => {
     if (refreshTimer.current) clearInterval(refreshTimer.current);
@@ -780,7 +824,21 @@ export default function FlightsPage() {
                         sincronizado con la app del conductor. */}
                     <td style={{ padding: "10px 14px" }} onClick={e => e.stopPropagation()}>
                       {resumen.total === 0 ? (
-                        <span style={{ fontSize: "10px", color: SURFACE.textFaint }}>{t("Sin traslado")}</span>
+                        <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "stretch", gap: "4px", minWidth: "118px" }}>
+                          <span style={{ fontSize: "10px", fontWeight: 700, padding: "3px 10px", borderRadius: "99px", textAlign: "center", whiteSpace: "nowrap", background: SURFACE.bg, color: SURFACE.textMuted, border: `1px solid ${SURFACE.border}` }}>
+                            {t("Sin traslado")}
+                          </span>
+                          {passengers.length > 0 && (
+                            <button
+                              type="button"
+                              disabled={creandoTraslado === flight.id}
+                              onClick={() => void crearTraslados(flight.id, passengers)}
+                              style={{ fontSize: "10px", fontWeight: 700, padding: "3px 10px", borderRadius: "99px", border: `1px solid ${BRAND.teal}`, background: SURFACE.card, color: BRAND.tealInk, cursor: creandoTraslado === flight.id ? "wait" : "pointer", whiteSpace: "nowrap" }}
+                            >
+                              {creandoTraslado === flight.id ? t("Creando…") : t("Crear traslado")}
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "stretch", gap: "4px", minWidth: "118px" }}>
                           <span style={{
@@ -798,7 +856,12 @@ export default function FlightsPage() {
                             enColumna
                             realizado={todosRealizados}
                             marcando={marcando === claveMarcar}
-                            onClick={() => setPorMarcar({ viajes: traslados, realizar: !todosRealizados, que: `${t("el vuelo")} ${flight.flightNumber}` })}
+                            onClick={() => setPorMarcar({
+                              viajes: traslados,
+                              realizar: !todosRealizados,
+                              que: `${t("el vuelo")} ${flight.flightNumber}`,
+                              quien: `${passengers.map((p) => p.fullName).filter(Boolean).join(", ") || t("Pasajeros")} · ${t("vuelo")} ${flight.flightNumber}.`,
+                            })}
                           />
                         </div>
                       )}
@@ -950,7 +1013,12 @@ export default function FlightsPage() {
                           conductor={trip.driverId ? conductores[trip.driverId] || t("Conductor asignado") : null}
                           ahora={ahora}
                           marcando={marcando === trip.id}
-                          onMarcar={() => setPorMarcar({ viajes: [trip], realizar: !trasladoRealizado(trip), que: `${t("el traslado de")} ${requester?.fullName || t("este pasajero")}` })}
+                          onMarcar={() => setPorMarcar({
+                            viajes: [trip],
+                            realizar: !trasladoRealizado(trip),
+                            que: `${t("el traslado de")} ${requester?.fullName || t("este pasajero")}`,
+                            quien: `${requester?.fullName || t("Pasajero")}${flight ? ` · ${t("vuelo")} ${flight}` : ""}.`,
+                          })}
                         />
                       </td>
                     </tr>
@@ -1139,8 +1207,18 @@ export default function FlightsPage() {
       )}
 
       {/* Delete confirmation modal */}
+      <RegistrarTrasladoDialog
+        open={Boolean(porMarcar?.realizar)}
+        titulo={t("Registrar traslado realizado")}
+        detalle={porMarcar?.quien ?? ""}
+        viaje={porMarcar?.realizar ? porMarcar.viajes[0] ?? null : null}
+        conductores={opcionesConductor}
+        guardando={Boolean(marcando)}
+        onGuardar={(datos) => { if (porMarcar && !marcando) void marcarTraslados(porMarcar.viajes, true, datos); }}
+        onCancel={() => { if (!marcando) setPorMarcar(null); }}
+      />
       <ConfirmDialog
-        open={Boolean(porMarcar)}
+        open={Boolean(porMarcar) && !porMarcar?.realizar}
         danger={false}
         title={porMarcar?.realizar ? t("Marcar traslado realizado") : t("Marcar traslado pendiente")}
         message={

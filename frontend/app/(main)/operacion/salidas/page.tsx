@@ -4,6 +4,10 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import LineaTraslado from "@/components/LineaTraslado";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import RegistrarTrasladoDialog, { type DatosRegistro } from "@/components/RegistrarTrasladoDialog";
+import { cuerpoRegistro } from "@/lib/registro-traslado";
+import { conductorEnEvento } from "@/lib/conductores-del-evento";
+import { opcionesDeConductores } from "@/lib/opciones-conductores";
 import { estadoAlMarcar, trasladoRealizado } from "@/lib/marcar-traslado";
 import { aplanarTramos, esSalida } from "@/lib/tramos-traslado";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
@@ -109,6 +113,8 @@ export default function DepartureMonitoringPage() {
   const [busqueda, setBusqueda] = useState("");
   // Nombres de conductores y hora de referencia de la línea de tiempo.
   const [conductores, setConductores] = useState<Record<string, string>>({});
+  // Conductores con sus eventos, para registrar a mano quién hizo el traslado.
+  const [listaConductores, setListaConductores] = useState<Array<{ id: string; fullName?: string | null; eventIds?: string[] | null; eventId?: string | null }>>([]);
   const [ahora, setAhora] = useState(() => new Date());
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -123,9 +129,10 @@ export default function DepartureMonitoringPage() {
         apiFetch<Athlete[]>("/athletes"),
         apiFetch<Delegation[]>("/delegations").catch(() => []),
         apiFetch<Trip[]>("/trips").catch(() => []),
-        apiFetch<Array<{ id: string; fullName?: string | null }>>("/drivers").catch(() => []),
+        apiFetch<Array<{ id: string; fullName?: string | null; eventIds?: string[] | null; eventId?: string | null }>>("/drivers").catch(() => []),
       ]);
       setConductores(Object.fromEntries((conductoresData ?? []).map((d) => [d.id, d.fullName ?? ""])));
+      setListaConductores(conductoresData ?? []);
       setAhora(new Date());
       setAthletes(filterValidatedAthletes(Array.isArray(ath) ? ath : []));
       // Salidas a monitorear: los Transfer Out y el regreso de cada Transfer
@@ -151,14 +158,18 @@ export default function DepartureMonitoringPage() {
    * Realizado / Pendiente desde el monitor: cambia el estado del viaje, el
    * mismo que ve el conductor en su app y el tracking de Viajes.
    */
-  const marcarTraslado = async (viaje: Trip) => {
+  const marcarTraslado = async (viaje: Trip, registro?: DatosRegistro) => {
     setMarcando(viaje.id);
     setError(null);
     try {
+      // Realizado: con el conductor y las horas reales (lib/registro-traslado).
+      const cuerpo = registro
+        ? cuerpoRegistro({ ...registro, donde: t("Monitoreo de Salidas") }, new Date())
+        : { status: estadoAlMarcar(viaje) };
       await apiFetch(`/trips/${viaje.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: estadoAlMarcar(viaje) }),
+        body: JSON.stringify(cuerpo),
       });
       await cargar();
     } catch (e) {
@@ -168,6 +179,12 @@ export default function DepartureMonitoringPage() {
       setPorMarcar(null);
     }
   };
+
+  // Conductores del evento para el registro manual, por nombre.
+  const opcionesConductor = useMemo(
+    () => opcionesDeConductores(listaConductores.filter((c) => conductorEnEvento(c, eventId))),
+    [listaConductores, eventId],
+  );
 
   // La línea de tiempo avanza sola: cada 30 s se vuelve a leer, y así se ve
   // cuando el conductor toca Iniciar, Recoger o Finalizar.
@@ -496,8 +513,18 @@ export default function DepartureMonitoringPage() {
           </section>
         ))
       )}
+      <RegistrarTrasladoDialog
+        open={Boolean(porMarcar) && !trasladoRealizado(porMarcar!.viaje)}
+        titulo={t("Registrar traslado realizado")}
+        detalle={porMarcar ? `${porMarcar.nombre}.` : ""}
+        viaje={porMarcar && !trasladoRealizado(porMarcar.viaje) ? porMarcar.viaje : null}
+        conductores={opcionesConductor}
+        guardando={Boolean(marcando)}
+        onGuardar={(datos) => { if (porMarcar && !marcando) void marcarTraslado(porMarcar.viaje, datos); }}
+        onCancel={() => { if (!marcando) setPorMarcar(null); }}
+      />
       <ConfirmDialog
-        open={Boolean(porMarcar)}
+        open={Boolean(porMarcar) && trasladoRealizado(porMarcar!.viaje)}
         danger={false}
         title={porMarcar && !trasladoRealizado(porMarcar.viaje) ? t("Marcar traslado realizado") : t("Marcar traslado pendiente")}
         message={
