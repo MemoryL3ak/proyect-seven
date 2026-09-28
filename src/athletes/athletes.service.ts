@@ -14,6 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { DataSource, Repository } from 'typeorm';
 import { StaffScopeService } from '../auth/staff-scope.service';
 import { TrasladosAndService } from './traslados-and.service';
+import { horaChileAIso } from './hora-sin-zona';
 import { MobileAuthService } from '../mobile-auth/mobile-auth.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
@@ -178,8 +179,11 @@ export class AthletesService {
     if (dto.flightNumber !== undefined) row.flight_number = dto.flightNumber ?? null;
     if (dto.airline !== undefined) row.airline = dto.airline ?? null;
     if (dto.origin !== undefined) row.origin = dto.origin ?? null;
-    if (dto.arrivalTime !== undefined) row.arrival_time = dto.arrivalTime ?? null;
-    if (dto.departureTime !== undefined) row.departure_time = dto.departureTime ?? null;
+    // Sin zona es hora de Chile (ver hora-sin-zona).
+    if (dto.arrivalTime !== undefined)
+      row.arrival_time = horaChileAIso(dto.arrivalTime) ?? null;
+    if (dto.departureTime !== undefined)
+      row.departure_time = horaChileAIso(dto.departureTime) ?? null;
     if (dto.departureGate !== undefined) row.departure_gate = dto.departureGate ?? null;
     if (dto.arrivalBaggage !== undefined) row.arrival_baggage = dto.arrivalBaggage ?? null;
     if (dto.hotelAccommodationId !== undefined) row.hotel_accommodation_id = dto.hotelAccommodationId ?? null;
