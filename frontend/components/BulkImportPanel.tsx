@@ -8,6 +8,7 @@ import { CLIENT_TYPE_OPTIONS, isEventCoordinator } from "@/lib/clientTypes";
 import { BRAND } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { claveDeColumna, tituloDeColumna } from "@/lib/columnas-carga";
 import { columnasConductor, conductorPorTexto, type ConductorBuscable } from "@/lib/conductor-por-texto";
 
 type ImportType = "athletes" | "drivers" | "hospitality";
@@ -216,9 +217,6 @@ const countryCodeByName: Record<string, string> = {
   "reino unido": "GBR",
   "united kingdom": "GBR"
 };
-
-const normalizeHeader = (value: string) =>
-  value.trim().toLowerCase().replace(/\s+/g, "_");
 
 const normalizeText = (value: unknown) =>
   String(value ?? "")
@@ -487,18 +485,23 @@ const downloadTemplate = (
   examples: Array<Record<string, string>> = [],
   reference?: { sheetName: string; rows: string[][] },
 ) => {
+  // La cabecera va con títulos en español (lib/columnas-carga); la carga los
+  // lee de vuelta y sigue aceptando los nombres internos de antes.
+  const titulos = Array.from(headers).map(tituloDeColumna);
   const filas = [
-    Array.from(headers),
+    titulos,
     ...examples.map((ejemplo) => headers.map((h) => ejemplo[h] ?? "")),
   ];
   const worksheet = XLSX.utils.aoa_to_sheet(filas);
-  worksheet["!cols"] = headers.map((h) => ({ wch: Math.max(14, h.length + 2) }));
+  worksheet["!cols"] = titulos.map((titulo) => ({ wch: Math.max(14, titulo.length + 2) }));
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Template");
   // Los valores válidos van en su propia hoja: pegarlos como comentario en la
   // cabecera no sobrevive a un "guardar como CSV".
   if (reference) {
-    const hoja = XLSX.utils.aoa_to_sheet(reference.rows);
+    const hoja = XLSX.utils.aoa_to_sheet(
+      reference.rows.map(([columna, ...resto]) => [columna ? tituloDeColumna(columna) : columna, ...resto]),
+    );
     hoja["!cols"] = [{ wch: 26 }, { wch: 46 }];
     XLSX.utils.book_append_sheet(workbook, hoja, reference.sheetName);
   }
@@ -520,7 +523,7 @@ const REFERENCIA_INSCRIPCION: { sheetName: string; rows: string[][] } = {
     ["visa_required", "SI / NO"],
     ["discipline_name", "Nombre del deporte tal como está en el maestro de Disciplinas. Vacío si no compite"],
     ["", ""],
-    ["user_type — valores válidos", ""],
+    [`${tituloDeColumna("user_type")} — valores válidos`, ""],
     ...CLIENT_TYPE_REFERENCE,
   ],
 };
@@ -698,7 +701,7 @@ export default function BulkImportPanel({
       rows.map((row) => {
         const next: Record<string, string> = {};
         Object.entries(row).forEach(([key, value]) => {
-          next[normalizeHeader(key)] = String(value ?? "").trim();
+          next[claveDeColumna(key)] = String(value ?? "").trim();
         });
         return next;
       }),
@@ -1471,7 +1474,7 @@ export default function BulkImportPanel({
             {errors.slice(0, 20).map((error, index) => (
               <li key={`${error.row}-${index}`}>
                 {t("Fila")} {error.row}
-                {error.field ? ` (${error.field})` : ""}: {error.message}
+                {error.field ? ` (${tituloDeColumna(error.field)})` : ""}: {error.message}
               </li>
             ))}
           </ul>
