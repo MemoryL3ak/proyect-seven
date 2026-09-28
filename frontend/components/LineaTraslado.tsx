@@ -19,10 +19,13 @@ export function BotonMarcar({
   realizado,
   marcando,
   onClick,
+  enColumna = false,
 }: {
   realizado: boolean;
   marcando?: boolean;
   onClick: () => void;
+  /** En la columna Traslado va bajo la etiqueta, alineado a la izquierda. */
+  enColumna?: boolean;
 }) {
   const { t } = useI18n();
   return (
@@ -34,7 +37,7 @@ export function BotonMarcar({
         onClick();
       }}
       style={{
-        marginLeft: "auto",
+        marginLeft: enColumna ? 0 : "auto",
         flexShrink: 0,
         fontSize: 10,
         fontWeight: 700,

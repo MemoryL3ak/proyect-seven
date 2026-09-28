@@ -40,7 +40,7 @@ export default function TopBar({ onMenuOpen }: { onMenuOpen?: () => void }) {
     users: "Usuarios",
     athletes: "Participantes",
     drivers: "Conductores",
-    flights: "Vuelos",
+    flights: "Monitoreo de Llegadas",
     "hotel-beds": "Camas",
     "hotel-extras": "Reserva de Extras",
     salones: "Salones",

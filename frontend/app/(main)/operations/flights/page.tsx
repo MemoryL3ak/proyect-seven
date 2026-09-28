@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import LineaTraslado, { BotonMarcar } from "@/components/LineaTraslado";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import { aplanarTramos, esLlegada } from "@/lib/tramos-traslado";
+import { estadoVuelo, type EstadoVuelo } from "@/lib/estado-vuelo";
 import { estadoAlMarcar, resumenTraslados, trasladoRealizado, trasladosDelVuelo } from "@/lib/marcar-traslado";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
@@ -349,19 +350,25 @@ export default function FlightsPage() {
     );
   }, [flightPassengers, filterDelegation]);
 
+  /**
+   * Arribado / Hoy / Programado: por la hora de llegada y por su traslado (si
+   * el conductor ya recogió al pasajero, el vuelo aterrizó). No sale de la
+   * API de vuelos. Ver lib/estado-vuelo.
+   */
+  const estadoDelVuelo = (flight: Flight, passengers: AthleteItem[]) =>
+    estadoVuelo(
+      flight.arrivalTime,
+      ahora,
+      trasladosDelVuelo(flight, passengers.map((p) => p.id), transferInTrips).map((v) => v.status),
+    );
+
   // Apply status filter
   const finalFlights = useMemo(() => {
     if (!filterStatus) return displayFlights;
-    return displayFlights.filter(({ flight }) => {
-      const arrDate = flight.arrivalTime ? new Date(flight.arrivalTime) : null;
-      const isPast = arrDate && arrDate.getTime() < Date.now();
-      const isToday = arrDate && arrDate.toDateString() === new Date().toDateString();
-      if (filterStatus === "arrived") return isPast && !isToday;
-      if (filterStatus === "today") return isToday;
-      if (filterStatus === "upcoming") return !isPast && !isToday;
-      return true;
-    });
-  }, [displayFlights, filterStatus]);
+    const buscado = filterStatus === "arrived" ? "ARRIBADO" : filterStatus === "today" ? "HOY" : "PROGRAMADO";
+    return displayFlights.filter(({ flight, passengers }) => estadoDelVuelo(flight, passengers) === buscado);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displayFlights, filterStatus, transferInTrips, ahora]);
 
   const athleteById = useMemo(() => athletes.reduce<Record<string, AthleteItem>>((acc, a) => { acc[a.id] = a; return acc; }, {}), [athletes]);
 
@@ -461,17 +468,17 @@ export default function FlightsPage() {
 
   // Stats
   const stats = useMemo(() => {
-    const today = new Date().toDateString();
     let arrived = 0, todayCount = 0, upcoming = 0, totalPax = 0;
     flightPassengers.forEach(({ flight, passengers }) => {
-      const d = flight.arrivalTime ? new Date(flight.arrivalTime) : null;
-      if (d && d.getTime() < Date.now() && d.toDateString() !== today) arrived++;
-      else if (d && d.toDateString() === today) todayCount++;
+      const estado = estadoDelVuelo(flight, passengers);
+      if (estado === "ARRIBADO") arrived++;
+      else if (estado === "HOY") todayCount++;
       else upcoming++;
       totalPax += passengers.length;
     });
     return { total: flightPassengers.length, arrived, today: todayCount, upcoming, totalPax };
-  }, [flightPassengers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flightPassengers, transferInTrips, ahora]);
 
   const pal = {
     cardBg: SURFACE.card, cardBorder: SURFACE.border, shadow: "0 1px 4px rgba(15,23,42,0.06)",
@@ -480,12 +487,9 @@ export default function FlightsPage() {
 
   const activeFilters = [searchQuery, filterDate, filterDelegation, filterStatus].filter(Boolean).length;
 
-  const getFlightStatus = (arrivalTime: string) => {
-    const arrDate = new Date(arrivalTime);
-    const isPast = arrDate.getTime() < Date.now();
-    const isToday = arrDate.toDateString() === new Date().toDateString();
-    if (isPast && !isToday) return { label: "Arribado", color: SURFACE.textMuted, bg: "rgba(100,116,139,0.08)" };
-    if (isToday) return { label: "Hoy", color: STATE.warning, bg: "rgba(245,158,11,0.08)" };
+  const getFlightStatus = (estado: EstadoVuelo) => {
+    if (estado === "ARRIBADO") return { label: "Arribado", color: SURFACE.textMuted, bg: "rgba(100,116,139,0.08)" };
+    if (estado === "HOY") return { label: "Hoy", color: STATE.warning, bg: "rgba(245,158,11,0.08)" };
     return { label: "Programado", color: STATE.info, bg: "rgba(59,130,246,0.08)" };
   };
 
@@ -518,7 +522,7 @@ export default function FlightsPage() {
               <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.22em", textTransform: "uppercase", color: BRAND.teal }}>{t("Operaciones aéreas")}</p>
             </div>
             )}
-            <h1 style={{ fontSize: isMobile ? "1.15rem" : "1.75rem", fontWeight: 800, color: pal.textPrimary, lineHeight: 1.1 }}>{t("Monitor de vuelos")}</h1>
+            <h1 style={{ fontSize: isMobile ? "1.15rem" : "1.75rem", fontWeight: 800, color: pal.textPrimary, lineHeight: 1.1 }}>{t("Monitoreo de Llegadas")}</h1>
             <p style={{ fontSize: isMobile ? "12px" : "13px", color: pal.textMuted, marginTop: "4px" }}>{t("Seguimiento en tiempo real · AviationStack")}</p>
           </div>
           <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", width: isMobile ? "100%" : undefined }}>
@@ -720,7 +724,7 @@ export default function FlightsPage() {
             </thead>
             <tbody>
               {finalFlights.map(({ flight, passengers }) => {
-                const st = getFlightStatus(flight.arrivalTime);
+                const st = getFlightStatus(estadoDelVuelo(flight, passengers));
                 const delegationCodes = getPassengerDelegations(passengers);
                 const discNames = getPassengerDisciplines(passengers);
                 const isExpanded = expandedFlightId === flight.id;
@@ -778,9 +782,9 @@ export default function FlightsPage() {
                       {resumen.total === 0 ? (
                         <span style={{ fontSize: "10px", color: SURFACE.textFaint }}>{t("Sin traslado")}</span>
                       ) : (
-                        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", gap: "4px" }}>
+                        <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "stretch", gap: "4px", minWidth: "118px" }}>
                           <span style={{
-                            fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "99px", whiteSpace: "nowrap",
+                            fontSize: "10px", fontWeight: 700, padding: "3px 10px", borderRadius: "99px", whiteSpace: "nowrap", textAlign: "center",
                             ...(todosRealizados
                               ? { background: STATE.successSoft, color: STATE.successText, border: `1px solid ${STATE.successBorder}` }
                               : resumen.estado === "EN_CURSO"
@@ -791,6 +795,7 @@ export default function FlightsPage() {
                             {resumen.total > 1 ? ` · ${resumen.realizados}/${resumen.total}` : ""}
                           </span>
                           <BotonMarcar
+                            enColumna
                             realizado={todosRealizados}
                             marcando={marcando === claveMarcar}
                             onClick={() => setPorMarcar({ viajes: traslados, realizar: !todosRealizados, que: `${t("el vuelo")} ${flight.flightNumber}` })}
