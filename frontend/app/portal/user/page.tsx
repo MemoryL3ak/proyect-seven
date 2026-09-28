@@ -785,9 +785,12 @@ export default function UserPortalPage() {
       // del evento y los comedores son parte de lo que coordina.
       // El Coordinador de Transporte lleva además el directorio de
       // conductores (llamar y WhatsApp), justo después de los traslados.
+      // Vuelos (llegadas y salidas del evento con su traslado) también para
+      // los dos coordinadores de evento: los de sede de World Rugby son
+      // Coordinadores de Transporte en la app (28-09-2026).
       const ORDEN_COMITE: PortalTab[] = puedeContactarChoferes
-        ? ["actividades", "conductores", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"]
-        : ["actividades", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"];
+        ? ["actividades", "vuelos", "conductores", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"]
+        : ["actividades", "vuelos", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"];
       return ORDEN_COMITE.map(key => all.find(t => t.key === key)).filter((t): t is typeof all[number] => Boolean(t));
     }
     if (esSede) {
@@ -810,8 +813,8 @@ export default function UserPortalPage() {
     const MAX_PRIMARY = 4;
     const PRIORITY = isComite
       ? (puedeContactarChoferes
-        ? ["actividades", "conductores", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"]
-        : ["actividades", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"])
+        ? ["actividades", "vuelos", "conductores", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"]
+        : ["actividades", "vuelos", "calendario", "sedes", "hoteles", "alimentacion", "documentos", "cuenta"])
       : isChief
       ? ["actividades", "flota", "calendario", "sedes", "alimentacion", "documentos", "cuenta"]
       : esSede
@@ -4169,8 +4172,8 @@ export default function UserPortalPage() {
         )}
 
         {/* ─── Conductores (Coordinador de Transporte) ─── */}
-        {/* ─── Vuelos del evento (Coordinador de Sede) ─── */}
-        {activeTab === "vuelos" && esSede && <VuelosEvento eventId={athlete.eventId} />}
+        {/* ─── Vuelos del evento (coordinadores de evento y de sede) ─── */}
+        {activeTab === "vuelos" && (esSede || isComite) && <VuelosEvento eventId={athlete.eventId} />}
 
         {activeTab === "conductores" && (puedeContactarChoferes || esSede) && (
           <DirectorioConductores
