@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
@@ -33,6 +33,9 @@ import { opcionesDeConductores, sinConductoresRepetidos } from "@/lib/opciones-c
 import { conductorEnEvento } from "@/lib/conductores-del-evento";
 import {
   cumpleFiltroAnd,
+  agruparPorDia,
+  SIN_CONDUCTOR,
+  valoresAnd,
   fechaHoraCorta,
   fichaValidada,
   fichaVisibleEnAnd,
@@ -42,6 +45,7 @@ import {
   type FiltroEstadoAnd,
 } from "@/lib/and-listado";
 import { esDelEvento } from "@/lib/evento-activo";
+import { etiquetaDiaEvento } from "@/lib/hora-evento";
 import { avisarEventosCambiaron, useEventoActivo } from "@/lib/evento-activo-provider";
 
 type Option = { label: string; value: string };
@@ -353,6 +357,10 @@ export default function ResourceScreen({
   const [andSearch, setAndSearch] = useState("");
   const [andTripFilter, setAndTripFilter] = useState<"all" | "ARRIVAL" | "DEPARTURE">("all");
   const [andEstadoFilter, setAndEstadoFilter] = useState<FiltroEstadoAnd>("");
+  // Filtros de AND: día, conductor, país o región, vuelo, aerolínea y tipo de
+  // cliente (ver lib/and-listado).
+  const FILTROS_AND_VACIOS = { dia: "", conductor: "", pais: "", vuelo: "", aerolinea: "", tipoCliente: "" };
+  const [andFiltros, setAndFiltros] = useState(FILTROS_AND_VACIOS);
   const [phoneDropdownOpen, setPhoneDropdownOpen] = useState(false);
   const [driverOptions, setDriverOptions] = useState<Option[]>([]);
   const [driverUserOptions, setDriverUserOptions] = useState<Option[]>([]);
@@ -450,6 +458,8 @@ export default function ResourceScreen({
       actual.delegationId || actual.disciplineId ? { ...actual, delegationId: "", disciplineId: "" } : actual,
     );
     setCodigosSeleccionados((actual) => (actual.size > 0 ? new Set() : actual));
+    // Los filtros de AND también eran del evento anterior.
+    setAndFiltros({ dia: "", conductor: "", pais: "", vuelo: "", aerolinea: "", tipoCliente: "" });
   }, [eventoId]);
 
   const flightLookupTimerRef = useRef<number | null>(null);
@@ -4188,8 +4198,15 @@ export default function ResourceScreen({
           // planilla, "Registradas") no aparecían. Ver lib/and-listado.
           const visibles = items.filter((item) => fichaVisibleEnAnd(item));
           const filtered = visibles.filter((item) =>
-            cumpleFiltroAnd(item, { busqueda: andSearch, sentido: andTripFilter, estado: andEstadoFilter }),
+            cumpleFiltroAnd(item, { busqueda: andSearch, sentido: andTripFilter, estado: andEstadoFilter, ...andFiltros }),
           );
+          // Por hora de llegada (o de salida con "Salidas"), agrupadas por día.
+          const grupos = agruparPorDia(filtered, andTripFilter);
+          const valores = valoresAnd(visibles, andTripFilter);
+          const filtrosAndActivos = Object.values(andFiltros).filter(Boolean).length + (andEstadoFilter ? 1 : 0);
+          const nombreConductor = (id: string) => driverLookup[id]?.fullName || t("Conductor");
+          const etiquetaFiltro: CSSProperties = { display: "block", fontSize: "10px", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--text-muted)", marginBottom: "4px" };
+          const cambiarFiltroAnd = (campo: keyof typeof andFiltros, valor: string) => setAndFiltros((f) => ({ ...f, [campo]: valor }));
           const arrivalCount = visibles.filter((i) => tieneLlegada(i)).length;
           const departureCount = visibles.filter((i) => tieneSalida(i)).length;
           const pendientesCount = visibles.filter((i) => !fichaValidada(i)).length;
@@ -4234,22 +4251,101 @@ export default function ResourceScreen({
                     {f === "all" ? t("Todos") : f === "ARRIVAL" ? t("Llegadas") : t("Salidas")}
                   </button>
                 ))}
-                <StyledSelect
-                  value={andEstadoFilter}
-                  onChange={(e) => setAndEstadoFilter(e.target.value as FiltroEstadoAnd)}
-                  wrapperStyle={{ width: 190, flex: "0 0 auto" }}
-                >
-                  {OPCIONES_ESTADO_AND.map((o) => (
-                    <option key={o.value} value={o.value}>{t(o.label)}</option>
-                  ))}
-                </StyledSelect>
+              </div>
+              {/* Filtros: día, conductor, país o región, vuelo, aerolínea, tipo
+                  de cliente y estado. Las opciones son las que hay en las fichas
+                  del evento. */}
+              <div style={{ display: "grid", gap: "10px", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", marginBottom: "10px" }}>
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={etiquetaFiltro}>{andTripFilter === "DEPARTURE" ? t("Día de salida") : t("Día de llegada")}</span>
+                  <StyledSelect value={andFiltros.dia} onChange={(e) => cambiarFiltroAnd("dia", e.target.value)}>
+                    <option value="">{t("Todos los días")}</option>
+                    {valores.dias.map((d) => <option key={d} value={d}>{etiquetaDiaEvento(d)}</option>)}
+                  </StyledSelect>
+                </label>
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={etiquetaFiltro}>{t("Conductor")}</span>
+                  <StyledSelect value={andFiltros.conductor} onChange={(e) => cambiarFiltroAnd("conductor", e.target.value)}>
+                    <option value="">{t("Todos los conductores")}</option>
+                    {valores.haySinConductor && <option value={SIN_CONDUCTOR}>{t("Sin conductor")}</option>}
+                    {valores.conductores
+                      .map((id) => ({ id, nombre: nombreConductor(id) }))
+                      .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
+                      .map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+                  </StyledSelect>
+                </label>
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={etiquetaFiltro}>{t("País o región")}</span>
+                  <StyledSelect value={andFiltros.pais} onChange={(e) => cambiarFiltroAnd("pais", e.target.value)}>
+                    <option value="">{t("Todos")}</option>
+                    {valores.paises.map((p) => <option key={p} value={p}>{p}</option>)}
+                  </StyledSelect>
+                </label>
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={etiquetaFiltro}>{t("Vuelo")}</span>
+                  <StyledSelect value={andFiltros.vuelo} onChange={(e) => cambiarFiltroAnd("vuelo", e.target.value)}>
+                    <option value="">{t("Todos los vuelos")}</option>
+                    {valores.vuelos.map((v) => <option key={v} value={v}>{v}</option>)}
+                  </StyledSelect>
+                </label>
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={etiquetaFiltro}>{t("Aerolínea")}</span>
+                  <StyledSelect value={andFiltros.aerolinea} onChange={(e) => cambiarFiltroAnd("aerolinea", e.target.value)}>
+                    <option value="">{t("Todas")}</option>
+                    {valores.aerolineas.map((a) => <option key={a} value={a}>{a}</option>)}
+                  </StyledSelect>
+                </label>
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={etiquetaFiltro}>{t("Tipo de cliente")}</span>
+                  <StyledSelect value={andFiltros.tipoCliente} onChange={(e) => cambiarFiltroAnd("tipoCliente", e.target.value)}>
+                    <option value="">{t("Todos")}</option>
+                    {valores.tiposCliente.map((tc) => <option key={tc} value={tc}>{USER_TYPE_LABELS[tc] ?? tc}</option>)}
+                  </StyledSelect>
+                </label>
+                <label className="text-sm block" style={{ minWidth: 0 }}>
+                  <span style={etiquetaFiltro}>{t("Estado")}</span>
+                  <StyledSelect value={andEstadoFilter} onChange={(e) => setAndEstadoFilter(e.target.value as FiltroEstadoAnd)}>
+                    {OPCIONES_ESTADO_AND.map((o) => (
+                      <option key={o.value} value={o.value}>{t(o.label)}</option>
+                    ))}
+                  </StyledSelect>
+                </label>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", marginBottom: "12px", fontSize: "12px", color: "var(--text-muted)" }}>
+                <span>{filtered.length} {t("de")} {visibles.length} {t("fichas")}</span>
+                {filtrosAndActivos > 0 && (
+                  <button
+                    type="button"
+                    className="btn btn-ghost"
+                    style={{ fontSize: "12px", padding: "4px 12px" }}
+                    onClick={() => { setAndFiltros(FILTROS_AND_VACIOS); setAndEstadoFilter(""); }}
+                  >
+                    {`${t("Limpiar filtros")} (${filtrosAndActivos})`}
+                  </button>
+                )}
               </div>
               {/* Cards */}
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "65vh", overflowY: "auto" }}>
                 {filtered.length === 0 && (
                   <div style={{ color: "var(--text-muted)", fontSize: "13px", padding: "16px 0" }}>{t("Sin resultados.")}</div>
                 )}
-                {filtered.map((item) => {
+                {grupos.map((grupo) => (
+                  <Fragment key={grupo.dia || "sin-fecha"}>
+                    {/* Un título por día, en orden de llegada. */}
+                    <div style={{ display: "flex", alignItems: "baseline", gap: "8px", padding: "10px 2px 2px", position: "sticky", top: 0, background: "var(--surface)", zIndex: 1 }}>
+                      <span style={{ fontSize: "12px", fontWeight: 800, color: "var(--text)", textTransform: "capitalize" }}>
+                        {grupo.dia ? etiquetaDiaEvento(grupo.dia) : t("Sin fecha de vuelo")}
+                      </span>
+                      <span style={{ fontSize: "11px", color: "var(--text-muted)" }}>
+                        {grupo.filas.length}{" "}
+                        {grupo.dia
+                          ? andTripFilter === "DEPARTURE"
+                            ? grupo.filas.length === 1 ? t("salida") : t("salidas")
+                            : grupo.filas.length === 1 ? t("llegada") : t("llegadas")
+                          : grupo.filas.length === 1 ? t("ficha") : t("fichas")}
+                      </span>
+                    </div>
+                {grupo.filas.map((item) => {
                   // Llegada y/o salida según los vuelos de la ficha.
                   const conLlegada = tieneLlegada(item);
                   const conSalida = tieneSalida(item);
@@ -4375,6 +4471,8 @@ export default function ResourceScreen({
                     </div>
                   );
                 })}
+                  </Fragment>
+                ))}
               </div>
             </div>
           );

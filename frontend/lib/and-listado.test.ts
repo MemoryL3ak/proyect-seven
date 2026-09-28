@@ -66,3 +66,79 @@ describe("listado de AND", () => {
     expect(fechaHoraCorta("")).toBe("");
   });
 });
+
+/* ─── Filtros, orden y agrupación por día (28-09-2026) ─── */
+import { agruparPorDia, ordenarAnd, SIN_CONDUCTOR, valoresAnd } from "./and-listado";
+
+const ALAN = {
+  participantStatus: "REGISTERED",
+  participantFullName: "ALAN GILPIN",
+  countryCode: "GBR",
+  participantUserType: "STAFF WR",
+  participantFlightNumber: "AR1282",
+  participantAirline: "Aerolíneas Argentinas",
+  participantArrivalTime: "2026-10-01T14:45",
+  participantArrivalDriverId: "hector",
+  participantDepartureFlightNumber: "QF28",
+  participantDepartureTime: "2026-10-04T13:10",
+  participantMetadata: { departure: { airline: "Qantas" } },
+};
+const ARMEN = {
+  participantStatus: "REGISTERED",
+  participantFullName: "ARMEN ABI-SAAB",
+  countryCode: "URY",
+  participantUserType: "TF",
+  participantFlightNumber: "LA411",
+  participantAirline: "LATAM",
+  participantArrivalTime: "2026-09-29T21:59",
+  participantDepartureFlightNumber: "LA406",
+  participantDepartureTime: "2026-10-18T09:35",
+};
+const COORD = { participantStatus: "PERSONAL_DATA_VALIDATED", participantFullName: "Claribel Fonseca", countryCode: "CHL", participantUserType: "COORDINADOR_TRANSPORTE" };
+
+describe("filtros de AND", () => {
+  it("por conductor (de llegada o de salida) y sin conductor", () => {
+    expect(cumpleFiltroAnd(ALAN, { conductor: "hector" })).toBe(true);
+    expect(cumpleFiltroAnd(ARMEN, { conductor: "hector" })).toBe(false);
+    expect(cumpleFiltroAnd(ARMEN, { conductor: SIN_CONDUCTOR })).toBe(true);
+    expect(cumpleFiltroAnd(ALAN, { conductor: SIN_CONDUCTOR })).toBe(false);
+  });
+  it("por país o región, vuelo (de llegada o salida), aerolínea y tipo de cliente", () => {
+    expect(cumpleFiltroAnd(ALAN, { pais: "GBR" })).toBe(true);
+    expect(cumpleFiltroAnd(ALAN, { vuelo: "QF28" })).toBe(true);
+    expect(cumpleFiltroAnd(ALAN, { vuelo: "ar 1282" })).toBe(true);
+    expect(cumpleFiltroAnd(ALAN, { aerolinea: "Qantas" })).toBe(true);
+    expect(cumpleFiltroAnd(ARMEN, { aerolinea: "Qantas" })).toBe(false);
+    expect(cumpleFiltroAnd(ARMEN, { tipoCliente: "TF" })).toBe(true);
+  });
+  it("por día de llegada, o de salida si se ven las salidas", () => {
+    expect(cumpleFiltroAnd(ALAN, { dia: "2026-10-01" })).toBe(true);
+    expect(cumpleFiltroAnd(ALAN, { dia: "2026-10-04" })).toBe(false);
+    expect(cumpleFiltroAnd(ALAN, { dia: "2026-10-04", sentido: "DEPARTURE" })).toBe(true);
+  });
+});
+
+describe("orden y días de AND", () => {
+  it("por hora de llegada; sin vuelo al final", () => {
+    expect(ordenarAnd([COORD, ALAN, ARMEN]).map((f) => f.participantFullName)).toEqual(["ARMEN ABI-SAAB", "ALAN GILPIN", "Claribel Fonseca"]);
+  });
+  it("con salidas, por hora de salida", () => {
+    expect(ordenarAnd([ARMEN, ALAN], "DEPARTURE").map((f) => f.participantFullName)).toEqual(["ALAN GILPIN", "ARMEN ABI-SAAB"]);
+  });
+  it("agrupa por día, y lo sin fecha al final", () => {
+    expect(agruparPorDia([COORD, ALAN, ARMEN]).map((g) => [g.dia, g.filas.length])).toEqual([
+      ["2026-09-29", 1],
+      ["2026-10-01", 1],
+      ["", 1],
+    ]);
+  });
+  it("opciones de los filtros con lo que hay en las fichas", () => {
+    const v = valoresAnd([ALAN, ARMEN, COORD]);
+    expect(v.paises).toEqual(["CHL", "GBR", "URY"]);
+    expect(v.vuelos).toEqual(["AR1282", "LA406", "LA411", "QF28"]);
+    expect(v.aerolineas).toEqual(["Aerolíneas Argentinas", "LATAM", "Qantas"]);
+    expect(v.conductores).toEqual(["hector"]);
+    expect(v.haySinConductor).toBe(true);
+    expect(v.dias).toEqual(["2026-09-29", "2026-10-01"]);
+  });
+});
