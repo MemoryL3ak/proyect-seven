@@ -46,6 +46,7 @@ import {
 } from "@/lib/and-listado";
 import { esDelEvento } from "@/lib/evento-activo";
 import { etiquetaDiaEvento } from "@/lib/hora-evento";
+import { isoDesdeLocal } from "@/lib/fecha-local";
 import { avisarEventosCambiaron, useEventoActivo } from "@/lib/evento-activo-provider";
 
 type Option = { label: string; value: string };
@@ -1706,8 +1707,9 @@ export default function ResourceScreen({
             oversizeText:
               (form.participantOversizeText as string | undefined) || undefined,
             luggageVolume: (form.participantVolume as string | undefined) || undefined,
-            arrivalTime: form.participantArrivalTime || undefined,
-            departureTime: form.participantDepartureTime || undefined,
+            // Con zona: sin ella la base tomaba la hora como UTC (3 h antes).
+            arrivalTime: isoDesdeLocal(form.participantArrivalTime),
+            departureTime: isoDesdeLocal(form.participantDepartureTime),
             departureGate: form.participantDepartureGate || undefined,
             arrivalBaggage: form.participantArrivalBaggage || undefined,
             // La fila guarda un vuelo: el de llegada, o el de salida si la
@@ -2089,6 +2091,11 @@ export default function ResourceScreen({
       next.participantDepartureGate = item.participantDepartureGate ?? "";
       next.participantArrivalBaggage = item.participantArrivalBaggage ?? "";
       next.participantFlightNumber = item.participantFlightNumber ?? "";
+      // Vuelo de salida y conductores: sin cargarlos aquí, "Actualizar" los
+      // guardaba vacíos y borraba el vuelo de salida de la ficha.
+      next.participantDepartureFlightNumber = item.participantDepartureFlightNumber ?? "";
+      next.participantArrivalDriverId = item.participantArrivalDriverId ?? "";
+      next.participantDepartureDriverId = item.participantDepartureDriverId ?? "";
       next.participantAirline = item.participantAirline ?? "";
       next.participantOrigin = item.participantOrigin ?? "";
       next.participantBolsoCount = item.participantBolsoCount ?? "";
