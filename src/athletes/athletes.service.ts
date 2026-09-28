@@ -14,6 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { DataSource, In, Repository } from 'typeorm';
 import { StaffScopeService } from '../auth/staff-scope.service';
 import { TrasladosAndService } from './traslados-and.service';
+import { normalizarNombrePersona } from '../shared/nombre-propio';
 import { horaChileAIso } from './hora-sin-zona';
 import { MobileAuthService } from '../mobile-auth/mobile-auth.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
@@ -155,7 +156,9 @@ export class AthletesService {
     if (dto.delegationId !== undefined) row.delegation_id = dto.delegationId ?? null;
     if (dto.disciplineId !== undefined) row.discipline_id = dto.disciplineId ?? null;
     if (dto.disciplineIds !== undefined) row.discipline_ids = dto.disciplineIds ?? [];
-    if (dto.fullName !== undefined) row.full_name = dto.fullName;
+    // TODO EN MAYÚSCULAS (o minúsculas) se guarda con la inicial en mayúscula.
+    if (dto.fullName !== undefined)
+      row.full_name = dto.fullName ? normalizarNombrePersona(dto.fullName) : dto.fullName;
     if (dto.email !== undefined) row.email = dto.email ?? null;
     if (dto.phone !== undefined) row.phone = dto.phone ?? null;
     if (dto.countryCode !== undefined) row.country_code = dto.countryCode ?? null;
