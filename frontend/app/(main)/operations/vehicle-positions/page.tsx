@@ -30,6 +30,7 @@ import { BRAND, TRIP_STATUS_META, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { esDelEvento } from "@/lib/evento-activo";
+import { conductorEnTracking } from "@/lib/conductores-del-evento";
 import type {
   DestinationPin,
   RoutePath,
@@ -84,7 +85,14 @@ type Trip = {
 
 type EventItem = { id: string; name?: string | null };
 
-type DriverItem = { id: string; userId?: string | null; fullName?: string | null };
+type DriverItem = {
+  id: string;
+  userId?: string | null;
+  fullName?: string | null;
+  /** Eventos del proveedor del conductor; la flota propia trae `eventId`. */
+  eventIds?: string[] | null;
+  eventId?: string | null;
+};
 
 type VehicleItem = { id: string; plate?: string | null; type?: string | null; brand?: string | null; model?: string | null };
 
@@ -240,7 +248,8 @@ export default function VehiclePositionsPage() {
   eventoIdRef.current = eventoId;
   const [allTrips, setAllTrips] = useState<Trip[]>([]);
   // Sólo los viajes del evento activo: mapa, indicadores, filtros y tabla
-  // salen de aquí. La presencia GPS de los conductores no es por evento.
+  // salen de aquí. Los conductores del mapa también son los del evento
+  // (trackedDrivers).
   const trips = useMemo(
     () => allTrips.filter((trip) => esDelEvento(eventoId, trip.eventId)),
     [allTrips, eventoId],
@@ -908,6 +917,19 @@ export default function VehiclePositionsPage() {
   // after their last fix so a brief connection drop doesn't make the marker
   // disappear — only the color changes (green ↔ red). Anything older than
   // 5 min is treated as a session that ended and is removed from the map.
+  // Conductores que van en un viaje del evento que no ha terminado: salen en
+  // el mapa aunque su proveedor sea de otro evento.
+  const conductoresConViajeDelEvento = useMemo(
+    () =>
+      new Set(
+        trips
+          .filter((t) => !["COMPLETED", "DROPPED_OFF", "CANCELLED"].includes(t.status ?? ""))
+          .map((t) => claveConductor(drivers, t.driverId))
+          .filter(Boolean),
+      ),
+    [trips, drivers],
+  );
+
   const trackedDrivers = useMemo(() => {
     // Ventana única del panel (lib/presencia): más larga que la cadencia del
     // conductor (20 s quieto) más el refresco de posiciones (8 s). Con 15 s
@@ -918,6 +940,8 @@ export default function VehiclePositionsPage() {
       .map(([driverId, pos]) => {
         const driver = drivers[driverId];
         if (!driver) return null;
+        // Sólo los conductores del evento elegido arriba.
+        if (!conductorEnTracking(driver, eventoId, conductoresConViajeDelEvento.has(driver.id))) return null;
         // Use server `receivedAt` for recency — device clocks can be skewed
         // (field test had a phone 32 min behind, which made every marker
         // look "old" and stuck red even while positions kept arriving).
@@ -932,7 +956,7 @@ export default function VehiclePositionsPage() {
           x !== null,
       )
       .sort((a, b) => (Number(b.online) - Number(a.online)) || a.ageMs - b.ageMs);
-  }, [positions, drivers, nowTick]);
+  }, [positions, drivers, nowTick, eventoId, conductoresConViajeDelEvento]);
 
   /**
    * El mapa sigue a los conductores, no a los viajes, así que los filtros se

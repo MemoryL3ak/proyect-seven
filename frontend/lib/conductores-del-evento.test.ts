@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { conductorEnEvento, proveedorEnEvento } from "./conductores-del-evento";
+import { conductorEnEvento, conductorEnTracking, proveedorEnEvento } from "./conductores-del-evento";
 
 /**
  * 28-09-2026: con World Rugby creado, "Conductor llegada" de AND y el
@@ -51,5 +51,24 @@ describe("proveedorEnEvento", () => {
     expect(proveedorEnEvento({ eventIds: [] }, RUGBY)).toBe(true);
     expect(proveedorEnEvento({}, RUGBY)).toBe(true);
     expect(proveedorEnEvento({ eventIds: [JDE] }, "")).toBe(true);
+  });
+});
+
+describe("conductorEnTracking", () => {
+  // Los que salían en el mapa con World Rugby elegido (28-09-2026).
+  const hectorSilva = { eventIds: [JDE] };
+  const carlosHernandez = { eventIds: [RUGBY] };
+
+  it("con World Rugby elegido no salen los conductores de los Juegos Escolares", () => {
+    expect(conductorEnTracking(hectorSilva, RUGBY, false)).toBe(false);
+    expect(conductorEnTracking(carlosHernandez, RUGBY, false)).toBe(true);
+  });
+
+  it("sale si va en un viaje del evento, aunque su proveedor sea de otro", () => {
+    expect(conductorEnTracking(hectorSilva, RUGBY, true)).toBe(true);
+  });
+
+  it("sin evento elegido salen todos", () => {
+    expect(conductorEnTracking(hectorSilva, "", false)).toBe(true);
   });
 });

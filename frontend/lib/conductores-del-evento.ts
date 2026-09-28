@@ -24,6 +24,20 @@ export function conductorEnEvento(driver: ConEventos | null | undefined, eventoI
   return true;
 }
 
+/**
+ * ¿Sale el conductor en el tracking en vivo del evento elegido? Sí si trabaja
+ * en el evento o si va en un viaje del evento (aunque su proveedor sea de
+ * otro). 28-09-2026: con World Rugby elegido, el mapa mostraba a los seis
+ * conductores de Valparaíso conectados a los Juegos Escolares.
+ */
+export function conductorEnTracking(
+  driver: ConEventos | null | undefined,
+  eventoId: string | null | undefined,
+  conViajeDelEvento: boolean,
+): boolean {
+  return conViajeDelEvento || conductorEnEvento(driver, eventoId);
+}
+
 /** ¿El proveedor trabaja en el evento? Sin eventos asociados vale para todos. */
 export function proveedorEnEvento(
   provider: { eventIds?: string[] | null } | null | undefined,
