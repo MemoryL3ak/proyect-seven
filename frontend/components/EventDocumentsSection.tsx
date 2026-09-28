@@ -24,11 +24,17 @@ import { BRAND, STATE, SURFACE } from "@/lib/design";
 export default function EventDocumentsSection({
   audience,
   eventId,
+  eventIds,
   title = "Documentos del evento",
   subtitle = "Información oficial para consultar o descargar",
 }: {
   audience: DocumentAudience | DocumentAudience[];
   eventId?: string | null;
+  /**
+   * Eventos de quien mira (el conductor trabaja en los de su proveedor): sólo
+   * los documentos de esos eventos, más los generales (sin evento).
+   */
+  eventIds?: string[] | null;
   title?: string;
   subtitle?: string;
 }) {
@@ -39,11 +45,15 @@ export default function EventDocumentsSection({
   useEffect(() => {
     let alive = true;
     fetchPortalDocuments(audience, eventId)
-      .then(list => { if (alive) setDocs(list); })
+      .then(list => {
+        if (!alive) return;
+        const eventos = eventIds ?? [];
+        setDocs(eventos.length ? list.filter(d => !d.eventId || eventos.includes(d.eventId)) : list);
+      })
       .catch(() => { if (alive) { setDocs([]); setError("No se pudieron cargar los documentos."); } });
     return () => { alive = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [Array.isArray(audience) ? audience.join(",") : audience, eventId]);
+  }, [Array.isArray(audience) ? audience.join(",") : audience, eventId, (eventIds ?? []).join(",")]);
 
   const download = (doc: EventDocument) => {
     if (isNativeBridge()) {

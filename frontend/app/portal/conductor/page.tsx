@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, type MouseEvent, useEffect, useRef, useState } from "react";
+import { Fragment, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import {
@@ -56,6 +56,7 @@ import {
   send as nativeSend,
 } from "@/lib/native-bridge";
 import PushTokenSync from "@/components/PushTokenSync";
+import { enEventosDelConductor, eventosDelConductor } from "@/lib/eventos-conductor";
 import { appYaRastrea, clasificarErrorUbicacionNativa } from "@/lib/ubicacion-conductor";
 import QRCode from "qrcode";
 import { buildCredentialHtml } from "@/lib/credential-template";
@@ -77,7 +78,7 @@ const TripMap = dynamic(() => import("@/components/TripMap"), {
 const VenueMap = dynamic(() => import("@/components/VenueMap"), { ssr: false });
 
 type VenueSite = { id: string; eventId?: string | null; name?: string | null; address?: string | null; commune?: string | null; region?: string | null; photoUrl?: string | null };
-type AccommodationSite = { id: string; name?: string | null; address?: string | null; city?: string | null; country?: string | null; photoUrl?: string | null; coordinators?: CoordinadorHotel[] | null };
+type AccommodationSite = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; photoUrl?: string | null; coordinators?: CoordinadorHotel[] | null };
 type FlightItem = { id: string; flightNumber: string; airline: string; arrivalTime: string | null; origin?: string | null; terminal?: string | null };
 
 type FlightTrack = {
@@ -145,6 +146,8 @@ type Trip = {
   destinationHotelId?: string | null;
   originFoodLocationId?: string | null;
   destinationFoodLocationId?: string | null;
+  /** Datos del traslado de AND: vuelo, hora del vuelo, aerolínea. */
+  metadata?: Record<string, unknown> | null;
   notes?: string | null;
   /**
    * Viaje de delegación: en los Juegos Escolares el traslado se asigna al
@@ -178,6 +181,8 @@ type Driver = {
   vehicleId?: string | null;
   providerId?: string | null;
   eventId?: string | null;
+  /** Eventos del proveedor del conductor (/drivers). */
+  eventIds?: string[] | null;
   accreditationStatus?: string | null;
   credentialCode?: string | null;
   accessTypes?: string[] | null;
@@ -400,10 +405,10 @@ export default function DriverPortalPage() {
   const [requestStatus, setRequestStatus] = useState<string | null>(null);
   // El home del portal es siempre Actividades; sólo un refresh (F5) restaura
   // la sección donde estaba el usuario.
-  const [activeTab, setActiveTab] = useState<"actividades" | "vuelos" | "sedes" | "reportes" | "documentos" | "cuenta">(() =>
-    restoreOnReload<"actividades" | "vuelos" | "sedes" | "reportes" | "documentos" | "cuenta">(
+  const [activeTab, setActiveTab] = useState<"actividades" | "vuelos" | "sedes" | "hoteles" | "reportes" | "documentos" | "cuenta">(() =>
+    restoreOnReload<"actividades" | "vuelos" | "sedes" | "hoteles" | "reportes" | "documentos" | "cuenta">(
       "portal_conductor_tab",
-      ["actividades", "vuelos", "sedes", "reportes", "documentos", "cuenta"],
+      ["actividades", "vuelos", "sedes", "hoteles", "reportes", "documentos", "cuenta"],
       "actividades",
     ),
   );
@@ -469,6 +474,17 @@ export default function DriverPortalPage() {
     }
   };
   const [expandedSiteId, setExpandedSiteId] = useState<string | null>(null);
+  // Sólo las sedes, hoteles y documentos de los eventos del conductor: el de
+  // World Rugby veía los de los Juegos Escolares (28-09-2026).
+  const eventosConductor = useMemo(() => eventosDelConductor(driverProfile), [driverProfile]);
+  const misSedes = useMemo(
+    () => venues.filter((v) => enEventosDelConductor(eventosConductor, v.eventId)),
+    [venues, eventosConductor],
+  );
+  const misHoteles = useMemo(
+    () => accommodations.filter((h) => enEventosDelConductor(eventosConductor, h.eventId)),
+    [accommodations, eventosConductor],
+  );
   const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
   const markTripSeen = (tripId: string) => {
     setSeenTripIds((prev) => {
@@ -1955,7 +1971,7 @@ export default function DriverPortalPage() {
             .dc-banner-tag span{font-size:10px;font-weight:700;letter-spacing:0.22em;text-transform:uppercase;color:rgba(33,208,179,0.9);}
             .dc-content{max-width:920px;margin:0 auto;padding:24px 16px 90px;position:relative;z-index:1;}
             .dc-bottom-tabs{position:fixed;bottom:0;left:0;right:0;z-index:50;background:#fff;border-top:1px solid #e2e8f0;display:flex;padding:6px 0;box-shadow:0 -2px 12px rgba(0,0,0,0.06);}
-            .dc-tab-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;background:none;border:none;cursor:pointer;font-size:10px;font-weight:600;transition:color .15s;-webkit-tap-highlight-color:transparent;}
+            .dc-tab-btn{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 1px;background:none;border:none;cursor:pointer;font-size:9.5px;letter-spacing:-0.01em;white-space:nowrap;font-weight:600;transition:color .15s;-webkit-tap-highlight-color:transparent;}
             .dc-profile-card{background:#fff;border-radius:24px;border:1px solid rgba(226,232,240,0.8);padding:24px 28px;margin-bottom:20px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;animation:dc-in .4s cubic-bezier(0.16,1,0.3,1) both;box-shadow:0 4px 24px rgba(0,0,0,0.06);position:relative;overflow:hidden;}
             .dc-profile-body{display:flex;align-items:center;gap:20px;min-width:0;}
             .dc-avatar{width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,${BRAND.teal} 0%,${BRAND.navyLight} 100%);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#fff;box-shadow:0 6px 24px rgba(33,208,179,0.4);letter-spacing:-0.02em;flex-shrink:0;}
@@ -2722,6 +2738,7 @@ export default function DriverPortalPage() {
                 <EventDocumentsSection
                   audience="CONDUCTOR"
                   eventId={(driverProfile as { eventId?: string | null }).eventId ?? null}
+                  eventIds={eventosConductor}
                 />
 
                 {/* Documents section */}
@@ -3113,6 +3130,46 @@ export default function DriverPortalPage() {
                       {noSchedule.slice(0, 10).map(f => <FlightCard key={f.id} f={f} />)}
                     </>
                   )}
+                  {/* Salidas: el vuelo de cada Transfer Out del conductor, para
+                      saber a qué vuelo lleva al pasajero (28-09-2026). */}
+                  {(() => {
+                    const salidas = trips
+                      .filter(tr => String(tr.tripType || "").toUpperCase() === "TRANSFER_OUT" && !["CANCELLED", "COMPLETED", "DROPPED_OFF"].includes(tr.status || ""))
+                      .map(tr => {
+                        const meta = (tr.metadata ?? {}) as Record<string, unknown>;
+                        const pasajero = tr.requesterAthleteId ? allAthletes[tr.requesterAthleteId] : undefined;
+                        const vuelo = typeof meta.flightNumber === "string" ? meta.flightNumber : "";
+                        const hora = typeof meta.flightTime === "string" ? meta.flightTime : null;
+                        return {
+                          id: `salida-${tr.id}`,
+                          flightNumber: vuelo,
+                          airline: typeof meta.airline === "string" ? meta.airline : "",
+                          origin: tr.origin ?? null,
+                          terminal: null,
+                          arrivalTime: hora,
+                          passengers: pasajero?.fullName ? [pasajero.fullName] : [],
+                          recogida: tr.scheduledAt ?? null,
+                        };
+                      })
+                      .filter(s => s.flightNumber)
+                      .sort((a, b) => new Date(a.arrivalTime || 0).getTime() - new Date(b.arrivalTime || 0).getTime());
+                    if (salidas.length === 0) return null;
+                    return (
+                      <>
+                        <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark,margin:"10px 0 0" }}>Salidas (traslado al aeropuerto)</p>
+                        {salidas.slice(0, 25).map(s => (
+                          <div key={s.id} style={{ display:"flex",flexDirection:"column",gap:2 }}>
+                            <FlightCard f={s} showDate />
+                            {s.recogida && (
+                              <p style={{ fontSize:11,color:SURFACE.textMuted,margin:"0 0 0 14px" }}>
+                                Recogida en el hotel: {fmtDate(s.recogida)} · {fmtTime(s.recogida)}
+                              </p>
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    );
+                  })()}
                 </div>
               );
             })()}
@@ -3121,8 +3178,8 @@ export default function DriverPortalPage() {
             {activeTab === "sedes" && (
               <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
                 <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Sedes del evento</p>
-                {venues.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
-                {venues.map(v => {
+                {misSedes.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay sedes registradas</p>}
+                {misSedes.map(v => {
                   const isOpen = expandedSiteId === `venue-${v.id}`;
                   const addr = [v.address, v.commune, v.region].filter(Boolean).join(", ");
                   return (
@@ -3148,9 +3205,15 @@ export default function DriverPortalPage() {
                     </div>
                   );
                 })}
-                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.tealDark,margin:"8px 0 0" }}>Hoteles</p>
-                {accommodations.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
-                {accommodations.map(h => {
+              </div>
+            )}
+
+            {/* ─── Hoteles tab ─── */}
+            {activeTab === "hoteles" && (
+              <div style={{ display:"flex",flexDirection:"column",gap:8 }}>
+                <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:0 }}>Hoteles del evento</p>
+                {misHoteles.length === 0 && <p style={{ fontSize:13,color:SURFACE.textFaint,textAlign:"center",padding:20 }}>No hay hoteles registrados</p>}
+                {misHoteles.map(h => {
                   const isOpen = expandedSiteId === `hotel-${h.id}`;
                   const addr = [h.address, h.city, h.country].filter(Boolean).join(", ");
                   return (
@@ -3195,6 +3258,7 @@ export default function DriverPortalPage() {
               { key: "actividades" as const, label: "Actividades", icon: <CarIcon size={20} strokeWidth={1.8} /> },
               { key: "vuelos" as const, label: "Vuelos", icon: <PlaneIcon size={20} strokeWidth={1.8} /> },
               { key: "sedes" as const, label: "Sedes", icon: <PinIcon size={20} strokeWidth={1.8} /> },
+              { key: "hoteles" as const, label: "Hoteles", icon: <BuildingIcon size={20} strokeWidth={1.8} /> },
               { key: "reportes" as const, label: "Reportes", icon: <FileTextIcon size={20} strokeWidth={1.8} /> },
               { key: "documentos" as const, label: "Documentos", icon: <FolderIcon size={20} strokeWidth={1.8} /> },
               { key: "cuenta" as const, label: "Cuenta", icon: <UserIcon size={20} strokeWidth={1.8} /> },
