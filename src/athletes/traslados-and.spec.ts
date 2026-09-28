@@ -138,6 +138,24 @@ describe('cambiosDeTraslado', () => {
     );
   });
 
+  it('quitar el conductor en la ficha lo quita del viaje si lo puso AND', () => {
+    expect(
+      cambiosDeTraslado(
+        { ...actual, andDriverId: 'hector' },
+        { ...deseado, driverId: null },
+      ),
+    ).toEqual({ driverId: null });
+  });
+
+  it('pero no quita el que despacho cambió en Viajes', () => {
+    expect(
+      cambiosDeTraslado(
+        { ...actual, driverId: 'patricia', andDriverId: 'hector' },
+        { ...deseado, driverId: null },
+      ),
+    ).toEqual({});
+  });
+
   it('un traslado que ya partió no se reescribe', () => {
     expect(
       cambiosDeTraslado(

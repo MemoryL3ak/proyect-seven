@@ -357,6 +357,8 @@ export default function ResourceScreen({
   const [andSearch, setAndSearch] = useState("");
   const [andTripFilter, setAndTripFilter] = useState<"all" | "ARRIVAL" | "DEPARTURE">("all");
   const [andEstadoFilter, setAndEstadoFilter] = useState<FiltroEstadoAnd>("");
+  // "<id>:LLEGADA" mientras se guarda el conductor elegido en una tarjeta.
+  const [asignandoConductor, setAsignandoConductor] = useState<string | null>(null);
   // Filtros de AND: día, conductor, país o región, vuelo, aerolínea y tipo de
   // cliente (ver lib/and-listado).
   const FILTROS_AND_VACIOS = { dia: "", conductor: "", pais: "", vuelo: "", aerolinea: "", tipoCliente: "" };
@@ -2432,6 +2434,44 @@ export default function ResourceScreen({
     }
   };
 
+  /**
+   * Conductor elegido directo en la tarjeta de AND (28-09-2026: asignarlo
+   * obligaba a abrir la ficha entera). Se guarda en la ficha y el servidor
+   * crea o ajusta el Transfer In / Out con ese conductor, que recibe el aviso.
+   */
+  const asignarConductorAnd = async (item: Record<string, any>, sentido: "LLEGADA" | "SALIDA", driverId: string) => {
+    if (!item.id) return;
+    const clave = sentido === "LLEGADA" ? "arrival" : "departure";
+    const meta = { ...readRecord(item.participantMetadata) };
+    const tramo: Record<string, unknown> = { ...readRecord(meta[clave]), driverId: driverId || null };
+    // Si el vuelo sólo está en la fila (ficha hecha a mano), se copia para que
+    // el servidor sepa a qué vuelo corresponde el traslado.
+    const vuelo = sentido === "LLEGADA" ? item.participantFlightNumber : item.participantDepartureFlightNumber;
+    if (!tramo.flightNumber && vuelo) tramo.flightNumber = vuelo;
+    meta[clave] = tramo;
+    setAsignandoConductor(`${item.id}:${sentido}`);
+    setError(null);
+    try {
+      await apiFetch(`/athletes/${item.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ metadata: meta }),
+      });
+      const nombre = driverId ? driverLookup[driverId]?.fullName || t("el conductor") : null;
+      setSuccessMsg(
+        nombre
+          ? `${item.participantFullName ?? ""}: ${sentido === "LLEGADA" ? t("traslado de llegada") : t("traslado de salida")} ${t("asignado a")} ${nombre}`
+          : `${item.participantFullName ?? ""}: ${t("conductor quitado")}`,
+      );
+      setTimeout(() => setSuccessMsg(null), 5000);
+      await loadItems();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("No se pudo asignar el conductor"));
+    } finally {
+      setAsignandoConductor(null);
+    }
+  };
+
   const handleValidateAthlete = async (item: Record<string, any>) => {
     const missing = missingAthleteValidationFields(item);
     if (missing.length > 0) {
@@ -4440,6 +4480,51 @@ export default function ResourceScreen({
                             )}
                           </div>
                         )}
+                        {/* Conductor de cada traslado, elegido aquí mismo. */}
+                        {(conLlegada || conSalida) && (() => {
+                          const eventoFicha = (item.eventId as string | undefined) || eventoId;
+                          const opciones = (sentido: "LLEGADA" | "SALIDA") => {
+                            const actual = String((sentido === "LLEGADA" ? item.participantArrivalDriverId : item.participantDepartureDriverId) ?? "");
+                            return (driverOptions as Option[]).filter(
+                              (o) => o.value === actual || conductorEnEvento(driverLookup[o.value], eventoFicha),
+                            );
+                          };
+                          const sinConductores = opciones("LLEGADA").length === 0 && opciones("SALIDA").length === 0;
+                          return (
+                            <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", alignItems: "center", margin: "4px 0 6px" }}>
+                              {sinConductores ? (
+                                <span style={{ fontSize: "11px", color: STATE.warningText }}>
+                                  {t("Este evento no tiene conductores: agrégalos en Proveedores (\"Traer de otro evento\" o uno nuevo).")}
+                                </span>
+                              ) : (
+                                (["LLEGADA", "SALIDA"] as const)
+                                  .filter((s) => (s === "LLEGADA" ? conLlegada : conSalida))
+                                  .map((s) => {
+                                    const actual = String((s === "LLEGADA" ? item.participantArrivalDriverId : item.participantDepartureDriverId) ?? "");
+                                    const guardando = asignandoConductor === `${item.id}:${s}`;
+                                    return (
+                                      <div key={s} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                                        <span style={{ fontSize: "11px", fontWeight: 700, color: s === "LLEGADA" ? BRAND.teal : ACCENT.violetLight, whiteSpace: "nowrap" }}>
+                                          {s === "LLEGADA" ? t("Conductor llegada") : t("Conductor salida")}
+                                        </span>
+                                        <StyledSelect
+                                          value={actual}
+                                          disabled={guardando}
+                                          onChange={(e) => void asignarConductorAnd(item, s, e.target.value)}
+                                          wrapperStyle={{ width: 220 }}
+                                        >
+                                          <option value="">{guardando ? t("Guardando…") : t("Sin conductor")}</option>
+                                          {opciones(s).map((o) => (
+                                            <option key={o.value} value={o.value}>{o.label}</option>
+                                          ))}
+                                        </StyledSelect>
+                                      </div>
+                                    );
+                                  })
+                              )}
+                            </div>
+                          );
+                        })()}
                         {/* Detail row */}
                         <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
                           {item.participantPhone && (

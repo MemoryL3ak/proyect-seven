@@ -26,6 +26,7 @@ type FilaViaje = {
   status: string;
   scheduled_at: string | null;
   driver_id: string | null;
+  and_driver_id: string | null;
   origin: string | null;
   destination: string | null;
   flight_number: string | null;
@@ -137,7 +138,8 @@ export class TrasladosAndService {
 
     const actuales = await this.dataSource.query<FilaViaje[]>(
       `select id, status, scheduled_at, driver_id, origin, destination,
-              metadata->>'flightNumber' as flight_number
+              metadata->>'flightNumber' as flight_number,
+              metadata->>'andDriverId' as and_driver_id
          from transport.trips
         where metadata->>'andKey' = $1
         order by created_at
@@ -164,6 +166,7 @@ export class TrasladosAndService {
         flightNumber: tramo.vuelo,
         metadata: {
           andKey: tramo.clave,
+          andDriverId: tramo.conductorId,
           source: 'AND',
           flightTime: tramo.horaVuelo,
           airline: tramo.aerolinea,
@@ -178,6 +181,7 @@ export class TrasladosAndService {
         status: actual.status,
         scheduledAt: actual.scheduled_at,
         driverId: actual.driver_id,
+        andDriverId: actual.and_driver_id,
         origin: actual.origin,
         destination: actual.destination,
         flightNumber: actual.flight_number,
@@ -191,12 +195,17 @@ export class TrasladosAndService {
       },
     );
     if (Object.keys(cambios).length === 0) return;
-    const ajuste: Partial<UpdateTripDto> = { ...cambios };
+    // driverId puede venir en null (quitar el conductor que puso AND).
+    const ajuste: Record<string, unknown> = { ...cambios };
     if (cambios.origin !== undefined || cambios.destination !== undefined) {
       if (llegada) ajuste.destinationHotelId = hotelId;
       else ajuste.originHotelId = hotelId ?? null;
     }
-    if (cambios.scheduledAt) ajuste.metadata = { flightTime: tramo.horaVuelo };
+    const metadata: Record<string, unknown> = {};
+    if (cambios.scheduledAt) metadata.flightTime = tramo.horaVuelo;
+    // Se anota qué conductor puso AND, para poder quitarlo después.
+    if (cambios.driverId !== undefined) metadata.andDriverId = cambios.driverId;
+    if (Object.keys(metadata).length) ajuste.metadata = metadata;
     await this.trips.update(actual.id, ajuste as UpdateTripDto, null);
   }
 }

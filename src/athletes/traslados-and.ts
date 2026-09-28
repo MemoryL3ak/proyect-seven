@@ -143,6 +143,8 @@ export type ViajeAnd = {
   status: string;
   scheduledAt: string | null;
   driverId: string | null;
+  /** Conductor que puso AND en el viaje (metadata.andDriverId). */
+  andDriverId?: string | null;
   origin: string | null;
   destination: string | null;
   flightNumber: string | null;
@@ -150,7 +152,8 @@ export type ViajeAnd = {
 
 export type CambiosTraslado = Partial<{
   scheduledAt: string;
-  driverId: string;
+  /** null = quitar el conductor que había puesto AND. */
+  driverId: string | null;
   origin: string;
   destination: string;
   flightNumber: string;
@@ -175,10 +178,18 @@ export function cambiosDeTraslado(
   const cambios: CambiosTraslado = {};
   if (iso(actual.scheduledAt) !== deseado.scheduledAt)
     cambios.scheduledAt = deseado.scheduledAt;
-  // Un conductor sólo se pone o se cambia desde la ficha; si la ficha no
-  // trae conductor no se le quita al viaje el que asignó despacho.
+  // El conductor de la ficha se pone o se cambia. Si la ficha queda sin
+  // conductor, se quita del viaje sólo si lo había puesto AND: el que asignó
+  // despacho en Viajes no se toca.
   if (deseado.driverId && actual.driverId !== deseado.driverId)
     cambios.driverId = deseado.driverId;
+  if (
+    !deseado.driverId &&
+    actual.driverId &&
+    actual.andDriverId &&
+    actual.driverId === actual.andDriverId
+  )
+    cambios.driverId = null;
   if ((actual.origin ?? '') !== deseado.origin) cambios.origin = deseado.origin;
   if ((actual.destination ?? '') !== deseado.destination)
     cambios.destination = deseado.destination;
