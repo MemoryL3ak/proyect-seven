@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import clsx from "clsx";
 import { useI18n } from "@/lib/i18n";
 import { getStoredUser } from "@/lib/api";
+import { nivelEnRuta, permisosDesdeMetadata, type PermisosPanel } from "@/lib/permisos-panel";
 import { BRAND, SURFACE } from "@/lib/design";
 
 type NavItem = { href: string; label: string; icon: string };
@@ -223,74 +224,6 @@ const inactiveItemStyle = {
   fontWeight: 400,
 } as const;
 
-// Map href → module ID for access control
-const HREF_TO_MODULE: Record<string, string> = {
-  "/dashboard/comercial": "dashboard.comercial",
-  "/dashboard/operacional": "dashboard.operacional",
-  "/registro/eventos": "registro.eventos",
-  "/registro/participantes": "registro.participantes",
-  // Delegaciones se registran como pestaña de Inscripción de Participantes;
-  // la página matriz (/masters/delegations) queda con el mismo permiso.
-  "/masters/delegations": "registro.participantes",
-  "/registro/proveedores": "registro.participantes",
-  "/operacion/and": "operacion.and",
-  "/operacion/cumplimiento-and": "operacion.cumplimiento",
-  "/operations/flights": "operacion.and",
-  "/operacion/salidas": "operacion.and",
-  "/operations/daily-transport": "operacion.viajes",
-  "/operations/vehicle-positions": "operacion.tracking",
-  "/operations/trips": "operacion.viajes",
-  // Faltaba en el mapa: sin entrada, canSee() lo daba por visible para
-  // cualquier usuario, sin importar sus módulos.
-  "/operations/trip-requests": "operacion.viajes",
-  // Con módulo propio: antes colgaba de "operacion.viajes" y no había forma
-  // de dar transporte sin exponer tarifas de proveedores y consumo real.
-  "/operations/transport-finance": "operacion.finanzas",
-  "/operations/driver-heatmap": "operacion.viajes",
-  "/operations/fleet": "operacion.viajes",
-  "/operations/driver-monitoring": "operacion.tracking",
-  "/operations/vip-monitoring": "operacion.tracking",
-  "/operations/hotel-tracking": "hoteleria.tracking",
-  "/masters/accommodations": "hoteleria.hoteles",
-  "/masters/hotel-rooms": "hoteleria.habitaciones",
-  "/operations/hotel-assignments": "hoteleria.asignaciones",
-  "/operations/hotel-keys": "hoteleria.llaves",
-  "/operations/salones": "hoteleria.llaves",
-  "/operations/hotel-extras": "hoteleria.llaves",
-  "/operations/food": "alimentacion.general",
-  "/operations/food/tipos": "alimentacion.general",
-  "/operations/food/desayuno": "alimentacion.general",
-  "/operations/food/cenas": "alimentacion.general",
-  "/operations/food/almuerzos": "alimentacion.general",
-  "/operations/food/lugares": "alimentacion.general",
-  "/health": "salud",
-  "/operations/support-chats": "_always",
-  "/operations/documentos": "documentos",
-  "/clientes": "clientes",
-  "/deportes": "deportes",
-  "/deportes/premiaciones": "deportes",
-  "/masters/disciplines": "deportes",
-  "/sede": "sede",
-  "/incidents": "incidencias",
-  "/sports-calendar": "calendario",
-  // Con módulo propio: antes colgaban de "operacion.viajes" y cualquier
-  // usuario con Viajes veía Staff & Voluntarios y Beneficios sin quererlo.
-  "/operations/workforce": "workforce",
-  "/operations/coupons": "beneficios",
-  "/accreditations": "acreditaciones",
-  "/portal/user": "portales",
-  "/portal/conductor": "portales",
-  "/portal/vehicle-request": "portales",
-  "/portal/access-control": "portales",
-  "/portal/partner": "portales",
-  "/admin/usuarios": "admin.usuarios",
-  "/admin/notificaciones": "admin.notificaciones",
-  "/admin/archivos": "admin.archivos",
-  "/operations/sofia-actions": "_always",
-  "/cuenta": "_always",
-  "/inicio-guiado": "_always",
-  "/ayuda": "_always",
-};
 
 export default function SideNav({ onClose }: { onClose?: () => void }) {
   const pathname = usePathname();
@@ -298,20 +231,14 @@ export default function SideNav({ onClose }: { onClose?: () => void }) {
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({});
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
   const [collapsed, setCollapsed] = useState(false);
-  const [userModules, setUserModules] = useState<string[] | null>(null);
+  // Módulos y niveles del usuario (lib/permisos-panel). Sin módulos = todo.
+  const [permisos, setPermisos] = useState<PermisosPanel | null>(null);
 
   useEffect(() => {
-    const user = getStoredUser();
-    const mods = user?.user_metadata?.modules;
-    if (Array.isArray(mods) && mods.length > 0) setUserModules(mods as string[]);
+    setPermisos(permisosDesdeMetadata(getStoredUser()?.user_metadata));
   }, []);
 
-  const canAccess = (href: string): boolean => {
-    if (!userModules) return true; // No modules set = show all (admin/legacy users)
-    const moduleId = HREF_TO_MODULE[href];
-    if (!moduleId || moduleId === "_always") return true;
-    return userModules.includes(moduleId);
-  };
+  const canAccess = (href: string): boolean => (permisos ? nivelEnRuta(permisos, href) !== "ninguno" : true);
 
   useEffect(() => {
     const activeSection = navSections.find((s) => sectionHasActivePath(s, pathname));

@@ -35,6 +35,8 @@ export class AuthService {
     phone,
     delegationId,
     delegationLabel,
+    soloVer,
+    eventIds,
   }: CreateUserDto): Promise<{ user: User }> {
     const resolvedEmail = email
       ? String(email).trim().toLowerCase()
@@ -60,6 +62,9 @@ export class AuthService {
         ...(delegationId?.trim()
           ? { delegationId: delegationId.trim(), delegationLabel: delegationLabel?.trim() || null }
           : {}),
+        // Niveles por módulo y eventos (auth/permisos-panel).
+        ...(Array.isArray(soloVer) ? { soloVer } : {}),
+        ...(Array.isArray(eventIds) && eventIds.length > 0 ? { eventIds } : {}),
         forcePasswordChange: forceChange,
         force_password_change: forceChange,
       },
@@ -103,6 +108,10 @@ export class AuthService {
       phone?: string;
       delegationId?: string | null;
       delegationLabel?: string | null;
+      /** null quita los niveles (vuelve a "editar" todo lo que ve). */
+      soloVer?: string[] | null;
+      /** null o vacío = todos los eventos. */
+      eventIds?: string[] | null;
     },
   ): Promise<{ user: User }> {
     const { data: result, error } = await this.supabase.auth.admin.updateUserById(id, {
@@ -121,6 +130,10 @@ export class AuthService {
               delegationId: data.delegationId?.trim() || null,
               delegationLabel: data.delegationId?.trim() ? data.delegationLabel?.trim() || null : null,
             }
+          : {}),
+        ...(data.soloVer !== undefined ? { soloVer: data.soloVer } : {}),
+        ...(data.eventIds !== undefined
+          ? { eventIds: data.eventIds && data.eventIds.length > 0 ? data.eventIds : null }
           : {}),
         ...(data.password
           ? {

@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BRAND, SURFACE } from "@/lib/design";
+import { useEffect, useState } from "react";
+import { getStoredUser } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
+import { nivelEnRuta, permisosDesdeMetadata, type PermisosPanel } from "@/lib/permisos-panel";
 
 /**
  * Barra inferior del panel en el teléfono (app staff). Lleva a las cuatro
@@ -66,6 +69,13 @@ const TABS: Tab[] = [
 export default function MobileTabBar({ onMenuOpen }: { onMenuOpen: () => void }) {
   const pathname = usePathname();
   const { t } = useI18n();
+  // Sólo las pantallas de los módulos del usuario (lib/permisos-panel): el
+  // Comité de World Rugby no tiene Registro.
+  const [permisos, setPermisos] = useState<PermisosPanel | null>(null);
+  useEffect(() => {
+    setPermisos(permisosDesdeMetadata(getStoredUser()?.user_metadata));
+  }, []);
+  const pestanas = TABS.filter((tab) => !permisos || nivelEnRuta(permisos, tab.href) !== "ninguno");
 
   const itemStyle = (active: boolean): React.CSSProperties => ({
     display: "flex",
@@ -109,7 +119,7 @@ export default function MobileTabBar({ onMenuOpen }: { onMenuOpen: () => void })
         zIndex: 35,
         // El display va en globals.css (.mobile-tabbar): puesto aquí en línea
         // pisaba al md:hidden y la barra salía también en el escritorio.
-        gridTemplateColumns: "repeat(5, 1fr)",
+        gridTemplateColumns: `repeat(${pestanas.length + 1}, 1fr)`,
         paddingBottom: "env(safe-area-inset-bottom)",
         background: "rgba(255,255,255,0.96)",
         backdropFilter: "blur(14px)",
@@ -118,7 +128,7 @@ export default function MobileTabBar({ onMenuOpen }: { onMenuOpen: () => void })
         boxShadow: "0 -4px 18px rgba(15,23,42,0.06)",
       }}
     >
-      {TABS.map((tab) => {
+      {pestanas.map((tab) => {
         const active = tab.isActive(pathname);
         return (
           <Link key={tab.href} href={tab.href} style={itemStyle(active)} aria-current={active ? "page" : undefined}>

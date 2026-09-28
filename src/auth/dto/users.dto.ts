@@ -44,6 +44,19 @@ export class CreateUserDto {
   @IsString()
   @IsOptional()
   delegationLabel?: string;
+
+  // Módulos que sólo puede mirar (ver auth/permisos-panel). Mandarlo, aunque
+  // vacío, activa los niveles: los cambios exigen el módulo con "editar".
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  soloVer?: string[];
+
+  // Eventos que puede ver en el panel; vacío = todos.
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  eventIds?: string[];
 }
 
 export class LoginUserDto {

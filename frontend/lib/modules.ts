@@ -19,8 +19,17 @@ export const ALL_MODULES: AppModule[] = [
   { id: "registro.participantes", label: "Inscripción Participantes", group: "Registro", icon: "user" },
   { id: "operacion.and", label: "AND", group: "Operación", icon: "shield" },
   { id: "operacion.cumplimiento", label: "Cumplimiento AND", group: "Operación", icon: "check-circle" },
+  // Desde el 28-09-2026 cada pantalla de Arribos y de Transporte tiene su
+  // módulo: el Comité de World Rugby mira Llegadas sin las fichas de AND.
+  // Quien tenía AND, Viajes o Tracking los conserva (lib/permisos-panel).
+  { id: "operacion.llegadas", label: "Monitoreo de Llegadas", group: "Operación", icon: "plane" },
+  { id: "operacion.salidas", label: "Monitoreo de Salidas", group: "Operación", icon: "plane" },
   { id: "operacion.tracking", label: "Tracking de Viajes", group: "Transporte", icon: "route" },
   { id: "operacion.viajes", label: "Viajes", group: "Transporte", icon: "bus" },
+  { id: "operacion.operatividad", label: "Operatividad Diaria", group: "Transporte", icon: "calendar" },
+  { id: "operacion.solicitudes", label: "Solicitudes T1/VIP", group: "Transporte", icon: "ticket" },
+  { id: "operacion.conductores", label: "Monitoreo de Conductores", group: "Transporte", icon: "car" },
+  { id: "operacion.vip", label: "Monitoreo VIP", group: "Transporte", icon: "star" },
   { id: "operacion.scanner", label: "Escáner QR", group: "Transporte", icon: "qr-code" },
   // Módulo propio: el Panel Financiero expone tarifas de proveedores, costos
   // y consumo real, y no todo quien opera transporte debe verlos.

@@ -34,6 +34,8 @@ export class AuthController {
       phone?: string;
       delegationId?: string | null;
       delegationLabel?: string | null;
+      soloVer?: string[] | null;
+      eventIds?: string[] | null;
     },
   ) {
     return this.authService.updateUser(id, body);

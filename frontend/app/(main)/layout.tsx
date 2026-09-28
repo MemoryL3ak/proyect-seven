@@ -6,6 +6,7 @@ import TopBar from "@/components/TopBar";
 import SofiaWidget from "@/components/SofiaWidget";
 import MobileTabBar from "@/components/MobileTabBar";
 import { EventoActivoProvider } from "@/lib/evento-activo-provider";
+import GuardiaModulo from "@/components/GuardiaModulo";
 
 function MobileOverlay({ visible, onClose }: { visible: boolean; onClose: () => void }) {
   if (!visible) return null;
@@ -39,7 +40,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
           inferior: el padding de abajo lo pone globals.css. */}
       <main className="flex-1 min-w-0 overflow-x-hidden px-4 pt-3 pb-5 md:px-7 md:py-7">
         <TopBar onMenuOpen={() => setSidebarOpen(true)} />
-        <div className="min-w-0 mx-auto" style={{ maxWidth: "1400px" }}>{children}</div>
+        {/* Sin el módulo, "Sin acceso"; con sólo lectura, el aviso arriba. */}
+        <div className="min-w-0 mx-auto" style={{ maxWidth: "1400px" }}><GuardiaModulo>{children}</GuardiaModulo></div>
       </main>
       <MobileTabBar onMenuOpen={() => setSidebarOpen(true)} />
       <SofiaWidget />

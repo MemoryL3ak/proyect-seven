@@ -33,6 +33,7 @@ import {
   LoaderIcon,
 } from "@/components/ui/Icons";
 import { ALL_MODULES, MODULE_GROUPS, type AppModule } from "@/lib/modules";
+import { modulosExplicitos, permisosDesdeMetadata } from "@/lib/permisos-panel";
 import StyledSelect from "@/components/StyledSelect";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
@@ -68,6 +69,10 @@ type AppUser = {
   phone?: string;
   role: Role;
   modules: string[];
+  /** Módulos que sólo puede mirar; null = usuario sin niveles (de antes). */
+  soloVer: string[] | null;
+  /** Eventos que ve; vacío = todos. */
+  eventIds: string[];
   status: UserStatus;
   createdAt: string;
   lastLogin?: string;
@@ -116,15 +121,6 @@ const ROLE_PERMISSIONS: Record<Role, string[]> = {
 
 const AVATAR_COLORS = [ACCENT.indigo, "#ec4899", STATE.success, STATE.warning, STATE.info, ACCENT.violetLight, STATE.danger, BRAND.teal];
 
-// ── Seed data ──────────────────────────────────────────────────────────────
-const SEED_USERS: AppUser[] = [
-  { id: "1", fullName: "Carlos Rodríguez", email: "carlos@sevenarana.com", role: "Administrador", modules: ROLE_PERMISSIONS["Administrador"], status: "active", emailConfirmed: true, createdAt: "2024-01-15", lastLogin: "hace 2 horas", initials: "CR", color: ACCENT.indigo },
-  { id: "2", fullName: "Ana González", email: "ana@sevenarana.com", role: "Supervisor", modules: ROLE_PERMISSIONS["Supervisor"], status: "active", emailConfirmed: true, createdAt: "2024-02-20", lastLogin: "hace 1 día", initials: "AG", color: "#ec4899" },
-  { id: "3", fullName: "Marco Silva", email: "marco@sevenarana.com", role: "Coordinador", modules: ROLE_PERMISSIONS["Coordinador"], status: "active", emailConfirmed: true, createdAt: "2024-03-10", lastLogin: "hace 3 días", initials: "MS", color: STATE.success },
-  { id: "4", fullName: "Valentina Torres", email: "valen@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "active", emailConfirmed: true, createdAt: "2024-04-05", lastLogin: "hoy", initials: "VT", color: STATE.warning },
-  { id: "5", fullName: "Felipe Muñoz", email: "felipe@sevenarana.com", role: "Visualizador", modules: ROLE_PERMISSIONS["Visualizador"], status: "inactive", emailConfirmed: true, createdAt: "2024-05-12", lastLogin: "hace 2 semanas", initials: "FM", color: STATE.info },
-  { id: "6", fullName: "Daniela Pérez", email: "dani@sevenarana.com", role: "Operador", modules: ROLE_PERMISSIONS["Operador"], status: "pending", emailConfirmed: false, createdAt: "2024-06-01", initials: "DP", color: ACCENT.violetLight },
-];
 
 function formatRelative(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
@@ -240,6 +236,10 @@ function emptyForm() {
     loginType: "email" as "email" | "username",
     role: "Operador" as Role,
     modules: ROLE_PERMISSIONS["Operador"],
+    // Los usuarios nuevos nacen con niveles: todo lo marcado en "Editar"
+    // hasta que se cambie a "Ver" (lib/permisos-panel).
+    soloVer: [] as string[] | null,
+    eventIds: [] as string[],
     tempPassword: generateTempPassword(),
     passwordEditable: false,
     status: "active" as UserStatus,
@@ -284,6 +284,13 @@ export default function UsuariosPage() {
   const [showTempPassword, setShowTempPassword] = useState(false);
   const [copiedPwd, setCopiedPwd] = useState(false);
   const [expandedModule, setExpandedModule] = useState<string | null>(null);
+  // Eventos para acotar al usuario (Gestión de Usuarios ve todos).
+  const [eventosDisponibles, setEventosDisponibles] = useState<Array<{ id: string; name: string }>>([]);
+  useEffect(() => {
+    apiFetch<Array<{ id: string; name?: string | null }>>("/events")
+      .then((evs) => setEventosDisponibles((evs ?? []).map((e) => ({ id: e.id, name: e.name || e.id }))))
+      .catch(() => setEventosDisponibles([]));
+  }, []);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<AppUser | null>(null);
@@ -300,7 +307,9 @@ export default function UsuariosPage() {
           email: u.email || "",
           phone: typeof u.user_metadata?.phone === "string" ? u.user_metadata.phone : "",
           role: (u.user_metadata?.role as Role) || "Operador",
-          modules: Array.isArray(u.user_metadata?.modules) ? u.user_metadata.modules : (ROLE_PERMISSIONS[(u.user_metadata?.role as Role) || "Operador"] || []),
+          modules: Array.isArray(u.user_metadata?.modules) ? modulosExplicitos(permisosDesdeMetadata(u.user_metadata)) : (ROLE_PERMISSIONS[(u.user_metadata?.role as Role) || "Operador"] || []),
+          soloVer: permisosDesdeMetadata(u.user_metadata).soloVer,
+          eventIds: permisosDesdeMetadata(u.user_metadata).eventIds ?? [],
           status: u.banned_until ? "inactive" : "active",
           emailConfirmed: Boolean(u.email_confirmed_at),
           createdAt: u.created_at?.split("T")[0] || "",
@@ -351,6 +360,8 @@ export default function UsuariosPage() {
       loginType: uType,
       role: user.role,
       modules: user.modules,
+      soloVer: user.soloVer,
+      eventIds: user.eventIds,
       tempPassword: uType === "username" ? "" : "",
       passwordEditable: uType === "username",
       status: user.status,
@@ -368,6 +379,25 @@ export default function UsuariosPage() {
     setForm((f) => ({
       ...f,
       modules: f.modules.includes(id) ? f.modules.filter((m) => m !== id) : [...f.modules, id],
+      soloVer: f.soloVer && f.modules.includes(id) ? f.soloVer.filter((m) => m !== id) : f.soloVer,
+    }));
+  }
+
+  /** "Ver" o "Editar" en un módulo marcado. */
+  function nivelDeModulo(id: string, soloVer: boolean) {
+    setForm((f) => {
+      const actual = f.soloVer ?? [];
+      return {
+        ...f,
+        soloVer: soloVer ? [...new Set([...actual, id])] : actual.filter((m) => m !== id),
+      };
+    });
+  }
+
+  function toggleEvento(id: string) {
+    setForm((f) => ({
+      ...f,
+      eventIds: f.eventIds.includes(id) ? f.eventIds.filter((e) => e !== id) : [...f.eventIds, id],
     }));
   }
 
@@ -399,10 +429,14 @@ export default function UsuariosPage() {
             role: form.role,
             modules: form.modules,
             phone: cleanWhatsappPhone(form.phone),
+            // Un usuario de antes (sin niveles) sigue así hasta que se le
+            // marque algún módulo en "Ver".
+            ...(form.soloVer ? { soloVer: form.soloVer.filter((m) => form.modules.includes(m)) } : {}),
+            eventIds: form.eventIds,
             ...(form.passwordEditable ? { password: form.tempPassword } : {}),
           }),
         });
-        setUsers((us) => us.map((u) => u.id === editingUser.id ? { ...u, fullName: form.fullName, phone: cleanWhatsappPhone(form.phone), role: form.role, modules: form.modules, status: form.status } : u));
+        setUsers((us) => us.map((u) => u.id === editingUser.id ? { ...u, fullName: form.fullName, phone: cleanWhatsappPhone(form.phone), role: form.role, modules: form.modules, soloVer: form.soloVer, eventIds: form.eventIds, status: form.status } : u));
       } else {
         // Create: register via backend → Supabase Auth
         const result = await apiFetch<{ user: SupabaseUser }>("/auth/register", {
@@ -414,6 +448,8 @@ export default function UsuariosPage() {
             password: form.tempPassword,
             role: form.role,
             modules: form.modules,
+            soloVer: (form.soloVer ?? []).filter((m) => form.modules.includes(m)),
+            ...(form.eventIds.length ? { eventIds: form.eventIds } : {}),
             isTemporaryPassword: !isUsername,
             ...(cleanWhatsappPhone(form.phone) ? { phone: cleanWhatsappPhone(form.phone) } : {}),
           }),
@@ -428,6 +464,8 @@ export default function UsuariosPage() {
           phone: cleanWhatsappPhone(form.phone),
           role: form.role,
           modules: form.modules,
+          soloVer: form.soloVer ?? [],
+          eventIds: form.eventIds,
           status: form.status,
           emailConfirmed: true,
           createdAt: new Date().toISOString().split("T")[0],
@@ -1185,6 +1223,43 @@ export default function UsuariosPage() {
                   </p>
               </div>
 
+              {/* Eventos: vacío = todos. Un usuario de World Rugby no ve los
+                  Juegos Escolares en el selector de evento. */}
+              <div style={{ marginBottom: "20px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+                  <h3 style={{ fontSize: "12px", fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: pal.mTextFaint, margin: 0 }}>
+                    {t("Eventos")}
+                  </h3>
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: pal.accent }}>
+                    {form.eventIds.length === 0 ? t("Todos los eventos") : `${form.eventIds.length} ${form.eventIds.length === 1 ? t("evento") : t("eventos")}`}
+                  </span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                  {eventosDisponibles.map((ev) => {
+                    const marcado = form.eventIds.includes(ev.id);
+                    return (
+                      <div
+                        key={ev.id}
+                        role="checkbox"
+                        aria-checked={marcado}
+                        tabIndex={0}
+                        onClick={() => toggleEvento(ev.id)}
+                        onKeyDown={(e) => { if (e.key === " " || e.key === "Enter") { e.preventDefault(); toggleEvento(ev.id); } }}
+                        style={{ display: "flex", alignItems: "center", gap: "10px", padding: "8px 10px", borderRadius: "8px", cursor: "pointer", border: `1px solid ${marcado ? pal.accent : pal.mBorder}`, background: marcado ? `${pal.accent}10` : "transparent" }}
+                      >
+                        <div style={{ width: 16, height: 16, borderRadius: "4px", background: marcado ? pal.accent : "transparent", border: `1.5px solid ${marcado ? pal.accent : pal.mBorder}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {marcado && <CheckIcon size={9} color={SURFACE.card} strokeWidth={3.5} />}
+                        </div>
+                        <span style={{ fontSize: "13px", color: pal.mText, fontWeight: marcado ? 600 : 400 }}>{ev.name}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p style={{ fontSize: "11px", color: pal.mTextFaint, margin: "6px 0 0" }}>
+                  {t("Sin eventos marcados, el usuario ve todos. En cada módulo, \"Ver\" deja mirar sin hacer cambios.")}
+                </p>
+              </div>
+
               {/* Module assignment */}
               <div>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" }}>
@@ -1283,9 +1358,28 @@ export default function UsuariosPage() {
                                     {checked && <CheckIcon size={9} color={SURFACE.card} strokeWidth={3.5} />}
                                   </div>
                                   <ModuleIcon module={m} color={checked ? pal.accent : SURFACE.textFaint} size={13} />
-                                  <span style={{ fontSize: "13px", color: checked ? pal.mText : pal.mTextMuted, fontWeight: checked ? 500 : 400, transition: "color 150ms" }}>
+                                  <span style={{ fontSize: "13px", color: checked ? pal.mText : pal.mTextMuted, fontWeight: checked ? 500 : 400, transition: "color 150ms", flex: 1 }}>
                                     {t(m.label)}
                                   </span>
+                                  {checked && (
+                                    // Ver = sólo mirar (el servidor rechaza sus cambios).
+                                    <div role="group" aria-label={t("Nivel de acceso")} style={{ display: "inline-flex", borderRadius: 99, border: `1px solid ${pal.mBorder}`, overflow: "hidden", flexShrink: 0 }}>
+                                      {([["ver", t("Ver")], ["editar", t("Editar")]] as const).map(([nivel, etiqueta]) => {
+                                        const esVer = (form.soloVer ?? []).includes(m.id);
+                                        const activo = nivel === "ver" ? esVer : !esVer;
+                                        return (
+                                          <button
+                                            key={nivel}
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); nivelDeModulo(m.id, nivel === "ver"); }}
+                                            style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", border: "none", cursor: "pointer", background: activo ? (nivel === "ver" ? STATE.infoSoft : pal.accent) : "transparent", color: activo ? (nivel === "ver" ? STATE.infoText : SURFACE.card) : pal.mTextFaint }}
+                                          >
+                                            {etiqueta}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}

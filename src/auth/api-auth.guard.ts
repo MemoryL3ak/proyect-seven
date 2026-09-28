@@ -12,6 +12,15 @@ import { DataSource } from 'typeorm';
 import { MobileAuthService } from '../mobile-auth/mobile-auth.service';
 import { IS_PUBLIC_KEY } from './public.decorator';
 import { STAFF_ONLY_KEY } from './staff-only.decorator';
+import {
+  esEstricto,
+  mensajeSinPermiso,
+  PermisosPanel,
+  permisosDesdeMetadata,
+  puedeEscribir,
+  reglaDeEscritura,
+  ViajeParaPermiso,
+} from './permisos-panel';
 
 /**
  * Quién llama a la API (SA-BACKEND-03 · 5.3.1):
@@ -21,7 +30,8 @@ import { STAFF_ONLY_KEY } from './staff-only.decorator';
  *            headers x-portal-kind / x-portal-user / x-portal-session.
  */
 export type ApiCaller =
-  | { type: 'staff'; userId: string }
+  // permisos: módulos, niveles y eventos del usuario (ver permisos-panel).
+  | { type: 'staff'; userId: string; permisos?: PermisosPanel }
   | { type: 'portal'; kind: 'athlete' | 'driver' | 'staff'; userId: string };
 
 export type ApiRequest = {
@@ -80,7 +90,36 @@ export class ApiAuthGuard implements CanActivate {
     if (staffOnly && caller.type !== 'staff') {
       throw new ForbiddenException('Requiere sesión del panel de administración');
     }
+    if (caller.type === 'staff' && caller.permisos && esEstricto(caller.permisos)) {
+      await this.exigirPermisoDeEscritura(req, caller.permisos);
+    }
     return true;
+  }
+
+  /**
+   * Usuarios del panel con niveles por módulo (permisos-panel): un cambio en
+   * un módulo que sólo pueden ver, o que no tienen, se rechaza con un motivo
+   * claro. Las lecturas no pasan por acá.
+   */
+  private async exigirPermisoDeEscritura(req: ApiRequest, permisos: PermisosPanel) {
+    const metodo = String(req.method ?? '').toUpperCase();
+    if (metodo === 'GET' || metodo === 'HEAD' || metodo === 'OPTIONS') return;
+    const crudo = req as unknown as { originalUrl?: string; url?: string; body?: unknown };
+    const ruta = String(crudo.originalUrl ?? crudo.url ?? '');
+    const cuerpo = crudo.body;
+    let viaje: ViajeParaPermiso | null = null;
+    const porId = /^\/?trips\/([0-9a-f-]{36})\/?(\?.*)?$/i.exec(ruta);
+    if (porId && metodo !== 'POST') {
+      const filas = (await this.dataSource.query(
+        `select client_type, trip_type from transport.trips where id = $1`,
+        [porId[1]],
+      )) as Array<{ client_type: string | null; trip_type: string | null }>;
+      if (filas[0]) viaje = { clientType: filas[0].client_type, tripType: filas[0].trip_type };
+    }
+    const regla = reglaDeEscritura(metodo, ruta, cuerpo, viaje);
+    if (!puedeEscribir(permisos, regla)) {
+      throw new ForbiddenException(mensajeSinPermiso(permisos, regla!));
+    }
   }
 
   async identify(req: ApiRequest): Promise<ApiCaller | null> {
@@ -101,7 +140,11 @@ export class ApiAuthGuard implements CanActivate {
             if (rows.length > 0) {
               return { type: 'portal', kind: 'driver', userId: rows[0].id };
             }
-            return { type: 'staff', userId: data.user.id };
+            return {
+              type: 'staff',
+              userId: data.user.id,
+              permisos: permisosDesdeMetadata(data.user.user_metadata),
+            };
           }
         } catch {
           // token ilegible o no Supabase (p. ej. token de socio): se sigue
