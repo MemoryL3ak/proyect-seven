@@ -12,7 +12,7 @@ import { openExternal, whatsappHref } from "@/lib/external-link";
 import { generoDeViaje as generoDeViajeCompartido } from "@/lib/genero-viaje";
 import TripMap from "@/components/TripMap";
 import { historialDeJornada, jornadasDelHistorial, SIN_FECHA as HISTORIAL_SIN_FECHA } from "@/lib/historial-viajes";
-import { etiquetaDiaEvento } from "@/lib/hora-evento";
+import { claveDiaEvento, etiquetaDiaEvento, horaEvento } from "@/lib/hora-evento";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { conductorEnEvento } from "@/lib/conductores-del-evento";
 import { apiFetch } from "@/lib/api";
@@ -2169,6 +2169,17 @@ export default function TripsPage() {
                         cursor: "pointer",
                         width: "100%",
                       }}>
+                      {/* Día, hora y tipo: sin esto el Transfer In y el Transfer
+                          Out de una misma persona parecían la misma tarjeta
+                          repetida (Sergio Alvarenga, 28-09-2026). */}
+                      {(trip.scheduledAt || trip.tripType) && (
+                        <p style={{ fontSize: "10px", fontWeight: 700, color: sc.accent, marginBottom: "2px", fontVariantNumeric: "tabular-nums" }}>
+                          {[
+                            trip.scheduledAt ? `${etiquetaDiaEvento(claveDiaEvento(trip.scheduledAt))} · ${horaEvento(trip.scheduledAt)}` : null,
+                            trip.tripType ? t(tripTypeLabel(trip.tripType)) : null,
+                          ].filter(Boolean).join(" · ")}
+                        </p>
+                      )}
                       <p style={{ fontSize: "12px", fontWeight: 700, color: pal.textPrimary }}>{resolveRequester(trip)}</p>
                       <p style={{ fontSize: "11px", color: pal.textMuted, marginTop: "2px" }}>{trip.origin || t("Origen pendiente")}</p>
                       <p style={{ fontSize: "11px", color: pal.labelColor }}>
