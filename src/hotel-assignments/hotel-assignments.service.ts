@@ -8,6 +8,7 @@ import { CreateHotelAssignmentDto } from './dto/create-hotel-assignment.dto';
 import { UpdateHotelAssignmentDto } from './dto/update-hotel-assignment.dto';
 import { AutoAssignHotelByRoomTypeDto } from './dto/auto-assign-hotel-by-room-type.dto';
 import { HotelAssignment } from './entities/hotel-assignment.entity';
+import { filasDe } from '../shared/filas-de';
 
 type HotelAssignmentRow = {
   id: string;
@@ -279,15 +280,17 @@ export class HotelAssignmentsService {
     const values = keys.map((key) => row[key]);
 
     try {
-      const rows = (await this.dataSource.query(
-        `
+      const rows = filasDe<HotelAssignmentRow>(
+        await this.dataSource.query(
+          `
         update logistics.hotel_assignments
         set ${setSql}, updated_at = now()
         where id = $1
         returning *
       `,
-        [id, ...values],
-      )) as HotelAssignmentRow[];
+          [id, ...values],
+        ),
+      );
 
       if (!rows[0]) {
         throw new NotFoundException(`Hotel assignment with id ${id} not found`);

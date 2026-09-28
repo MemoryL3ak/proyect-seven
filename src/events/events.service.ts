@@ -8,6 +8,7 @@ import { DataSource, Repository } from 'typeorm';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { Event } from './entities/event.entity';
+import { filasDe } from '../shared/filas-de';
 
 type EventRow = {
   id: string;
@@ -347,15 +348,17 @@ export class EventsService {
     if (keys.length > 0) {
       const setSql = keys.map((key, index) => `${key} = $${index + 2}`).join(', ');
       const values = keys.map((key) => row[key]);
-      const rows = (await this.dataSource.query(
-        `
+      const rows = filasDe<{ id: string }>(
+        await this.dataSource.query(
+          `
         update core.events
         set ${setSql}, updated_at = now()
         where id = $1
         returning id
       `,
-        [id, ...values],
-      )) as Array<{ id: string }>;
+          [id, ...values],
+        ),
+      );
       if (!rows[0]) {
         throw new NotFoundException(`Event with id ${id} not found`);
       }

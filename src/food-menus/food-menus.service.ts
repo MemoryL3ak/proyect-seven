@@ -8,6 +8,7 @@ import { delegationHotelsSql } from '../shared/delegation-hotels';
 import { CreateFoodMenuDto } from './dto/create-food-menu.dto';
 import { UpdateFoodMenuDto } from './dto/update-food-menu.dto';
 import { FoodMenu } from './entities/food-menu.entity';
+import { filasDe } from '../shared/filas-de';
 
 type FoodMenuRow = {
   id: string;
@@ -156,10 +157,12 @@ export class FoodMenusService {
     const values = keys.map((k) => map[k]);
 
     try {
-      const rows = (await this.dataSource.query(
-        `update logistics.food_menus set ${setSql}, updated_at = now() where id = $1 returning ${SELECT_COLS}`,
-        [id, ...values],
-      )) as FoodMenuRow[];
+      const rows = filasDe<FoodMenuRow>(
+        await this.dataSource.query(
+          `update logistics.food_menus set ${setSql}, updated_at = now() where id = $1 returning ${SELECT_COLS}`,
+          [id, ...values],
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Food menu ${id} not found`);
       return this.toEntity(rows[0]);
     } catch (error) {

@@ -8,6 +8,7 @@ import {
   CreateMealTimeBlockDto,
   UpdateMealTimeBlockDto,
 } from './dto/meal-time-block.dto';
+import { filasDe } from '../shared/filas-de';
 
 type MealTimeBlockRow = {
   id: string;
@@ -114,13 +115,15 @@ export class MealTimeBlocksService {
     }
 
     try {
-      const rows = (await this.dataSource.query(
-        `update logistics.meal_time_blocks
+      const rows = filasDe<MealTimeBlockRow>(
+        await this.dataSource.query(
+          `update logistics.meal_time_blocks
             set ${set.join(', ')}, updated_at = now()
           where id = $1
           returning ${COLUMNAS}`,
-        params,
-      )) as MealTimeBlockRow[];
+          params,
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Meal time block ${id} not found`);
       return this.toEntity(rows[0]);
     } catch (error) {

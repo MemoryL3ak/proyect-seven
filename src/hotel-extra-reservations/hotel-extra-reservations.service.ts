@@ -7,6 +7,7 @@ import { DataSource } from 'typeorm';
 import { CreateHotelExtraReservationDto } from './dto/create-hotel-extra-reservation.dto';
 import { UpdateHotelExtraReservationDto } from './dto/update-hotel-extra-reservation.dto';
 import { HotelExtraReservation } from './entities/hotel-extra-reservation.entity';
+import { filasDe } from '../shared/filas-de';
 
 type HotelExtraReservationRow = {
   id: string;
@@ -111,10 +112,12 @@ export class HotelExtraReservationsService {
     const values = keys.map((k) => map[k]);
 
     try {
-      const rows = (await this.dataSource.query(
-        `update logistics.hotel_extra_reservations set ${setSql}, updated_at = now() where id = $1 returning *`,
-        [id, ...values],
-      )) as HotelExtraReservationRow[];
+      const rows = filasDe<HotelExtraReservationRow>(
+        await this.dataSource.query(
+          `update logistics.hotel_extra_reservations set ${setSql}, updated_at = now() where id = $1 returning *`,
+          [id, ...values],
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Reservation ${id} not found`);
       return this.toEntity(rows[0]);
     } catch (error) {

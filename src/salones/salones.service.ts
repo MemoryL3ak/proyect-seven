@@ -6,6 +6,7 @@ import { CreateSalonReservationDto } from './dto/create-salon-reservation.dto';
 import { UpdateSalonReservationDto } from './dto/update-salon-reservation.dto';
 import { Salon } from './entities/salon.entity';
 import { SalonReservation } from './entities/salon-reservation.entity';
+import { filasDe } from '../shared/filas-de';
 
 type SalonRow = {
   id: string;
@@ -130,10 +131,12 @@ export class SalonesService {
     if (keys.length === 0) return this.findOneSalon(id);
     const setSql = keys.map((k, i) => `${k} = $${i + 2}`).join(', ');
     try {
-      const rows = (await this.dataSource.query(
-        `update logistics.salones set ${setSql}, updated_at = now() where id = $1 returning *`,
-        [id, ...keys.map((k) => map[k])],
-      )) as SalonRow[];
+      const rows = filasDe<SalonRow>(
+        await this.dataSource.query(
+          `update logistics.salones set ${setSql}, updated_at = now() where id = $1 returning *`,
+          [id, ...keys.map((k) => map[k])],
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Salon ${id} not found`);
       return this.toSalon(rows[0]);
     } catch (error) {
@@ -216,10 +219,12 @@ export class SalonesService {
     if (keys.length === 0) return this.findOneReservation(id);
     const setSql = keys.map((k, i) => `${k} = $${i + 2}`).join(', ');
     try {
-      const rows = (await this.dataSource.query(
-        `update logistics.salon_reservations set ${setSql}, updated_at = now() where id = $1 returning *`,
-        [id, ...keys.map((k) => map[k])],
-      )) as ReservationRow[];
+      const rows = filasDe<ReservationRow>(
+        await this.dataSource.query(
+          `update logistics.salon_reservations set ${setSql}, updated_at = now() where id = $1 returning *`,
+          [id, ...keys.map((k) => map[k])],
+        ),
+      );
       if (!rows[0]) throw new NotFoundException(`Reservation ${id} not found`);
       return this.toReservation(rows[0]);
     } catch (error) {

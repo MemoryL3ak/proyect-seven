@@ -12,6 +12,7 @@ import { UpdateHotelKeyDto } from './dto/update-hotel-key.dto';
 import { UpdateHotelKeyStatusDto } from './dto/update-hotel-key-status.dto';
 import { HotelKeyMovement } from './entities/hotel-key-movement.entity';
 import { HotelKey } from './entities/hotel-key.entity';
+import { filasDe } from '../shared/filas-de';
 
 type HotelKeyRow = {
   id: string;
@@ -302,8 +303,9 @@ export class HotelKeysService {
     const issuedAt = dto.issuedAt ?? new Date().toISOString();
     let data: HotelKeyRow | null = null;
     try {
-      const rows = (await this.dataSource.query(
-        `
+      const rows = filasDe<HotelKeyRow>(
+        await this.dataSource.query(
+          `
           update logistics.hotel_keys
           set
             status = 'ASSIGNED',
@@ -316,14 +318,15 @@ export class HotelKeysService {
           where id = $5
           returning *
         `,
-        [
-          dto.holderName,
-          dto.holderType ?? null,
-          dto.holderParticipantId ?? null,
-          issuedAt,
-          id,
-        ],
-      )) as HotelKeyRow[];
+          [
+            dto.holderName,
+            dto.holderType ?? null,
+            dto.holderParticipantId ?? null,
+            issuedAt,
+            id,
+          ],
+        ),
+      );
       data = rows[0] ?? null;
     } catch (error) {
       throw new InternalServerErrorException(
@@ -356,8 +359,9 @@ export class HotelKeysService {
     const returnedAt = dto.returnedAt ?? new Date().toISOString();
     let data: HotelKeyRow | null = null;
     try {
-      const rows = (await this.dataSource.query(
-        `
+      const rows = filasDe<HotelKeyRow>(
+        await this.dataSource.query(
+          `
           update logistics.hotel_keys
           set
             status = 'AVAILABLE',
@@ -369,8 +373,9 @@ export class HotelKeysService {
           where id = $2
           returning *
         `,
-        [returnedAt, id],
-      )) as HotelKeyRow[];
+          [returnedAt, id],
+        ),
+      );
       data = rows[0] ?? null;
     } catch (error) {
       throw new InternalServerErrorException(

@@ -35,6 +35,7 @@ import { Flight } from '../flights/entities/flight.entity';
 import { Provider } from '../providers/entities/provider.entity';
 import { DriverPresenceService } from '../driver-presence/driver-presence.service';
 import { Subject } from 'rxjs';
+import { filasDe } from '../shared/filas-de';
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -829,15 +830,17 @@ export class SofiaService {
   }
 
   private async actAssignDriver(args: Record<string, any>): Promise<ToolOutcome> {
-    const rows = (await this.dataSource.query(
-      `update transport.trips
+    const rows = filasDe<Record<string, any>>(
+      await this.dataSource.query(
+        `update transport.trips
          set driver_id = $2,
              status = case when status = 'REQUESTED' then 'SCHEDULED' else status end,
              updated_at = now()
        where id = $1
        returning id, driver_id, status, origin, destination`,
-      [args.tripId, args.driverId],
-    )) as Array<Record<string, any>>;
+        [args.tripId, args.driverId],
+      ),
+    );
     if (!rows[0]) throw new Error(`No se encontró el viaje ${args.tripId}.`);
     const summary = `Conductor asignado al viaje ${args.tripId}.`;
     const logId = await this.logAction({
@@ -860,11 +863,13 @@ export class SofiaService {
     )) as Array<{ status: string }>;
     if (!before[0]) throw new Error(`No se encontró el viaje ${args.tripId}.`);
     const prevStatus = before[0].status;
-    const rows = (await this.dataSource.query(
-      `update transport.trips set status = $2, updated_at = now()
+    const rows = filasDe<Record<string, any>>(
+      await this.dataSource.query(
+        `update transport.trips set status = $2, updated_at = now()
        where id = $1 returning id, status`,
-      [args.tripId, args.status],
-    )) as Array<Record<string, any>>;
+        [args.tripId, args.status],
+      ),
+    );
     const summary = `Estado del viaje ${args.tripId}: ${prevStatus} → ${args.status}.`;
     const logId = await this.logAction({
       tool: 'update_trip_status',
@@ -996,12 +1001,14 @@ export class SofiaService {
   }
 
   private async actReleaseHotelAssignment(args: Record<string, any>): Promise<ToolOutcome> {
-    const rows = (await this.dataSource.query(
-      `update logistics.hotel_assignments
+    const rows = filasDe<Record<string, any>>(
+      await this.dataSource.query(
+        `update logistics.hotel_assignments
          set status = 'CANCELLED', updated_at = now()
        where id = $1 returning id, status`,
-      [args.assignmentId],
-    )) as Array<Record<string, any>>;
+        [args.assignmentId],
+      ),
+    );
     if (!rows[0]) throw new Error(`No se encontró la asignación ${args.assignmentId}.`);
     const summary = `Asignación de hotel ${args.assignmentId} liberada.`;
     const logId = await this.logAction({
@@ -1046,11 +1053,13 @@ export class SofiaService {
       [args.premiacionId],
     )) as Array<{ status: string }>;
     if (!before[0]) throw new Error(`No se encontró la premiación ${args.premiacionId}.`);
-    const rows = (await this.dataSource.query(
-      `update core.premiaciones set status = $2, updated_at = now()
+    const rows = filasDe<Record<string, any>>(
+      await this.dataSource.query(
+        `update core.premiaciones set status = $2, updated_at = now()
        where id = $1 returning id, status`,
-      [args.premiacionId, args.status],
-    )) as Array<Record<string, any>>;
+        [args.premiacionId, args.status],
+      ),
+    );
     const summary = `Premiación ${args.premiacionId}: ${before[0].status} → ${args.status}.`;
     const logId = await this.logAction({
       tool: 'update_premiacion_status',
@@ -1228,10 +1237,12 @@ export class SofiaService {
       [args.eventId],
     )) as Array<{ status: string }>;
     if (!before[0]) throw new Error(`No se encontró el evento ${args.eventId}.`);
-    const rows = (await this.dataSource.query(
-      `update core.events set status = $2, updated_at = now() where id = $1 returning id, name, status`,
-      [args.eventId, args.status],
-    )) as Array<Record<string, any>>;
+    const rows = filasDe<Record<string, any>>(
+      await this.dataSource.query(
+        `update core.events set status = $2, updated_at = now() where id = $1 returning id, name, status`,
+        [args.eventId, args.status],
+      ),
+    );
     return this.finishAction(
       'update_event_status',
       'Evento actualizado',
@@ -1293,10 +1304,12 @@ export class SofiaService {
       [args.athleteId],
     )) as Array<{ status: string }>;
     if (!before[0]) throw new Error(`No se encontró el participante ${args.athleteId}.`);
-    const rows = (await this.dataSource.query(
-      `update core.athletes set status = $2, updated_at = now() where id = $1 returning id, full_name, status`,
-      [args.athleteId, args.status],
-    )) as Array<Record<string, any>>;
+    const rows = filasDe<Record<string, any>>(
+      await this.dataSource.query(
+        `update core.athletes set status = $2, updated_at = now() where id = $1 returning id, full_name, status`,
+        [args.athleteId, args.status],
+      ),
+    );
     return this.finishAction(
       'update_athlete_status',
       'Participante actualizado',
@@ -1455,10 +1468,12 @@ export class SofiaService {
       [args.accreditationId],
     )) as Array<{ status: string }>;
     if (!before[0]) throw new Error(`No se encontró la acreditación ${args.accreditationId}.`);
-    const rows = (await this.dataSource.query(
-      `update core.accreditations set status = $2, updated_at = now() where id = $1 returning id, status`,
-      [args.accreditationId, args.status],
-    )) as Array<Record<string, any>>;
+    const rows = filasDe<Record<string, any>>(
+      await this.dataSource.query(
+        `update core.accreditations set status = $2, updated_at = now() where id = $1 returning id, status`,
+        [args.accreditationId, args.status],
+      ),
+    );
     return this.finishAction(
       'update_accreditation_status',
       'Acreditación actualizada',

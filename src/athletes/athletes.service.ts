@@ -18,6 +18,7 @@ import { MobileAuthService } from '../mobile-auth/mobile-auth.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
 import { Athlete } from './entities/athlete.entity';
+import { filasDe } from '../shared/filas-de';
 
 export type RequestHeaders = Record<string, string | string[] | undefined>;
 
@@ -460,15 +461,17 @@ export class AthletesService {
     const setSql = keys.map((key, index) => `${key} = $${index + 2}`).join(', ');
     const values = keys.map((key) => row[key]);
 
-    const rows = (await this.dataSource.query(
-      `
+    const rows = filasDe<AthleteRow>(
+      await this.dataSource.query(
+        `
       update core.athletes
       set ${setSql}, updated_at = now()
       where id = $1
       returning *
     `,
-      [id, ...values],
-    )) as AthleteRow[];
+        [id, ...values],
+      ),
+    );
 
     if (!rows[0]) {
       throw new NotFoundException(`Athlete with id ${id} not found`);

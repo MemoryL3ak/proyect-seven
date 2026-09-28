@@ -16,6 +16,7 @@ import {
 } from './dto/create-accommodation.dto';
 import { UpdateAccommodationDto } from './dto/update-accommodation.dto';
 import { Accommodation } from './entities/accommodation.entity';
+import { filasDe } from '../shared/filas-de';
 
 type AccommodationRow = {
   id: string;
@@ -638,15 +639,17 @@ export class AccommodationsService {
     }
 
     try {
-      const rows = (await this.dataSource.query(
-        `
+      const rows = filasDe<AccommodationRow>(
+        await this.dataSource.query(
+          `
         update logistics.accommodations
         set ${set.join(', ')}, updated_at = now()
         where id = $1
         returning *
       `,
-        [id, ...params],
-      )) as AccommodationRow[];
+          [id, ...params],
+        ),
+      );
 
       if (!rows[0]) throw new NotFoundException(`Accommodation with id ${id} not found`);
 

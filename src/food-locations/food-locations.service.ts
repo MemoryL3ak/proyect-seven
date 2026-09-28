@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
+import { filasDe } from '../shared/filas-de';
 import { delegationHotelsSql } from '../shared/delegation-hotels';
 import { CreateFoodLocationDto } from './dto/create-food-location.dto';
 import { UpdateFoodLocationDto } from './dto/update-food-location.dto';
@@ -23,19 +24,9 @@ type FoodLocationRow = {
   updated_at: string;
 };
 
-/**
- * Filas de un `returning *`.
- *
- * En un UPDATE o un DELETE, `dataSource.query` devuelve `[filas, afectadas]`
- * en vez de las filas a secas, así que `rows[0]` era el arreglo entero y la
- * entidad salía con todos sus campos vacíos: editar un lugar respondía
- * `{"clientTypes":[],"createdAt":null}` aunque en la base quedara bien. El
- * formulario recargaba la lista enseguida y por eso no se notaba.
- */
-const filasDe = <T>(resultado: unknown): T[] => {
-  if (!Array.isArray(resultado)) return [];
-  return Array.isArray(resultado[0]) ? (resultado[0] as T[]) : (resultado as T[]);
-};
+// Filas de un `returning *`: ver shared/filas-de (en un UPDATE o DELETE,
+// dataSource.query devuelve [filas, afectadas]; editar un lugar respondía
+// `{"clientTypes":[],"createdAt":null}` aunque en la base quedara bien).
 
 @Injectable()
 export class FoodLocationsService {
