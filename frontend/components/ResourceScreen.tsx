@@ -14,6 +14,7 @@ import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import StyledSelect from "@/components/StyledSelect";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { autocompletaConVuelo } from "@/lib/autocompletar-vuelo";
 import PlacesAutocompleteInput from "@/components/PlacesAutocompleteInput";
 import CoordinadoresHotel, {
   leerContactosHotel,
@@ -1326,6 +1327,8 @@ export default function ResourceScreen({
   }, [needsFlights]);
 
   useEffect(() => {
+    // En Viajes el origen es el lugar de recogida: el vuelo no lo pisa.
+    if (!autocompletaConVuelo(config.endpoint)) return;
     const isDelegationsEndpoint = config.endpoint === "/delegations";
     const flightKey = isDelegationsEndpoint
       ? "participantFlightNumber"
