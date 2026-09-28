@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { apiFetch } from "@/lib/api";
+import { esDelEvento } from "@/lib/evento-activo";
 import {
   type IconComponent,
   PinIcon,
@@ -143,7 +144,7 @@ type HotelAssignment = {
 type HotelRoom = { id: string; roomNumber: string; roomType: string };
 type HotelBed = { id: string; bedType: string };
 type Vehicle = { id: string; plate: string; type: string };
-type Trip = { id: string; driverId: string; delegationId?: string | null; allDelegations?: boolean; disciplineId?: string | null; originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; originFoodLocationId?: string | null; destinationFoodLocationId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; legType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null; vehiclePlate?: string | null };
+type Trip = { id: string; driverId: string; eventId?: string | null; delegationId?: string | null; allDelegations?: boolean; disciplineId?: string | null; originVenueId?: string | null; originHotelId?: string | null; destinationVenueId?: string | null; destinationHotelId?: string | null; originFoodLocationId?: string | null; destinationFoodLocationId?: string | null; vehicleId?: string | null; athleteIds?: string[]; athleteNames?: string[]; requesterAthleteId?: string | null; clientType?: string | null; origin?: string | null; destination?: string | null; status?: string | null; scheduledAt?: string | null; startedAt?: string | null; completedAt?: string | null; tripType?: string | null; legType?: string | null; discipline?: string | null; notes?: string | null; driverRating?: number | null; ratingComment?: string | null; ratedAt?: string | null; passengerLat?: number | null; passengerLng?: number | null; vehiclePlate?: string | null };
 type Driver = { id: string; fullName: string; userId?: string | null };
 type Event = { id: string; name: string };
 // name: las delegaciones de los Juegos Escolares son regiones con nombre visible.
@@ -196,6 +197,8 @@ type PremAwarder = {
 };
 type Premiacion = {
   id: string;
+  /** Evento de la premiación: la app muestra sólo las del evento de la ficha. */
+  eventId?: string | null;
   title: string;
   discipline?: string | null;
   disciplineId?: string | null;
@@ -685,7 +688,7 @@ export default function UserPortalPage() {
       const endpoint = decision === "CONFIRM" ? "confirm" : "decline";
       await apiFetch(`/premiaciones/${premiacionId}/awarders/${awarderId}/${endpoint}`, { method: "PATCH" });
       const data = await apiFetch<Premiacion[]>("/premiaciones");
-      setPremiaciones(Array.isArray(data) ? data : []);
+      setPremiaciones((Array.isArray(data) ? data : []).filter((p) => esDelEvento(athlete?.eventId, p.eventId)));
     } catch (e) {
       alert(e instanceof Error ? e.message : "No se pudo actualizar la confirmación.");
     }
@@ -1091,8 +1094,11 @@ export default function UserPortalPage() {
       void catalogoConCache<CalendarEvent[]>("disciplines", () => apiFetch<CalendarEvent[]>("/disciplines"), aplicarDisciplinas);
       void catalogoConCache<Venue[]>("venues", () => apiFetch<Venue[]>("/venues"), (lista) =>
         setVenues((lista || []).filter(v => !data.eventId || v.eventId === data.eventId)));
+      // Hoteles, premiaciones y traslados: sólo los del evento de la ficha.
+      // 28-09-2026: la Coordinadora de Transporte de World Rugby veía los 596
+      // traslados, las premiaciones y los hoteles de los Juegos Escolares.
       void catalogoConCache<Accommodation[]>("accommodations", () => apiFetch<Accommodation[]>("/accommodations"), (lista) =>
-        setAllAccommodations(lista || []));
+        setAllAccommodations((lista || []).filter((h) => esDelEvento(data.eventId, h.eventId))));
       void catalogoConCache<{ id: string; name?: string | null }[]>(
         "accommodation-names",
         () => apiFetch<{ id: string; name?: string | null }[]>("/accommodations/names"),
@@ -1140,9 +1146,9 @@ export default function UserPortalPage() {
           ? (sirveLoPedido && tanda ? tanda.viajesDelegacion : apiFetch<Trip[]>("/trips").catch(() => [] as Trip[]))
           : Promise.resolve([] as Trip[]),
       ]);
-      setPremiaciones(Array.isArray(prems) ? prems : []);
+      setPremiaciones((Array.isArray(prems) ? prems : []).filter((p) => esDelEvento(data.eventId, p.eventId)));
       setDelegationMembers((miembros || []).filter(a => a.id !== data.id));
-      setDelegationTrips(Array.isArray(viajesDelegacion) ? viajesDelegacion : []);
+      setDelegationTrips((Array.isArray(viajesDelegacion) ? viajesDelegacion : []).filter((v) => esDelEvento(data.eventId, v.eventId)));
 
       // Load health record from athlete metadata
       const hr = (data as any).metadata?.healthRecord ?? null;

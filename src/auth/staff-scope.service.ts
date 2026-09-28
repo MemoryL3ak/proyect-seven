@@ -261,12 +261,28 @@ export class StaffScopeService {
     if (!scope || !permitido) {
       throw new ForbiddenException('Requiere sesión del panel, del comité o de Coordinador de Sede');
     }
-    if (scope.kind === 'staff') return { scope, eventId: null };
+    return { scope, eventId: await this.eventoDelPortal(scope) };
+  }
+
+  /**
+   * Evento de la ficha de quien entra por la app (comité, Jefe de Misión,
+   * participante); null para el panel, que elige el evento arriba. 28-09-2026:
+   * la Coordinadora de Transporte de World Rugby recibía los 596 traslados de
+   * los Juegos Escolares.
+   */
+  async eventoDelPortal(scope: StaffScope | null): Promise<string | null> {
+    if (!scope || scope.kind === 'staff') return null;
+    if (
+      scope.kind !== 'committee' &&
+      scope.kind !== 'mission_head' &&
+      scope.kind !== 'participant'
+    )
+      return null;
     const filas = await this.dataSource.query<Array<{ event_id: string | null }>>(
       `select event_id from core.athletes where id = $1`,
       [scope.userId],
     );
-    return { scope, eventId: filas[0]?.event_id ?? null };
+    return filas[0]?.event_id ?? null;
   }
 
   invalidate(userId: string) {

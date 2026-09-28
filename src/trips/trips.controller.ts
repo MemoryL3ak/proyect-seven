@@ -56,7 +56,13 @@ export class TripsController {
     // con sesión de portal. El Coordinador de Comité sí ve todo: ése es su
     // trabajo, y por eso es un tipo de cliente aparte.
     const soloSuyos = scope?.kind === 'participant' ? scope.userId : requesterAthleteId;
-    return this.tripsService.findAll(soloSuyos, delegationId);
+    // Comité y Jefe de Misión: sólo los viajes del evento de su ficha (el
+    // comité recibía los de todos los eventos).
+    const eventId =
+      scope?.kind === 'committee' || scope?.kind === 'mission_head'
+        ? await this.scope.eventoDelPortal(scope)
+        : null;
+    return this.tripsService.findAll(soloSuyos, delegationId, eventId);
   }
 
   /* ─── Panel financiero ─── */

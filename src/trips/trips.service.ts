@@ -788,11 +788,16 @@ export class TripsService {
    * para cualquier jefe. La Flota sigue siendo sólo de su región: ese recorte
    * lo hace la pantalla.
    */
-  async findAll(requesterAthleteId?: string, delegationId?: string | null) {
+  async findAll(
+    requesterAthleteId?: string,
+    delegationId?: string | null,
+    eventId?: string | null,
+  ) {
     try {
       const qb = this.tripRepository
         .createQueryBuilder('t')
         .orderBy('t.createdAt', 'DESC');
+      if (eventId) qb.andWhere('t.eventId = :eventId', { eventId });
       if (requesterAthleteId) {
         qb.andWhere('t.requesterAthleteId = :requesterAthleteId', {
           requesterAthleteId,
