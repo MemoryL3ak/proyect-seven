@@ -690,12 +690,26 @@ export default function ResourceScreen({
                     ? String(metadata.visaType).trim().toLowerCase() === "si"
                     : undefined),
               ),
-            participantTripType: String(inferredTripType),
+            // Con llegada y salida cargadas y sin tipo elegido, el formulario
+            // muestra los dos bloques (así llegan las fichas de la carga AND).
+            participantTripType: String(
+              athlete.tripType ??
+                metadata.tripType ??
+                ((athlete.arrivalTime || arrival.time) && (athlete.departureTime || departure.time)
+                  ? ""
+                  : inferredTripType),
+            ),
             participantArrivalTime: toDateTimeLocal(athlete.arrivalTime ?? String(arrival.time ?? "")),
             participantDepartureTime: toDateTimeLocal(athlete.departureTime ?? String(departure.time ?? "")),
             participantDepartureGate: athlete.departureGate ?? String(departure.gate ?? ""),
             participantArrivalBaggage: athlete.arrivalBaggage ?? String(arrival.baggageClaim ?? ""),
-            participantFlightNumber: primaryFlightNumber,
+            participantFlightNumber:
+              inferredTripType === "DEPARTURE" ? String(arrival.flightNumber ?? "") : primaryFlightNumber,
+            participantDepartureFlightNumber: String(
+              departure.flightNumber ?? (inferredTripType === "DEPARTURE" ? athlete.flightNumber ?? "" : ""),
+            ),
+            participantArrivalDriverId: String(arrival.driverId ?? ""),
+            participantDepartureDriverId: String(departure.driverId ?? ""),
             participantAirline: primaryAirline,
             participantOrigin: athlete.origin ?? "",
             participantBolsoCount: numberToFormValue(
@@ -1598,6 +1612,26 @@ export default function ResourceScreen({
             }
             existing.luggage = luggage;
             existing.mobility = mobility;
+            // Vuelo y conductor de cada sentido: con esto el servidor pone el
+            // vuelo de llegada en el Monitor y crea el Transfer In / Out
+            // asignado al conductor (src/athletes/traslados-and).
+            const tipoViaje = (form.participantTripType as string | undefined) ?? "";
+            const vueloLlegada = (form.participantFlightNumber as string | undefined)?.trim() || null;
+            const vueloSalida = (form.participantDepartureFlightNumber as string | undefined)?.trim() || null;
+            if (tipoViaje !== "DEPARTURE") {
+              existing.arrival = {
+                ...readRecord(existing.arrival),
+                flightNumber: vueloLlegada,
+                driverId: (form.participantArrivalDriverId as string | undefined) || null,
+              };
+            }
+            if (tipoViaje !== "ARRIVAL") {
+              existing.departure = {
+                ...readRecord(existing.departure),
+                flightNumber: vueloSalida,
+                driverId: (form.participantDepartureDriverId as string | undefined) || null,
+              };
+            }
             return existing;
           })();
           const luggageSummary = (() => {
@@ -1651,7 +1685,12 @@ export default function ResourceScreen({
             departureTime: form.participantDepartureTime || undefined,
             departureGate: form.participantDepartureGate || undefined,
             arrivalBaggage: form.participantArrivalBaggage || undefined,
-            flightNumber: form.participantFlightNumber || undefined,
+            // La fila guarda un vuelo: el de llegada, o el de salida si la
+            // ficha es sólo de salida.
+            flightNumber:
+              (form.participantTripType === "DEPARTURE"
+                ? form.participantDepartureFlightNumber
+                : form.participantFlightNumber) || undefined,
             airline: form.participantAirline || undefined,
             origin: form.participantOrigin || undefined,
             hotelAccommodationId: form.participantHotelAccommodationId || undefined,
@@ -3598,11 +3637,19 @@ export default function ResourceScreen({
                 if (field.key === "participantRut") return showRut;
                 if (field.key === "participantPassportNumber") return showPassport;
                 if (field.key === "participantRegion") return delegationCountry === "CHL";
-                if (field.key === "participantArrivalTime") return participantTripType === "ARRIVAL";
-                if (field.key === "participantDepartureTime") return participantTripType === "DEPARTURE";
-                if (field.key === "participantDepartureGate") return participantTripType === "DEPARTURE" && participantTransportType === "AVION";
-                if (field.key === "participantArrivalBaggage") return participantTripType === "ARRIVAL" && participantTransportType === "AVION";
-                if (["participantFlightNumber", "participantAirline", "participantOrigin"].includes(field.key)) return participantTransportType === "AVION";
+                // Sin tipo de viaje se ven la llegada y la salida. El vuelo y
+                // su conductor se piden salvo que viaje en bus: la carga de
+                // AND no trae el tipo de transporte y sus fichas quedaban sin
+                // vuelo a la vista.
+                const conLlegada = participantTripType !== "DEPARTURE";
+                const conSalida = participantTripType !== "ARRIVAL";
+                const enAvion = participantTransportType !== "BUS";
+                if (field.key === "participantArrivalTime") return conLlegada;
+                if (field.key === "participantDepartureTime") return conSalida;
+                if (field.key === "participantDepartureGate") return conSalida && participantTransportType === "AVION";
+                if (field.key === "participantArrivalBaggage") return conLlegada && participantTransportType === "AVION";
+                if (["participantFlightNumber", "participantAirline", "participantOrigin", "participantArrivalDriverId"].includes(field.key)) return conLlegada && enAvion;
+                if (["participantDepartureFlightNumber", "participantDepartureDriverId"].includes(field.key)) return conSalida && enAvion;
                 if (["participantBusPlate", "participantBusDriverName", "participantBusCompany"].includes(field.key)) return participantTransportType === "BUS";
                 return true;
               };
@@ -3632,9 +3679,12 @@ export default function ResourceScreen({
                 "participantAirline",
                 "participantOrigin",
                 "participantArrivalTime",
+                "participantArrivalBaggage",
+                "participantArrivalDriverId",
+                "participantDepartureFlightNumber",
                 "participantDepartureTime",
                 "participantDepartureGate",
-                "participantArrivalBaggage",
+                "participantDepartureDriverId",
                 "participantRegion",
                 "participantTransportType",
                 "participantBusPlate",

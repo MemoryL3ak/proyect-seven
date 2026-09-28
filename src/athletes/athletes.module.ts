@@ -4,14 +4,21 @@ import { SupabaseProvider } from '@/supabase/provider';
 import { AuthModule } from '../auth/auth.module';
 import { MobileAuthModule } from '../mobile-auth/mobile-auth.module';
 import { AthletesService } from './athletes.service';
+import { TrasladosAndService } from './traslados-and.service';
+import { TripsModule } from '../trips/trips.module';
 import { AthletesController } from './athletes.controller';
 import { Athlete } from './entities/athlete.entity';
 
 @Module({
   // AuthModule: StaffScopeService, para invalidar el alcance del Jefe de Misión
   // cuando cambia is_delegation_lead o la delegación de un participante.
-  imports: [TypeOrmModule.forFeature([Athlete]), MobileAuthModule, AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([Athlete]),
+    MobileAuthModule,
+    AuthModule,
+    TripsModule,
+  ],
   controllers: [AthletesController],
-  providers: [AthletesService, SupabaseProvider],
+  providers: [AthletesService, SupabaseProvider, TrasladosAndService],
 })
 export class AthletesModule {}

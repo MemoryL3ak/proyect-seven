@@ -13,6 +13,7 @@ import { MAX_CORREOS_POR_LOTE, sendResendBatch, sendResendEmail } from '../share
 import { ConfigService } from '@nestjs/config';
 import { DataSource, Repository } from 'typeorm';
 import { StaffScopeService } from '../auth/staff-scope.service';
+import { TrasladosAndService } from './traslados-and.service';
 import { MobileAuthService } from '../mobile-auth/mobile-auth.service';
 import { CreateAthleteDto } from './dto/create-athlete.dto';
 import { UpdateAthleteDto } from './dto/update-athlete.dto';
@@ -135,6 +136,7 @@ export class AthletesService {
     private readonly dataSource: DataSource,
     private readonly mobileAuth: MobileAuthService,
     private readonly scope: StaffScopeService,
+    private readonly trasladosAnd: TrasladosAndService,
   ) {}
 
   private getAdminClient() {
@@ -371,6 +373,8 @@ export class AthletesService {
 
     const athlete = this.toEntity(rows[0]);
     await this.syncHotelAssignment(athlete, createAthleteDto);
+    // Ficha con vuelo: su vuelo al Monitor y sus traslados al conductor.
+    await this.trasladosAnd.sincronizarSinFallar(athlete.id);
     return athlete;
   }
   async findAll(filters?: { delegationId?: string; eventId?: string }) {
@@ -484,6 +488,21 @@ export class AthletesService {
       updateAthleteDto.roomType !== undefined;
     if (shouldSyncHotel) {
       await this.syncHotelAssignment(athlete, updateAthleteDto);
+    }
+    // Si la edición toca el vuelo, el hotel o el conductor, se ajustan el
+    // vuelo del Monitor y los traslados de la ficha.
+    const tocaTraslados = [
+      updateAthleteDto.flightNumber,
+      updateAthleteDto.airline,
+      updateAthleteDto.arrivalTime,
+      updateAthleteDto.departureTime,
+      updateAthleteDto.tripType,
+      updateAthleteDto.transportType,
+      updateAthleteDto.hotelAccommodationId,
+      updateAthleteDto.metadata,
+    ].some((v) => v !== undefined);
+    if (tocaTraslados) {
+      await this.trasladosAnd.sincronizarSinFallar(athlete.id);
     }
 
     // Validar es el momento en que el participante pasa a poder entrar al

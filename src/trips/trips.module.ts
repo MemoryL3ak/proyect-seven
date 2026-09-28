@@ -20,5 +20,7 @@ import { AuthModule } from '../auth/auth.module';
   ],
   controllers: [TripsController],
   providers: [TripsService, TripsScheduleService, TripsFinanceService, SupabaseProvider],
+  // AND crea los traslados de cada ficha con su vuelo (athletes/traslados-and).
+  exports: [TripsService],
 })
 export class TripsModule {}

@@ -325,6 +325,8 @@ export const resources: Record<string, ResourceConfig> = {
         ]
       },
       { key: "participantBirthDate", label: "Fecha nacimiento", type: "date", transient: true },
+      // Sin tipo de viaje se ven la llegada y la salida (así viene la carga de
+      // AND); con "Llegada" o "Salida", sólo ese bloque.
       {
         key: "participantTripType",
         label: "Tipo de viaje",
@@ -335,25 +337,15 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Salida", value: "DEPARTURE" }
         ]
       },
+      // Llegada: su vuelo va al Monitor de Vuelos y genera el Transfer In
+      // (aeropuerto → hotel) asignado al conductor elegido.
+      { key: "participantFlightNumber", label: "Vuelo de llegada", type: "text", transient: true },
+      { key: "participantAirline", label: "Aerolínea", type: "text", transient: true },
+      { key: "participantOrigin", label: "Origen", type: "text", transient: true },
       {
         key: "participantArrivalTime",
         label: "Fecha y hora de llegada",
         type: "datetime",
-        transient: true
-      },
-      {
-        key: "participantDepartureTime",
-        label: "Fecha y hora de salida",
-        type: "datetime",
-        transient: true
-      },
-      { key: "participantFlightNumber", label: "Número de vuelo", type: "text", transient: true },
-      { key: "participantAirline", label: "Aerolínea", type: "text", transient: true },
-      { key: "participantOrigin", label: "Origen", type: "text", transient: true },
-      {
-        key: "participantDepartureGate",
-        label: "Puerta de embarque",
-        type: "text",
         transient: true
       },
       {
@@ -362,6 +354,22 @@ export const resources: Record<string, ResourceConfig> = {
         type: "text",
         transient: true
       },
+      { key: "participantArrivalDriverId", label: "Conductor llegada", type: "select", optionsSource: "drivers", transient: true },
+      // Salida: genera el Transfer Out (hotel → aeropuerto), 3 h antes del vuelo.
+      { key: "participantDepartureFlightNumber", label: "Vuelo de salida", type: "text", transient: true },
+      {
+        key: "participantDepartureTime",
+        label: "Fecha y hora de salida",
+        type: "datetime",
+        transient: true
+      },
+      {
+        key: "participantDepartureGate",
+        label: "Puerta de embarque",
+        type: "text",
+        transient: true
+      },
+      { key: "participantDepartureDriverId", label: "Conductor salida", type: "select", optionsSource: "drivers", transient: true },
       { key: "participantBolsoCount", label: "Bolso", type: "number", transient: true },
       { key: "participantBag8Count", label: "Maleta de 8", type: "number", transient: true },
       { key: "participantSuitcase10Count", label: "Maleta de 10", type: "number", transient: true },
