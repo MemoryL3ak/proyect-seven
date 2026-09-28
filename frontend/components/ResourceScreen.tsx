@@ -3087,8 +3087,13 @@ export default function ResourceScreen({
                 }
               }
 
+              // El teléfono tiene dos controles (país y número). Dentro de un
+              // <label>, Safari y la app del iPhone mandan cualquier toque al
+              // primero, el botón del país: tocar el número abría la lista y
+              // no dejaba escribir (28-09-2026). Por eso va en un <div>.
+              const Contenedor = field.type === "phone" ? "div" : "label";
               return (
-                <label key={field.key} className="flex flex-col gap-2 text-sm">
+                <Contenedor key={field.key} className="flex flex-col gap-2 text-sm">
                   {t(field.label)}
                   {field.type === "json" ? (
                     <textarea
@@ -3457,6 +3462,8 @@ export default function ResourceScreen({
                           <input
                             className="input flex-1"
                             type="tel"
+                            inputMode="tel"
+                            aria-label={t(field.label)}
                             value={currentNumber}
                             placeholder={field.placeholder || "912345678"}
                             onChange={(e) => {
@@ -3629,7 +3636,7 @@ export default function ResourceScreen({
                       RUT válido
                     </span>;
                   })()}
-                </label>
+                </Contenedor>
               );
             };
 

@@ -2103,13 +2103,17 @@ export default function ProveedoresPage() {
                     <input className="input" value={participantForm.fullName} onChange={e => setParticipantForm(f => ({ ...f, fullName: e.target.value }))} placeholder={t("Nombre y apellido")} autoFocus />
                   </label>
 
-                  <label className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
+                  {/* <div> y no <label>: el selector de país tiene botón y
+                      buscador; dentro de una etiqueta, Safari y el iPhone
+                      mandan el toque del buscador al botón y no dejan
+                      escribir (28-09-2026). */}
+                  <div className="flex flex-col gap-1" style={{ fontSize: "11px", fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "var(--text-muted)" }}>
                     {t("País")}
                     <CountrySelect
                       value={participantForm.countryCode}
                       onChange={val => setParticipantForm(f => ({ ...f, countryCode: val, rut: val !== "CHL" ? "" : f.rut, passportNumber: val === "CHL" ? "" : f.passportNumber }))}
                     />
-                  </label>
+                  </div>
 
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

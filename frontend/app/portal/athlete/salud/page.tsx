@@ -991,10 +991,13 @@ function FichaSaludContent() {
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Región")}</span>
                   <input className="input" value={c.region} onChange={(ev) => setC({ region: ev.target.value })} />
                 </label>
-                <label className="space-y-2">
+                {/* <div> y no <label>: con país y número dentro de una etiqueta,
+                    Safari y el iPhone mandan el toque del número al país y no
+                    dejan escribir (28-09-2026). */}
+                <div className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Teléfono")}</span>
                   <PhoneField value={c.phone} onChange={(v) => setC({ phone: v })} />
-                </label>
+                </div>
                 <label className="space-y-2 sm:col-span-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Correo electrónico")}</span>
                   <input className="input" type="email" value={c.email} onChange={(ev) => setC({ email: ev.target.value })} />
@@ -1056,10 +1059,10 @@ function FichaSaludContent() {
                 <input className="input" value={e.name} onChange={(ev) => setE({ name: ev.target.value })} />
               </label>
               <div className="grid gap-4 sm:grid-cols-2">
-                <label className="space-y-2">
+                <div className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Teléfono")}</span>
                   <PhoneField value={e.phone} onChange={(v) => setE({ phone: v })} />
-                </label>
+                </div>
                 <label className="space-y-2">
                   <span className="text-sm font-medium" style={{ color: "var(--text-muted)" }}>{t("Relación")}</span>
                   <input className="input" value={e.relation} onChange={(ev) => setE({ relation: ev.target.value })} placeholder={t("Madre, padre, pareja...")} />
