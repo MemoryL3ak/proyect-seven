@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AirlineLogo from "@/components/AirlineLogo";
 import { apiFetch } from "@/lib/api";
+import LineaTraslado from "@/components/LineaTraslado";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   RefreshIcon,
@@ -53,6 +54,9 @@ type TripItem = {
   destination?: string | null;
   status?: string | null;
   scheduledAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  driverId?: string | null;
   flightNumber?: string | null;
   metadata?: Record<string, unknown> | null;
 };
@@ -202,19 +206,25 @@ export default function FlightsPage() {
   const [filterDelegation, setFilterDelegation] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
   const [expandedFlightId, setExpandedFlightId] = useState<string | null>(null);
+  // Nombres de conductores para la línea de tiempo de cada traslado.
+  const [conductores, setConductores] = useState<Record<string, string>>({});
+  // Hora de referencia de la línea de tiempo; avanza con cada refresco.
+  const [ahora, setAhora] = useState(() => new Date());
   const [deleteConfirm, setDeleteConfirm] = useState<Flight | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
-      const [flightData, eventData, athleteData, delegationData, disciplineData, tripData] = await Promise.all([
+      const [flightData, eventData, athleteData, delegationData, disciplineData, tripData, driverData] = await Promise.all([
         apiFetch<Flight[]>("/flights"),
         apiFetch<EventItem[]>("/events"),
         apiFetch<AthleteItem[]>("/athletes"),
         apiFetch<DelegationItem[]>("/delegations"),
         apiFetch<DisciplineItem[]>("/disciplines"),
         apiFetch<TripItem[]>("/trips").catch(() => []),
+        apiFetch<Array<{ id: string; fullName?: string | null }>>("/drivers").catch(() => []),
       ]);
+      setConductores(Object.fromEntries((driverData ?? []).map((d) => [d.id, d.fullName ?? ""])));
       setFlights(flightData ?? []);
       setEvents(eventData ?? []);
       setAthletes(filterValidatedAthletes(athleteData ?? []));
@@ -232,6 +242,25 @@ export default function FlightsPage() {
   };
 
   useEffect(() => { load(); }, []);
+
+  // La línea de tiempo de cada traslado avanza sola: cada 30 s se vuelven a
+  // leer los viajes (sólo los viajes, sin recargar la pantalla), y así se ve
+  // cuando el conductor toca Iniciar, Recoger o Finalizar.
+  useEffect(() => {
+    const timer = setInterval(() => {
+      apiFetch<TripItem[]>("/trips")
+        .then((tripData) => {
+          setTransferInTrips(
+            (tripData ?? []).filter(
+              (t) => String(t.tripType || "").toUpperCase() === "TRANSFER_IN" && t.status !== "CANCELLED",
+            ),
+          );
+          setAhora(new Date());
+        })
+        .catch(() => undefined);
+    }, 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (refreshTimer.current) clearInterval(refreshTimer.current);
@@ -804,10 +833,10 @@ export default function FlightsPage() {
             </p>
           ) : (
             <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
-            <table style={{ width: "100%", minWidth: "680px", borderCollapse: "collapse", fontSize: "13px" }}>
+            <table style={{ width: "100%", minWidth: "960px", borderCollapse: "collapse", fontSize: "13px" }}>
               <thead>
                 <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: SURFACE.bg }}>
-                  {["Llegada", "Pasajero", "Tipo cliente", "Destino", "Vuelo", "Estado"].map(h => (
+                  {["Llegada", "Pasajero", "Tipo cliente", "Destino", "Vuelo", "Seguimiento"].map(h => (
                     <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{t(h)}</th>
                   ))}
                 </tr>
@@ -818,7 +847,6 @@ export default function FlightsPage() {
                   const del = requester?.delegationId ? delegationById[requester.delegationId] : null;
                   const flightRaw = trip.flightNumber || (trip.metadata as Record<string, unknown> | null)?.flightNumber;
                   const flight = typeof flightRaw === "string" && flightRaw ? flightRaw : null;
-                  const st = trip.scheduledAt ? getFlightStatus(trip.scheduledAt) : { label: "Sin fecha", color: SURFACE.textFaint, bg: SURFACE.borderMuted };
                   return (
                     <tr key={trip.id} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                       <td style={{ padding: "10px 14px" }}>
@@ -845,9 +873,13 @@ export default function FlightsPage() {
                         )}
                       </td>
                       <td style={{ padding: "10px 14px" }}>
-                        <span style={{ fontSize: "10px", fontWeight: 700, padding: "3px 10px", borderRadius: "99px", background: st.bg, color: st.color, border: `1px solid ${st.color}30` }}>
-                          {t(st.label === "Arribado" ? "Llegó" : st.label)}
-                        </span>
+                        {/* En camino → Aterrizado → Recogido → Completado, con
+                            la hora en que el conductor marcó cada paso. */}
+                        <LineaTraslado
+                          viaje={trip}
+                          conductor={trip.driverId ? conductores[trip.driverId] || t("Conductor asignado") : null}
+                          ahora={ahora}
+                        />
                       </td>
                     </tr>
                   );

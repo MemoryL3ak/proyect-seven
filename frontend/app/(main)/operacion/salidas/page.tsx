@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import LineaTraslado from "@/components/LineaTraslado";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
@@ -28,6 +29,8 @@ type Athlete = {
   departureTime?: string | null;
   departureGate?: string | null;
   metadata?: Record<string, unknown> | null;
+  /** Transfer Out de la persona (o el viaje suelto, si no hay ficha). */
+  traslado?: Trip | null;
 };
 
 type Delegation = { id: string; eventId?: string | null; countryCode?: string | null; name?: string | null };
@@ -41,6 +44,9 @@ type Trip = {
   destination?: string | null;
   status?: string | null;
   scheduledAt?: string | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  driverId?: string | null;
   flightNumber?: string | null;
   metadata?: Record<string, unknown> | null;
 };
@@ -95,17 +101,23 @@ export default function DepartureMonitoringPage() {
   const [fecha, setFecha] = useState("");
   const [delegacionId, setDelegacionId] = useState("");
   const [busqueda, setBusqueda] = useState("");
+  // Nombres de conductores y hora de referencia de la línea de tiempo.
+  const [conductores, setConductores] = useState<Record<string, string>>({});
+  const [ahora, setAhora] = useState(() => new Date());
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const cargar = async () => {
     setError(null);
     try {
-      const [ath, dels, trips] = await Promise.all([
+      const [ath, dels, trips, conductoresData] = await Promise.all([
         apiFetch<Athlete[]>("/athletes"),
         apiFetch<Delegation[]>("/delegations").catch(() => []),
         apiFetch<Trip[]>("/trips").catch(() => []),
+        apiFetch<Array<{ id: string; fullName?: string | null }>>("/drivers").catch(() => []),
       ]);
+      setConductores(Object.fromEntries((conductoresData ?? []).map((d) => [d.id, d.fullName ?? ""])));
+      setAhora(new Date());
       setAthletes(filterValidatedAthletes(Array.isArray(ath) ? ath : []));
       // Viajes Transfer Out: también son salidas a monitorear.
       setTransferOutTrips(
@@ -125,6 +137,14 @@ export default function DepartureMonitoringPage() {
 
   useEffect(() => { void cargar(); }, []);
 
+  // La línea de tiempo avanza sola: cada 30 s se vuelve a leer, y así se ve
+  // cuando el conductor toca Iniciar, Recoger o Finalizar.
+  useEffect(() => {
+    const timer = setInterval(() => void cargar(), 30_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* Participantes con salida: trip_type DEPARTURE o con hora de salida
      cargada. Además, los VIAJES tipo Transfer Out entran como salidas. */
   const salidas = useMemo(() => {
@@ -136,7 +156,16 @@ export default function DepartureMonitoringPage() {
         Boolean(meta.vuelo_salida)
       );
     });
-    const deViajes: Athlete[] = transferOutTrips.map((t) => {
+    // El Transfer Out va en la fila de su persona; antes salía también como
+    // una fila aparte y la misma salida se veía dos veces.
+    const trasladoDe = new Map<string, Trip>();
+    transferOutTrips.forEach((t) => {
+      if (t.requesterAthleteId && !trasladoDe.has(t.requesterAthleteId)) trasladoDe.set(t.requesterAthleteId, t);
+    });
+    const conFila = new Set(deParticipantes.map((a) => a.id));
+    const deViajes: Athlete[] = transferOutTrips
+      .filter((t) => !t.requesterAthleteId || !conFila.has(t.requesterAthleteId))
+      .map((t) => {
       const requester = athletes.find((a) => a.id === t.requesterAthleteId);
       const flight = t.flightNumber || ((t.metadata || {}) as Record<string, unknown>).flightNumber;
       return {
@@ -151,12 +180,17 @@ export default function DepartureMonitoringPage() {
         tripType: "DEPARTURE",
         flightNumber: typeof flight === "string" && flight ? flight : null,
         airline: null,
-        departureTime: t.scheduledAt ?? null,
+        // Hora del vuelo (la deja AND en el viaje); si no, la del viaje.
+        departureTime:
+          (typeof (t.metadata || {}).flightTime === "string" ? ((t.metadata || {}).flightTime as string) : null) ??
+          t.scheduledAt ??
+          null,
         departureGate: null,
         metadata: {},
+        traslado: t,
       };
     });
-    return [...deParticipantes, ...deViajes];
+    return [...deParticipantes.map((a) => ({ ...a, traslado: trasladoDe.get(a.id) ?? null })), ...deViajes];
   }, [athletes, transferOutTrips]);
 
   const filtradas = useMemo(() => {
@@ -222,10 +256,20 @@ export default function DepartureMonitoringPage() {
     [delegations, eventId],
   );
 
-  const vueloDe = (a: Athlete) => {
+  // El vuelo y la aerolínea de SALIDA. La carga AND deja en la ficha el de
+  // llegada (flight_number) y el de salida en metadata.departure: antes aquí
+  // se mostraba el de llegada (Sergio Alvarenga "salía" en su LA1324).
+  const salidaDe = (a: Athlete) => {
     const meta = (a.metadata || {}) as Record<string, unknown>;
-    return a.flightNumber || (typeof meta.vuelo_salida === "string" ? meta.vuelo_salida : null);
+    const d = (meta.departure && typeof meta.departure === "object" ? meta.departure : {}) as Record<string, unknown>;
+    const soloSalida = (a.tripType || "").toUpperCase() === "DEPARTURE";
+    const texto = (v: unknown) => (typeof v === "string" && v.trim() ? v.trim() : null);
+    return {
+      vuelo: texto(d.flightNumber) ?? texto(meta.vuelo_salida) ?? (soloSalida ? texto(a.flightNumber) : null),
+      aerolinea: texto(d.airline) ?? (soloSalida ? texto(a.airline) : null),
+    };
   };
+  const vueloDe = (a: Athlete) => salidaDe(a).vuelo;
 
   if (cargando) {
     return (
@@ -351,10 +395,10 @@ export default function DepartureMonitoringPage() {
               </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm" style={{ minWidth: 760 }}>
+              <table className="w-full text-sm" style={{ minWidth: 1060 }}>
                 <thead>
                   <tr style={{ background: "var(--elevated)" }}>
-                    {["Hora", "Participante", "Delegación", "Tipo", "Vuelo", "Aerolínea", "Puerta"].map((h) => (
+                    {["Hora", "Participante", "Delegación", "Tipo", "Vuelo", "Aerolínea", "Puerta", "Traslado al aeropuerto"].map((h) => (
                       <th
                         key={h}
                         className="px-3 py-2 text-left text-[10px] font-bold uppercase"
@@ -396,8 +440,19 @@ export default function DepartureMonitoringPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{a.airline || "—"}</td>
+                        <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{salidaDe(a).aerolinea || "—"}</td>
                         <td className="px-3 py-2.5 whitespace-nowrap" style={{ color: "var(--text-muted)" }}>{a.departureGate || "—"}</td>
+                        <td className="px-3 py-2.5">
+                          {a.traslado ? (
+                            <LineaTraslado
+                              viaje={a.traslado}
+                              conductor={a.traslado.driverId ? conductores[a.traslado.driverId] || t("Conductor asignado") : null}
+                              ahora={ahora}
+                            />
+                          ) : (
+                            <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t("Sin traslado")}</span>
+                          )}
+                        </td>
                       </tr>
                     );
                   })}
