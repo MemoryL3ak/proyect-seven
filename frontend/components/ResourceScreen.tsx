@@ -31,6 +31,16 @@ import {
 import { horaRegresoDeViaje } from "@/lib/viajeRegreso";
 import { opcionesDeConductores, sinConductoresRepetidos } from "@/lib/opciones-conductores";
 import { conductorEnEvento } from "@/lib/conductores-del-evento";
+import {
+  cumpleFiltroAnd,
+  fechaHoraCorta,
+  fichaValidada,
+  fichaVisibleEnAnd,
+  OPCIONES_ESTADO_AND,
+  tieneLlegada,
+  tieneSalida,
+  type FiltroEstadoAnd,
+} from "@/lib/and-listado";
 import { esDelEvento } from "@/lib/evento-activo";
 import { avisarEventosCambiaron, useEventoActivo } from "@/lib/evento-activo-provider";
 
@@ -342,6 +352,7 @@ export default function ResourceScreen({
   >(null);
   const [andSearch, setAndSearch] = useState("");
   const [andTripFilter, setAndTripFilter] = useState<"all" | "ARRIVAL" | "DEPARTURE">("all");
+  const [andEstadoFilter, setAndEstadoFilter] = useState<FiltroEstadoAnd>("");
   const [phoneDropdownOpen, setPhoneDropdownOpen] = useState(false);
   const [driverOptions, setDriverOptions] = useState<Option[]>([]);
   const [driverUserOptions, setDriverUserOptions] = useState<Option[]>([]);
@@ -759,6 +770,8 @@ export default function ResourceScreen({
             participantRoomNumber: athlete.roomNumber ?? "",
             participantPassportNumber: athlete.passportNumber ?? "",
             participantMetadata: metadata,
+            // Estado de la ficha: AND marca las que faltan por validar.
+            participantStatus: athlete.status ?? null,
             participantRut:
               athlete.countryCode === "CHL" && athlete.passportNumber
                 ? athlete.passportNumber
@@ -4170,21 +4183,16 @@ export default function ResourceScreen({
         {items.length === 0 ? (
           <div className="text-sm" style={{color:"var(--text-muted)"}}>{t("Sin registros aún.")}</div>
         ) : config.endpoint === "/delegations" ? (() => {
-          const searchLower = andSearch.toLowerCase();
-          const filtered = items.filter((item) => {
-            // Only show validated participants in AND view
-            const isValidated = item.participantStatus === "PERSONAL_DATA_VALIDATED" || (item.participantMetadata as any)?.personalDataValidated === true;
-            if (!isValidated) return false;
-            const nameMatch = !andSearch || (item.participantFullName ?? "").toLowerCase().includes(searchLower);
-            const trip = (item.participantTripType ?? "").toUpperCase();
-            const tripMatch =
-              andTripFilter === "all" ||
-              (andTripFilter === "ARRIVAL" && trip === "ARRIVAL") ||
-              (andTripFilter === "DEPARTURE" && trip === "DEPARTURE");
-            return nameMatch && tripMatch;
-          });
-          const arrivalCount = items.filter((i) => (i.participantTripType ?? "").toUpperCase() === "ARRIVAL").length;
-          const departureCount = items.filter((i) => (i.participantTripType ?? "").toUpperCase() === "DEPARTURE").length;
+          // Se ven todas las fichas del evento, validadas o no: antes sólo
+          // las validadas, y las 23 con vuelo de World Rugby (cargadas por la
+          // planilla, "Registradas") no aparecían. Ver lib/and-listado.
+          const visibles = items.filter((item) => fichaVisibleEnAnd(item));
+          const filtered = visibles.filter((item) =>
+            cumpleFiltroAnd(item, { busqueda: andSearch, sentido: andTripFilter, estado: andEstadoFilter }),
+          );
+          const arrivalCount = visibles.filter((i) => tieneLlegada(i)).length;
+          const departureCount = visibles.filter((i) => tieneSalida(i)).length;
+          const pendientesCount = visibles.filter((i) => !fichaValidada(i)).length;
           const USER_TYPE_LABELS: Record<string, string> = {
             VIP: "VIP", FAMILIA_PARAPAN: "Familia Parapan", TA: "Deportista",
             TF: "Oficiales Técnicos", TM: "Prensa", JEFE_MISION: "Jefe de Misión",
@@ -4200,7 +4208,12 @@ export default function ResourceScreen({
                 <span style={{ fontSize: "12px", fontWeight: 600, color: ACCENT.violetLight, background: "rgba(167,139,250,0.1)", borderRadius: "20px", padding: "3px 10px", border: "1px solid rgba(167,139,250,0.2)" }}>
                   {departureCount} {t("salidas")}
                 </span>
-                <span style={{ fontSize: "12px", color: "var(--text-muted)", marginLeft: "4px" }}>— {items.length} {t("total")}</span>
+                {pendientesCount > 0 && (
+                  <span style={{ fontSize: "12px", fontWeight: 600, color: STATE.warningText, background: STATE.warningSoft, borderRadius: "20px", padding: "3px 10px", border: `1px solid ${STATE.warningBorder}` }}>
+                    {pendientesCount} {t("sin validar")}
+                  </span>
+                )}
+                <span style={{ fontSize: "12px", color: "var(--text-muted)", marginLeft: "4px" }}>— {visibles.length} {t("total")}</span>
               </div>
               {/* Search + filter */}
               <div style={{ display: "flex", gap: "8px", marginBottom: "16px", flexWrap: "wrap" }}>
@@ -4221,6 +4234,15 @@ export default function ResourceScreen({
                     {f === "all" ? t("Todos") : f === "ARRIVAL" ? t("Llegadas") : t("Salidas")}
                   </button>
                 ))}
+                <StyledSelect
+                  value={andEstadoFilter}
+                  onChange={(e) => setAndEstadoFilter(e.target.value as FiltroEstadoAnd)}
+                  wrapperStyle={{ width: 190, flex: "0 0 auto" }}
+                >
+                  {OPCIONES_ESTADO_AND.map((o) => (
+                    <option key={o.value} value={o.value}>{t(o.label)}</option>
+                  ))}
+                </StyledSelect>
               </div>
               {/* Cards */}
               <div style={{ display: "flex", flexDirection: "column", gap: "8px", maxHeight: "65vh", overflowY: "auto" }}>
@@ -4228,10 +4250,13 @@ export default function ResourceScreen({
                   <div style={{ color: "var(--text-muted)", fontSize: "13px", padding: "16px 0" }}>{t("Sin resultados.")}</div>
                 )}
                 {filtered.map((item) => {
-                  const trip = (item.participantTripType ?? "").toUpperCase();
-                  const isArrival = trip === "ARRIVAL";
-                  const isDeparture = trip === "DEPARTURE";
-                  const borderColor = isArrival ? BRAND.teal : isDeparture ? ACCENT.violetLight : SURFACE.borderStrong;
+                  // Llegada y/o salida según los vuelos de la ficha.
+                  const conLlegada = tieneLlegada(item);
+                  const conSalida = tieneSalida(item);
+                  const isArrival = conLlegada && !conSalida;
+                  const isDeparture = conSalida && !conLlegada;
+                  const validada = fichaValidada(item);
+                  const borderColor = isArrival ? BRAND.teal : isDeparture ? ACCENT.violetLight : conLlegada ? BRAND.blue : SURFACE.borderStrong;
                   const bgColor = isArrival ? "rgba(33,208,179,0.03)" : isDeparture ? "rgba(167,139,250,0.03)" : "#fafafa";
                   const initials = (item.participantFullName ?? "?").split(" ").slice(0, 2).map((w: string) => w[0] ?? "").join("").toUpperCase();
                   const avatarBg = isArrival ? "rgba(33,208,179,0.15)" : isDeparture ? "rgba(167,139,250,0.12)" : "rgba(148,163,184,0.12)";
@@ -4263,14 +4288,19 @@ export default function ResourceScreen({
                               {t("Jefe de misión")}
                             </span>
                           )}
-                          {trip && (
-                            <span style={{
-                              fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", borderRadius: "20px",
-                              background: isArrival ? "rgba(33,208,179,0.12)" : isDeparture ? "rgba(167,139,250,0.12)" : "rgba(148,163,184,0.1)",
-                              color: isArrival ? BRAND.teal : isDeparture ? ACCENT.violetLight : "var(--text-muted)",
-                              border: `1px solid ${isArrival ? "rgba(33,208,179,0.25)" : isDeparture ? "rgba(167,139,250,0.25)" : "var(--border)"}`,
-                            }}>
-                              {isArrival ? t("LLEGADA") : isDeparture ? t("SALIDA") : trip}
+                          {conLlegada && (
+                            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", borderRadius: "20px", background: "rgba(33,208,179,0.12)", color: BRAND.teal, border: "1px solid rgba(33,208,179,0.25)" }}>
+                              {t("LLEGADA")}
+                            </span>
+                          )}
+                          {conSalida && (
+                            <span style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.06em", padding: "2px 8px", borderRadius: "20px", background: "rgba(167,139,250,0.12)", color: ACCENT.violetLight, border: "1px solid rgba(167,139,250,0.25)" }}>
+                              {t("SALIDA")}
+                            </span>
+                          )}
+                          {!validada && (
+                            <span title={t("Datos personales sin validar (Inscripción Participantes)")} style={{ fontSize: "10px", fontWeight: 700, padding: "2px 8px", borderRadius: "20px", background: STATE.warningSoft, color: STATE.warningText, border: `1px solid ${STATE.warningBorder}` }}>
+                              {t("Sin validar")}
                             </span>
                           )}
                         </div>
@@ -4297,6 +4327,23 @@ export default function ResourceScreen({
                             </span>
                           )}
                         </div>
+                        {/* Vuelos de la ficha */}
+                        {(conLlegada || conSalida) && (
+                          <div style={{ display: "flex", gap: "14px", flexWrap: "wrap", marginBottom: "4px" }}>
+                            {conLlegada && (item.participantFlightNumber || item.participantArrivalTime) && (
+                              <span style={{ fontSize: "11px", color: "var(--text)" }}>
+                                <span style={{ fontWeight: 700, color: BRAND.teal }}>{t("Llega")}: </span>
+                                {[item.participantFlightNumber, fechaHoraCorta(item.participantArrivalTime)].filter(Boolean).join(" · ")}
+                              </span>
+                            )}
+                            {conSalida && (item.participantDepartureFlightNumber || item.participantDepartureTime) && (
+                              <span style={{ fontSize: "11px", color: "var(--text)" }}>
+                                <span style={{ fontWeight: 700, color: ACCENT.violetLight }}>{t("Sale")}: </span>
+                                {[item.participantDepartureFlightNumber, fechaHoraCorta(item.participantDepartureTime)].filter(Boolean).join(" · ")}
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {/* Detail row */}
                         <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
                           {item.participantPhone && (
