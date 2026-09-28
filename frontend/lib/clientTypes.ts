@@ -71,3 +71,12 @@ export function isMissionHead(value?: string | null) {
 export function canContactDrivers(value?: string | null) {
   return normalizeClientType(value) === "COORDINADOR_TRANSPORTE";
 }
+
+/**
+ * Coordinador de Sede: en la app tiene los módulos de un participante y,
+ * además, los vuelos del evento y el directorio de conductores (28-09-2026,
+ * pedido para World Rugby U20).
+ */
+export function isVenueCoordinator(value?: string | null) {
+  return normalizeClientType(value) === "COORDINADOR_SEDE";
+}

@@ -144,6 +144,60 @@ export class FlightsService {
     return this.aeroDataBox.airportArrivals(iata, -60, duration);
   }
 
+  /**
+   * Pasajeros validados del evento con su vuelo de llegada y de salida, y el
+   * traslado de AND de cada tramo (estado y conductor). La app agrupa por
+   * vuelo. Mismo criterio que los monitores del panel: sólo fichas validadas.
+   */
+  async vuelosDelEvento(eventId: string) {
+    return this.flightRepository.manager.query(
+      `select a.id,
+              a.full_name as nombre,
+              d.country_code as pais,
+              d.metadata->>'name' as delegacion,
+              coalesce(nullif(a.metadata->'arrival'->>'flightNumber', ''),
+                       case when upper(coalesce(a.trip_type, '')) <> 'DEPARTURE' then a.flight_number end) as vuelo_llegada,
+              coalesce(nullif(a.metadata->'arrival'->>'airline', ''),
+                       case when upper(coalesce(a.trip_type, '')) <> 'DEPARTURE' then a.airline end) as aerolinea_llegada,
+              a.arrival_time as hora_llegada,
+              f.origin as origen,
+              coalesce(nullif(a.metadata->'departure'->>'flightNumber', ''),
+                       case when upper(coalesce(a.trip_type, '')) = 'DEPARTURE' then a.flight_number end) as vuelo_salida,
+              nullif(a.metadata->'departure'->>'airline', '') as aerolinea_salida,
+              a.departure_time as hora_salida,
+              tl.status as traslado_llegada,
+              tl.conductor as conductor_llegada,
+              ts.status as traslado_salida,
+              ts.conductor as conductor_salida,
+              ts.scheduled_at as recogida_salida
+         from core.athletes a
+         left join core.delegations d on d.id = a.delegation_id
+         left join transport.flights f on f.id = a.arrival_flight_id
+         left join lateral (
+           select t.status, t.scheduled_at, coalesce(pp.full_name, dr.full_name) as conductor
+             from transport.trips t
+             left join core.provider_participants pp on pp.id = t.driver_id
+             left join transport.drivers dr on dr.id = t.driver_id
+            where t.metadata->>'andKey' = 'and:' || a.id || ':LLEGADA' and t.status <> 'CANCELLED'
+            order by t.created_at desc limit 1
+         ) tl on true
+         left join lateral (
+           select t.status, t.scheduled_at, coalesce(pp.full_name, dr.full_name) as conductor
+             from transport.trips t
+             left join core.provider_participants pp on pp.id = t.driver_id
+             left join transport.drivers dr on dr.id = t.driver_id
+            where t.metadata->>'andKey' = 'and:' || a.id || ':SALIDA' and t.status <> 'CANCELLED'
+            order by t.created_at desc limit 1
+         ) ts on true
+        where a.event_id = $1
+          and a.status is distinct from 'DELETED'
+          and (a.status = 'PERSONAL_DATA_VALIDATED' or a.metadata->>'personalDataValidated' = 'true')
+          and (a.arrival_time is not null or a.departure_time is not null)
+        order by coalesce(a.arrival_time, a.departure_time)`,
+      [eventId],
+    );
+  }
+
   async trackFlight(flightNumber: string, flightDate?: string) {
     if (this.useAeroDataBox())
       return this.aeroDataBox.trackFlight(flightNumber, flightDate);

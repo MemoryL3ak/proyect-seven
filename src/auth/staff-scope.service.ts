@@ -60,6 +60,14 @@ export const COMMITTEE_ROLE = 'Coordinador de Comité';
 export const TRANSPORT_CLIENT_TYPE = 'COORDINADOR_TRANSPORTE';
 export const TRANSPORT_ROLE = 'Coordinador de Transporte';
 
+/**
+ * Coordinador de Sede: participante común (sus viajes, su calendario) que
+ * además ve en la app los vuelos del evento y el directorio de conductores
+ * (28-09-2026, World Rugby U20). No se vuelve comité: no recibe la nómina.
+ */
+export const SEDE_CLIENT_TYPE = 'COORDINADOR_SEDE';
+export const SEDE_ROLE = 'Coordinador de Sede';
+
 const CACHE_TTL_MS = 60_000;
 
 const asString = (value: unknown): string | null =>
@@ -171,6 +179,7 @@ export class StaffScopeService {
       const isTransport = !isHead && tipo === TRANSPORT_CLIENT_TYPE;
       const isCommittee =
         !isHead && (isTransport || tipo === COMMITTEE_CLIENT_TYPE);
+      const isSede = !isHead && !isCommittee && tipo === SEDE_CLIENT_TYPE;
       const scope: StaffScope = {
         kind: isHead ? 'mission_head' : isCommittee ? 'committee' : 'participant',
         userId: row.id,
@@ -181,7 +190,9 @@ export class StaffScopeService {
             ? TRANSPORT_ROLE
             : isCommittee
               ? COMMITTEE_ROLE
-              : 'Participante',
+              : isSede
+                ? SEDE_ROLE
+                : 'Participante',
         delegationId: isHead ? row.delegation_id : null,
         delegationName: isHead ? await this.delegationNameOf(row.delegation_id) : null,
       };
@@ -220,17 +231,42 @@ export class StaffScopeService {
     const scope = await this.forRequest(req);
     const esCoordinadorTransporte =
       scope?.kind === 'committee' && scope.role === TRANSPORT_ROLE;
+    // El Coordinador de Sede también tiene el directorio de conductores.
+    const esCoordinadorSede = scope?.kind === 'participant' && scope.role === SEDE_ROLE;
     if (
       !scope ||
       (scope.kind !== 'staff' &&
         scope.kind !== 'mission_head' &&
-        !esCoordinadorTransporte)
+        !esCoordinadorTransporte &&
+        !esCoordinadorSede)
     ) {
       throw new ForbiddenException(
-        'Requiere sesión del panel, de Jefe de Misión o de Coordinador de Transporte',
+        'Requiere sesión del panel, de Jefe de Misión o de Coordinador de Transporte o de Sede',
       );
     }
     return scope;
+  }
+
+  /**
+   * Vuelos del evento (llegadas y salidas con su traslado): el panel, el
+   * comité y el Coordinador de Sede. Devuelve el evento al que queda
+   * acotado quien llama desde la app (el de su ficha), o null si es el panel.
+   */
+  async requireMonitorVuelos(req: ApiRequest): Promise<{ scope: StaffScope; eventId: string | null }> {
+    const scope = await this.forRequest(req);
+    const permitido =
+      scope?.kind === 'staff' ||
+      scope?.kind === 'committee' ||
+      (scope?.kind === 'participant' && scope.role === SEDE_ROLE);
+    if (!scope || !permitido) {
+      throw new ForbiddenException('Requiere sesión del panel, del comité o de Coordinador de Sede');
+    }
+    if (scope.kind === 'staff') return { scope, eventId: null };
+    const filas = await this.dataSource.query<Array<{ event_id: string | null }>>(
+      `select event_id from core.athletes where id = $1`,
+      [scope.userId],
+    );
+    return { scope, eventId: filas[0]?.event_id ?? null };
   }
 
   invalidate(userId: string) {

@@ -7,14 +7,34 @@ import {
   Patch,
   Post,
   Query,
+  Req,
 } from '@nestjs/common';
+import type { ApiRequest } from '../auth/api-auth.guard';
+import { StaffScopeService } from '../auth/staff-scope.service';
 import { CreateFlightDto } from './dto/create-flight.dto';
 import { UpdateFlightDto } from './dto/update-flight.dto';
 import { FlightsService } from './flights.service';
 
 @Controller('flights')
 export class FlightsController {
-  constructor(private readonly flightsService: FlightsService) {}
+  constructor(
+    private readonly flightsService: FlightsService,
+    private readonly scope: StaffScopeService,
+  ) {}
+
+  /**
+   * Llegadas y salidas del evento con su traslado, para la pestaña Vuelos de
+   * la app del Coordinador de Sede (28-09-2026). Desde la app el evento es
+   * el de su ficha, no el que pida; sólo nombres, delegación, vuelos y el
+   * estado del traslado, sin datos de contacto.
+   */
+  @Get('evento')
+  async vuelosDelEvento(@Req() req: ApiRequest, @Query('eventId') eventId?: string) {
+    const acceso = await this.scope.requireMonitorVuelos(req);
+    const evento = acceso.eventId ?? eventId ?? null;
+    if (!evento) return [];
+    return this.flightsService.vuelosDelEvento(evento);
+  }
 
   @Post()
   create(@Body() createFlightDto: CreateFlightDto) {

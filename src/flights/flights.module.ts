@@ -5,9 +5,11 @@ import { AeroDataBoxProvider } from './aerodatabox.provider';
 import { FlightsController } from './flights.controller';
 import { FlightsService } from './flights.service';
 import { Flight } from './entities/flight.entity';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Flight])],
+  // AuthModule: StaffScopeService decide quién ve los vuelos del evento.
+  imports: [TypeOrmModule.forFeature([Flight]), AuthModule],
   controllers: [FlightsController],
   providers: [FlightsService, SupabaseProvider, AeroDataBoxProvider],
 })

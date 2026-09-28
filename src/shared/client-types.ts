@@ -23,6 +23,9 @@ export const CLIENT_TYPES = [
   // Comité —el evento entero, de consulta— y además el contacto directo con
   // el conductor de cada traslado, que el resto del portal no ofrece.
   'COORDINADOR_TRANSPORTE',
+  // Coordinador de Sede: responsable de un recinto. En la app ve además los
+  // vuelos del evento y el directorio de conductores (28-09-2026).
+  'COORDINADOR_SEDE',
   'COMITE_ORGANIZADOR',
   'PROVEEDORES',
 ] as const;

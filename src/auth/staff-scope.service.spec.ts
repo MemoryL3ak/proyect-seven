@@ -73,3 +73,48 @@ describe('StaffScopeService.forAthlete', () => {
     });
   });
 });
+
+/**
+ * 28-09-2026: el Coordinador de Sede de World Rugby ve en la app los vuelos
+ * del evento y el directorio de conductores, sin volverse comité (no recibe
+ * la nómina) y sólo de su evento.
+ */
+describe('StaffScopeService: Coordinador de Sede', () => {
+  const RUGBY = '8bbd6a39-a788-4588-9c15-7aec86080dba';
+  const build = () => {
+    const dataSource = {
+      query: jest.fn((sql: string) =>
+        Promise.resolve(
+          sql.includes('select event_id')
+            ? [{ event_id: RUGBY }]
+            : [{ id: 'almendra', full_name: 'Almendra Moraga', delegation_id: null, is_delegation_lead: false, user_type: 'COORDINADOR_SEDE' }],
+        ),
+      ),
+    };
+    const svc = new StaffScopeService({} as unknown as SupabaseClient, dataSource as unknown as DataSource);
+    const req = {
+      method: 'GET',
+      headers: {},
+      apiCaller: { type: 'portal', kind: 'athlete', userId: 'almendra' },
+    } as never;
+    return { svc, req };
+  };
+
+  it('es participante con su rol, no comité', async () => {
+    const { svc } = build();
+    await expect(svc.forAthlete('almendra')).resolves.toMatchObject({
+      kind: 'participant',
+      role: 'Coordinador de Sede',
+    });
+  });
+
+  it('ve el directorio de conductores', async () => {
+    const { svc, req } = build();
+    await expect(svc.requireFleetViewer(req)).resolves.toMatchObject({ role: 'Coordinador de Sede' });
+  });
+
+  it('ve los vuelos de SU evento, no el que pida', async () => {
+    const { svc, req } = build();
+    await expect(svc.requireMonitorVuelos(req)).resolves.toMatchObject({ eventId: RUGBY });
+  });
+});
