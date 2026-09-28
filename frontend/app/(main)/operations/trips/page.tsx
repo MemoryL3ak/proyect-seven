@@ -14,6 +14,7 @@ import TripMap from "@/components/TripMap";
 import { historialDeJornada, jornadasDelHistorial, SIN_FECHA as HISTORIAL_SIN_FECHA } from "@/lib/historial-viajes";
 import { etiquetaDiaEvento } from "@/lib/hora-evento";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { conductorEnEvento } from "@/lib/conductores-del-evento";
 import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
@@ -215,6 +216,10 @@ type DriverItem = {
   isFleet?: boolean;
   /** 'fleet' | 'provider' — lo marca /drivers al unificar ambas fuentes. */
   source?: string | null;
+  /** Conductor de proveedor: los eventos de su proveedor. */
+  eventIds?: string[] | null;
+  /** Flota propia: su evento. */
+  eventId?: string | null;
 };
 
 type ParticipantItem = {
@@ -1360,14 +1365,17 @@ export default function TripsPage() {
   const driverOptions = useMemo(
     () => {
       // En Viajes se descartan los conductores de Flota (exclusivos VIP/T1).
+      // Sólo los conductores del evento activo: con World Rugby creado se
+      // ofrecían los 80 de los Juegos Escolares. El ya elegido se conserva.
       const unique = new Map<string, DriverItem>();
       Object.values(drivers).forEach((d) => {
         if (d.isFleet) return;
+        if (d.id !== selectedDriverId && !conductorEnEvento(d, selectedEventId)) return;
         unique.set(d.id, d);
       });
       return Array.from(unique.values()).sort((a, b) => (a.fullName || "").localeCompare(b.fullName || ""));
     },
-    [drivers],
+    [drivers, selectedEventId, selectedDriverId],
   );
 
   const kpis = useMemo(() => {

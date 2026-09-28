@@ -9,8 +9,10 @@ import { SupabaseClient } from '@supabase/supabase-js';
  */
 
 /**
- * Ids de los proveedores de un evento. null = no filtrar: sin evento, o si
- * la consulta falla (mejor ofrecer todos los conductores que ninguno).
+ * Ids de los proveedores de un evento: los que lo tienen en event_ids y los
+ * que no tienen ninguno (antiguos: valen para todos, igual que en el panel).
+ * null = no filtrar: sin evento, o si la consulta falla (mejor ofrecer todos
+ * los conductores que ninguno).
  */
 export async function proveedoresDelEvento(
   supabase: SupabaseClient,
@@ -20,10 +22,21 @@ export async function proveedoresDelEvento(
   const { data, error } = await supabase
     .schema('core')
     .from('providers')
-    .select('id')
-    .contains('event_ids', [eventId]);
+    .select('id, event_ids');
   if (error) return null;
-  return new Set(((data ?? []) as Array<{ id: string }>).map((r) => r.id));
+  return new Set(
+    ((data ?? []) as Array<{ id: string; event_ids: string[] | null }>)
+      .filter((p) => proveedorEsDelEvento(p.event_ids, eventId))
+      .map((p) => p.id),
+  );
+}
+
+/** Un proveedor sin eventos vale para todos. */
+export function proveedorEsDelEvento(
+  eventIds: string[] | null | undefined,
+  eventId: string,
+): boolean {
+  return !eventIds || eventIds.length === 0 || eventIds.includes(eventId);
 }
 
 /** ¿El conductor (por su proveedor) trabaja en el evento? */

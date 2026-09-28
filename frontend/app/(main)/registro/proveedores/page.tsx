@@ -36,6 +36,19 @@ import StyledSelect from "@/components/StyledSelect";
 import CountrySelect from "@/components/CountrySelect";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
+import {
+  accionAlQuitar,
+  agregarEvento,
+  eventosParaNuevo,
+  nombresDeEventos,
+  otrosEventos,
+  participantesDelEvento,
+  proveedoresDelEvento,
+  proveedoresParaTraer,
+  quitarEvento,
+  recortar,
+} from "@/lib/proveedores-evento";
 
 // ── Type/subtype catalogue ──────────────────────────────────────────────────
 type TypeEntry = { label: string; subtypes: string[]; color: string; bg: string };
@@ -98,6 +111,8 @@ type Provider = {
   city?: string | null;
   contactName?: string | null;
   metadata?: Record<string, unknown> | null;
+  /** Eventos en que trabaja (28-09-2026); vacío = ficha antigua, se ve en todos. */
+  eventIds?: string[] | null;
 };
 
 type ProviderRate = {
@@ -280,6 +295,8 @@ const EMPTY_PARTICIPANT_FORM = {
 // ── Main page ────────────────────────────────────────────────────────────────
 export default function ProveedoresPage() {
   const { t } = useI18n();
+  // Evento activo del panel: los proveedores trabajan en uno o varios eventos.
+  const { eventoId, evento, eventos } = useEventoActivo();
   const [activeTab, setActiveTab] = useState<"proveedores" | "participantes">("proveedores");
   const [providerFilter, setProviderFilter] = useState<string>(""); // provider id filter for participantes tab
 
@@ -294,6 +311,12 @@ export default function ProveedoresPage() {
   const [savingProvider, setSavingProvider] = useState(false);
   const [providerRates, setProviderRates] = useState<ProviderRate[]>([]);
   const [providerError, setProviderError] = useState<string | null>(null);
+  // "Traer de otro evento": el mismo proveedor, con sus conductores, sin duplicarlo.
+  const [traerAbierto, setTraerAbierto] = useState(false);
+  const [traerBusqueda, setTraerBusqueda] = useState("");
+  /** Todas las personas de todos los proveedores, para contar las de cada uno. null = cargando. */
+  const [personasTodas, setPersonasTodas] = useState<Participant[] | null | "error">(null);
+  const [trayendoId, setTrayendoId] = useState<string | null>(null);
 
   // ── Participants state
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -388,6 +411,10 @@ export default function ProveedoresPage() {
   const [confirmDialog, setConfirmDialog] = useState<{
     message: string;
     onConfirm: () => void;
+    /** Para "Quitar del evento", que no borra nada. */
+    title?: string;
+    confirmLabel?: string;
+    danger?: boolean;
   } | null>(null);
 
   // ── Loaders ─────────────────────────────────────────────────────────────
@@ -426,16 +453,42 @@ export default function ProveedoresPage() {
     return PROVIDER_TYPES[providerForm.type]?.subtypes ?? [];
   }, [providerForm.type]);
 
+  // Sólo los del evento activo: con World Rugby creado se veían los
+  // proveedores de los Juegos Escolares. Contadores, filtros y búsqueda
+  // parten de esta lista, no de la de todos los eventos.
+  const proveedoresEvento = useMemo(() => proveedoresDelEvento(providers, eventoId), [providers, eventoId]);
+
+  /** Cuántos proveedores de cada tipo hay en el evento (tarjetas y filtro). */
+  const tiposEvento = useMemo(() => {
+    const cuenta: Record<string, number> = {};
+    proveedoresEvento.forEach(p => { if (p.type) cuenta[p.type] = (cuenta[p.type] ?? 0) + 1; });
+    return cuenta;
+  }, [proveedoresEvento]);
+
+  // Al cambiar de evento no queda elegido nada del otro: un proveedor o un
+  // tipo que aquí no tiene a nadie dejaba la lista vacía sin explicación.
+  useEffect(() => {
+    if (loadingProviders) return;
+    const enEvento = (id: string) => proveedoresEvento.some(p => p.id === id);
+    if (providerFilter && !enEvento(providerFilter)) setProviderFilter("");
+    if (filterType && !tiposEvento[filterType]) setFilterType("");
+    // Un participante nuevo no puede quedar colgando de un proveedor de otro evento.
+    if (participantModal && !participantModal.editing && participantForm.providerId && !enEvento(participantForm.providerId)) {
+      setParticipantForm(f => ({ ...f, providerId: "" }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [proveedoresEvento, loadingProviders]);
+
   const filteredProviders = useMemo(() => {
     const q = providerSearch.trim().toLowerCase();
-    return providers.filter(p => {
+    return proveedoresEvento.filter(p => {
       if (q && !p.name.toLowerCase().includes(q) &&
           !(p.email ?? "").toLowerCase().includes(q) &&
           !(p.rut ?? "").toLowerCase().includes(q)) return false;
       if (filterType && p.type !== filterType) return false;
       return true;
     });
-  }, [providers, providerSearch, filterType]);
+  }, [proveedoresEvento, providerSearch, filterType]);
 
   const groupedProviders = useMemo(() => {
     const map: Record<string, Provider[]> = {};
@@ -480,6 +533,7 @@ export default function ProveedoresPage() {
     try {
       const parentId = providerModal?.parentId ?? null;
       const parentProv = parentId ? providers.find(pr => pr.id === parentId) : null;
+      const eventosNuevo = eventosParaNuevo(eventoId, parentProv);
       const body = {
         name: providerForm.name.trim(),
         type: providerForm.type || parentProv?.type || null,
@@ -494,6 +548,9 @@ export default function ProveedoresPage() {
         bidAmount: providerForm.bidAmount ? Number(providerForm.bidAmount) : null,
         bidTripCount: providerForm.bidTripCount ? Number(providerForm.bidTripCount) : null,
         ...(parentId ? { parentProviderId: parentId } : {}),
+        // Uno nuevo queda en el evento activo; un subproveedor, en los de su
+        // padre. Al editar no se tocan sus eventos.
+        ...(!providerModal?.editing && eventosNuevo.length > 0 ? { eventIds: eventosNuevo } : {}),
       };
 
       let providerId: string;
@@ -548,7 +605,43 @@ export default function ProveedoresPage() {
     }
   };
 
+  const guardarEventos = (id: string, eventIds: string[]) =>
+    apiFetch(`/providers/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ eventIds }),
+    });
+
   const removeProvider = (p: Provider) => {
+    // Si además trabaja en otro evento, la papelera sólo lo saca de éste:
+    // eliminarlo se llevaría a sus conductores también del otro evento.
+    if (accionAlQuitar(p.eventIds, eventoId) === "QUITAR_DEL_EVENTO") {
+      const otros = nombresDeEventos(otrosEventos(p.eventIds, eventoId), eventos);
+      const subs = providers.filter(sp => sp.parentProviderId === p.id);
+      setConfirmDialog({
+        title: t("Quitar del evento"),
+        confirmLabel: t("Quitar del evento"),
+        danger: false,
+        message: `"${p.name}" ${t("deja de verse en")} ${evento?.name ?? t("este evento")}. ${t("No se elimina: sigue en")} ${otros.join(", ") || t("otro evento")} ${t("con sus participantes y conductores.")}${subs.length > 0 ? ` ${t("Sus subproveedores también salen de este evento.")}` : ""}`,
+        onConfirm: async () => {
+          setConfirmDialog(null);
+          try {
+            const quedan = quitarEvento(p.eventIds, eventoId);
+            if (quedan) await guardarEventos(p.id, quedan);
+            // Sus subproveedores salen con él; uno que era sólo de este
+            // evento pasa a los que le quedan al padre.
+            for (const sub of subs) {
+              const delSub = quitarEvento(sub.eventIds, eventoId, quedan ?? []);
+              if (delSub) await guardarEventos(sub.id, delSub);
+            }
+            await loadProviders();
+          } catch (e) {
+            alert(e instanceof Error ? e.message : t("No se pudo quitar del evento"));
+          }
+        },
+      });
+      return;
+    }
     setConfirmDialog({
       message: `${t("¿Eliminar proveedor")} "${p.name}"? ${t("Esta acción no se puede deshacer.")}`,
       onConfirm: async () => {
@@ -566,6 +659,60 @@ export default function ProveedoresPage() {
   const handleProviderClick = (p: Provider) => {
     setProviderFilter(p.id);
     setActiveTab("participantes");
+  };
+
+  // ── Traer de otro evento ─────────────────────────────────────────────────
+  // BVAN trabaja en los Juegos Escolares y en World Rugby: se agrega el
+  // evento al mismo proveedor y sus conductores vienen con él, sin duplicarlos.
+  const abrirTraer = () => {
+    setTraerBusqueda("");
+    setPersonasTodas(null);
+    setTraerAbierto(true);
+    apiFetch<Participant[]>("/provider-participants")
+      .then(d => setPersonasTodas(Array.isArray(d) ? d : []))
+      .catch(() => setPersonasTodas("error"));
+  };
+
+  const paraTraer = useMemo(() => {
+    const q = traerBusqueda.trim().toLowerCase();
+    return proveedoresParaTraer(providers, eventoId).filter(({ proveedor, subproveedores }) => {
+      if (!q) return true;
+      return [proveedor, ...subproveedores].some(p =>
+        p.name.toLowerCase().includes(q) ||
+        (p.rut ?? "").toLowerCase().includes(q) ||
+        (p.email ?? "").toLowerCase().includes(q));
+    });
+  }, [providers, eventoId, traerBusqueda]);
+
+  /** Personas y conductores de cada proveedor, para decir qué se trae. */
+  const personasPorProveedor = useMemo(() => {
+    const cuenta = new Map<string, { personas: number; conductores: number }>();
+    (Array.isArray(personasTodas) ? personasTodas : []).forEach(pa => {
+      const c = cuenta.get(pa.providerId) ?? { personas: 0, conductores: 0 };
+      c.personas += 1;
+      if (ES_CONDUCTOR(pa)) c.conductores += 1;
+      cuenta.set(pa.providerId, c);
+    });
+    return cuenta;
+  }, [personasTodas]);
+
+  const traerAlEvento = async (proveedor: Provider, subproveedores: Provider[]) => {
+    if (!eventoId || trayendoId) return;
+    setTrayendoId(proveedor.id);
+    try {
+      const nuevos = agregarEvento(proveedor.eventIds, eventoId);
+      if (nuevos) await guardarEventos(proveedor.id, nuevos);
+      for (const sub of subproveedores) {
+        const delSub = agregarEvento(sub.eventIds, eventoId);
+        if (delSub) await guardarEventos(sub.id, delSub);
+      }
+      await loadProviders();
+      setMailToast({ ok: true, msg: `${proveedor.name} ${t("quedó en")} ${evento?.name ?? t("este evento")}` });
+    } catch (e) {
+      setMailToast({ ok: false, msg: e instanceof Error ? e.message : t("No se pudo agregar al evento") });
+    } finally {
+      setTrayendoId(null);
+    }
   };
 
   // ── Participant logic ────────────────────────────────────────────────────
@@ -594,9 +741,28 @@ export default function ProveedoresPage() {
     }
   };
 
+  // Sólo las personas de proveedores del evento activo: los conductores de
+  // los Juegos Escolares no son de World Rugby (salvo que su proveedor esté
+  // en los dos). Filtros, contadores, fotos y descargas parten de aquí.
+  const participantesEvento = useMemo(
+    () => participantesDelEvento(participants, providers, eventoId),
+    [participants, providers, eventoId],
+  );
+
+  /**
+   * Proveedores que ofrece el formulario de participante: los del evento, y
+   * el que ya tiene si se está editando a alguien de otro.
+   */
+  const opcionesProveedorForm = useMemo(() => {
+    const actual = providers.find(p => p.id === participantForm.providerId);
+    return actual && !proveedoresEvento.some(p => p.id === actual.id)
+      ? [...proveedoresEvento, actual]
+      : proveedoresEvento;
+  }, [providers, proveedoresEvento, participantForm.providerId]);
+
   const filteredParticipants = useMemo(() => {
     const q = participantSearch.trim().toLowerCase();
-    return participants.filter(p => {
+    return participantesEvento.filter(p => {
       if (q && !p.fullName.toLowerCase().includes(q) &&
           !(p.rut ?? "").toLowerCase().includes(q) &&
           !(p.email ?? "").toLowerCase().includes(q)) return false;
@@ -607,7 +773,7 @@ export default function ProveedoresPage() {
       }
       return true;
     });
-  }, [participants, participantSearch, participantTipo, participantDocs, providers]);
+  }, [participantesEvento, participantSearch, participantTipo, participantDocs, providers]);
 
   const openAddParticipant = () => {
     setParticipantForm({ ...EMPTY_PARTICIPANT_FORM, providerId: providerFilter });
@@ -775,11 +941,11 @@ export default function ProveedoresPage() {
     <div className="space-y-6">
       <ConfirmDialog
         open={!!confirmDialog}
-        title={t("Confirmar eliminación")}
+        title={confirmDialog?.title ?? t("Confirmar eliminación")}
         message={confirmDialog?.message ?? ""}
-        confirmLabel={t("Eliminar")}
+        confirmLabel={confirmDialog?.confirmLabel ?? t("Eliminar")}
         cancelLabel={t("Cancelar")}
-        danger
+        danger={confirmDialog?.danger ?? true}
         onConfirm={() => confirmDialog?.onConfirm()}
         onCancel={() => setConfirmDialog(null)}
       />
@@ -796,12 +962,24 @@ export default function ProveedoresPage() {
             {t("Gestión de proveedores y sus participantes")}
           </p>
         </div>
-        <button
-          className="btn btn-primary"
-          onClick={activeTab === "proveedores" ? openAddProvider : openAddParticipant}
-        >
-          {activeTab === "proveedores" ? t("+ Nuevo proveedor") : t("+ Nuevo participante")}
-        </button>
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap" }}>
+          {/* Un proveedor que ya trabaja en otro evento se trae, no se vuelve a crear. */}
+          {activeTab === "proveedores" && eventoId && (
+            <button
+              className="btn btn-ghost"
+              onClick={abrirTraer}
+              title={t("Agregar a este evento un proveedor de otro evento, con sus participantes y conductores")}
+            >
+              {t("Traer de otro evento")}
+            </button>
+          )}
+          <button
+            className="btn btn-primary"
+            onClick={activeTab === "proveedores" ? openAddProvider : openAddParticipant}
+          >
+            {activeTab === "proveedores" ? t("+ Nuevo proveedor") : t("+ Nuevo participante")}
+          </button>
+        </div>
       </section>
 
       {/* Tabs */}
@@ -834,23 +1012,18 @@ export default function ProveedoresPage() {
       {activeTab === "proveedores" && (
         <>
           {/* Stats bar */}
-          {!loadingProviders && providers.length > 0 && (
+          {!loadingProviders && proveedoresEvento.length > 0 && (
             <div style={{ display: "flex", gap: "12px", flexWrap: "wrap" }}>
               <div className="surface rounded-2xl px-5 py-3 flex items-center gap-3" style={{ boxShadow: "0 1px 4px rgba(15,23,42,0.05)", minWidth: "130px" }}>
                 <div style={{ width: "36px", height: "36px", borderRadius: "10px", background: "rgba(33,208,179,0.12)", display: "flex", alignItems: "center", justifyContent: "center" }}>
                   <BuildingIcon size={18} color={BRAND.teal} strokeWidth={2} />
                 </div>
                 <div>
-                  <p style={{ fontSize: "22px", fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>{providers.length}</p>
+                  <p style={{ fontSize: "22px", fontWeight: 700, color: "var(--text)", lineHeight: 1 }}>{proveedoresEvento.length}</p>
                   <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>{t("Proveedores")}</p>
                 </div>
               </div>
-              {Object.entries(
-                providers.reduce((acc, p) => {
-                  if (p.type) acc[p.type] = (acc[p.type] ?? 0) + 1;
-                  return acc;
-                }, {} as Record<string, number>)
-              )
+              {Object.entries(tiposEvento)
                 .sort((a, b) => b[1] - a[1])
                 .slice(0, 4)
                 .map(([type, count]) => {
@@ -887,14 +1060,17 @@ export default function ProveedoresPage() {
                 onChange={e => setProviderSearch(e.target.value)}
               />
             </div>
+            {/* Sólo los tipos que tienen proveedores en este evento, con cuántos. */}
             <StyledSelect wrapperStyle={FILTRO_ANCHO(200)} value={filterType} onChange={e => setFilterType(e.target.value)}>
               <option value="">{t("Todos los tipos")}</option>
-              {Object.entries(PROVIDER_TYPES).map(([key, { label }]) => (
-                <option key={key} value={key}>{t(label)}</option>
-              ))}
+              {Object.entries(PROVIDER_TYPES)
+                .filter(([key]) => tiposEvento[key] || key === filterType)
+                .map(([key, { label }]) => (
+                  <option key={key} value={key}>{`${t(label)} (${tiposEvento[key] ?? 0})`}</option>
+                ))}
             </StyledSelect>
             <span style={{ fontSize: "12px", color: "var(--text-faint)", whiteSpace: "nowrap" }}>
-              {filteredProviders.length} {t("de")} {providers.length}
+              {filteredProviders.length} {t("de")} {proveedoresEvento.length}
             </span>
           </section>
 
@@ -906,10 +1082,14 @@ export default function ProveedoresPage() {
             <div className="surface rounded-2xl p-10 text-center" style={{ color: "var(--text-faint)" }}>
               <BuildingIcon size={40} strokeWidth={1.5} style={{ margin: "0 auto 12px", opacity: 0.3 }} />
               <p style={{ fontSize: "14px", fontWeight: 600 }}>
-                {providers.length === 0 ? t("No hay proveedores registrados") : t("Sin resultados")}
+                {proveedoresEvento.length === 0
+                  ? (eventoId ? t("No hay proveedores en este evento") : t("No hay proveedores registrados"))
+                  : t("Sin resultados")}
               </p>
               <p style={{ fontSize: "12px", marginTop: "4px" }}>
-                {providers.length === 0 ? t("Agrega un proveedor para comenzar.") : t("Ajusta los filtros de búsqueda.")}
+                {proveedoresEvento.length === 0
+                  ? (eventoId && providers.length > 0 ? t("Agrega uno nuevo o tráelo de otro evento.") : t("Agrega un proveedor para comenzar."))
+                  : t("Ajusta los filtros de búsqueda.")}
               </p>
             </div>
           ) : (
@@ -976,6 +1156,21 @@ export default function ProveedoresPage() {
                                   )}
                                 </div>
 
+                                {/* Trabaja además en otro evento: por eso la papelera sólo lo saca de éste. */}
+                                {(() => {
+                                  if (!eventoId) return null;
+                                  const otros = nombresDeEventos(otrosEventos(p.eventIds, eventoId), eventos);
+                                  if (otros.length === 0) return null;
+                                  return (
+                                    <p
+                                      title={`${t("También en:")} ${otros.join(" · ")}`}
+                                      style={{ fontSize: "11px", color: "var(--text-faint)", marginTop: "6px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                                    >
+                                      {t("También en:")} {otros.map(n => recortar(n)).join(", ")}
+                                    </p>
+                                  );
+                                })()}
+
                                 {(p.email || p.rut) && (
                                   <div style={{ marginTop: "8px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
                                     {p.email && (
@@ -1012,7 +1207,7 @@ export default function ProveedoresPage() {
                                   style={{ padding: "5px", borderRadius: "7px", background: "none", border: "none", cursor: "pointer", color: "var(--text-faint)", transition: "all 0.15s" }}
                                   onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = "rgba(244,63,94,0.1)"; el.style.color = STATE.danger; }}
                                   onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = "none"; el.style.color = "var(--text-faint)"; }}
-                                  title={t("Eliminar")}
+                                  title={accionAlQuitar(p.eventIds, eventoId) === "QUITAR_DEL_EVENTO" ? t("Quitar de este evento") : t("Eliminar")}
                                 >
                                   <TrashIcon size={14} strokeWidth={2} />
                                 </button>
@@ -1068,7 +1263,7 @@ export default function ProveedoresPage() {
 
                             {/* Sub-providers */}
                             {(() => {
-                              const subs = providers.filter(sp => sp.parentProviderId === p.id);
+                              const subs = proveedoresEvento.filter(sp => sp.parentProviderId === p.id);
                               if (subs.length === 0) return null;
                               return (
                                 <div style={{ padding: "8px 16px 12px", borderTop: `1px solid ${typeColor}15`, background: `${typeColor}05` }}>
@@ -1080,7 +1275,7 @@ export default function ProveedoresPage() {
                                         <button onClick={() => openEditProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: SURFACE.textFaint }} title={t("Editar")}>
                                           <PencilIcon size={11} strokeWidth={2} />
                                         </button>
-                                        <button onClick={() => removeProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: SURFACE.textFaint }} title={t("Eliminar")}>
+                                        <button onClick={() => removeProvider(sub)} style={{ padding: 3, borderRadius: 4, border: "none", background: "none", cursor: "pointer", color: SURFACE.textFaint }} title={accionAlQuitar(sub.eventIds, eventoId) === "QUITAR_DEL_EVENTO" ? t("Quitar de este evento") : t("Eliminar")}>
                                           <TrashIcon size={11} strokeWidth={2} />
                                         </button>
                                       </div>
@@ -1116,7 +1311,7 @@ export default function ProveedoresPage() {
                 <select> nativo: Ariel lo pidió expresamente el 24-09-2026. */}
             <StyledSelect wrapperStyle={FILTRO_ANCHO(240)} value={providerFilter} onChange={e => setProviderFilter(e.target.value)}>
               <option value="">{t("Todos los proveedores")}</option>
-              {providers.map(p => (
+              {proveedoresEvento.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </StyledSelect>
@@ -1197,7 +1392,9 @@ export default function ProveedoresPage() {
                   const notFoundNames: string[] = [];
                   for (const file of files) {
                     const baseName = file.name.replace(/\.[^.]+$/, "").trim().toLowerCase().replace(/[._-]/g, " ");
-                    const participant = participants.find(p => (p.fullName || "").toLowerCase() === baseName);
+                    // Sólo entre las personas del evento: un homónimo de otro
+                    // evento no debe recibir la foto.
+                    const participant = participantesEvento.find(p => (p.fullName || "").toLowerCase() === baseName);
                     if (!participant) { notFound++; notFoundNames.push(file.name); continue; }
                     try {
                       const raw = await new Promise<string>((resolve) => { const r = new FileReader(); r.onload = () => resolve(r.result as string); r.readAsDataURL(file); });
@@ -1271,13 +1468,15 @@ export default function ProveedoresPage() {
             </div>
           )}
 
-          {loadingParticipants ? (
+          {/* Sin la lista de proveedores no se sabe de qué evento es cada persona:
+              se espera en vez de mostrar los dos eventos mezclados un momento. */}
+          {loadingParticipants || (loadingProviders && providers.length === 0) ? (
             <div className="flex items-center justify-center h-40 text-sm" style={{ color: "var(--text-faint)" }}>
               {t("Cargando participantes…")}
             </div>
           ) : filteredParticipants.length === 0 ? (
             <div className="surface rounded-2xl p-8 text-center text-sm" style={{ color: "var(--text-faint)" }}>
-              {participants.length === 0
+              {participantesEvento.length === 0
                 ? t("No hay participantes registrados para este proveedor.")
                 : t("Sin resultados para el filtro actual.")}
             </div>
@@ -1689,6 +1888,125 @@ export default function ProveedoresPage() {
         </div>
       )}
 
+      {/* ── MODAL: TRAER DE OTRO EVENTO ──────────────────────────────────── */}
+      {traerAbierto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div
+            className="surface rounded-3xl w-full flex flex-col"
+            style={{
+              maxWidth: "620px",
+              maxHeight: "min(90vh, calc(100dvh - 32px))",
+              borderTop: `2px solid ${BRAND.teal}`,
+              boxShadow: "0 8px 32px rgba(15,23,42,0.18)",
+            }}
+          >
+            <div className="px-4 md:px-6 pt-5 md:pt-6 pb-4 flex-shrink-0">
+              <p style={{ fontSize: "10px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: BRAND.teal, marginBottom: "4px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {evento?.name ?? t("Evento activo")}
+              </p>
+              <h2 style={{ fontSize: "1.25rem", fontWeight: 700, color: "var(--text)" }}>{t("Traer de otro evento")}</h2>
+              <p style={{ fontSize: "12px", color: "var(--text-muted)", marginTop: "4px", lineHeight: 1.5 }}>
+                {t("El proveedor queda también en este evento, con sus participantes y conductores. No se duplica: lo que se cambie se ve en los dos.")}
+              </p>
+              <div style={{ position: "relative", marginTop: "12px" }}>
+                <SearchIcon size={14} color="var(--text-faint)" strokeWidth={2} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
+                <input
+                  className="input"
+                  style={{ paddingLeft: "32px" }}
+                  placeholder={t("Buscar por nombre, email o RUT…")}
+                  value={traerBusqueda}
+                  onChange={e => setTraerBusqueda(e.target.value)}
+                  autoFocus
+                />
+              </div>
+            </div>
+
+            <div className="overflow-y-auto px-4 md:px-6 pb-4 flex-1">
+              {paraTraer.length === 0 ? (
+                <div style={{ padding: "28px 8px", textAlign: "center", color: "var(--text-faint)" }}>
+                  <BuildingIcon size={32} strokeWidth={1.5} style={{ margin: "0 auto 10px", opacity: 0.3 }} />
+                  <p style={{ fontSize: "13px", fontWeight: 600 }}>
+                    {traerBusqueda.trim() ? t("Sin resultados") : t("Los proveedores de los otros eventos ya están en éste.")}
+                  </p>
+                </div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                  {paraTraer.map(({ proveedor, subproveedores }) => {
+                    const tipo = proveedor.type ? PROVIDER_TYPES[proveedor.type] : undefined;
+                    const color = tipo?.color ?? SURFACE.textFaint;
+                    // Se trae con sus subproveedores: se cuentan las personas de todos.
+                    const conteo = [proveedor, ...subproveedores].reduce(
+                      (acc, p) => {
+                        const c = personasPorProveedor.get(p.id);
+                        return c ? { personas: acc.personas + c.personas, conductores: acc.conductores + c.conductores } : acc;
+                      },
+                      { personas: 0, conductores: 0 },
+                    );
+                    const estaEn = nombresDeEventos(proveedor.eventIds ?? [], eventos);
+                    const padre = proveedor.parentProviderId ? providers.find(pr => pr.id === proveedor.parentProviderId) : undefined;
+                    return (
+                      <div
+                        key={proveedor.id}
+                        style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px 12px", padding: "12px 14px", borderRadius: "14px", border: "1px solid var(--border)", borderLeft: `3px solid ${color}`, background: "var(--elevated)" }}
+                      >
+                        <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                            <span style={{ fontSize: "14px", fontWeight: 700, color: "var(--text)" }}>{proveedor.name}</span>
+                            {tipo && (
+                              <span style={{ fontSize: "10px", fontWeight: 600, padding: "1px 7px", borderRadius: "99px", background: tipo.bg, color: tipo.color, border: `1px solid ${tipo.color}30` }}>
+                                {t(tipo.label)}
+                              </span>
+                            )}
+                          </div>
+                          {padre && (
+                            <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
+                              {t("Subproveedor de")} {padre.name}
+                            </p>
+                          )}
+                          {/* Sin la lista de personas no se dice "0": se omite el conteo. */}
+                          {personasTodas !== "error" && (
+                            <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "4px" }}>
+                              {personasTodas === null
+                                ? t("Contando personas…")
+                                : `${conteo.personas} ${conteo.personas === 1 ? t("participante") : t("participantes")} · ${conteo.conductores} ${conteo.conductores === 1 ? t("conductor") : t("conductores")}`}
+                            </p>
+                          )}
+                          {subproveedores.length > 0 && (
+                            <p style={{ fontSize: "11px", color: "var(--text-muted)", marginTop: "2px" }}>
+                              {t("Con sus subproveedores:")} {subproveedores.map(s => s.name).join(", ")}
+                            </p>
+                          )}
+                          {estaEn.length > 0 && (
+                            <p
+                              title={estaEn.join(" · ")}
+                              style={{ fontSize: "11px", color: "var(--text-faint)", marginTop: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                            >
+                              {t("Está en:")} {estaEn.map(n => recortar(n, 40)).join(", ")}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          className="btn btn-primary"
+                          style={{ flexShrink: 0 }}
+                          disabled={!!trayendoId}
+                          onClick={() => void traerAlEvento(proveedor, subproveedores)}
+                        >
+                          {trayendoId === proveedor.id ? t("Agregando…") : t("Agregar a este evento")}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="px-4 md:px-6 py-4 flex justify-end gap-3 flex-shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
+              <button className="btn btn-ghost" onClick={() => setTraerAbierto(false)} disabled={!!trayendoId}>{t("Cerrar")}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── MODAL: PARTICIPANTE ──────────────────────────────────────────── */}
       {participantModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -1720,7 +2038,8 @@ export default function ProveedoresPage() {
                   onChange={e => setParticipantForm(f => ({ ...f, providerId: e.target.value }))}
                 >
                   <option value="">{t("— Seleccionar proveedor —")}</option>
-                  {providers.map(p => (
+                  {/* Sólo proveedores del evento activo (y el actual, si se edita). */}
+                  {opcionesProveedorForm.map(p => (
                     <option key={p.id} value={p.id}>{p.name}{p.type ? ` (${t(PROVIDER_TYPES[p.type]?.label ?? p.type)})` : ""}</option>
                   ))}
                 </select>

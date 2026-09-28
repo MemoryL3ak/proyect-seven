@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { proveedorEnEvento } from "@/lib/conductores-del-evento";
 import KpiCard from "@/components/ui/KpiCard";
 import PageHeader from "@/components/ui/PageHeader";
 import EmptyState from "@/components/ui/EmptyState";
@@ -121,7 +122,7 @@ type Detalle = {
   origenValor: string;
 };
 
-type ProviderItem = { id: string; name?: string | null };
+type ProviderItem = { id: string; name?: string | null; eventIds?: string[] | null };
 
 /** GET /trips/finance/jornadas: horas de jornada y extras (regla de 13 h). */
 type Jornadas = {
@@ -295,6 +296,13 @@ export default function TransportFinancePage() {
       .then((p) => setProveedores(Array.isArray(p) ? p : []))
       .catch(() => setProveedores([]));
   }, []);
+
+  // Sólo los proveedores del evento activo: con World Rugby creado se
+  // ofrecían los de los Juegos Escolares. El ya elegido se conserva.
+  const proveedoresDelEvento = useMemo(
+    () => proveedores.filter((p) => p.id === proveedorId || proveedorEnEvento(p, eventId)),
+    [proveedores, proveedorId, eventId],
+  );
 
   const hayFiltros = Boolean(desde || hasta || tipoCliente || flota || servicio || proveedorId);
   const limpiarFiltros = () => {
@@ -553,7 +561,7 @@ export default function TransportFinancePage() {
               style={{ borderColor: proveedorId ? "var(--brand)" : undefined, fontWeight: proveedorId ? 600 : 400 }}
             >
               <option value="">{t("Todos los proveedores")}</option>
-              {proveedores.map((pr) => (
+              {proveedoresDelEvento.map((pr) => (
                 <option key={pr.id} value={pr.id}>{pr.name || t("Proveedor sin nombre")}</option>
               ))}
             </select>

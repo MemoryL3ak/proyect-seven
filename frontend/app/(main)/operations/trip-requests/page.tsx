@@ -15,6 +15,7 @@ import {
 import { normalizeClientType, clientTypeLabel } from "@/lib/clientTypes";
 import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { conductorEnEvento } from "@/lib/conductores-del-evento";
 import { BRAND, TRIP_STATUS_META, STATE, SURFACE, ACCENT } from "@/lib/design";
 
 /**
@@ -55,7 +56,15 @@ type Trip = {
 type LogEntry = { action?: string; by?: string; at?: string; detail?: string };
 
 type EventItem = { id: string; name?: string | null };
-type DriverItem = { id: string; fullName?: string | null; full_name?: string | null };
+type DriverItem = {
+  id: string;
+  fullName?: string | null;
+  full_name?: string | null;
+  /** Conductor de proveedor: los eventos de su proveedor. */
+  eventIds?: string[] | null;
+  /** Flota propia: su evento. */
+  eventId?: string | null;
+};
 type VehicleItem = { id: string; plate?: string | null };
 
 /**
@@ -300,6 +309,14 @@ export default function TripRequestsPage() {
     (id: string | null | undefined) => (id ? drivers.find((d) => d.id === id) : null),
     [drivers],
   );
+
+  // Sólo los conductores del evento del viaje: con World Rugby creado se
+  // ofrecían los 80 de los Juegos Escolares. El ya asignado se conserva para
+  // que el desplegable no quede en blanco.
+  const conductoresAsignables = useMemo(() => {
+    const evento = assigning?.eventId || selectedEventId;
+    return drivers.filter((d) => d.id === assigning?.driverId || conductorEnEvento(d, evento));
+  }, [drivers, assigning, selectedEventId]);
 
   function openAssign(r: Trip) {
     setAssigning(r);
@@ -801,7 +818,7 @@ export default function TripRequestsPage() {
               <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Conductor")}</span>
               <select className="input w-full mt-1" value={assignDriverId} onChange={(e) => setAssignDriverId(e.target.value)}>
                 <option value="">{t("— Sin conductor —")}</option>
-                {drivers.map((d) => <option key={d.id} value={d.id}>{driverName(d)}</option>)}
+                {conductoresAsignables.map((d) => <option key={d.id} value={d.id}>{driverName(d)}</option>)}
               </select>
             </label>
             <label className="block text-sm">

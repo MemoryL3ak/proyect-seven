@@ -30,6 +30,7 @@ import {
 } from "@/lib/filtroParticipantes";
 import { horaRegresoDeViaje } from "@/lib/viajeRegreso";
 import { opcionesDeConductores, sinConductoresRepetidos } from "@/lib/opciones-conductores";
+import { conductorEnEvento } from "@/lib/conductores-del-evento";
 import { esDelEvento } from "@/lib/evento-activo";
 import { avisarEventosCambiaron, useEventoActivo } from "@/lib/evento-activo-provider";
 
@@ -2755,6 +2756,17 @@ export default function ResourceScreen({
     const opciones = getOptionsForField(field);
     const fuente = field.optionsSource;
     const evento = (typeof form.eventId === "string" && form.eventId) || eventoId;
+    const elegido = form[field.key];
+    const elegidos = new Set(Array.isArray(elegido) ? elegido : elegido ? [elegido] : []);
+    if (evento && (fuente === "drivers" || fuente === "driverUsers")) {
+      // Sólo los conductores del evento: con World Rugby creado se ofrecían
+      // los 80 de los Juegos Escolares ("Conductor llegada/salida" de AND, el
+      // conductor de Viajes). driverLookup trae los eventos de cada uno, por
+      // id y por userId; el ya asignado se conserva aunque sea de otro evento.
+      return opciones.filter(
+        (opcion) => elegidos.has(opcion.value) || conductorEnEvento(driverLookup[opcion.value], evento),
+      );
+    }
     if (!evento || !fuente || !FUENTES_POR_EVENTO.has(fuente)) return opciones;
     const eventoDeHotel = new Map(
       (accommodationOptions as Array<Option & { eventId?: string | null }>).map((o) => [o.value, o.eventId ?? null]),
@@ -2763,8 +2775,6 @@ export default function ResourceScreen({
       fuente === "hotelRooms" || fuente === "hotelExtras"
         ? (opcion.hotelId ? eventoDeHotel.get(opcion.hotelId) ?? null : null)
         : opcion.eventId ?? null;
-    const elegido = form[field.key];
-    const elegidos = new Set(Array.isArray(elegido) ? elegido : elegido ? [elegido] : []);
     return opciones.filter((opcion) => elegidos.has(opcion.value) || esDelEvento(evento, eventoDeOpcion(opcion)));
   };
 

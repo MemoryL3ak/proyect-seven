@@ -21,6 +21,8 @@ import {
 import { DownloadIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { proveedorEnEvento } from "@/lib/conductores-del-evento";
 
 /**
  * Documentación recibida de las personas de los proveedores: quién subió qué
@@ -29,7 +31,7 @@ import { useIsMobile } from "@/lib/useIsMobile";
  * así que hasta ahora la única forma de saberlo era abrir cada ficha en
  * Registro → Proveedores.
  */
-type Proveedor = { id: string; name: string; type?: string | null };
+type Proveedor = { id: string; name: string; type?: string | null; eventIds?: string[] | null };
 type Persona = {
   id: string;
   providerId: string;
@@ -58,6 +60,7 @@ const fechaCorta = (d: Date | null) =>
 export default function DocumentacionPersonas() {
   const { t } = useI18n();
   const isMobile = useIsMobile();
+  const { eventoId } = useEventoActivo();
   const [personas, setPersonas] = useState<Persona[]>([]);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [cargando, setCargando] = useState(true);
@@ -92,15 +95,30 @@ export default function DocumentacionPersonas() {
 
   const proveedorPorId = useMemo(() => new Map(proveedores.map((p) => [p.id, p])), [proveedores]);
 
-  /** Sólo los proveedores cuya gente sube documentos (transporte). */
+  /**
+   * Sólo los proveedores de transporte (su gente sube documentos) y del evento
+   * activo: con World Rugby creado se veía a toda la gente de los Juegos
+   * Escolares. El proveedor ya elegido se conserva en el desplegable.
+   */
   const proveedoresConDocs = useMemo(
-    () => proveedores.filter((p) => String(p.type ?? "").toUpperCase() === "TRANSPORTE"),
-    [proveedores],
+    () =>
+      proveedores.filter(
+        (p) =>
+          String(p.type ?? "").toUpperCase() === "TRANSPORTE" &&
+          (p.id === proveedor || proveedorEnEvento(p, eventoId)),
+      ),
+    [proveedores, proveedor, eventoId],
+  );
+
+  /** La gente de los proveedores del evento activo. */
+  const personasDelEvento = useMemo(
+    () => personas.filter((p) => proveedorEnEvento(proveedorPorId.get(p.providerId), eventoId)),
+    [personas, proveedorPorId, eventoId],
   );
 
   const filas = useMemo(() => {
     const q = busqueda.trim().toLowerCase();
-    return personas
+    return personasDelEvento
       .map((p) => {
         const prov = proveedorPorId.get(p.providerId) ?? null;
         return { p, prov, doc: documentacionDe(p, prov?.type) };
@@ -119,7 +137,7 @@ export default function DocumentacionPersonas() {
         const orden: Record<EstadoDocumentacion, number> = { SIN_DOCUMENTOS: 0, INCOMPLETA: 1, COMPLETA: 2, NO_APLICA: 3 };
         return orden[a.doc.estado] - orden[b.doc.estado] || (a.p.fullName ?? "").localeCompare(b.p.fullName ?? "", "es");
       });
-  }, [personas, proveedorPorId, busqueda, proveedor, tipo, documentos]);
+  }, [personasDelEvento, proveedorPorId, busqueda, proveedor, tipo, documentos]);
 
   /**
    * Descarga lo que se ve: con los filtros aplicados, una fila por persona y
@@ -150,7 +168,7 @@ export default function DocumentacionPersonas() {
 
   const resumen = useMemo(() => {
     const r = { total: 0, sin: 0, incompleta: 0, completa: 0 };
-    for (const p of personas) {
+    for (const p of personasDelEvento) {
       const prov = proveedorPorId.get(p.providerId);
       const d = documentacionDe(p, prov?.type);
       if (d.estado === "NO_APLICA" || String(p.status ?? "").toUpperCase() === "INACTIVE") continue;
@@ -160,7 +178,7 @@ export default function DocumentacionPersonas() {
       else r.completa += 1;
     }
     return r;
-  }, [personas, proveedorPorId]);
+  }, [personasDelEvento, proveedorPorId]);
 
   return (
     <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 18, overflow: "hidden", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>

@@ -22,6 +22,7 @@ import {
 import type { DisciplineLike } from "@/lib/discipline-filters";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import { claveDiaEvento } from "@/lib/hora-evento";
+import { conductorEnEvento, type ConEventos, proveedorEnEvento } from "@/lib/conductores-del-evento";
 import { useI18n } from "@/lib/i18n";
 import { nombrePropio } from "@/lib/nombres";
 
@@ -34,7 +35,8 @@ import { nombrePropio } from "@/lib/nombres";
  * WhatsApp. Antes el coordinador sólo podía contactar al chofer desde la
  * tarjeta de un traslado concreto.
  */
-type Proveedor = { id: string; name?: string | null; type?: string | null };
+type Proveedor = { id: string; name?: string | null; type?: string | null; eventIds?: string[] | null };
+type Conductor = ConductorDirectorio & ConEventos;
 type Snapshot = { drivers: PresenciaConductor[]; stats?: { onlineNow?: number } };
 
 const REFRESH_MS = 30_000;
@@ -77,7 +79,7 @@ export default function DirectorioConductores({
   disciplines?: DisciplineLike[];
 }) {
   const { t } = useI18n();
-  const [conductores, setConductores] = useState<ConductorDirectorio[]>([]);
+  const [conductores, setConductores] = useState<Conductor[]>([]);
   const [proveedores, setProveedores] = useState<Proveedor[]>([]);
   const [presencia, setPresencia] = useState<Map<string, PresenciaConductor>>(new Map());
   const [cargando, setCargando] = useState(true);
@@ -112,7 +114,7 @@ export default function DirectorioConductores({
     void (async () => {
       try {
         const [d, p] = await Promise.all([
-          apiFetch<ConductorDirectorio[]>("/drivers"),
+          apiFetch<Conductor[]>("/drivers"),
           apiFetch<Proveedor[]>("/providers").catch(() => [] as Proveedor[]),
         ]);
         if (!vivo) return;
@@ -148,24 +150,33 @@ export default function DirectorioConductores({
   }, [eventId]);
 
   const proveedorPorId = useMemo(() => new Map(proveedores.map((p) => [p.id, p])), [proveedores]);
+
+  // Sólo los conductores del evento del coordinador: con World Rugby creado
+  // se listaban los 80 de los Juegos Escolares. El portal no tiene el evento
+  // activo del panel: manda el evento que llega por props.
+  const conductoresDelEvento = useMemo(
+    () => conductores.filter((c) => conductorEnEvento(c, eventId)),
+    [conductores, eventId],
+  );
+
   const proveedoresConChoferes = useMemo(() => {
-    const ids = new Set(conductores.map((c) => c.providerId).filter(Boolean));
+    const ids = new Set(conductoresDelEvento.map((c) => c.providerId).filter(Boolean));
     return proveedores
-      .filter((p) => ids.has(p.id))
+      .filter((p) => ids.has(p.id) && (p.id === proveedorId || proveedorEnEvento(p, eventId)))
       .sort((a, b) => String(a.name ?? "").localeCompare(String(b.name ?? ""), "es"))
-      .map((p) => ({ value: p.id, label: `${p.name ?? p.id} · ${conductores.filter((c) => c.providerId === p.id).length}` }));
-  }, [proveedores, conductores]);
+      .map((p) => ({ value: p.id, label: `${p.name ?? p.id} · ${conductoresDelEvento.filter((c) => c.providerId === p.id).length}` }));
+  }, [proveedores, conductoresDelEvento, proveedorId, eventId]);
 
   const visibles = useMemo(
-    () => filtrarConductores(conductores, presencia, { busqueda, proveedorId, estado, disciplina, genero }, asignaciones),
-    [conductores, presencia, busqueda, proveedorId, estado, disciplina, genero, asignaciones],
+    () => filtrarConductores(conductoresDelEvento, presencia, { busqueda, proveedorId, estado, disciplina, genero }, asignaciones),
+    [conductoresDelEvento, presencia, busqueda, proveedorId, estado, disciplina, genero, asignaciones],
   );
 
   const resumen = useMemo(() => {
-    const activos = conductores.filter((c) => String(c.status ?? "").toUpperCase() !== "DELETED");
+    const activos = conductoresDelEvento.filter((c) => String(c.status ?? "").toUpperCase() !== "DELETED");
     const cuenta = (e: EstadoConductor) => activos.filter((c) => estadoDe(presencia.get(c.id)) === e).length;
     return { total: activos.length, enViaje: cuenta("EN_VIAJE"), enLinea: cuenta("EN_LINEA") };
-  }, [conductores, presencia]);
+  }, [conductoresDelEvento, presencia]);
 
   const llamar = (c: ConductorDirectorio) => {
     if (c.phone) openExternal(`tel:${String(c.phone).replace(/\s+/g, "")}`);
@@ -292,7 +303,7 @@ export default function DirectorioConductores({
       {error && <p style={{ fontSize: 13, color: STATE.danger, textAlign: "center", padding: 20 }}>{error}</p>}
       {!cargando && !error && visibles.length === 0 && (
         <div style={{ borderRadius: 14, border: `1px dashed ${SURFACE.border}`, padding: "28px 16px", textAlign: "center", color: SURFACE.textMuted, fontSize: 13 }}>
-          {conductores.length === 0 ? t("No hay conductores registrados.") : t("Ningún conductor coincide con el filtro.")}
+          {conductoresDelEvento.length === 0 ? t("No hay conductores registrados.") : t("Ningún conductor coincide con el filtro.")}
         </div>
       )}
 

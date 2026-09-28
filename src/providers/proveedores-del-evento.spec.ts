@@ -1,4 +1,7 @@
-import { esDeProveedorDelEvento } from './proveedores-del-evento';
+import {
+  esDeProveedorDelEvento,
+  proveedorEsDelEvento,
+} from './proveedores-del-evento';
 
 /**
  * 28-09-2026: los proveedores se asocian a eventos. La auto-asignación de un
@@ -18,5 +21,16 @@ describe('esDeProveedorDelEvento', () => {
 
   it('sin filtro (sin evento o consulta fallida) entran todos', () => {
     expect(esDeProveedorDelEvento(null, 'cualquiera')).toBe(true);
+  });
+});
+
+describe('proveedorEsDelEvento', () => {
+  it('BVAN en los Juegos y en Rugby es de los dos', () => {
+    expect(proveedorEsDelEvento(['jde', 'rugby'], 'rugby')).toBe(true);
+    expect(proveedorEsDelEvento(['jde'], 'rugby')).toBe(false);
+  });
+  it('un proveedor sin eventos vale para todos, igual que en el panel', () => {
+    expect(proveedorEsDelEvento([], 'rugby')).toBe(true);
+    expect(proveedorEsDelEvento(null, 'rugby')).toBe(true);
   });
 });

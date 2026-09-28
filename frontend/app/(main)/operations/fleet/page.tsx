@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { conductorEnEvento, type ConEventos } from "@/lib/conductores-del-evento";
 import PageHeader from "@/components/ui/PageHeader";
 import {
   TruckIcon,
@@ -102,6 +103,18 @@ export default function FleetAvailabilityPage() {
   const [driverFilter, setDriverFilter] = useState<"" | DriverAvailability["availability"]>("");
   const [vehicleFilter, setVehicleFilter] = useState<"" | VehicleAvailability["availability"]>("");
   const [search, setSearch] = useState("");
+  const { eventoId } = useEventoActivo();
+  // Evento de cada conductor: la disponibilidad no lo trae, y pedirla con
+  // ?eventId también acotaría los vehículos, que se comparten entre eventos.
+  const [eventosDeConductor, setEventosDeConductor] = useState<Map<string, ConEventos>>(new Map());
+
+  useEffect(() => {
+    apiFetch<Array<ConEventos & { id: string }>>("/drivers")
+      .then((lista) => setEventosDeConductor(new Map((lista ?? []).map((d) => [d.id, d]))))
+      .catch(() => {
+        // Sin la lista se muestran todos, como antes.
+      });
+  }, []);
 
   const load = useCallback(async () => {
     try {
@@ -121,15 +134,21 @@ export default function FleetAvailabilityPage() {
     return () => clearInterval(int);
   }, [load]);
 
+  // Sólo los conductores del evento activo: con World Rugby creado se veían
+  // los de los Juegos Escolares.
+  const driversDelEvento = useMemo(
+    () => (snapshot?.drivers ?? []).filter(d => conductorEnEvento(eventosDeConductor.get(d.id), eventoId)),
+    [snapshot, eventosDeConductor, eventoId],
+  );
+
   const visibleDrivers = useMemo(() => {
-    if (!snapshot) return [];
     const q = search.trim().toLowerCase();
-    return snapshot.drivers.filter(d => {
+    return driversDelEvento.filter(d => {
       if (driverFilter && d.availability !== driverFilter) return false;
       if (q && !`${d.fullName} ${d.rut ?? ""} ${d.preferredVehiclePlate ?? ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [snapshot, driverFilter, search]);
+  }, [driversDelEvento, driverFilter, search]);
 
   const visibleVehicles = useMemo(() => {
     if (!snapshot) return [];
@@ -141,7 +160,18 @@ export default function FleetAvailabilityPage() {
     });
   }, [snapshot, vehicleFilter, search]);
 
-  const sd = snapshot?.summary.drivers ?? { total: 0, free: 0, onTrip: 0, offline: 0, inactive: 0 };
+  // Los contadores salen de la lista ya acotada al evento, no del resumen
+  // del servidor (que cuenta a todos).
+  const sd = useMemo(() => {
+    const cuenta = (a: DriverAvailability["availability"]) => driversDelEvento.filter(d => d.availability === a).length;
+    return {
+      total: driversDelEvento.length,
+      free: cuenta("FREE"),
+      onTrip: cuenta("ON_TRIP"),
+      offline: cuenta("OFFLINE"),
+      inactive: cuenta("INACTIVE"),
+    };
+  }, [driversDelEvento]);
   const sv = snapshot?.summary.vehicles ?? { total: 0, free: 0, onTrip: 0, outOfService: 0 };
 
   return (
@@ -338,6 +368,10 @@ type DriverRow = {
   accessTypes?: string[];
   vehicleId?: string | null;
   metadata?: Record<string, unknown>;
+  /** Conductor de proveedor: los eventos de su proveedor. */
+  eventIds?: string[] | null;
+  /** Flota propia: su evento. */
+  eventId?: string | null;
 };
 
 type VehicleRow = {
@@ -384,7 +418,8 @@ const VEHICLE_STATUS_OPTIONS = [
 function CrudSection({ section }: { section: "drivers" | "vehicles" }) {
   const { t } = useI18n();
   // Los conductores y vehículos nuevos quedan en el evento activo (el de la
-  // barra superior). Los listados no se filtran: la flota se comparte.
+  // barra superior). La lista de vehículos no se filtra: se comparten. La de
+  // conductores sí: con World Rugby creado salían los de los Juegos Escolares.
   const { eventoId: selectedEventId } = useEventoActivo();
   const [drivers, setDrivers] = useState<DriverRow[]>([]);
   const [vehicles, setVehicles] = useState<VehicleRow[]>([]);
@@ -419,14 +454,14 @@ function CrudSection({ section }: { section: "drivers" | "vehicles" }) {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (section === "drivers") {
-      return drivers.filter(d => !q ||
+      return drivers.filter(d => conductorEnEvento(d, selectedEventId) && (!q ||
         `${d.fullName} ${d.rut} ${d.email ?? ""} ${d.phone ?? ""} ${d.licenseNumber ?? ""}`.toLowerCase().includes(q)
-      );
+      ));
     }
     return vehicles.filter(v => !q ||
       `${v.plate} ${v.type} ${v.brand ?? ""} ${v.model ?? ""}`.toLowerCase().includes(q)
     );
-  }, [search, section, drivers, vehicles]);
+  }, [search, section, drivers, vehicles, selectedEventId]);
 
   const remove = async (id: string, label: string) => {
     if (!confirm(`${t("¿Eliminar")} "${label}"? ${t("Esta acción no se puede deshacer.")}`)) return;

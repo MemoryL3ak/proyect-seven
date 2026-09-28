@@ -6,6 +6,7 @@ import { apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { conductorEnEvento } from "@/lib/conductores-del-evento";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { buildCredentialHtml } from "@/lib/credential-template";
@@ -28,7 +29,10 @@ type AthleteItem = {
 };
 type DriverItem = {
   id: string;
+  /** Flota propia: su evento. */
   eventId?: string | null;
+  /** Conductor de proveedor: los eventos de su proveedor. */
+  eventIds?: string[] | null;
   providerId?: string | null;
   fullName?: string | null;
   rut?: string | null;
@@ -245,11 +249,23 @@ export default function AccreditationsPage() {
   }, [newSubjectType, newAthleteId, newDriverId, selectedAccreditation, selectedDriver]);
 
   const eventAthletes = useMemo(() => filterValidatedAthletes(athletes).filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [athletes, selectedEventId]);
-  // Los conductores sin evento asignado (p.ej. los de proveedor) se muestran
-  // siempre: antes el filtro por evento los ocultaba y la lista salía vacía.
+  // Sólo los conductores del evento activo: los de proveedor por los eventos
+  // de su proveedor, los de flota por su evento. Con World Rugby creado salían
+  // los 80 de los Juegos Escolares. Sin datos de evento se siguen mostrando
+  // (antes el filtro los ocultaba y la lista salía vacía), y quien ya tiene
+  // acreditación en este evento también.
+  const acreditadosDelEvento = useMemo(
+    () =>
+      new Set(
+        accreditations
+          .filter((item) => item.subjectType === "DRIVER" && item.driverId && item.eventId === selectedEventId)
+          .map((item) => item.driverId as string),
+      ),
+    [accreditations, selectedEventId],
+  );
   const eventDrivers = useMemo(
-    () => drivers.filter((item) => (selectedEventId ? !item.eventId || item.eventId === selectedEventId : true)),
-    [drivers, selectedEventId],
+    () => drivers.filter((item) => acreditadosDelEvento.has(item.id) || conductorEnEvento(item, selectedEventId)),
+    [drivers, selectedEventId, acreditadosDelEvento],
   );
   const eventDelegations = useMemo(() => delegations.filter((item) => (selectedEventId ? item.eventId === selectedEventId : true)), [delegations, selectedEventId]);
   const andKpiRows = useMemo(() => {
