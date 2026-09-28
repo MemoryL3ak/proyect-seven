@@ -7,6 +7,7 @@ import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { nombrePropio } from "@/lib/nombres";
 import { AlertIcon, BedIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon, DownloadIcon } from "@/components/ui/Icons";
 import { downloadCSV, slugify } from "@/lib/export";
+import { datosDelTramo, fechaHoraPlanilla, trasladosPorClave, type ConductorAnd, type SentidoAnd, type VehiculoAnd, type ViajeAnd } from "@/lib/and-planilla";
 import { isAthletePersonalDataValidated } from "@/lib/athletes";
 import { isEventCoordinator, isMissionHead } from "@/lib/clientTypes";
 import type { FieldDef, ResourceConfig } from "@/lib/resources";
@@ -2948,7 +2949,7 @@ export default function ResourceScreen({
    * pantalla dice "Jefe de Misión" y no "JEFE_MISION". Sacar el listado a
    * Excel era copiarlo a mano desde el navegador.
    */
-  const descargarListado = () => {
+  const descargarListado = async () => {
     if (items.length === 0) return;
     // Dos campos pueden compartir etiqueta; con el mismo encabezado una
     // columna pisaría a la otra al armar la fila.
@@ -2971,11 +2972,55 @@ export default function ResourceScreen({
       });
       return fila;
     });
+    const columnasExtra: string[] = [];
+    // AND: cada tramo con su vuelo, conductor, teléfono, patente y tipo de
+    // flota (28-09-2026: la planilla no los traía). Ver lib/and-planilla.
+    if (config.endpoint === "/delegations") {
+      const [viajes, conductores, vehiculos] = await Promise.all([
+        apiFetch<ViajeAnd[]>("/trips").catch(() => [] as ViajeAnd[]),
+        apiFetch<ConductorAnd[]>("/drivers").catch(() => [] as ConductorAnd[]),
+        apiFetch<VehiculoAnd[]>("/transports").catch(() => [] as VehiculoAnd[]),
+      ]);
+      const traslados = trasladosPorClave(viajes ?? []);
+      const porConductor = new Map((conductores ?? []).map((c) => [c.id, c] as const));
+      const porVehiculo = new Map((vehiculos ?? []).map((v) => [v.id, v] as const));
+      const tramos: Array<[SentidoAnd, string]> = [["LLEGADA", t("Llegada")], ["SALIDA", t("Salida")]];
+      for (const [, nombre] of tramos) {
+        columnasExtra.push(
+          `${nombre} · ${t("vuelo")}`,
+          `${nombre} · ${t("fecha y hora")}`,
+          `${nombre} · ${t("conductor")}`,
+          `${nombre} · ${t("teléfono conductor")}`,
+          `${nombre} · ${t("patente")}`,
+          `${nombre} · ${t("tipo de flota")}`,
+        );
+      }
+      items.forEach((item, i) => {
+        for (const [sentido, nombre] of tramos) {
+          const llegada = sentido === "LLEGADA";
+          const datos = datosDelTramo(
+            String(item.id),
+            sentido,
+            String((llegada ? item.participantArrivalDriverId : item.participantDepartureDriverId) ?? "") || null,
+            traslados,
+            porConductor,
+            porVehiculo,
+          );
+          const fila = filas[i];
+          fila[`${nombre} · ${t("vuelo")}`] = String((llegada ? item.participantFlightNumber : item.participantDepartureFlightNumber) ?? "");
+          fila[`${nombre} · ${t("fecha y hora")}`] = fechaHoraPlanilla(String((llegada ? item.participantArrivalTime : item.participantDepartureTime) ?? ""));
+          fila[`${nombre} · ${t("conductor")}`] = datos.conductor;
+          fila[`${nombre} · ${t("teléfono conductor")}`] = datos.telefono;
+          fila[`${nombre} · ${t("patente")}`] = datos.patente;
+          fila[`${nombre} · ${t("tipo de flota")}`] = datos.flota;
+        }
+      });
+    }
     const fecha = new Date().toISOString().slice(0, 10);
     downloadCSV(
       `${slugify(config.name)}-${fecha}`,
       filas,
-      encabezados.map((e) => e.header),
+      [...encabezados.map((e) => e.header), ...columnasExtra],
     );
   };
 
@@ -4252,7 +4297,7 @@ export default function ResourceScreen({
           <div style={{ display: "inline-flex", alignItems: "center", gap: "6px" }}>
           <button
             className="btn btn-ghost"
-            onClick={descargarListado}
+            onClick={() => void descargarListado()}
             disabled={items.length === 0}
             title={t("Descargar el listado como CSV")}
             style={{ display: "inline-flex", alignItems: "center", gap: "6px", fontSize: "12px", opacity: items.length === 0 ? 0.5 : 1 }}
