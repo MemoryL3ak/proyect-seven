@@ -15,6 +15,8 @@ import { delegationDriversCondition } from '../shared/delegation-fleet';
  */
 export type SofiaScope = { delegationId: string; delegationName: string | null };
 import { InjectRepository } from '@nestjs/typeorm';
+import { CAMPOS_DE_COBRO } from '../auth/permisos-panel';
+import { strip } from '../auth/sensitive-fields.interceptor';
 import {
   DataSource,
   ILike,
@@ -444,6 +446,7 @@ export class SofiaService {
     rawArgs: Record<string, any>,
     locale?: string,
     scope?: SofiaScope | null,
+    sinCobros = false,
   ): Promise<{ output: string; artifact?: SofiaArtifact }> {
     const args = this.sanitizeArgs(rawArgs);
     // Cinturón y tirantes: aunque el catálogo ya viene filtrado, ninguna
@@ -463,6 +466,13 @@ export class SofiaService {
       if (isToolOutcome(result)) {
         payload = result.__data;
         artifact = result.__artifact;
+      }
+      // Quien no ve el valor de los viajes (permisos-panel) tampoco se lo
+      // oye a Sofía.
+      if (sinCobros) {
+        const claves = new Set(CAMPOS_DE_COBRO);
+        payload = strip(payload, 0, claves);
+        if (artifact) artifact = strip(artifact, 0, claves) as SofiaArtifact;
       }
 
       let json = JSON.stringify(payload);
@@ -2123,6 +2133,7 @@ export class SofiaService {
     previousResponseId?: string,
     locale?: string,
     scope?: SofiaScope | null,
+    sinCobros = false,
   ): Promise<SofiaAnswer> {
     const model = this.getModel();
     const instructions = this.buildSystemPrompt(locale, scope);
@@ -2165,7 +2176,7 @@ export class SofiaService {
           try {
             parsed = JSON.parse(fc.arguments);
           } catch { /* empty args */ }
-          const { output, artifact } = await this.executeTool(fc.name, parsed, locale, scope);
+          const { output, artifact } = await this.executeTool(fc.name, parsed, locale, scope, sinCobros);
           if (artifact) artifacts.push(artifact);
           return { type: 'function_call_output' as const, call_id: fc.callId, output };
         }),
@@ -2197,9 +2208,10 @@ export class SofiaService {
     previousResponseId?: string,
     locale?: string,
     scope?: SofiaScope | null,
+    sinCobros = false,
   ): Subject<SofiaStreamChunk> {
     const subject = new Subject<SofiaStreamChunk>();
-    this.runStreamLoop(subject, question, previousResponseId, locale, scope).catch((err) => {
+    this.runStreamLoop(subject, question, previousResponseId, locale, scope, sinCobros).catch((err) => {
       this.logger.error(`Stream error: ${err}`);
       subject.next({ type: 'error', content: String(err) });
       subject.complete();
@@ -2213,6 +2225,7 @@ export class SofiaService {
     previousResponseId?: string,
     locale?: string,
     scope?: SofiaScope | null,
+    sinCobros = false,
   ): Promise<void> {
     const model = this.getModel();
     const instructions = this.buildSystemPrompt(locale, scope);
@@ -2255,7 +2268,7 @@ export class SofiaService {
           try {
             parsed = JSON.parse(fc.arguments);
           } catch { /* empty */ }
-          const { output, artifact } = await this.executeTool(fc.name, parsed, locale, scope);
+          const { output, artifact } = await this.executeTool(fc.name, parsed, locale, scope, sinCobros);
           if (artifact) {
             subject.next({ type: 'render', content: artifact.kind, artifact });
           }

@@ -17,6 +17,7 @@ import { claveDiaEvento, etiquetaDiaEvento, horaEvento } from "@/lib/hora-evento
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { conductorEnEvento } from "@/lib/conductores-del-evento";
 import { apiFetch } from "@/lib/api";
+import { usuarioVeCobros } from "@/lib/ve-cobros";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterValidatedAthletes } from "@/lib/athletes";
 import { resources } from "@/lib/resources";
@@ -1551,7 +1552,8 @@ export default function TripsPage() {
       [t("Flota")]: trip.fleetAcronym ?? "",
       [t("Duración estimada (min)")]: trip.travelTimeMinutes ?? "",
       [t("Vuelo")]: trip.flightNumber ?? "",
-      [t("Valor")]: trip.tripCost ?? "",
+      // El valor es lo que se cobra: sólo para quien ve cobros (Finanzas).
+      ...(usuarioVeCobros() ? { [t("Valor")]: trip.tripCost ?? "" } : {}),
       [t("Validado comité")]: trip.committeeValidated ? t("Sí") : t("No"),
       [t("Solicitado")]: fechaHora(trip.requestedAt),
       [t("Inicio real")]: fechaHora(trip.startedAt),

@@ -66,6 +66,34 @@ export function nivelModulo(p: PermisosPanel, id: string): Nivel {
   return 'editar';
 }
 
+/**
+ * El valor de un viaje (trip_cost) es lo que se le cobra al cliente
+ * (29-09-2026: "les aparece el costo del viaje y eso es lo que cobramos
+ * nosotros"). Lo ven los usuarios del panel con Finanzas —administradores y
+ * BVAN— y el conductor en su app. El Comité, los participantes y cualquier
+ * ruta pública no: el servidor lo borra de la respuesta y lo ignora si llega
+ * en un cambio (así un guardado desde una pantalla sin el valor no lo pisa).
+ */
+export const CAMPOS_DE_COBRO = ['tripCost', 'trip_cost'];
+
+export function ocultaCobros(
+  caller: { type: string; kind?: string; permisos?: PermisosPanel } | null | undefined,
+): boolean {
+  if (!caller) return true;
+  if (caller.type === 'staff') return !!caller.permisos && nivelModulo(caller.permisos, 'operacion.finanzas') === 'ninguno';
+  if (caller.type === 'portal') return caller.kind !== 'driver';
+  return true;
+}
+
+/** Quien no ve el valor tampoco lo cambia: se saca del cuerpo de su petición. */
+export function quitarCobrosDelCuerpo(
+  caller: Parameters<typeof ocultaCobros>[0],
+  cuerpo: unknown,
+): void {
+  if (!ocultaCobros(caller) || !cuerpo || typeof cuerpo !== 'object' || Array.isArray(cuerpo)) return;
+  for (const campo of CAMPOS_DE_COBRO) delete (cuerpo as Record<string, unknown>)[campo];
+}
+
 /** El usuario está en el modo estricto (configurado con niveles). */
 export const esEstricto = (p: PermisosPanel) =>
   p.soloVer !== null && (p.modules ?? []).length > 0;

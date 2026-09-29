@@ -17,6 +17,7 @@ import {
   mensajeSinPermiso,
   PermisosPanel,
   permisosDesdeMetadata,
+  quitarCobrosDelCuerpo,
   puedeEscribir,
   reglaDeEscritura,
   ViajeParaPermiso,
@@ -80,6 +81,9 @@ export class ApiAuthGuard implements CanActivate {
 
     const caller = await this.identify(req);
     req.apiCaller = caller;
+    // Quien no ve el valor de los viajes tampoco lo cambia: si llega (una
+    // pantalla que guarda el viaje entero con el campo vacío), se ignora.
+    quitarCobrosDelCuerpo(caller, (req as unknown as { body?: unknown }).body);
 
     if (isPublic) return true;
     if (!caller) {

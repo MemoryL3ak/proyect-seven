@@ -50,6 +50,14 @@ export function nivelModulo(p: PermisosPanel, id: string): Nivel {
   return "editar";
 }
 
+/**
+ * El valor de un viaje es lo que se le cobra al cliente (29-09-2026): sólo lo
+ * ve quien tiene Finanzas. El servidor ya no se lo manda a los demás
+ * (ocultaCobros en src/auth/permisos-panel.ts); acá se ocultan la columna, el
+ * campo y la casilla "Valor", que si no quedarían vacíos.
+ */
+export const veCobros = (p: PermisosPanel) => nivelModulo(p, "operacion.finanzas") !== "ninguno";
+
 /** Ruta del panel → módulo que la habilita. */
 export const RUTA_A_MODULO: Record<string, string> = {
   "/dashboard/comercial": "dashboard.comercial",

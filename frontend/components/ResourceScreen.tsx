@@ -3,6 +3,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
+import { useVeCobros } from "@/lib/ve-cobros";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { nombrePropio } from "@/lib/nombres";
 import { AlertIcon, BedIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon, DownloadIcon } from "@/components/ui/Icons";
@@ -317,6 +318,7 @@ export default function ResourceScreen({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(() => buildInitial(config.fields));
+  const veCobros = useVeCobros();
   const [editingId, setEditingId] = useState<string | null>(null);
   // En el teléfono (app staff) el formulario de alta ocupaba varias pantallas
   // antes de llegar a la lista: se pliega tras un botón "Nuevo registro" y se
@@ -3801,7 +3803,8 @@ export default function ResourceScreen({
               );
             };
 
-            const fields = config.fields.filter((field) => !field.formHidden);
+            // El valor del viaje sólo para quien ve cobros (Finanzas).
+            const fields = config.fields.filter((field) => !field.formHidden && (field.key !== "tripCost" || veCobros));
             if (config.endpoint === "/delegations") {
               const participantCountry =
                 (form.participantCountryCode as string | undefined) ?? "";

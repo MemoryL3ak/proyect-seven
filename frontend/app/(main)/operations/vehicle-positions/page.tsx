@@ -5,6 +5,7 @@ import TripMap from "@/components/TripMap";
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { usuarioVeCobros } from "@/lib/ve-cobros";
 import { VENTANA_CONECTADO_MS, VENTANA_SIN_SENAL_MS, useRelojServidor } from "@/lib/presencia";
 import {
   RefreshIcon,
@@ -1734,7 +1735,8 @@ export default function VehiclePositionsPage() {
                 {/* Stats */}
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4,1fr)", gap: "8px" }}>
                   {stat("Distancia", km != null ? `${km.toFixed(1)} km` : (detailLoading ? "…" : "—"))}
-                  {stat("Valor", trip.tripCost != null ? `$${Number(trip.tripCost).toLocaleString("es-CL")}` : "—", BRAND.tealInk)}
+                  {/* El valor es lo que se cobra: sólo para quien ve cobros (Finanzas). */}
+                  {usuarioVeCobros() && stat("Valor", trip.tripCost != null ? `$${Number(trip.tripCost).toLocaleString("es-CL")}` : "—", BRAND.tealInk)}
                   {stat("Duración", formatDuration(trip.startedAt, trip.completedAt))}
                   {stat("Pasajeros", (paxNames.length || pax) ? String(paxNames.length || pax) : "—")}
                 </div>

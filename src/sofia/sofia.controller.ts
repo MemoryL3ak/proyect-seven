@@ -1,6 +1,7 @@
 import { Protected } from '../auth/public.decorator';
 import { StaffOnly } from '../auth/staff-only.decorator';
 import type { ApiRequest } from '../auth/api-auth.guard';
+import { ocultaCobros } from '../auth/permisos-panel';
 import { StaffScopeService, type SofiaCallerScope } from '../auth/staff-scope.service';
 import {
   Body,
@@ -44,7 +45,7 @@ export class SofiaController {
   async ask(@Body() dto: AskSofiaDto, @Req() req: ApiRequest) {
     const scope = await this.scopeOf(req);
     try {
-      return await this.sofiaService.ask(dto.question, dto.previousResponseId, dto.locale, scope);
+      return await this.sofiaService.ask(dto.question, dto.previousResponseId, dto.locale, scope, ocultaCobros(req.apiCaller));
     } catch (err) {
       // El detalle (modelo inválido, clave vencida, timeout del proveedor…)
       // queda en el log del servidor; al cliente le llega un 503 accionable
@@ -72,6 +73,7 @@ export class SofiaController {
         dto.previousResponseId,
         dto.locale,
         scope,
+        ocultaCobros(req.apiCaller),
       );
       const subscription = subject.subscribe({
         next: (chunk) => res.write(`data: ${JSON.stringify(chunk)}\n\n`),
