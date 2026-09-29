@@ -10,6 +10,8 @@ import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { claveDeColumna, tituloDeColumna } from "@/lib/columnas-carga";
 import { codigoDePais, paisPorInformar } from "@/lib/paises";
+import { buscadorDeFichas } from "@/lib/ficha-existente";
+import { hotelDeTexto, type HotelBuscable } from "@/lib/hotel-por-texto";
 import {
   columnasConductor,
   columnasExtraTraslado,
@@ -719,8 +721,12 @@ export default function BulkImportPanel({
     const nextErrors: ImportError[] = [];
     let disciplineByName = new Map<string, Record<string, any>>();
     let conductores: ConductorBuscable[] = [];
+    let hoteles: HotelBuscable[] = [];
     if (type === "athletes") {
-      conductores = await apiFetch<ConductorBuscable[]>("/drivers").catch(() => []);
+      [conductores, hoteles] = await Promise.all([
+        apiFetch<ConductorBuscable[]>("/drivers").catch(() => []),
+        apiFetch<HotelBuscable[]>("/accommodations").catch(() => []),
+      ]);
     }
     if (type === "athletes") {
       try {
@@ -784,6 +790,10 @@ export default function BulkImportPanel({
         if (row.trip_type && !tripTypes.has(normalizeTripTypeValue(row.trip_type))) {
           nextErrors.push({ row: rowNumber, field: "trip_type", message: "Tipo de viaje invalido" });
         }
+        // Un hotel que no calza ya no se descarta callado: el traslado
+        // quedaba con destino "Hotel por confirmar".
+        const hotel = hotelDeTexto(row.hotel_name, hoteles, effectiveEventId);
+        if (hotel && "error" in hotel) nextErrors.push({ row: rowNumber, field: "hotel_name", message: hotel.error });
       } else if (type === "drivers") {
         if (!row.full_name) {
           nextErrors.push({ row: rowNumber, field: "full_name", message: "Requerido" });
@@ -838,18 +848,8 @@ export default function BulkImportPanel({
       // (pasaporte o correo), alguien de los Juegos Escolares que viniera en
       // la planilla de Rugby actualizaba su ficha de los Juegos y la pasaba
       // a Rugby en vez de crear la suya.
-      const claveEvento = (eventId: unknown, clave: unknown) => `${String(eventId ?? "")}::${String(clave).toLowerCase()}`;
-      const athleteByEmail = new Map(
-        (athletes || []).filter((item) => item.email).map((item) => [claveEvento(item.eventId, item.email), item])
-      );
-      const athleteByPassport = new Map(
-        (athletes || [])
-          .filter((item) => item.passportNumber)
-          .map((item) => [claveEvento(item.eventId, item.passportNumber), item])
-      );
-      const accommodationByKey = new Map(
-        (accommodations || []).map((item) => [`${item.eventId}::${String(item.name).toLowerCase()}`, item])
-      );
+      // Pasaporte, correo y, sin ninguno de los dos, el nombre (lib/ficha-existente).
+      const fichas = buscadorDeFichas(athletes || []);
       const disciplineById = new Map((disciplines || []).map((item) => [String(item.id), item]));
       const disciplineByName = new Map(
         (disciplines || []).map((item) => [normalizeDisciplineName(item.name), item])
@@ -959,11 +959,12 @@ export default function BulkImportPanel({
           disciplineId = undefined;
         }
 
-        const passportKey = row.passport_number ? String(row.passport_number).toLowerCase() : "";
-        const emailKey = row.email ? String(row.email).toLowerCase() : "";
-        const existing =
-          (passportKey ? athleteByPassport.get(claveEvento(eventId, passportKey)) : null) ??
-          (emailKey ? athleteByEmail.get(claveEvento(eventId, emailKey)) : null);
+        const existing = fichas.buscar({
+          eventId,
+          pasaporte: row.passport_number,
+          correo: row.email,
+          nombre: row.full_name,
+        });
         // Conductor de cada traslado. Si la planilla no lo trae, se conserva el
         // que ya tenía la ficha (volver a cargar no borra lo asignado a mano).
         const metaPrevia = (existing?.metadata && typeof existing.metadata === "object" ? existing.metadata : {}) as Record<string, any>;
@@ -1095,13 +1096,8 @@ export default function BulkImportPanel({
           status: row.status || undefined
         };
 
-        if (row.hotel_name) {
-          const hotel = accommodationByKey.get(`${eventId}::${row.hotel_name.toLowerCase()}`);
-          if (hotel) payload.hotelAccommodationId = hotel.id;
-        }
-
-        const payloadPassportKey = payload.passportNumber ? String(payload.passportNumber).toLowerCase() : "";
-        const payloadEmailKey = payload.email ? String(payload.email).toLowerCase() : "";
+        const hotel = hotelDeTexto(row.hotel_name, (accommodations || []) as HotelBuscable[], eventId);
+        if (hotel && "hotel" in hotel) payload.hotelAccommodationId = hotel.hotel.id;
 
         try {
           const saved = existing?.id
@@ -1119,8 +1115,7 @@ export default function BulkImportPanel({
           if (existing?.id) updated += 1;
           else created += 1;
 
-          if (payload.passportNumber) athleteByPassport.set(claveEvento(eventId, payloadPassportKey), saved);
-          if (payload.email) athleteByEmail.set(claveEvento(eventId, payloadEmailKey), saved);
+          fichas.registrar({ ...saved, eventId, fullName: payload.fullName, passportNumber: payload.passportNumber, email: payload.email });
         } catch (error) {
           rowErrors.push({
             row: rowNumber,
