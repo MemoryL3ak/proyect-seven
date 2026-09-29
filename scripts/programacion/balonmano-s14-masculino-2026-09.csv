@@ -1,0 +1,49 @@
+deporte;genero;jornada;partido;grupo;delegacion_1;delegacion_2;dia;salida_hotel;hora;retorno_hotel;recinto
+Balonmano;Masculino;1;1;A;Antofagasta;Aysén;29-sept;8:00;9:30;11:00;UVM
+Balonmano;Masculino;1;2;A;Arica y P.;Ñuble;29-sept;9:30;11:00;12:30;UVM
+Balonmano;Masculino;1;3;D;Magallanes;Los Lagos;29-sept;11:00;12:30;14:00;UVM
+Balonmano;Masculino;1;4;D;Tarapacá;Atacama;29-sept;12:30;14:00;15:30;UVM
+Balonmano;Masculino;1;5;C;Metropolitana;Araucanía;29-sept;14:00;15:30;17:00;UVM
+Balonmano;Masculino;1;6;C;Maule;O'Higgins;29-sept;15:30;17:00;18:30;UVM
+Balonmano;Masculino;1;7;B;Biobío;Los Ríos;29-sept;13:30;15:00;16:30;Renato Raggio
+Balonmano;Masculino;1;8;B;Valparaíso;Coquimbo;29-sept;15:00;16:30;18:00;Renato Raggio
+Balonmano;Masculino;2;9;A;Ñuble;Antofagasta;30-sept;7:45;9:30;11:00;Nicolás Massu
+Balonmano;Masculino;2;10;A;Aysén;Arica y P.;30-sept;9:00;11:00;12:30;Nicolás Massu
+Balonmano;Masculino;2;11;D;Atacama;Magallanes;30-sept;10:30;12:30;14:00;Nicolás Massu
+Balonmano;Masculino;2;12;D;Los Lagos;Tarapacá;30-sept;12:00;14:00;15:30;Nicolás Massu
+Balonmano;Masculino;2;13;C;O'Higgins;Metropolitana;30-sept;7:40;9:00;10:30;Polideportivo Viña
+Balonmano;Masculino;2;14;C;Araucanía;Maule;30-sept;9:00;10:30;12:00;Polideportivo Viña
+Balonmano;Masculino;2;15;B;Coquimbo;Biobío;30-sept;10:30;12:00;13:30;Polideportivo Viña
+Balonmano;Masculino;2;16;B;Los Ríos;Valparaíso;30-sept;12:00;13:30;15:00;Polideportivo Viña
+Balonmano;Masculino;3;17;A;Antofagasta;Arica y P.;30-sept;13:40;15:00;16:30;Polideportivo Viña
+Balonmano;Masculino;3;18;A;Ñuble;Aysén;30-sept;15:00;16:30;18:00;Polideportivo Viña
+Balonmano;Masculino;3;19;D;Magallanes;Tarapacá;30-sept;16:30;18:00;19:30;Polideportivo Viña
+Balonmano;Masculino;3;20;D;Atacama;Los Lagos;30-sept;18:00;19:30;21:00;Polideportivo Viña
+Balonmano;Masculino;3;21;C;Metropolitana;Maule;30-sept;13:20;15:30;17:00;Nicolás Massu
+Balonmano;Masculino;3;22;C;O'Higgins;Araucanía;30-sept;14:30;17:00;18:30;Nicolás Massu
+Balonmano;Masculino;3;23;B;Los Ríos;Coquimbo;30-sept;16:00;18:30;20:00;Nicolás Massu
+Balonmano;Masculino;3;24;B;Valparaíso;Biobío;30-sept;17:30;20:00;21:30;Nicolás Massu
+Balonmano;Masculino;4;25;9° - 16°;3°C;4°A;01-oct;8:30;10:00;11:30;UVM
+Balonmano;Masculino;4;26;9° - 16°;3°D;4°B;01-oct;10:00;11:30;13:00;UVM
+Balonmano;Masculino;4;27;9° - 16°;3°A;4°C;01-oct;11:30;13:00;14:30;UVM
+Balonmano;Masculino;4;28;9° - 16°;3°B;4°D;01-oct;13:30;14:30;16:00;UVM
+Balonmano;Masculino;4;29;1° - 8°;1°C;2°A;01-oct;8:30;10:00;11:30;Renato Raggio
+Balonmano;Masculino;4;30;1° - 8°;1°D;2°B;01-oct;10:00;11:30;13:00;Renato Raggio
+Balonmano;Masculino;4;31;1° - 8°;1°A;2°C;01-oct;11:30;13:00;14:30;Renato Raggio
+Balonmano;Masculino;4;32;1° - 8°;1°B;2°D;01-oct;13:00;14:30;16:00;Renato Raggio
+Balonmano;Masculino;5;33;13° - 16°;Perdedor P25;Perdedor P26;02-oct;8:00;9:30;11:00;Polideportivo Viña
+Balonmano;Masculino;5;34;13° - 16°;Perdedor P27;Perdedor P28;02-oct;9:30;11:00;12:30;Polideportivo Viña
+Balonmano;Masculino;5;35;9° - 12°;Ganador P25;Ganador P26;02-oct;11:00;12:30;14:00;Polideportivo Viña
+Balonmano;Masculino;5;36;9° - 12°;Ganador P27;Ganador P28;02-oct;12:30;14:00;15:30;Polideportivo Viña
+Balonmano;Masculino;5;37;5° - 8°;Perdedor P29;Perdedor P30;02-oct;14:00;15:30;17:00;Polideportivo Viña
+Balonmano;Masculino;5;38;5° - 8°;Perdedor P31;Perdedor P32;02-oct;15:30;17:00;18:30;Polideportivo Viña
+Balonmano;Masculino;5;39;1° - 4°;Ganador P29;Ganador P30;02-oct;16:30;18:00;19:00;Renato Raggio
+Balonmano;Masculino;5;40;1° - 4°;Ganador P31;Ganador P32;02-oct;18:00;19:30;21:00;Renato Raggio
+Balonmano;Masculino;6;41;15° - 16°;Perdedor P33;Perdedor P34;03-oct;7:45;9:30;11:00;Nicolás Massu
+Balonmano;Masculino;6;42;13° - 14°;Ganador P33;Ganador P34;03-oct;9:00;11:00;12:30;Nicolás Massu
+Balonmano;Masculino;6;43;11° - 12°;Perdedor P35;Perdedor P36;03-oct;10:30;12:30;14:00;Nicolás Massu
+Balonmano;Masculino;6;44;9° - 10°;Ganador P35;Ganador P36;03-oct;12:00;14:00;15:30;Nicolás Massu
+Balonmano;Masculino;6;45;7° - 8°;Perdedor P37;Perdedor P38;03-oct;11:00;12:30;14:00;Polideportivo Viña
+Balonmano;Masculino;6;46;5° - 6°;Ganador P37;Ganador P38;03-oct;12:30;14:00;15:30;Polideportivo Viña
+Balonmano;Masculino;6;47;3° - 4°;Perdedor P39;Perdedor P40;03-oct;14:30;16:30;21:30;Renato Raggio
+Balonmano;Masculino;6;48;Final;Ganador P39;Ganador P40;03-oct;17:30;19:30;21:30;Renato Raggio

@@ -238,6 +238,15 @@ function unico(lista, que, texto) {
         [r.padre.id, r.fixtureKey],
       );
       const ids = [r.d1?.id, r.d2?.id].filter(Boolean);
+      // El nombre es único por evento, categoría y género, y no dice el
+      // deporte: "Fecha 1 · P8 · Grupo B · Valparaíso vs Coquimbo" existía en
+      // futsal y en balonmano varones (29-09-2026). Si choca con una prueba de
+      // otro deporte, se le agrega el deporte.
+      const choque = await db.query(
+        "select 1 from core.disciplines where name = $1 and event_id = $2 and category = 'CONVENTIONAL' and gender = $3 and parent_id is distinct from $4",
+        [r.name, r.padre.event_id, r.padre.gender, r.padre.id],
+      );
+      if (choque.rowCount) r.name = `${r.name} · ${r.padre.name}`;
       const valores = [r.name, r.padre.event_id, 'CONVENTIONAL', r.padre.gender, r.padre.id, r.scheduledAt, r.sede.name, ids, JSON.stringify(r.metadata)];
       let id;
       if (existente.rowCount) {
