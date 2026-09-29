@@ -183,6 +183,14 @@ export function reglaDeEscritura(
         };
       }
     }
+    // Reserva T1/VIP nueva desde Solicitudes (28-09-2026): la crea quien
+    // edita Solicitudes, igual que la edita.
+    if (m === 'POST' && resto.length === 0 && cuerpo && typeof cuerpo === 'object') {
+      const tipoNuevo = normalizeClientType(String((cuerpo as { clientType?: unknown }).clientType ?? ''));
+      if (tipoNuevo === 'T1' || tipoNuevo === 'VIP') {
+        return { modulos: ['operacion.solicitudes', 'operacion.viajes'], nivel: 'editar', que: 'Solicitudes T1/VIP' };
+      }
+    }
     return VIAJES;
   }
   for (const [prefijo, regla] of POR_PREFIJO) {

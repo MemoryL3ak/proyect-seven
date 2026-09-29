@@ -64,6 +64,13 @@ describe('permisos del panel', () => {
     expect(puedeEscribir(VICTOR, regla)).toBe(true);
   });
 
+  it('crea una reserva T1/VIP desde Solicitudes, pero no un viaje común', () => {
+    const reserva = reglaDeEscritura('POST', '/trips', { clientType: 'T1', status: 'REQUESTED' });
+    expect(puedeEscribir(VICTOR, reserva)).toBe(true);
+    const comun = reglaDeEscritura('POST', '/trips', { clientType: 'TA' });
+    expect(puedeEscribir(VICTOR, comun)).toBe(false);
+  });
+
   it('valida los servicios del día aunque el calendario sea sólo de lectura', () => {
     const regla = reglaDeEscritura('PATCH', '/trips/abc', { committeeValidated: true, committeeValidatedBy: 'Comité Organizador' });
     expect(puedeEscribir(VICTOR, regla)).toBe(true);

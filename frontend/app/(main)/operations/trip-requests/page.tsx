@@ -1,7 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getStoredUser } from "@/lib/api";
+import StyledSelect from "@/components/StyledSelect";
+import { conductoresParaViaje, TIPOS_FLOTA } from "@/lib/flota-conductor";
+import { cuerpoReserva, errorDeReserva, type LugarReserva } from "@/lib/reserva-t1";
+import { claveDiaEvento, etiquetaDiaEvento } from "@/lib/hora-evento";
 import PageHeader from "@/components/ui/PageHeader";
 import {
   TicketIcon,
@@ -64,8 +68,18 @@ type DriverItem = {
   eventIds?: string[] | null;
   /** Flota propia: su evento. */
   eventId?: string | null;
+  /** Vehículo del conductor de proveedor (vehicleTipo, vehicleCapacity). */
+  metadata?: Record<string, unknown> | null;
 };
 type VehicleItem = { id: string; plate?: string | null };
+/** Para quién se reserva: fichas T1 o VIP del evento. */
+type PersonaItem = { id: string; fullName?: string | null; userType?: string | null; eventId?: string | null; hotelAccommodationId?: string | null };
+type LugarItem = { id: string; name?: string | null; eventId?: string | null };
+
+const VEHICULOS_RESERVA: Record<string, string> = {
+  SEDAN: "Sedán", SUV: "SUV", VAN_10: "Van 10", VAN_15: "Van 15-17", VAN_19: "Van 19", MINIBUS: "Minibus", BUS: "Bus",
+};
+const SIN_CONDUCTOR_FILTRO = "__sin_conductor__";
 
 /**
  * Despliega los tramos anidados que devuelve /trips. Cada tramo necesita su
@@ -222,6 +236,30 @@ export default function TripRequestsPage() {
   const [statusFilter, setStatusFilter] = useState<string>("");
   const [clientFilter, setClientFilter] = useState<"" | "T1" | "VIP">("");
   const [search, setSearch] = useState("");
+  // Filtros nuevos (28-09-2026): día, quién pidió y conductor.
+  const [dayFilter, setDayFilter] = useState("");
+  const [requesterFilter, setRequesterFilter] = useState("");
+  const [driverFilter, setDriverFilter] = useState("");
+
+  // Nueva reserva T1/VIP desde el panel (antes sólo llegaban desde la app).
+  const [personas, setPersonas] = useState<PersonaItem[]>([]);
+  const [sedes, setSedes] = useState<LugarItem[]>([]);
+  const [hoteles, setHoteles] = useState<LugarItem[]>([]);
+  const [reservando, setReservando] = useState(false);
+  const [guardandoReserva, setGuardandoReserva] = useState(false);
+  const [errorReserva, setErrorReserva] = useState<string | null>(null);
+  const [rSolicitante, setRSolicitante] = useState("");
+  const [rOrigen, setROrigen] = useState("");
+  const [rOrigenTexto, setROrigenTexto] = useState("");
+  const [rDestino, setRDestino] = useState("");
+  const [rDestinoTexto, setRDestinoTexto] = useState("");
+  const [rFecha, setRFecha] = useState("");
+  const [rPasajeros, setRPasajeros] = useState("1");
+  const [rVehiculo, setRVehiculo] = useState("");
+  const [rIdaVuelta, setRIdaVuelta] = useState(false);
+  const [rRegreso, setRRegreso] = useState("");
+  const [rNotas, setRNotas] = useState("");
+  const [rConductor, setRConductor] = useState("");
 
   // Asignación
   const [detail, setDetail] = useState<Trip | null>(null);
@@ -261,13 +299,19 @@ export default function TripRequestsPage() {
   useEffect(() => {
     (async () => {
       try {
-        const [dr, ve] = await Promise.all([
+        const [dr, ve, pe, se, ho] = await Promise.all([
           apiFetch<DriverItem[]>("/drivers"),
           apiFetch<VehicleItem[]>("/transports"),
+          apiFetch<PersonaItem[]>("/athletes").catch(() => [] as PersonaItem[]),
+          apiFetch<LugarItem[]>("/venues").catch(() => [] as LugarItem[]),
+          apiFetch<LugarItem[]>("/accommodations").catch(() => [] as LugarItem[]),
         ]);
         // /drivers ya une flota propia y choferes de proveedor, sin duplicados.
         setDrivers(dr ?? []);
         setVehicles(ve ?? []);
+        setPersonas(pe ?? []);
+        setSedes(se ?? []);
+        setHoteles(ho ?? []);
       } catch {
         /* catálogos opcionales para la asignación */
       }
@@ -281,10 +325,115 @@ export default function TripRequestsPage() {
       if (selectedEventId && r.eventId !== selectedEventId) return false;
       if (statusFilter && r.status !== statusFilter) return false;
       if (clientFilter && client !== clientFilter) return false;
-      if (q && !`${r.origin ?? ""} ${r.destination ?? ""} ${r.notes ?? ""} ${r.vehiclePlate ?? ""}`.toLowerCase().includes(q)) return false;
+      if (dayFilter && claveDiaEvento(r.scheduledAt) !== dayFilter) return false;
+      if (requesterFilter && (r.requesterName ?? "") !== requesterFilter) return false;
+      if (driverFilter && (driverFilter === SIN_CONDUCTOR_FILTRO ? !!r.driverId : r.driverId !== driverFilter)) return false;
+      if (q && !`${r.origin ?? ""} ${r.destination ?? ""} ${r.notes ?? ""} ${r.vehiclePlate ?? ""} ${r.requesterName ?? ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [trips, selectedEventId, statusFilter, clientFilter, search]);
+  }, [trips, selectedEventId, statusFilter, clientFilter, search, dayFilter, requesterFilter, driverFilter]);
+
+  // Opciones de los filtros: lo que hay en las solicitudes del evento.
+  const delEvento = useMemo(() => trips.filter((r) => !selectedEventId || r.eventId === selectedEventId), [trips, selectedEventId]);
+  const diasOpciones = useMemo(() => {
+    const cuenta = new Map<string, number>();
+    delEvento.forEach((r) => {
+      const dia = claveDiaEvento(r.scheduledAt);
+      if (dia) cuenta.set(dia, (cuenta.get(dia) ?? 0) + 1);
+    });
+    return [...cuenta.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [delEvento]);
+  const solicitantesOpciones = useMemo(
+    () => [...new Set(delEvento.map((r) => r.requesterName).filter((n): n is string => !!n))].sort((a, b) => a.localeCompare(b, "es")),
+    [delEvento],
+  );
+  const conductoresOpciones = useMemo(() => {
+    const ids = [...new Set(delEvento.map((r) => r.driverId).filter((id): id is string => !!id))];
+    return ids
+      .map((id) => ({ id, nombre: (() => { const d = drivers.find((x) => x.id === id); return d ? driverName(d) : id; })() }))
+      .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  }, [delEvento, drivers]);
+  const filtrosActivos = [statusFilter, clientFilter, search, dayFilter, requesterFilter, driverFilter].filter(Boolean).length;
+
+  // ── Nueva reserva ──────────────────────────────────────────────────────
+  const personasReserva = useMemo(
+    () =>
+      personas
+        .filter((p) => (!selectedEventId || p.eventId === selectedEventId) && CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(p.userType)))
+        .sort((a, b) => String(a.fullName ?? "").localeCompare(String(b.fullName ?? ""), "es")),
+    [personas, selectedEventId],
+  );
+  const lugaresReserva = useMemo(() => {
+    const delEv = (l: LugarItem) => !selectedEventId || !l.eventId || l.eventId === selectedEventId;
+    return [
+      ...hoteles.filter(delEv).map((h) => ({ clave: `HOTEL:${h.id}`, tipo: "HOTEL" as const, id: h.id, nombre: h.name ?? h.id })),
+      ...sedes.filter(delEv).map((v) => ({ clave: `SEDE:${v.id}`, tipo: "SEDE" as const, id: v.id, nombre: v.name ?? v.id })),
+    ];
+  }, [hoteles, sedes, selectedEventId]);
+  const lugarElegido = (clave: string, texto: string): LugarReserva | null => {
+    if (clave === "DIRECCION") return texto.trim() ? { tipo: "DIRECCION", nombre: texto.trim() } : null;
+    const lugar = lugaresReserva.find((l) => l.clave === clave);
+    return lugar ? { tipo: lugar.tipo, id: lugar.id, nombre: lugar.nombre } : null;
+  };
+  // Conductores del evento, del vehículo pedido y con cupo (lib/flota-conductor).
+  const conductoresReserva = useMemo(
+    () =>
+      conductoresParaViaje(
+        drivers.map((d) => ({
+          value: d.id,
+          label: driverName(d),
+          eventIds: d.eventIds ?? null,
+          eventId: d.eventId ?? null,
+          vehicleType: typeof d.metadata?.vehicleTipo === "string" ? (d.metadata.vehicleTipo as string) : null,
+          capacity: Number(d.metadata?.vehicleCapacity) || null,
+        })),
+        { eventoId: selectedEventId, tipo: rVehiculo, pasajeros: Number(rPasajeros) || 0, elegido: rConductor || null },
+      ).sort((a, b) => a.label.localeCompare(b.label, "es")),
+    [drivers, selectedEventId, rVehiculo, rPasajeros, rConductor],
+  );
+
+  function abrirReserva() {
+    setRSolicitante(""); setROrigen(""); setROrigenTexto(""); setRDestino(""); setRDestinoTexto("");
+    setRFecha(""); setRPasajeros("1"); setRVehiculo(""); setRIdaVuelta(false); setRRegreso(""); setRNotas(""); setRConductor("");
+    setErrorReserva(null);
+    setReservando(true);
+  }
+
+  async function guardarReserva() {
+    const persona = personasReserva.find((p) => p.id === rSolicitante) ?? null;
+    const usuario = getStoredUser();
+    const datos = {
+      eventoId: selectedEventId ?? "",
+      solicitante: persona ? { id: persona.id, userType: persona.userType, fullName: persona.fullName } : null,
+      origen: lugarElegido(rOrigen, rOrigenTexto),
+      destino: lugarElegido(rDestino, rDestinoTexto),
+      fechaHora: rFecha,
+      pasajeros: Number(rPasajeros),
+      vehiculo: rVehiculo,
+      idaYVuelta: rIdaVuelta,
+      regreso: rRegreso,
+      notas: rNotas,
+      conductorId: rConductor || null,
+      autor: String(usuario?.user_metadata?.name ?? usuario?.email ?? "Panel"),
+    };
+    const problema = errorDeReserva(datos);
+    if (problema) { setErrorReserva(t(problema)); return; }
+    setGuardandoReserva(true);
+    setErrorReserva(null);
+    try {
+      await apiFetch("/trips", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(cuerpoReserva(datos, new Date())),
+      });
+      setReservando(false);
+      await load();
+    } catch (err) {
+      setErrorReserva(err instanceof Error ? err.message : t("No se pudo crear la reserva."));
+    } finally {
+      setGuardandoReserva(false);
+    }
+  }
 
   const summary = useMemo(() => {
     const base = visible;
@@ -384,9 +533,14 @@ export default function TripRequestsPage() {
           </span>
         }
         action={
-          <button type="button" className="btn btn-ghost text-xs" onClick={load}>
-            <RefreshIcon size={13} className="inline-block mr-1" /> {t("Refrescar")}
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button type="button" className="btn btn-primary text-xs" onClick={abrirReserva}>
+              + {t("Nueva reserva")}
+            </button>
+            <button type="button" className="btn btn-ghost text-xs" onClick={load}>
+              <RefreshIcon size={13} className="inline-block mr-1" /> {t("Refrescar")}
+            </button>
+          </div>
         }
       />
 
@@ -519,7 +673,9 @@ export default function TripRequestsPage() {
       <section className="surface rounded-2xl p-4 flex flex-wrap items-center gap-3">
         {/* En el teléfono los filtros van a ancho completo; el tope de ancho
             es sólo para que en escritorio no se estiren. */}
-        <select className="input md:max-w-[170px]" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+        {/* Filtros con el selector del panel (StyledSelect), nunca el
+            <select> nativo. */}
+        <StyledSelect wrapperStyle={{ flex: "1 1 160px", maxWidth: 200, width: "auto" }} value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
           <option value="">{t("Todos los estados")}</option>
           <option value="REQUESTED">{t("Pendiente")}</option>
           <option value="SCHEDULED">{t("Agendada")}</option>
@@ -527,12 +683,31 @@ export default function TripRequestsPage() {
           <option value="PICKED_UP">{t("En curso")}</option>
           <option value="COMPLETED">{t("Completada")}</option>
           <option value="CANCELLED">{t("Cancelada")}</option>
-        </select>
-        <select className="input md:max-w-[140px]" value={clientFilter} onChange={(e) => setClientFilter(e.target.value as typeof clientFilter)}>
-          <option value="">{t("T1 y VIP")}</option>{/* ambos: la pantalla ya no trae otros */}
+        </StyledSelect>
+        <StyledSelect wrapperStyle={{ flex: "1 1 130px", maxWidth: 160, width: "auto" }} value={clientFilter} onChange={(e) => setClientFilter(e.target.value as typeof clientFilter)}>
+          <option value="">{t("T1 y VIP")}</option>
           <option value="T1">{t("Sólo T1")}</option>
           <option value="VIP">{t("Sólo VIP")}</option>
-        </select>
+        </StyledSelect>
+        <StyledSelect wrapperStyle={{ flex: "1 1 160px", maxWidth: 210, width: "auto" }} value={dayFilter} onChange={(e) => setDayFilter(e.target.value)}>
+          <option value="">{t("Todos los días")}</option>
+          {diasOpciones.map(([dia, n]) => <option key={dia} value={dia}>{`${etiquetaDiaEvento(dia)} (${n})`}</option>)}
+        </StyledSelect>
+        <StyledSelect wrapperStyle={{ flex: "1 1 180px", maxWidth: 240, width: "auto" }} value={requesterFilter} onChange={(e) => setRequesterFilter(e.target.value)}>
+          <option value="">{t("Todos los solicitantes")}</option>
+          {solicitantesOpciones.map((n) => <option key={n} value={n}>{n}</option>)}
+        </StyledSelect>
+        <StyledSelect wrapperStyle={{ flex: "1 1 180px", maxWidth: 240, width: "auto" }} value={driverFilter} onChange={(e) => setDriverFilter(e.target.value)}>
+          <option value="">{t("Todos los conductores")}</option>
+          <option value={SIN_CONDUCTOR_FILTRO}>{t("Sin conductor")}</option>
+          {conductoresOpciones.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+        </StyledSelect>
+        {filtrosActivos > 0 && (
+          <button type="button" className="text-xs font-semibold" style={{ color: STATE.dangerText, background: "none", border: "none", cursor: "pointer" }}
+            onClick={() => { setStatusFilter(""); setClientFilter(""); setSearch(""); setDayFilter(""); setRequesterFilter(""); setDriverFilter(""); }}>
+            {t("Limpiar")} ({filtrosActivos})
+          </button>
+        )}
         <div className="relative flex-1 min-w-[200px]">
           <span className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: SURFACE.textFaint }}>
             <SearchIcon size={15} />
@@ -806,6 +981,88 @@ export default function TripRequestsPage() {
         );
       })()}
 
+      {/* Modal de nueva reserva */}
+      {reservando && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.45)" }}>
+          <div className="surface rounded-2xl p-5 w-full max-w-lg space-y-3" style={{ maxHeight: "calc(100dvh - 32px)", overflowY: "auto" }}>
+            <div>
+              <h3 className="text-lg font-bold" style={{ color: STATE.infoText }}>{t("Nueva reserva T1/VIP")}</h3>
+              <p className="text-xs" style={{ color: SURFACE.textFaint }}>{t("Queda Pendiente; si eliges conductor, queda Agendada y se le avisa.")}</p>
+            </div>
+            <label className="block text-sm">
+              <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Para quién")}</span>
+              <StyledSelect value={rSolicitante} onChange={(e) => setRSolicitante(e.target.value)}>
+                <option value="">{t("Elige una persona T1 o VIP")}</option>
+                {personasReserva.map((p) => <option key={p.id} value={p.id}>{`${p.fullName ?? p.id} · ${clientTypeLabel(p.userType)}`}</option>)}
+              </StyledSelect>
+            </label>
+            {([
+              ["Origen", rOrigen, setROrigen, rOrigenTexto, setROrigenTexto],
+              ["Destino", rDestino, setRDestino, rDestinoTexto, setRDestinoTexto],
+            ] as const).map(([rotulo, valor, setValor, texto, setTexto]) => (
+              <div key={rotulo} className="space-y-1">
+                <label className="block text-sm">
+                  <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t(rotulo)}</span>
+                  <StyledSelect value={valor} onChange={(e) => setValor(e.target.value)}>
+                    <option value="">{t("Elige hotel, sede u otra dirección")}</option>
+                    {lugaresReserva.map((l) => <option key={l.clave} value={l.clave}>{`${l.tipo === "HOTEL" ? t("Hotel") : t("Sede")} · ${l.nombre}`}</option>)}
+                    <option value="DIRECCION">{t("Otra dirección…")}</option>
+                  </StyledSelect>
+                </label>
+                {valor === "DIRECCION" && (
+                  <input className="input w-full" placeholder={t("Dirección")} value={texto} onChange={(e) => setTexto(e.target.value)} />
+                )}
+              </div>
+            ))}
+            <div className="grid grid-cols-2 gap-3">
+              <label className="block text-sm">
+                <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Fecha y hora")}</span>
+                <input type="datetime-local" className="input w-full mt-1" value={rFecha} onChange={(e) => setRFecha(e.target.value)} />
+              </label>
+              <label className="block text-sm">
+                <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Personas")}</span>
+                <input type="number" min={1} className="input w-full mt-1" value={rPasajeros} onChange={(e) => setRPasajeros(e.target.value)} />
+              </label>
+            </div>
+            <label className="block text-sm">
+              <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Vehículo")}</span>
+              <StyledSelect value={rVehiculo} onChange={(e) => setRVehiculo(e.target.value)}>
+                <option value="">{t("Cualquiera")}</option>
+                {TIPOS_FLOTA.map((tipo) => <option key={tipo} value={tipo}>{VEHICULOS_RESERVA[tipo] ?? tipo}</option>)}
+              </StyledSelect>
+            </label>
+            <label className="flex items-center gap-2 text-sm" style={{ color: SURFACE.textSecondary }}>
+              <input type="checkbox" checked={rIdaVuelta} onChange={(e) => setRIdaVuelta(e.target.checked)} style={{ width: 16, height: 16, accentColor: BRAND.teal }} />
+              {t("Ida y vuelta")}
+            </label>
+            {rIdaVuelta && (
+              <label className="block text-sm">
+                <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Regreso")}</span>
+                <input type="datetime-local" className="input w-full mt-1" value={rRegreso} onChange={(e) => setRRegreso(e.target.value)} />
+              </label>
+            )}
+            <label className="block text-sm">
+              <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Conductor (opcional)")}</span>
+              <StyledSelect value={rConductor} onChange={(e) => setRConductor(e.target.value)}>
+                <option value="">{t("Sin conductor por ahora")}</option>
+                {conductoresReserva.map((c) => <option key={c.value} value={c.value}>{c.label}</option>)}
+              </StyledSelect>
+            </label>
+            <label className="block text-sm">
+              <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Notas")}</span>
+              <input className="input w-full mt-1" placeholder={t("Vuelo, contacto, equipaje…")} value={rNotas} onChange={(e) => setRNotas(e.target.value)} />
+            </label>
+            {errorReserva && <p className="text-sm" role="alert" style={{ color: STATE.dangerText }}>{errorReserva}</p>}
+            <div className="flex justify-end gap-2 pt-1">
+              <button type="button" className="btn btn-ghost text-sm" onClick={() => setReservando(false)} disabled={guardandoReserva}>{t("Cancelar")}</button>
+              <button type="button" className="btn btn-primary text-sm" onClick={() => void guardarReserva()} disabled={guardandoReserva}>
+                <CheckIcon size={14} className="inline-block mr-1" /> {guardandoReserva ? t("Guardando…") : t("Reservar")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Modal de asignación */}
       {assigning && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(15,23,42,0.45)" }}>
@@ -816,17 +1073,17 @@ export default function TripRequestsPage() {
             </div>
             <label className="block text-sm">
               <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Conductor")}</span>
-              <select className="input w-full mt-1" value={assignDriverId} onChange={(e) => setAssignDriverId(e.target.value)}>
+              <StyledSelect value={assignDriverId} onChange={(e) => setAssignDriverId(e.target.value)}>
                 <option value="">{t("— Sin conductor —")}</option>
                 {conductoresAsignables.map((d) => <option key={d.id} value={d.id}>{driverName(d)}</option>)}
-              </select>
+              </StyledSelect>
             </label>
             <label className="block text-sm">
               <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Vehículo")}</span>
-              <select className="input w-full mt-1" value={assignVehicleId} onChange={(e) => setAssignVehicleId(e.target.value)}>
+              <StyledSelect value={assignVehicleId} onChange={(e) => setAssignVehicleId(e.target.value)}>
                 <option value="">{t("— Sin vehículo —")}</option>
                 {vehicles.map((v) => <option key={v.id} value={v.id}>{v.plate ?? v.id}</option>)}
-              </select>
+              </StyledSelect>
             </label>
             <div className="flex justify-end gap-2 pt-1">
               <button type="button" className="btn btn-ghost text-sm" onClick={() => setAssigning(null)} disabled={saving}>{t("Cancelar")}</button>
