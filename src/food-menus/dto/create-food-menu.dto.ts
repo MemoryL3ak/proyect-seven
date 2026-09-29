@@ -35,4 +35,9 @@ export class CreateFoodMenuDto {
   @IsString()
   @IsOptional()
   locationDetail?: string;
+
+  /** Evento del menú o comedor (28-09-2026); sin evento se ve en todos. */
+  @IsString()
+  @IsOptional()
+  eventId?: string;
 }

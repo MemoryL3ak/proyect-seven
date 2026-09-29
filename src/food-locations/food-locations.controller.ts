@@ -6,11 +6,13 @@ import {
   Patch,
   Param,
   Delete,
+  Query,
   Req,
 } from '@nestjs/common';
 import { FoodLocationsService } from './food-locations.service';
 import type { ApiRequest } from '../auth/api-auth.guard';
 import { StaffScopeService } from '../auth/staff-scope.service';
+import { eventoValido } from '../shared/evento-conductores';
 import { CreateFoodLocationDto } from './dto/create-food-location.dto';
 import { UpdateFoodLocationDto } from './dto/update-food-location.dto';
 
@@ -27,9 +29,16 @@ export class FoodLocationsController {
   }
 
   @Get()
-  async findAll(@Req() req: ApiRequest) {
+  async findAll(@Req() req: ApiRequest, @Query('eventId') eventId?: string) {
     // Jefe de Misión: sólo la alimentación de los hoteles de su delegación.
-    return this.foodLocationsService.findAll(await this.scope.delegationOf(req));
+    // Quien entra por la app ve los comedores de su evento; el panel, los del
+    // evento elegido.
+    const scope = await this.scope.forRequest(req);
+    const delPortal = await this.scope.eventoDelPortal(scope);
+    return this.foodLocationsService.findAll(
+      scope?.delegationId ?? null,
+      delPortal ?? eventoValido(eventId),
+    );
   }
 
   @Get(':id')

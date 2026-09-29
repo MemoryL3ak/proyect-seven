@@ -186,8 +186,8 @@ type Venue = { id: string; eventId?: string | null; name?: string | null; addres
 // hotel. Los calcula GET /accommodations, no son una columna del alojamiento.
 // coordinators: quién responde por el hotel, con su teléfono.
 type Accommodation = { id: string; eventId?: string | null; name?: string | null; address?: string | null; city?: string | null; country?: string | null; checkIn?: string | null; checkOut?: string | null; roomType?: string | null; photoUrl?: string | null; disciplineIds?: string[] | null; coordinators?: CoordinadorHotel[] | null };
-type FoodLocation = { id: string; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
-type FoodMenu = { id: string; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null; clientTypes?: string[] | null; locationDetail?: string | null };
+type FoodLocation = { id: string; eventId?: string | null; accommodationId?: string | null; name: string; description?: string | null; capacity?: number | null; clientTypes: string[] };
+type FoodMenu = { id: string; eventId?: string | null; date: string; mealType: string; title: string; description?: string | null; dietaryType?: string | null; accommodationId?: string | null; clientTypes?: string[] | null; locationDetail?: string | null };
 type PremAwarder = {
   id?: string;
   athleteId: string;
@@ -1105,10 +1105,12 @@ export default function UserPortalPage() {
         (lista) => setNombresHoteles(lista || []),
       );
       // Alimentación visible para todos — sin filtrar por clientType
+      // Menús y comedores de su evento (el servidor ya los acota; esto cubre
+      // lo que quedó guardado en el teléfono de antes).
       void catalogoConCache<FoodLocation[]>("food-locations", () => apiFetch<FoodLocation[]>("/food-locations"), (lista) =>
-        setFoodLocations(lista || []));
+        setFoodLocations((lista || []).filter((l) => esDelEvento(data.eventId, l.eventId))));
       void catalogoConCache<FoodMenu[]>("food-menus", () => apiFetch<FoodMenu[]>("/food-menus"), (lista) =>
-        setFoodMenus(lista || []));
+        setFoodMenus((lista || []).filter((m) => esDelEvento(data.eventId, m.eventId))));
 
       // Para la próxima apertura: con esto, los viajes y la nómina de la
       // delegación salen junto con la ficha en vez de esperarla.
@@ -1225,7 +1227,10 @@ export default function UserPortalPage() {
     setCouponError(null);
     try {
       const [list, claims] = await Promise.all([
-        apiFetch<Coupon[]>(`/coupons/for-user?userType=${encodeURIComponent(userType || "ATHLETE")}`),
+        // Los cupones de su evento y los generales.
+        apiFetch<Coupon[]>(
+          `/coupons/for-user?userType=${encodeURIComponent(userType || "ATHLETE")}${athlete?.eventId ? `&eventId=${encodeURIComponent(athlete.eventId)}` : ""}`,
+        ),
         apiFetch<CouponClaim[]>(`/coupons/claims/mine?userId=${encodeURIComponent(athleteId)}`),
       ]);
       setCouponsAvailable(Array.isArray(list) ? list : []);
@@ -2251,6 +2256,7 @@ export default function UserPortalPage() {
                 una región, así que el mensaje no la nombra. */}
             {(isChief || isComite) && (
               <BannerCoordinador
+                eventId={athlete.eventId}
                 delegacion={delegationName}
                 nombreRemitente={athlete.fullName}
                 onSinWhatsapp={() => { setAssistCategoria("COORDINATOR_CONTACT"); setAssistOpen(true); }}

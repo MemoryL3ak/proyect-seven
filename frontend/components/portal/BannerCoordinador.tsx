@@ -30,7 +30,10 @@ export default function BannerCoordinador({
   delegacion,
   nombreRemitente,
   onSinWhatsapp,
+  eventId,
 }: {
+  /** Evento de quien escribe: se ofrece el Coordinador General de ese evento. */
+  eventId?: string | null;
   /**
    * Región de quien escribe, para el mensaje ya redactado. El Coordinador de
    * Comité no tiene ninguna —coordina el evento entero—: en ese caso el
@@ -48,7 +51,9 @@ export default function BannerCoordinador({
   useEffect(() => {
     void (async () => {
       try {
-        const data = await apiFetch<Coordinator | Record<string, never>>("/m/auth/coordinator");
+        const data = await apiFetch<Coordinator | Record<string, never>>(
+          `/m/auth/coordinator${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ""}`,
+        );
         setCoordinador(data && "phone" in data && data.phone ? (data as Coordinator) : null);
       } catch {
         setCoordinador(null);
@@ -56,7 +61,7 @@ export default function BannerCoordinador({
         setCargado(true);
       }
     })();
-  }, []);
+  }, [eventId]);
 
   // Mientras no se sabe, no se pinta: un banner que cambia de texto al segundo
   // de abrir la pantalla se lee como un error.

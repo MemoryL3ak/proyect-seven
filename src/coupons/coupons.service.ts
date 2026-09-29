@@ -41,6 +41,9 @@ function makeQrToken(): string {
   return randomBytes(32).toString('hex'); // 64 chars
 }
 
+const UUID_CUPON =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 @Injectable()
 export class CouponsService {
   constructor(@Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient) {}
@@ -88,7 +91,10 @@ export class CouponsService {
       .from('coupons')
       .select('*')
       .eq('status', 'ACTIVE');
-    if (eventId) q = q.eq('event_id', eventId);
+    // Los del evento y los generales (sin evento): un cupón de un evento no
+    // se ofrece en otro (28-09-2026).
+    if (eventId && UUID_CUPON.test(eventId))
+      q = q.or(`event_id.eq.${eventId},event_id.is.null`);
     const { data, error } = await q.order('created_at', { ascending: false });
     this.throwIfError(error, 'Error listando cupones para usuario');
     const rows = (data as Row[]).map(camelize);

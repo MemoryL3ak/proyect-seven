@@ -6,11 +6,14 @@ import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { XIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { esDelEvento } from "@/lib/evento-activo";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
 
 type FoodLocation = {
   id: string;
+  /** Evento del comedor (28-09-2026); sin evento se ve en todos. */
+  eventId?: string | null;
   accommodationId?: string | null;
   name: string;
   address?: string | null;
@@ -180,7 +183,7 @@ const labelStyle: React.CSSProperties = {
 export default function FoodLocationsPage() {
   const { t } = useI18n();
   const isMobile = useIsMobile();
-  const [locations, setLocations] = useState<FoodLocation[]>([]);
+  const [todosLosLugares, setLocations] = useState<FoodLocation[]>([]);
   const [accommodations, setAccommodations] = useState<Record<string, Accommodation>>({});
   const [delegaciones, setDelegaciones] = useState<Delegacion[]>([]);
   const [disciplinas, setDisciplinas] = useState<Disciplina[]>([]);
@@ -234,6 +237,13 @@ export default function FoodLocationsPage() {
   };
 
   useEffect(() => { loadData(); }, []);
+
+  // Sólo los comedores del evento elegido arriba (y los que no tienen evento).
+  // 28-09-2026: la app de World Rugby mostraba los comedores de Viña.
+  const locations = useMemo(
+    () => todosLosLugares.filter((l) => esDelEvento(eventoId, l.eventId)),
+    [todosLosLugares, eventoId],
+  );
 
   const regionesDelEvento = useMemo(
     () => delegaciones.filter((d) => !eventoId || d.eventId === eventoId),
@@ -326,6 +336,8 @@ export default function FoodLocationsPage() {
         clientTypes: form.clientTypes,
         delegationIds: form.delegationIds,
         disciplineIds: form.disciplineIds,
+        // Uno nuevo queda en el evento elegido arriba; al editar no se mueve.
+        ...(!editingId && eventoId ? { eventId: eventoId } : {}),
       };
       if (editingId) {
         await apiFetch(`/food-locations/${editingId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });

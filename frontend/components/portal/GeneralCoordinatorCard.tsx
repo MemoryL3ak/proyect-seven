@@ -14,7 +14,7 @@ type Coordinator = { name: string; phone: string };
  * teléfono con acceso directo a WhatsApp. El backend entrega el teléfono sólo
  * a sesiones autenticadas (GET /m/auth/coordinator).
  */
-export default function GeneralCoordinatorCard() {
+export default function GeneralCoordinatorCard({ eventId }: { eventId?: string | null } = {}) {
   const { t } = useI18n();
   const [coordinator, setCoordinator] = useState<Coordinator | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -22,7 +22,9 @@ export default function GeneralCoordinatorCard() {
   useEffect(() => {
     void (async () => {
       try {
-        const data = await apiFetch<Coordinator | Record<string, never>>("/m/auth/coordinator");
+        const data = await apiFetch<Coordinator | Record<string, never>>(
+          `/m/auth/coordinator${eventId ? `?eventId=${encodeURIComponent(eventId)}` : ""}`,
+        );
         setCoordinator(data && "phone" in data && data.phone ? (data as Coordinator) : null);
       } catch {
         setCoordinator(null);
@@ -30,7 +32,7 @@ export default function GeneralCoordinatorCard() {
         setLoaded(true);
       }
     })();
-  }, []);
+  }, [eventId]);
 
   if (!loaded) return null;
 

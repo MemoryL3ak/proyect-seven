@@ -796,7 +796,14 @@ export class MobileAuthService {
    * WhatsApp al coordinador. Si hay mas de uno, manda el primero por nombre;
    * si no hay ninguno con telefono, null y el boton no se muestra.
    */
-  async findGeneralCoordinator(): Promise<{ name: string; phone: string } | null> {
+  /**
+   * Coordinador General del evento (28-09-2026): el panel guarda en
+   * user_metadata.eventIds los eventos de cada usuario (vacío = todos). Se
+   * prefiere al que tiene el evento anotado; si no hay, uno sin eventos.
+   */
+  async findGeneralCoordinator(
+    eventId?: string | null,
+  ): Promise<{ name: string; phone: string } | null> {
     const { data, error } = await this.supabase.auth.admin.listUsers({ perPage: 1000 });
     if (error) {
       this.logger.error('findGeneralCoordinator listUsers error', JSON.stringify(error));
@@ -810,10 +817,20 @@ export class MobileAuthService {
         const name = typeof meta.name === 'string' ? meta.name.trim() : '';
         const bannedUntil = (u as { banned_until?: string | null }).banned_until;
         const banned = bannedUntil ? new Date(bannedUntil).getTime() > now : false;
-        return { role: meta.role, phone, name: name || (u.email ?? '').split('@')[0], banned };
+        const eventos = Array.isArray(meta.eventIds)
+          ? meta.eventIds.filter((e): e is string => typeof e === 'string')
+          : [];
+        return { role: meta.role, phone, name: name || (u.email ?? '').split('@')[0], banned, eventos };
       })
       .filter((u) => u.role === 'Coordinador General' && u.phone && !u.banned)
-      .sort((a, b) => a.name.localeCompare(b.name));
+      .filter((u) => !eventId || u.eventos.length === 0 || u.eventos.includes(eventId))
+      // El que tiene el evento anotado va antes que el que vale para todos.
+      .sort(
+        (a, b) =>
+          Number(!!eventId && b.eventos.includes(eventId)) -
+            Number(!!eventId && a.eventos.includes(eventId)) ||
+          a.name.localeCompare(b.name),
+      );
     if (candidates.length === 0) return null;
     return { name: candidates[0].name, phone: candidates[0].phone };
   }

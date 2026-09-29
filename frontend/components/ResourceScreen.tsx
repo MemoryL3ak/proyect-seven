@@ -2294,7 +2294,7 @@ export default function ResourceScreen({
     try {
       const data = await apiFetch<Record<string, any>[]>("/food-locations");
       setFoodLocationOptions(
-        (data || []).map((lugar) => ({ label: lugar.name || lugar.id, value: lugar.id })),
+        (data || []).map((lugar) => ({ label: lugar.name || lugar.id, value: lugar.id, eventId: lugar.eventId ?? null })),
       );
     } catch {
       setFoodLocationOptions([]);
@@ -2796,7 +2796,9 @@ export default function ResourceScreen({
       }
       return venueOptions;
     }
-    if (source === "foodLocations") return foodLocationOptions;
+    // Comedores del evento elegido arriba (desde el 28-09-2026 guardan su evento).
+    if (source === "foodLocations")
+      return (foodLocationOptions as Array<Option & { eventId?: string | null }>).filter((o) => esDelEvento(eventoId, o.eventId));
     if (source === "vehicles") return vehicleOptions;
     if (source === "drivers") return driverOptions;
     if (source === "driverUsers") {

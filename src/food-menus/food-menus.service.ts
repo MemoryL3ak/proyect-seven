@@ -12,6 +12,7 @@ import { filasDe } from '../shared/filas-de';
 
 type FoodMenuRow = {
   id: string;
+  event_id: string | null;
   date: string;        // always "YYYY-MM-DD" thanks to to_char cast
   meal_type: string;
   title: string;
@@ -26,7 +27,7 @@ type FoodMenuRow = {
 };
 
 // Columns to select — date cast to text to avoid pg Date-object timezone issues
-const SELECT_COLS = `id, to_char(date, 'YYYY-MM-DD') as date, meal_type, title, description, dietary_type, accommodation_id, client_types, venue_id, location_detail, created_at, updated_at`;
+const SELECT_COLS = `id, event_id, to_char(date, 'YYYY-MM-DD') as date, meal_type, title, description, dietary_type, accommodation_id, client_types, venue_id, location_detail, created_at, updated_at`;
 
 @Injectable()
 export class FoodMenusService {
@@ -35,6 +36,7 @@ export class FoodMenusService {
   private toEntity(row: FoodMenuRow): FoodMenu {
     return {
       id: row.id,
+      eventId: row.event_id ?? undefined,
       date: row.date, // already "YYYY-MM-DD" from to_char
       mealType: row.meal_type,
       title: row.title,
@@ -53,8 +55,8 @@ export class FoodMenusService {
     try {
       const rows = (await this.dataSource.query(
         `
-        insert into logistics.food_menus (date, meal_type, title, description, dietary_type, accommodation_id, client_types, venue_id, location_detail)
-        values ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+        insert into logistics.food_menus (date, meal_type, title, description, dietary_type, accommodation_id, client_types, venue_id, location_detail, event_id)
+        values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         returning ${SELECT_COLS}
         `,
         [
@@ -67,6 +69,7 @@ export class FoodMenusService {
           dto.clientTypes ?? [],
           dto.venueId ?? null,
           dto.locationDetail ?? null,
+          dto.eventId ?? null,
         ],
       )) as FoodMenuRow[];
       return this.toEntity(rows[0]);
@@ -83,7 +86,7 @@ export class FoodMenusService {
    * generales sin hotel.
    */
   async findAll(
-    filters: { month?: string; accommodationId?: string },
+    filters: { month?: string; accommodationId?: string; eventId?: string | null },
     delegationId?: string | null,
   ) {
     try {
@@ -97,6 +100,11 @@ export class FoodMenusService {
       if (filters.accommodationId) {
         params.push(filters.accommodationId);
         conditions.push(`accommodation_id = $${params.length}`);
+      }
+      // Evento: los suyos y los que no tienen evento (se ven en todos).
+      if (filters.eventId) {
+        params.push(filters.eventId);
+        conditions.push(`(event_id is null or event_id = $${params.length}::uuid)`);
       }
       if (delegationId) {
         params.push(delegationId);
@@ -149,6 +157,7 @@ export class FoodMenusService {
     if (dto.venueId !== undefined) map.venue_id = dto.venueId ?? null;
     if (dto.locationDetail !== undefined)
       map.location_detail = dto.locationDetail ?? null;
+    if (dto.eventId !== undefined) map.event_id = dto.eventId || null;
 
     const keys = Object.keys(map);
     if (keys.length === 0) return this.findOne(id);

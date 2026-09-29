@@ -41,4 +41,9 @@ export class CreateFoodLocationDto {
   @IsString({ each: true })
   @IsOptional()
   disciplineIds?: string[];
+
+  /** Evento del menú o comedor (28-09-2026); sin evento se ve en todos. */
+  @IsString()
+  @IsOptional()
+  eventId?: string;
 }

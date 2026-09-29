@@ -12,6 +12,7 @@ import {
 import { FoodMenusService } from './food-menus.service';
 import type { ApiRequest } from '../auth/api-auth.guard';
 import { StaffScopeService } from '../auth/staff-scope.service';
+import { eventoValido } from '../shared/evento-conductores';
 import { CreateFoodMenuDto } from './dto/create-food-menu.dto';
 import { UpdateFoodMenuDto } from './dto/update-food-menu.dto';
 
@@ -32,9 +33,16 @@ export class FoodMenusController {
     @Req() req: ApiRequest,
     @Query('month') month?: string,
     @Query('accommodationId') accommodationId?: string,
+    @Query('eventId') eventId?: string,
   ) {
-    // Jefe de Misión: sólo los menús de los hoteles de su delegación.
-    return this.foodMenusService.findAll({ month, accommodationId }, await this.scope.delegationOf(req));
+    // Jefe de Misión: sólo los menús de los hoteles de su delegación. Quien
+    // entra por la app ve los de su evento; el panel, los del evento elegido.
+    const scope = await this.scope.forRequest(req);
+    const delPortal = await this.scope.eventoDelPortal(scope);
+    return this.foodMenusService.findAll(
+      { month, accommodationId, eventId: delPortal ?? eventoValido(eventId) },
+      scope?.delegationId ?? null,
+    );
   }
 
   @Get(':id')

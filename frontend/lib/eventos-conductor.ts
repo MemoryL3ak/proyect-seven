@@ -29,3 +29,42 @@ export function enEventosDelConductor(
   if (!filaEventId) return true;
   return eventos.includes(filaEventId);
 }
+
+/**
+ * Eventos entre los que elige un conductor que trabaja en más de uno
+ * (28-09-2026, pedido de Ariel: "en el caso de que se repita, que tenga un
+ * filtro de evento"). Los de su proveedor y los de sus viajes, sin repetir y
+ * en el orden en que aparecen. Con uno solo no hay nada que elegir.
+ */
+export function eventosParaFiltro(
+  eventosConductor: string[],
+  viajes: Array<{ eventId?: string | null }>,
+): string[] {
+  const vistos = new Set<string>();
+  const lista: string[] = [];
+  for (const id of [...eventosConductor, ...viajes.map((v) => v.eventId ?? "")]) {
+    if (!id || vistos.has(id)) continue;
+    vistos.add(id);
+    lista.push(id);
+  }
+  return lista;
+}
+
+/**
+ * ¿Se ve la fila con el evento elegido? Sin elegir ("") se ve lo de todos sus
+ * eventos, como hasta ahora. Una fila sin evento (documento general) se ve
+ * siempre.
+ */
+export function enEventoElegido(
+  elegido: string,
+  eventosConductor: string[],
+  filaEventId: string | null | undefined,
+): boolean {
+  if (!elegido) return enEventosDelConductor(eventosConductor, filaEventId);
+  return !filaEventId || filaEventId === elegido;
+}
+
+/** Sus viajes del evento elegido ("" = todos sus viajes). */
+export function viajesDelEventoElegido<T extends { eventId?: string | null }>(viajes: T[], elegido: string): T[] {
+  return elegido ? viajes.filter((v) => v.eventId === elegido) : viajes;
+}

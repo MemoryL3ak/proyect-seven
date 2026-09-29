@@ -1,5 +1,6 @@
 import { Protected, Public } from '../auth/public.decorator';
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { eventoValido } from '../shared/evento-conductores';
 import {
   MobileAuthService,
   MobileLoginResult,
@@ -75,7 +76,8 @@ export class MobileAuthController {
    */
   @Protected()
   @Get('coordinator')
-  coordinator() {
-    return this.mobileAuthService.findGeneralCoordinator();
+  coordinator(@Query('eventId') eventId?: string) {
+    // El coordinador del evento de quien pregunta (la app manda el suyo).
+    return this.mobileAuthService.findGeneralCoordinator(eventoValido(eventId));
   }
 }

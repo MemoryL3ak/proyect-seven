@@ -56,7 +56,13 @@ import {
   send as nativeSend,
 } from "@/lib/native-bridge";
 import PushTokenSync from "@/components/PushTokenSync";
-import { enEventosDelConductor, eventosDelConductor } from "@/lib/eventos-conductor";
+import {
+  enEventoElegido,
+  eventosDelConductor,
+  eventosParaFiltro,
+  viajesDelEventoElegido,
+} from "@/lib/eventos-conductor";
+import SelectorFiltro from "@/components/portal/SelectorFiltro";
 import { esSalida } from "@/lib/tramos-traslado";
 import { appYaRastrea, clasificarErrorUbicacionNativa } from "@/lib/ubicacion-conductor";
 import QRCode from "qrcode";
@@ -478,13 +484,30 @@ export default function DriverPortalPage() {
   // Sólo las sedes, hoteles y documentos de los eventos del conductor: el de
   // World Rugby veía los de los Juegos Escolares (28-09-2026).
   const eventosConductor = useMemo(() => eventosDelConductor(driverProfile), [driverProfile]);
+  // Filtro de evento para quien trabaja en más de uno (28-09-2026: "en el
+  // caso de que se repita, que tenga un filtro de evento"). "" = todos.
+  const [eventoElegido, setEventoElegido] = useState("");
+  const opcionesEvento = useMemo(() => eventosParaFiltro(eventosConductor, trips), [eventosConductor, trips]);
+  useEffect(() => {
+    try { setEventoElegido(localStorage.getItem("conductor_evento") ?? ""); } catch { /* sin almacenamiento */ }
+  }, []);
+  const elegirEvento = (id: string) => {
+    setEventoElegido(id);
+    try { localStorage.setItem("conductor_evento", id); } catch { /* sin almacenamiento */ }
+  };
+  // Un evento guardado que ya no es suyo no queda elegido.
+  useEffect(() => {
+    if (eventoElegido && opcionesEvento.length > 0 && !opcionesEvento.includes(eventoElegido)) setEventoElegido("");
+  }, [eventoElegido, opcionesEvento]);
+  /** Sus viajes del evento elegido: listas y contadores. El seguimiento usa todos. */
+  const tripsVista = useMemo(() => viajesDelEventoElegido(trips, eventoElegido), [trips, eventoElegido]);
   const misSedes = useMemo(
-    () => venues.filter((v) => enEventosDelConductor(eventosConductor, v.eventId)),
-    [venues, eventosConductor],
+    () => venues.filter((v) => enEventoElegido(eventoElegido, eventosConductor, v.eventId)),
+    [venues, eventosConductor, eventoElegido],
   );
   const misHoteles = useMemo(
-    () => accommodations.filter((h) => enEventosDelConductor(eventosConductor, h.eventId)),
-    [accommodations, eventosConductor],
+    () => accommodations.filter((h) => enEventoElegido(eventoElegido, eventosConductor, h.eventId)),
+    [accommodations, eventosConductor, eventoElegido],
   );
   const [locationPermission, setLocationPermission] = useState<"granted" | "prompt" | "denied" | null>(null);
   const markTripSeen = (tripId: string) => {
@@ -1591,10 +1614,10 @@ export default function DriverPortalPage() {
   };
 
   const typeOptions = Array.from(
-    new Set(trips.map((trip) => trip.tripType).filter(Boolean))
+    new Set(tripsVista.map((trip) => trip.tripType).filter(Boolean))
   ) as string[];
   const todayKey = chileDay();
-  const filteredTrips = trips.filter((trip) => {
+  const filteredTrips = tripsVista.filter((trip) => {
     const matchesType = typeFilter === "all" || trip.tripType === typeFilter;
     const destination = (trip.destination || "").toLowerCase();
     const matchesDestination =
@@ -2042,6 +2065,20 @@ export default function DriverPortalPage() {
 
           <div className="dc-content">
 
+            {/* Filtro de evento: sólo para quien trabaja en más de uno. */}
+            {opcionesEvento.length > 1 && (
+              <div style={{ marginBottom: 12 }}>
+                <SelectorFiltro
+                  rotulo={t("Evento")}
+                  titulo={t("Evento")}
+                  opciones={opcionesEvento.map((id) => ({ value: id, label: events[id]?.name || t("Evento") }))}
+                  etiquetaTodos={t("Todos mis eventos")}
+                  valor={eventoElegido}
+                  onChange={elegirEvento}
+                />
+              </div>
+            )}
+
             {/* ─── TAB: Actividades ─── */}
             {activeTab === "actividades" && (<>
 
@@ -2245,9 +2282,9 @@ export default function DriverPortalPage() {
               {/* Status filter tabs */}
               <div style={{ display:"flex",gap:4,marginBottom:12,background:SURFACE.borderMuted,borderRadius:10,padding:3 }}>
                 {([
-                  { key: "en_curso", label: "En curso", count: trips.filter((t) => t.status === "EN_ROUTE" || t.status === "PICKED_UP").length, unread: 0 },
-                  { key: "hoy", label: "Hoy", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "") && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length, unread: trips.filter((t) => t.status === "SCHEDULED" && !seenTripIds.has(t.id) && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length },
-                  { key: "todos", label: "Programados", count: trips.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "")).length, unread: trips.filter((t) => t.status === "SCHEDULED" && !seenTripIds.has(t.id)).length },
+                  { key: "en_curso", label: "En curso", count: tripsVista.filter((t) => t.status === "EN_ROUTE" || t.status === "PICKED_UP").length, unread: 0 },
+                  { key: "hoy", label: "Hoy", count: tripsVista.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "") && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length, unread: tripsVista.filter((t) => t.status === "SCHEDULED" && !seenTripIds.has(t.id) && ((t.scheduledAt || t.startedAt || "").slice(0,10) === todayKey || !(t.scheduledAt || t.startedAt))).length },
+                  { key: "todos", label: "Programados", count: tripsVista.filter((t) => ["SCHEDULED","EN_ROUTE","PICKED_UP"].includes(t.status ?? "")).length, unread: tripsVista.filter((t) => t.status === "SCHEDULED" && !seenTripIds.has(t.id)).length },
                 ]).map(({ key, label, count, unread }) => (
                   <button key={key} type="button" onClick={() => setStatusFilter(key)}
                     style={{
@@ -2590,7 +2627,7 @@ export default function DriverPortalPage() {
 
             {/* ─── TAB: Reportes ─── */}
             {activeTab === "reportes" && (() => {
-              const allCompleted = trips
+              const allCompleted = tripsVista
                 .filter((t) => t.status === "COMPLETED" || t.status === "DROPPED_OFF")
                 .sort((a, b) => new Date(b.completedAt || b.startedAt || 0).getTime() - new Date(a.completedAt || a.startedAt || 0).getTime());
 
@@ -2739,7 +2776,7 @@ export default function DriverPortalPage() {
                 <EventDocumentsSection
                   audience="CONDUCTOR"
                   eventId={(driverProfile as { eventId?: string | null }).eventId ?? null}
-                  eventIds={eventosConductor}
+                  eventIds={eventoElegido ? [eventoElegido] : eventosConductor}
                 />
 
                 {/* Documents section */}
@@ -3030,7 +3067,7 @@ export default function DriverPortalPage() {
               const flightById = new Map(flights.map(f => [f.id, f]));
               type PassengerFlight = FlightItem & { passengers: string[] };
               const byKey = new Map<string, PassengerFlight>();
-              trips
+              tripsVista
                 .filter(t => t.status !== "CANCELLED" && t.status !== "COMPLETED")
                 .forEach(trip => {
                   const passengerIds = new Set<string>([
@@ -3134,7 +3171,7 @@ export default function DriverPortalPage() {
                   {/* Salidas: el vuelo de cada Transfer Out del conductor, para
                       saber a qué vuelo lleva al pasajero (28-09-2026). */}
                   {(() => {
-                    const salidas = trips
+                    const salidas = tripsVista
                       .filter(tr => esSalida(tr) && !["CANCELLED", "COMPLETED", "DROPPED_OFF"].includes(tr.status || ""))
                       .map(tr => {
                         const meta = (tr.metadata ?? {}) as Record<string, unknown>;

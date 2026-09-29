@@ -14,6 +14,8 @@ type MealType = "DESAYUNO" | "ALMUERZO" | "CENA";
 
 type FoodMenu = {
   id: string;
+  /** Evento del menú (28-09-2026); sin evento se ve en todos. */
+  eventId?: string | null;
   date: string;
   mealType: MealType;
   title: string;
@@ -211,13 +213,15 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
     () => todasLasSedes.filter((v) => esDelEvento(eventoId, v.eventId)),
     [todasLasSedes, eventoId],
   );
-  // El menú no guarda evento: lo toma de su hotel y de su sede. Sin ninguno
-  // de los dos es general y se ve en todos los eventos.
+  // Menús del evento elegido arriba: el suyo (desde el 28-09-2026 el menú
+  // guarda su evento) y, por si acaso, el de su hotel y su sede. Sin evento
+  // es general y se ve en todos.
   const menus = useMemo(() => {
     const eventoDelHotel = new Map(todosLosHoteles.map((a) => [a.id, a.eventId]));
     const eventoDeLaSede = new Map(todasLasSedes.map((v) => [v.id, v.eventId]));
     return todosLosMenus.filter(
       (m) =>
+        esDelEvento(eventoId, m.eventId) &&
         (!m.accommodationId || esDelEvento(eventoId, eventoDelHotel.get(m.accommodationId))) &&
         (!m.venueId || esDelEvento(eventoId, eventoDeLaSede.get(m.venueId))),
     );
@@ -245,12 +249,13 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
     try {
       const params = new URLSearchParams({ month: monthStr });
       if (filterAccomm) params.set("accommodationId", filterAccomm);
+      if (eventoId) params.set("eventId", eventoId);
       const data = await apiFetch<FoodMenu[]>(`/food-menus?${params}`);
       setMenus((data ?? []).filter((m) => m.mealType === mealType));
     } finally {
       setLoading(false);
     }
-  }, [monthStr, filterAccomm, mealType]);
+  }, [monthStr, filterAccomm, mealType, eventoId]);
 
   useEffect(() => { loadMenus(); }, [loadMenus]);
   useEffect(() => { apiFetch<Accommodation[]>("/accommodations").then((d) => setAccommodations(d ?? [])).catch(() => setAccommodations([])); }, []);
@@ -310,6 +315,8 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
       clientTypes: panelForm.clientTypes,
       venueId: panelForm.venueId || undefined,
       locationDetail: panelForm.locationDetail.trim() || undefined,
+      // Uno nuevo queda en el evento elegido arriba; al editar no se mueve.
+      ...(!editingId && eventoId ? { eventId: eventoId } : {}),
     };
     try {
       if (editingId) {

@@ -1,5 +1,7 @@
 export class FoodMenu {
   id: string;
+  /** Evento del menú; sin evento se ve en todos. */
+  eventId?: string;
   date: string; // ISO date YYYY-MM-DD
   mealType: string; // DESAYUNO | ALMUERZO | CENA
   title: string;

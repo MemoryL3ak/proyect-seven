@@ -12,6 +12,7 @@ import { FoodLocation } from './entities/food-location.entity';
 
 type FoodLocationRow = {
   id: string;
+  event_id: string | null;
   accommodation_id: string | null;
   name: string;
   address: string | null;
@@ -35,6 +36,7 @@ export class FoodLocationsService {
   private toEntity(row: FoodLocationRow): FoodLocation {
     return {
       id: row.id,
+      eventId: row.event_id ?? undefined,
       accommodationId: row.accommodation_id ?? undefined,
       name: row.name,
       address: row.address ?? undefined,
@@ -53,8 +55,8 @@ export class FoodLocationsService {
       const rows = (await this.dataSource.query(
         `
         insert into logistics.food_locations
-          (accommodation_id, name, address, description, capacity, client_types, delegation_ids, discipline_ids)
-        values ($1, $2, $3, $4, $5, $6, $7::uuid[], $8::uuid[])
+          (accommodation_id, name, address, description, capacity, client_types, delegation_ids, discipline_ids, event_id)
+        values ($1, $2, $3, $4, $5, $6, $7::uuid[], $8::uuid[], $9)
         returning *
         `,
         [
@@ -66,6 +68,7 @@ export class FoodLocationsService {
           dto.clientTypes ?? [],
           dto.delegationIds ?? [],
           dto.disciplineIds ?? [],
+          dto.eventId ?? null,
         ],
       )) as FoodLocationRow[];
       return this.toEntity(rows[0]);
@@ -81,15 +84,17 @@ export class FoodLocationsService {
    * delegación (vínculo explícito o donde se alojan sus participantes) y los
    * puntos generales sin hotel.
    */
-  async findAll(delegationId?: string | null) {
+  async findAll(delegationId?: string | null, eventId?: string | null) {
     try {
+      // Evento: los suyos y los que no tienen evento (se ven en todos).
       const rows = await this.dataSource.query<FoodLocationRow[]>(
         `select * from logistics.food_locations
          where ($1::uuid is null
                 or accommodation_id is null
                 or accommodation_id in ${delegationHotelsSql('$1')})
+           and ($2::uuid is null or event_id is null or event_id = $2::uuid)
          order by created_at desc`,
-        [delegationId ?? null],
+        [delegationId ?? null, eventId ?? null],
       );
       return rows.map((r) => this.toEntity(r));
     } catch (error) {
@@ -125,6 +130,7 @@ export class FoodLocationsService {
     if (dto.clientTypes !== undefined) map.client_types = dto.clientTypes;
     if (dto.delegationIds !== undefined) map.delegation_ids = dto.delegationIds;
     if (dto.disciplineIds !== undefined) map.discipline_ids = dto.disciplineIds;
+    if (dto.eventId !== undefined) map.event_id = dto.eventId || null;
 
     const keys = Object.keys(map);
     if (keys.length === 0) return this.findOne(id);
