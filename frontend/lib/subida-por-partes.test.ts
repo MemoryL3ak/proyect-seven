@@ -70,5 +70,8 @@ describe("subir por partes", () => {
     expect(portal).toContain("/document-part`");
     expect(portal).toContain("await subirPorPartes<any>(dataUrl,");
     expect(portal).toContain("{ alAvanzar: setProgresoDoc }");
+    // si el servidor todavía no tiene la ruta por partes, sube entero
+    expect(portal).toContain("?.status !== 404) throw err;");
+    expect(portal).toContain("apiFetch<any>(`${base}/document`, {");
   });
 });

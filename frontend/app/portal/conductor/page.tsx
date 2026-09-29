@@ -2769,9 +2769,10 @@ export default function DriverPortalPage() {
                                   // 512 KB: un corte de señal repite sólo esa
                                   // parte, no el archivo entero ("Load failed").
                                   const dataUrl = await prepararDocumento(file);
-                                  const endpoint = driverProfile._isParticipant
-                                    ? `/provider-participants/${driverProfile.id}/document-part`
-                                    : `/drivers/${driverProfile.id}/document-part`;
+                                  const base = driverProfile._isParticipant
+                                    ? `/provider-participants/${driverProfile.id}`
+                                    : `/drivers/${driverProfile.id}`;
+                                  const endpoint = `${base}/document-part`;
                                   const result = await subirPorPartes<any>(dataUrl, async (parte) => {
                                     const corte = new AbortController();
                                     const reloj = setTimeout(() => corte.abort(), 60_000);
@@ -2782,7 +2783,15 @@ export default function DriverPortalPage() {
                                         signal: corte.signal,
                                       });
                                     } finally { clearTimeout(reloj); }
-                                  }, { alAvanzar: setProgresoDoc });
+                                  }, { alAvanzar: setProgresoDoc }).catch((err) => {
+                                    // Servidor sin la ruta por partes (un despliegue
+                                    // a medias): se sube entero, como antes.
+                                    if ((err as { status?: number })?.status !== 404) throw err;
+                                    return apiFetch<any>(`${base}/document`, {
+                                      method: "POST", headers: { "Content-Type": "application/json" },
+                                      body: JSON.stringify({ key: doc.key, dataUrl }),
+                                    });
+                                  });
                                   const newUrl = result?.metadata?.[doc.key] ?? `uploaded_${Date.now()}`;
                                   setDriverProfile((prev) => prev ? { ...prev, metadata: { ...(prev.metadata || {}), [doc.key]: newUrl } } : prev);
                                   driverNotify.push(`${doc.label} cargado`, "doc");
