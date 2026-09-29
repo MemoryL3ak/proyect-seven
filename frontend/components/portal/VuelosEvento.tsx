@@ -13,7 +13,16 @@ import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { fechaCortaEvento, horaEvento } from "@/lib/hora-evento";
 import { useI18n } from "@/lib/i18n";
 import { nombrePropio } from "@/lib/nombres";
-import { agruparVuelos, type EstadoTraslado, type PasajeroVuelo, soloProximos } from "@/lib/vuelos-evento";
+import SelectorFiltro from "@/components/portal/SelectorFiltro";
+import {
+  agruparVuelos,
+  conductoresDeVuelos,
+  type EstadoTraslado,
+  filtrarVuelos,
+  type PasajeroVuelo,
+  SIN_CONDUCTOR_APP,
+  soloProximos,
+} from "@/lib/vuelos-evento";
 
 const REFRESCO_MS = 60_000;
 
@@ -32,6 +41,9 @@ export default function VuelosEvento({ eventId }: { eventId?: string | null }) {
   const [sentido, setSentido] = useState<"LLEGADA" | "SALIDA">("LLEGADA");
   const [alcance, setAlcance] = useState<"proximos" | "todos">("proximos");
   const [ahora, setAhora] = useState(() => new Date());
+  // Filtros de traslado y conductor, igual que los monitores del panel.
+  const [filtroTraslado, setFiltroTraslado] = useState<EstadoTraslado | "">("");
+  const [filtroConductor, setFiltroConductor] = useState("");
 
   const cargar = async () => {
     try {
@@ -53,10 +65,15 @@ export default function VuelosEvento({ eventId }: { eventId?: string | null }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [eventId]);
 
-  const grupos = useMemo(() => {
+  const gruposSinFiltro = useMemo(() => {
     const todos = agruparVuelos(filas, sentido, ahora);
     return alcance === "proximos" ? soloProximos(todos, ahora) : todos;
   }, [filas, sentido, alcance, ahora]);
+  const opcionesConductor = useMemo(() => conductoresDeVuelos(gruposSinFiltro), [gruposSinFiltro]);
+  const grupos = useMemo(
+    () => filtrarVuelos(gruposSinFiltro, { traslado: filtroTraslado, conductor: filtroConductor }),
+    [gruposSinFiltro, filtroTraslado, filtroConductor],
+  );
 
   const etiquetaEstado = (estado: string) =>
     sentido === "SALIDA"
@@ -81,6 +98,22 @@ export default function VuelosEvento({ eventId }: { eventId?: string | null }) {
         </button>
       </div>
 
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        <SelectorFiltro
+          rotulo={t("Traslado")}
+          opciones={(Object.keys(TRASLADO) as EstadoTraslado[]).map((e) => ({ value: e, label: t(TRASLADO[e].label) }))}
+          etiquetaTodos={t("Todos")}
+          valor={filtroTraslado}
+          onChange={(v) => setFiltroTraslado(v as EstadoTraslado | "")}
+        />
+        <SelectorFiltro
+          rotulo={t("Conductor")}
+          opciones={[{ value: SIN_CONDUCTOR_APP, label: t("Sin conductor") }, ...opcionesConductor]}
+          etiquetaTodos={t("Todos")}
+          valor={filtroConductor}
+          onChange={setFiltroConductor}
+        />
+      </div>
       {cargando && <p style={{ fontSize: 13, color: SURFACE.textFaint, textAlign: "center", padding: 20 }}>{t("Cargando vuelos…")}</p>}
       {error && <p role="alert" style={{ fontSize: 13, color: STATE.dangerText, textAlign: "center", padding: 12 }}>{error}</p>}
       {!cargando && !error && grupos.length === 0 && (
@@ -119,7 +152,18 @@ export default function VuelosEvento({ eventId }: { eventId?: string | null }) {
                   <span style={{ flex: 1, minWidth: 0, fontWeight: 600, color: SURFACE.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {nombrePropio(p.nombre)}
                     {p.pais && <span style={{ marginLeft: 6, fontSize: 10, fontWeight: 700, color: SURFACE.textMuted }}>{p.pais}</span>}
-                    {p.conductor && <span style={{ display: "block", fontSize: 11, fontWeight: 400, color: SURFACE.textMuted }}>{t("Conductor")}: {nombrePropio(p.conductor)}</span>}
+                    {p.conductor && (
+                      <span style={{ display: "block", fontSize: 11, fontWeight: 400, color: SURFACE.textMuted, whiteSpace: "normal" }}>
+                        {t("Conductor")}: {nombrePropio(p.conductor)}
+                        {p.telefono && (
+                          <>
+                            {" · "}
+                            <a href={`tel:${p.telefono.replace(/[^\d+]/g, "")}`} style={{ color: BRAND.tealInk, fontWeight: 600 }}>{p.telefono}</a>
+                          </>
+                        )}
+                        {p.patente ? ` · ${p.patente}` : ""}
+                      </span>
+                    )}
                   </span>
                   <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 99, background: tono.bg, color: tono.color }}>
                     {t(tono.label)}

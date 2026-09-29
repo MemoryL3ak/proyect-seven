@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { agruparVuelos, estadoTraslado, soloProximos, type PasajeroVuelo } from "./vuelos-evento";
+import { agruparVuelos, conductoresDeVuelos, estadoTraslado, filtrarVuelos, SIN_CONDUCTOR_APP, soloProximos, type PasajeroVuelo } from "./vuelos-evento";
 
 /** Lo que devolvía /flights/evento para World Rugby el 28-09-2026. */
 const base: PasajeroVuelo = {
@@ -59,5 +59,34 @@ describe("vuelos del evento (app del Coordinador de Sede)", () => {
     expect(estadoTraslado(null)).toBe("SIN_TRASLADO");
     expect(estadoTraslado("PICKED_UP")).toBe("EN_CURSO");
     expect(estadoTraslado("SCHEDULED")).toBe("PENDIENTE");
+  });
+});
+
+/**
+ * 28-09-2026: "crear filtros en ambos vuelos, y que nos aparezca en cada
+ * vuelo la información del conductor". La app trae el teléfono y la patente
+ * del conductor y filtra por traslado y conductor, como el panel.
+ */
+describe("vuelos de la app: conductor y filtros", () => {
+  const GINZO_CON_DATOS: PasajeroVuelo = {
+    ...GINZO,
+    conductor_llegada_id: "carlos",
+    telefono_conductor_llegada: "+56998241782",
+    patente_llegada: "TRSB84",
+  };
+
+  it("cada pasajero trae el teléfono y la patente de su conductor", () => {
+    const [grupo] = agruparVuelos([GINZO_CON_DATOS], "LLEGADA", AHORA);
+    expect(grupo.pasajeros[0]).toMatchObject({ conductorId: "carlos", telefono: "+56998241782", patente: "TRSB84" });
+  });
+
+  it("filtra por conductor y por estado del traslado", () => {
+    const grupos = agruparVuelos([SERGIO, GINZO_CON_DATOS, COMPANERO], "LLEGADA", AHORA);
+    expect(conductoresDeVuelos(grupos)).toEqual([{ value: "carlos", label: "Carlos marcelo Hernández sepulveda" }]);
+    expect(filtrarVuelos(grupos, { conductor: "carlos" }).map((g) => g.vuelo)).toEqual(["H2 1811"]);
+    // Sergio y su compañero tienen traslado sin conductor.
+    expect(filtrarVuelos(grupos, { conductor: SIN_CONDUCTOR_APP }).flatMap((g) => g.pasajeros.map((p) => p.id)).sort()).toEqual(["otro", "sergio"]);
+    expect(filtrarVuelos(grupos, { traslado: "PENDIENTE" }).flatMap((g) => g.pasajeros.map((p) => p.id))).toEqual(["otro"]);
+    expect(filtrarVuelos(grupos, {})).toBe(grupos);
   });
 });

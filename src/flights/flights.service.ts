@@ -146,7 +146,8 @@ export class FlightsService {
 
   /**
    * Pasajeros validados del evento con su vuelo de llegada y de salida, y el
-   * traslado de AND de cada tramo (estado y conductor). La app agrupa por
+   * traslado de AND de cada tramo (estado y conductor con su teléfono y
+   * patente, 28-09-2026). La app agrupa por
    * vuelo. Mismo criterio que los monitores del panel: sólo fichas validadas.
    */
   async vuelosDelEvento(eventId: string) {
@@ -167,14 +168,23 @@ export class FlightsService {
               a.departure_time as hora_salida,
               tl.status as traslado_llegada,
               tl.conductor as conductor_llegada,
+              tl.driver_id as conductor_llegada_id,
+              tl.telefono as telefono_conductor_llegada,
+              tl.patente as patente_llegada,
               ts.status as traslado_salida,
               ts.conductor as conductor_salida,
+              ts.driver_id as conductor_salida_id,
+              ts.telefono as telefono_conductor_salida,
+              ts.patente as patente_salida,
               ts.scheduled_at as recogida_salida
          from core.athletes a
          left join core.delegations d on d.id = a.delegation_id
          left join transport.flights f on f.id = a.arrival_flight_id
          left join lateral (
-           select t.status, t.scheduled_at, coalesce(pp.full_name, dr.full_name) as conductor
+           select t.status, t.scheduled_at, t.driver_id,
+                  coalesce(pp.full_name, dr.full_name) as conductor,
+                  coalesce(pp.phone, dr.phone) as telefono,
+                  upper(coalesce(nullif(t.metadata->>'andPatente', ''), nullif(pp.metadata->>'vehiclePatente', ''))) as patente
              from transport.trips t
              left join core.provider_participants pp on pp.id = t.driver_id
              left join transport.drivers dr on dr.id = t.driver_id
@@ -182,7 +192,10 @@ export class FlightsService {
             order by t.created_at desc limit 1
          ) tl on true
          left join lateral (
-           select t.status, t.scheduled_at, coalesce(pp.full_name, dr.full_name) as conductor
+           select t.status, t.scheduled_at, t.driver_id,
+                  coalesce(pp.full_name, dr.full_name) as conductor,
+                  coalesce(pp.phone, dr.phone) as telefono,
+                  upper(coalesce(nullif(t.metadata->>'andPatente', ''), nullif(pp.metadata->>'vehiclePatente', ''))) as patente
              from transport.trips t
              left join core.provider_participants pp on pp.id = t.driver_id
              left join transport.drivers dr on dr.id = t.driver_id

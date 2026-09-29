@@ -27,6 +27,19 @@ import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { filterValidatedAthletes } from "@/lib/athletes";
+import StyledSelect from "@/components/StyledSelect";
+import { claveDiaEvento, etiquetaDiaEvento } from "@/lib/hora-evento";
+import { nombreDePais } from "@/lib/paises";
+import {
+  conductoresDeViajes,
+  cumpleFiltroConductor,
+  cumpleFiltroTraslado,
+  diasConVuelos,
+  OPCIONES_FILTRO_TRASLADO,
+  opcionesFiltroConductor,
+  SIN_CONDUCTOR,
+  type FiltroTraslado,
+} from "@/lib/conductor-del-traslado";
 
 type Flight = {
   id: string;
@@ -52,7 +65,7 @@ type AthleteItem = {
   metadata?: Record<string, unknown> | null;
 };
 
-type ConductorItem = { id: string; fullName?: string | null; eventIds?: string[] | null; eventId?: string | null };
+type ConductorItem = { id: string; fullName?: string | null; phone?: string | null; metadata?: Record<string, unknown> | null; eventIds?: string[] | null; eventId?: string | null };
 
 type TripItem = {
   id: string;
@@ -222,6 +235,9 @@ export default function FlightsPage() {
   const [filterDate, setFilterDate] = useState("");
   const [filterDelegation, setFilterDelegation] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
+  // Traslado (pendiente, en curso, realizado) y su conductor (28-09-2026).
+  const [filterTraslado, setFilterTraslado] = useState<FiltroTraslado>("");
+  const [filterConductor, setFilterConductor] = useState("");
   const [expandedFlightId, setExpandedFlightId] = useState<string | null>(null);
   // Nombres de conductores para la línea de tiempo de cada traslado.
   const [conductores, setConductores] = useState<Record<string, string>>({});
@@ -360,10 +376,7 @@ export default function FlightsPage() {
         const q = searchQuery.toLowerCase();
         if (!f.flightNumber.toLowerCase().includes(q) && !f.airline.toLowerCase().includes(q) && !f.origin.toLowerCase().includes(q)) return false;
       }
-      if (filterDate) {
-        const flightDay = f.arrivalTime ? new Date(f.arrivalTime).toISOString().slice(0, 10) : "";
-        if (flightDay !== filterDate) return false;
-      }
+      if (filterDate && claveDiaEvento(f.arrivalTime) !== filterDate) return false;
       return true;
     }),
     [flights, selectedEventId, searchQuery, filterDate]
@@ -406,13 +419,29 @@ export default function FlightsPage() {
       trasladosDelVuelo(flight, passengers.map((p) => p.id), transferInTrips).map((v) => v.status),
     );
 
-  // Apply status filter
+  // Estado del vuelo, del traslado y conductor.
   const finalFlights = useMemo(() => {
-    if (!filterStatus) return displayFlights;
-    const buscado = filterStatus === "arrived" ? "ARRIBADO" : filterStatus === "today" ? "HOY" : "PROGRAMADO";
-    return displayFlights.filter(({ flight, passengers }) => estadoDelVuelo(flight, passengers) === buscado);
+    const buscado = filterStatus === "arrived" ? "ARRIBADO" : filterStatus === "today" ? "HOY" : filterStatus ? "PROGRAMADO" : "";
+    return displayFlights.filter(({ flight, passengers }) => {
+      if (buscado && estadoDelVuelo(flight, passengers) !== buscado) return false;
+      const traslados = trasladosDelVuelo(flight, passengers.map((p) => p.id), transferInTrips);
+      return cumpleFiltroTraslado(traslados, filterTraslado) && cumpleFiltroConductor(traslados, filterConductor);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displayFlights, filterStatus, transferInTrips, ahora]);
+  }, [displayFlights, filterStatus, filterTraslado, filterConductor, transferInTrips, ahora]);
+
+  /** Fichas de conductor (nombre, teléfono, patente) por id. */
+  const conductoresPorId = useMemo(() => new Map(listaConductores.map((c) => [c.id, c])), [listaConductores]);
+  // Opciones de los filtros: los días con vuelos y los conductores de las
+  // llegadas del evento elegido.
+  const diasFiltro = useMemo(
+    () => diasConVuelos(flights.filter((f) => !selectedEventId || f.eventId === selectedEventId).map((f) => f.arrivalTime)),
+    [flights, selectedEventId],
+  );
+  const conductoresFiltro = useMemo(
+    () => opcionesFiltroConductor(transferInTrips.filter((v) => !selectedEventId || v.eventId === selectedEventId), conductoresPorId),
+    [transferInTrips, selectedEventId, conductoresPorId],
+  );
 
   const athleteById = useMemo(() => athletes.reduce<Record<string, AthleteItem>>((acc, a) => { acc[a.id] = a; return acc; }, {}), [athletes]);
 
@@ -428,13 +457,11 @@ export default function FlightsPage() {
           const haystack = [requester?.fullName, t.destination, t.origin, flight, t.clientType].filter(Boolean).join(" ").toLowerCase();
           if (!haystack.includes(q)) return false;
         }
-        if (filterDate) {
-          const day = t.scheduledAt ? new Date(t.scheduledAt).toISOString().slice(0, 10) : "";
-          if (day !== filterDate) return false;
-        }
+        if (filterDate && claveDiaEvento(t.scheduledAt) !== filterDate) return false;
         if (filterDelegation) {
           if (!requester || requester.delegationId !== filterDelegation) return false;
         }
+        if (!cumpleFiltroTraslado([t], filterTraslado) || !cumpleFiltroConductor([t], filterConductor)) return false;
         return true;
       })
       .sort((a, b) => {
@@ -442,7 +469,7 @@ export default function FlightsPage() {
         const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Number.MAX_SAFE_INTEGER;
         return ta - tb;
       }),
-    [transferInTrips, selectedEventId, searchQuery, filterDate, filterDelegation, athleteById]
+    [transferInTrips, selectedEventId, searchQuery, filterDate, filterDelegation, filterTraslado, filterConductor, athleteById]
   );
 
   const lookupAirline = async (flightNum: string) => {
@@ -529,7 +556,7 @@ export default function FlightsPage() {
     textPrimary: SURFACE.text, textMuted: SURFACE.textMuted, labelColor: SURFACE.textFaint,
   };
 
-  const activeFilters = [searchQuery, filterDate, filterDelegation, filterStatus].filter(Boolean).length;
+  const activeFilters = [searchQuery, filterDate, filterDelegation, filterStatus, filterTraslado, filterConductor].filter(Boolean).length;
 
   const getFlightStatus = (estado: EstadoVuelo) => {
     if (estado === "ARRIBADO") return { label: "Arribado", color: SURFACE.textMuted, bg: "rgba(100,116,139,0.08)" };
@@ -717,22 +744,40 @@ export default function FlightsPage() {
           <SearchIcon size={14} color={SURFACE.textFaint} strokeWidth={2} style={{ position: "absolute", left: "10px", top: "50%", transform: "translateY(-50%)", pointerEvents: "none" }} />
           <input className="input" style={{ paddingLeft: "32px", borderRadius: "10px", width: "100%" }} placeholder={t("Buscar vuelo, aerolínea u origen...")} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} />
         </div>
-        {/* En teléfono los filtros se reparten de a dos por fila en vez de anchos fijos. */}
-        <input className="input" type="date" style={{ borderRadius: "10px", width: isMobile ? "auto" : "160px", flex: isMobile ? "1 1 140px" : undefined }} value={filterDate} onChange={e => setFilterDate(e.target.value)} />
-        <select className="input" style={{ borderRadius: "10px", width: isMobile ? "auto" : "160px", flex: isMobile ? "1 1 140px" : undefined }} value={filterDelegation} onChange={e => setFilterDelegation(e.target.value)}>
-          <option value="">{t("Delegación")}</option>
-          {delegations.filter(d => selectedEventId ? d.eventId === selectedEventId : true).map(d => (
-            <option key={d.id} value={d.id}>{d.countryCode || d.id}</option>
+        {/* Filtros con el selector del panel (StyledSelect), nunca el <select>
+            nativo. En teléfono se reparten de a dos por fila. */}
+        <StyledSelect wrapperStyle={{ flex: isMobile ? "1 1 140px" : "0 1 190px", width: "auto" }} value={filterDate} onChange={e => setFilterDate(e.target.value)}>
+          <option value="">{t("Todos los días")}</option>
+          {diasFiltro.map(d => (
+            <option key={d.dia} value={d.dia}>{`${etiquetaDiaEvento(d.dia)} (${d.cantidad})`}</option>
           ))}
-        </select>
-        <select className="input" style={{ borderRadius: "10px", width: isMobile ? "auto" : "140px", flex: isMobile ? "1 1 140px" : undefined }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
-          <option value="">{t("Estado")}</option>
+        </StyledSelect>
+        <StyledSelect wrapperStyle={{ flex: isMobile ? "1 1 140px" : "0 1 190px", width: "auto" }} value={filterDelegation} onChange={e => setFilterDelegation(e.target.value)}>
+          <option value="">{t("Todas las delegaciones")}</option>
+          {delegations.filter(d => selectedEventId ? d.eventId === selectedEventId : true).map(d => (
+            <option key={d.id} value={d.id}>{d.countryCode ? `${nombreDePais(d.countryCode)} (${d.countryCode})` : d.id}</option>
+          ))}
+        </StyledSelect>
+        <StyledSelect wrapperStyle={{ flex: isMobile ? "1 1 140px" : "0 1 160px", width: "auto" }} value={filterStatus} onChange={e => setFilterStatus(e.target.value)}>
+          <option value="">{t("Vuelo: todos")}</option>
           <option value="arrived">{t("Arribado")}</option>
           <option value="today">{t("Hoy")}</option>
           <option value="upcoming">{t("Programado")}</option>
-        </select>
+        </StyledSelect>
+        <StyledSelect wrapperStyle={{ flex: isMobile ? "1 1 140px" : "0 1 170px", width: "auto" }} value={filterTraslado} onChange={e => setFilterTraslado(e.target.value as FiltroTraslado)}>
+          {OPCIONES_FILTRO_TRASLADO.map(o => (
+            <option key={o.value} value={o.value}>{t(o.label)}</option>
+          ))}
+        </StyledSelect>
+        <StyledSelect wrapperStyle={{ flex: isMobile ? "1 1 140px" : "0 1 220px", width: "auto" }} value={filterConductor} onChange={e => setFilterConductor(e.target.value)}>
+          <option value="">{t("Todos los conductores")}</option>
+          {conductoresFiltro.haySinConductor && <option value={SIN_CONDUCTOR}>{t("Sin conductor")}</option>}
+          {conductoresFiltro.opciones.map(c => (
+            <option key={c.id} value={c.id}>{c.nombre}</option>
+          ))}
+        </StyledSelect>
         {activeFilters > 0 && (
-          <button onClick={() => { setSearchQuery(""); setFilterDate(""); setFilterDelegation(""); setFilterStatus(""); }}
+          <button onClick={() => { setSearchQuery(""); setFilterDate(""); setFilterDelegation(""); setFilterStatus(""); setFilterTraslado(""); setFilterConductor(""); }}
             style={{ fontSize: "11px", color: STATE.danger, fontWeight: 600, border: "none", background: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: "4px" }}>
             <XIcon size={12} strokeWidth={2} />
             {t("Limpiar")} ({activeFilters})
@@ -758,10 +803,10 @@ export default function FlightsPage() {
           {/* overflow hidden del card recortaba columnas en móvil: la tabla
               scrollea horizontal dentro de su propio contenedor. */}
           <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
-          <table style={{ width: "100%", minWidth: "940px", borderCollapse: "collapse", fontSize: "13px" }}>
+          <table style={{ width: "100%", minWidth: "1120px", borderCollapse: "collapse", fontSize: "13px" }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: SURFACE.bg }}>
-                {["", "Vuelo", "Aerolínea", "Ruta", "Llegada", "Estado", "Delegaciones", "Pax", "Traslado", "Acciones"].map(h => (
+                {["", "Vuelo", "Aerolínea", "Ruta", "Llegada", "Estado", "Delegaciones", "Pax", "Traslado", "Conductor", "Acciones"].map(h => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: "9px", fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: pal.labelColor }}>{h ? t(h) : h}</th>
                 ))}
               </tr>
@@ -776,6 +821,8 @@ export default function FlightsPage() {
                 const resumen = resumenTraslados(traslados);
                 const todosRealizados = resumen.estado === "REALIZADO";
                 const claveMarcar = traslados.map((v) => v.id).join(",");
+                const choferes = conductoresDeViajes(traslados, conductoresPorId);
+                const sinAsignar = traslados.filter((v) => !v.driverId).length;
                 return (
                   <>
                   <tr key={flight.id} style={{ borderBottom: isExpanded ? "none" : `1px solid ${SURFACE.borderMuted}`, cursor: "pointer", transition: "background 0.1s" }}
@@ -866,6 +913,30 @@ export default function FlightsPage() {
                         </div>
                       )}
                     </td>
+                    {/* Conductor del traslado: nombre, teléfono y patente. */}
+                    <td style={{ padding: "10px 14px", minWidth: "170px" }} onClick={e => e.stopPropagation()}>
+                      {traslados.length === 0 ? (
+                        <span style={{ fontSize: "10px", color: SURFACE.borderStrong }}>—</span>
+                      ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+                          {choferes.slice(0, 2).map(c => (
+                            <div key={c.id} style={{ lineHeight: 1.25 }}>
+                              <div style={{ fontSize: "12px", fontWeight: 700, color: pal.textPrimary }}>{c.nombre}</div>
+                              <div style={{ fontSize: "10.5px", color: pal.textMuted }}>
+                                {c.telefono ? <a href={`tel:${c.telefono.replace(/[^\d+]/g, "")}`} style={{ color: "inherit" }}>{c.telefono}</a> : t("Sin teléfono")}
+                                {c.patente ? ` · ${c.patente}` : ""}
+                              </div>
+                            </div>
+                          ))}
+                          {choferes.length > 2 && <span style={{ fontSize: "10px", color: pal.labelColor }}>+{choferes.length - 2} {t("más")}</span>}
+                          {sinAsignar > 0 && (
+                            <span style={{ fontSize: "10px", fontWeight: 700, color: STATE.warningText }}>
+                              {sinAsignar === traslados.length ? t("Sin conductor") : `${sinAsignar} ${t("sin conductor")}`}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </td>
                     <td style={{ padding: "10px 14px" }} onClick={e => e.stopPropagation()}>
                       <div style={{ display: "flex", gap: "5px" }}>
                         <button onClick={() => openTrack(flight)} style={{ padding: "5px 12px", borderRadius: "8px", border: "none", background: `linear-gradient(135deg,${BRAND.teal},#14AE98)`, color: SURFACE.card, fontSize: "11px", fontWeight: 600, cursor: "pointer" }}>{t("Rastrear")}</button>
@@ -878,7 +949,7 @@ export default function FlightsPage() {
                   {/* Expanded detail row */}
                   {isExpanded && (
                     <tr key={`${flight.id}-detail`}>
-                      <td colSpan={10} style={{ padding: "0 14px 14px", background: SURFACE.bg, borderBottom: `1px solid ${SURFACE.border}` }}>
+                      <td colSpan={11} style={{ padding: "0 14px 14px", background: SURFACE.bg, borderBottom: `1px solid ${SURFACE.border}` }}>
                         {/* En teléfono el detalle se apila y queda pegado (sticky) al borde
                             izquierdo del scroll horizontal: así se lee sin desplazar la
                             tabla de 820 px. */}

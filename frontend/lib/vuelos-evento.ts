@@ -20,8 +20,15 @@ export type PasajeroVuelo = {
   hora_salida: string | null;
   traslado_llegada: string | null;
   conductor_llegada: string | null;
+  /** Id, teléfono y patente del conductor de cada tramo (28-09-2026). */
+  conductor_llegada_id?: string | null;
+  telefono_conductor_llegada?: string | null;
+  patente_llegada?: string | null;
   traslado_salida: string | null;
   conductor_salida: string | null;
+  conductor_salida_id?: string | null;
+  telefono_conductor_salida?: string | null;
+  patente_salida?: string | null;
   recogida_salida: string | null;
 };
 
@@ -44,7 +51,18 @@ export type GrupoVuelo = {
   /** Recogida en el hotel (salidas). */
   recogida: string | null;
   estado: EstadoVuelo;
-  pasajeros: Array<{ id: string; nombre: string; pais: string | null; traslado: EstadoTraslado; conductor: string | null }>;
+  pasajeros: PasajeroDelVuelo[];
+};
+
+export type PasajeroDelVuelo = {
+  id: string;
+  nombre: string;
+  pais: string | null;
+  traslado: EstadoTraslado;
+  conductor: string | null;
+  conductorId: string | null;
+  telefono: string | null;
+  patente: string | null;
 };
 
 const norm = (v: string) => v.replace(/\s+/g, "").toUpperCase();
@@ -79,6 +97,9 @@ export function agruparVuelos(filas: PasajeroVuelo[], sentido: "LLEGADA" | "SALI
       pais: f.pais,
       traslado: estadoTraslado(status),
       conductor: (llegada ? f.conductor_llegada : f.conductor_salida) || null,
+      conductorId: (llegada ? f.conductor_llegada_id : f.conductor_salida_id) || null,
+      telefono: (llegada ? f.telefono_conductor_llegada : f.telefono_conductor_salida) || null,
+      patente: (llegada ? f.patente_llegada : f.patente_salida) || null,
     });
   }
   const lista = [...grupos.values()];
@@ -89,6 +110,38 @@ export function agruparVuelos(filas: PasajeroVuelo[], sentido: "LLEGADA" | "SALI
     g.estado = estadoVuelo(g.hora, ahora, estados);
   }
   return lista.sort((a, b) => new Date(a.hora).getTime() - new Date(b.hora).getTime());
+}
+
+/** Valor del filtro de conductor para los pasajeros sin conductor asignado. */
+export const SIN_CONDUCTOR_APP = "__sin_conductor__";
+
+/**
+ * Filtros de la pestaña Vuelos (28-09-2026): estado del traslado y
+ * conductor. Un vuelo queda con los pasajeros que cumplen; sin ninguno, sale.
+ */
+export function filtrarVuelos(
+  grupos: GrupoVuelo[],
+  filtros: { traslado?: EstadoTraslado | ""; conductor?: string },
+): GrupoVuelo[] {
+  const cumple = (p: PasajeroDelVuelo) => {
+    if (filtros.traslado && p.traslado !== filtros.traslado) return false;
+    if (filtros.conductor === SIN_CONDUCTOR_APP) return p.traslado !== "SIN_TRASLADO" && !p.conductorId;
+    if (filtros.conductor && p.conductorId !== filtros.conductor) return false;
+    return true;
+  };
+  if (!filtros.traslado && !filtros.conductor) return grupos;
+  return grupos
+    .map((g) => ({ ...g, pasajeros: g.pasajeros.filter(cumple) }))
+    .filter((g) => g.pasajeros.length > 0);
+}
+
+/** Conductores de los vuelos a la vista, para el filtro, por nombre. */
+export function conductoresDeVuelos(grupos: GrupoVuelo[]): Array<{ value: string; label: string }> {
+  const porId = new Map<string, string>();
+  for (const g of grupos) for (const p of g.pasajeros) if (p.conductorId && p.conductor) porId.set(p.conductorId, p.conductor);
+  return [...porId.entries()]
+    .map(([value, label]) => ({ value, label }))
+    .sort((a, b) => a.label.localeCompare(b.label, "es"));
 }
 
 /** "Próximos": los de hoy (aunque ya pasaron) y los que vienen. */

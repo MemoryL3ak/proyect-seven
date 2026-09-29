@@ -17,6 +17,19 @@ import { CalendarIcon, AlertIcon, SearchIcon, RefreshIcon, PlaneIcon } from "@/c
 import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
+import StyledSelect from "@/components/StyledSelect";
+import { etiquetaDiaEvento } from "@/lib/hora-evento";
+import { nombreDePais } from "@/lib/paises";
+import {
+  conductorDelViaje,
+  cumpleFiltroConductor,
+  cumpleFiltroTraslado,
+  diasConVuelos,
+  OPCIONES_FILTRO_TRASLADO,
+  opcionesFiltroConductor,
+  SIN_CONDUCTOR,
+  type FiltroTraslado,
+} from "@/lib/conductor-del-traslado";
 
 /* ────────────────────────────────────────────────────────────
    Monitoreo de Salidas de Participantes
@@ -114,7 +127,10 @@ export default function DepartureMonitoringPage() {
   // Nombres de conductores y hora de referencia de la línea de tiempo.
   const [conductores, setConductores] = useState<Record<string, string>>({});
   // Conductores con sus eventos, para registrar a mano quién hizo el traslado.
-  const [listaConductores, setListaConductores] = useState<Array<{ id: string; fullName?: string | null; eventIds?: string[] | null; eventId?: string | null }>>([]);
+  const [listaConductores, setListaConductores] = useState<Array<{ id: string; fullName?: string | null; phone?: string | null; metadata?: Record<string, unknown> | null; eventIds?: string[] | null; eventId?: string | null }>>([]);
+  // Estado del traslado y conductor (28-09-2026: filtros en los dos monitores).
+  const [filtroTraslado, setFiltroTraslado] = useState<FiltroTraslado>("");
+  const [filtroConductor, setFiltroConductor] = useState("");
   const [ahora, setAhora] = useState(() => new Date());
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -249,6 +265,10 @@ export default function DepartureMonitoringPage() {
       .filter((a) => !delegacionId || a.delegationId === delegacionId)
       .filter((a) => !fecha || fechaLocal(a.departureTime) === fecha)
       .filter((a) => {
+        const traslados = a.traslado ? [a.traslado] : [];
+        return cumpleFiltroTraslado(traslados, filtroTraslado) && cumpleFiltroConductor(traslados, filtroConductor);
+      })
+      .filter((a) => {
         if (!q) return true;
         const del = delegations[a.delegationId || ""];
         return [a.fullName, a.flightNumber, a.airline, a.departureGate, del?.countryCode, del?.name]
@@ -260,7 +280,16 @@ export default function DepartureMonitoringPage() {
         const tb = b.departureTime ? new Date(b.departureTime).getTime() : Number.MAX_SAFE_INTEGER;
         return ta - tb;
       });
-  }, [salidas, eventId, delegacionId, fecha, busqueda, delegations]);
+  }, [salidas, eventId, delegacionId, fecha, busqueda, delegations, filtroTraslado, filtroConductor]);
+
+  /** Fichas de conductor (nombre, teléfono, patente) por id. */
+  const conductoresPorId = useMemo(() => new Map(listaConductores.map((c) => [c.id, c])), [listaConductores]);
+  const salidasDelEvento = useMemo(() => salidas.filter((a) => !eventId || a.eventId === eventId), [salidas, eventId]);
+  const diasFiltro = useMemo(() => diasConVuelos(salidasDelEvento.map((a) => a.departureTime)), [salidasDelEvento]);
+  const conductoresFiltro = useMemo(
+    () => opcionesFiltroConductor(salidasDelEvento.flatMap((a) => (a.traslado ? [a.traslado] : [])), conductoresPorId),
+    [salidasDelEvento, conductoresPorId],
+  );
 
   const hoy = hoyChile();
   const kpis = useMemo(() => {
@@ -385,19 +414,42 @@ export default function DepartureMonitoringPage() {
 
       {/* Filtros */}
       <section className="surface rounded-2xl p-5">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-3 items-end">
           <label className="text-sm block">
-            <span className="block mb-1">{t("Fecha de salida")}</span>
-            <input type="date" className="input" value={fecha} onChange={(e) => setFecha(e.target.value)} />
+            <span className="block mb-1">{t("Día de salida")}</span>
+            <StyledSelect value={fecha} onChange={(e) => setFecha(e.target.value)}>
+              <option value="">{t("Todos los días")}</option>
+              {diasFiltro.map((d) => (
+                <option key={d.dia} value={d.dia}>{`${etiquetaDiaEvento(d.dia)} (${d.cantidad})`}</option>
+              ))}
+            </StyledSelect>
           </label>
           <label className="text-sm block">
             <span className="block mb-1">{t("Delegación")}</span>
-            <select className="input" value={delegacionId} onChange={(e) => setDelegacionId(e.target.value)}>
+            <StyledSelect value={delegacionId} onChange={(e) => setDelegacionId(e.target.value)}>
               <option value="">{t("Todas las delegaciones")}</option>
               {delegacionesOrdenadas.map((d) => (
-                <option key={d.id} value={d.id}>{d.countryCode || d.name || d.id}</option>
+                <option key={d.id} value={d.id}>{d.countryCode ? `${nombreDePais(d.countryCode)} (${d.countryCode})` : d.name || d.id}</option>
               ))}
-            </select>
+            </StyledSelect>
+          </label>
+          <label className="text-sm block">
+            <span className="block mb-1">{t("Traslado")}</span>
+            <StyledSelect value={filtroTraslado} onChange={(e) => setFiltroTraslado(e.target.value as FiltroTraslado)}>
+              {OPCIONES_FILTRO_TRASLADO.map((o) => (
+                <option key={o.value} value={o.value}>{t(o.label)}</option>
+              ))}
+            </StyledSelect>
+          </label>
+          <label className="text-sm block">
+            <span className="block mb-1">{t("Conductor")}</span>
+            <StyledSelect value={filtroConductor} onChange={(e) => setFiltroConductor(e.target.value)}>
+              <option value="">{t("Todos los conductores")}</option>
+              {conductoresFiltro.haySinConductor && <option value={SIN_CONDUCTOR}>{t("Sin conductor")}</option>}
+              {conductoresFiltro.opciones.map((c) => (
+                <option key={c.id} value={c.id}>{c.nombre}</option>
+              ))}
+            </StyledSelect>
           </label>
           <label className="text-sm block">
             <span className="block mb-1">{t("Buscar")}</span>
@@ -444,10 +496,10 @@ export default function DepartureMonitoringPage() {
               </span>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full text-sm" style={{ minWidth: 1060 }}>
+              <table className="w-full text-sm" style={{ minWidth: 1240 }}>
                 <thead>
                   <tr style={{ background: "var(--elevated)" }}>
-                    {["Hora", "Participante", "Delegación", "Tipo", "Vuelo", "Aerolínea", "Puerta", "Traslado al aeropuerto"].map((h) => (
+                    {["Hora", "Participante", "Delegación", "Tipo", "Vuelo", "Aerolínea", "Puerta", "Traslado al aeropuerto", "Conductor"].map((h) => (
                       <th
                         key={h}
                         className="px-3 py-2 text-left text-[10px] font-bold uppercase"
@@ -503,6 +555,23 @@ export default function DepartureMonitoringPage() {
                           ) : (
                             <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>{t("Sin traslado")}</span>
                           )}
+                        </td>
+                        {/* Conductor del traslado: nombre, teléfono y patente. */}
+                        <td className="px-3 py-2.5" style={{ minWidth: 170 }}>
+                          {(() => {
+                            if (!a.traslado) return <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>—</span>;
+                            const c = conductorDelViaje(a.traslado, conductoresPorId);
+                            if (!c) return <span className="text-[11px] font-bold" style={{ color: STATE.warningText }}>{t("Sin conductor")}</span>;
+                            return (
+                              <div style={{ lineHeight: 1.25 }}>
+                                <div className="text-[12px] font-bold" style={{ color: "var(--text)" }}>{c.nombre}</div>
+                                <div className="text-[10.5px]" style={{ color: "var(--text-muted)" }}>
+                                  {c.telefono ? <a href={`tel:${c.telefono.replace(/[^\d+]/g, "")}`} style={{ color: "inherit" }}>{c.telefono}</a> : t("Sin teléfono")}
+                                  {c.patente ? ` · ${c.patente}` : ""}
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </td>
                       </tr>
                     );
