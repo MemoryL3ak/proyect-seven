@@ -96,4 +96,12 @@ describe('alimentación por evento', () => {
     expect(params[9]).toBe(RUGBY);
     expect(menu.eventId).toBe(RUGBY);
   });
+
+  it('las secciones de una comida salen en el orden en que se cargaron', async () => {
+    const { ds, llamadas } = baseQueGuarda();
+    await new FoodMenusService(ds).findAll({ eventId: RUGBY });
+    expect(llamadas[0].sql).toContain(
+      'order by date asc, meal_type asc, created_at asc',
+    );
+  });
 });

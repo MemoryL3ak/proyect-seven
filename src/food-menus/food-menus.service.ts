@@ -117,7 +117,9 @@ export class FoodMenusService {
         conditions.length > 0 ? `where ${conditions.join(' and ')}` : '';
 
       const rows = (await this.dataSource.query(
-        `select ${SELECT_COLS} from logistics.food_menus ${where} order by date asc, meal_type asc`,
+        // created_at: las secciones de una comida salen en el orden de la
+        // minuta (Ensaladas, Proteína, Pasta… en la de Rugby, 28-09-2026).
+        `select ${SELECT_COLS} from logistics.food_menus ${where} order by date asc, meal_type asc, created_at asc`,
         params,
       )) as FoodMenuRow[];
       return rows.map((r) => this.toEntity(r));
