@@ -13,6 +13,7 @@ import { CambiarEventoDto } from './dto/cambiar-evento.dto';
 import { CreateProviderParticipantDto } from './dto/create-provider-participant.dto';
 import { UpdateProviderParticipantDto } from './dto/update-provider-participant.dto';
 import { ProviderParticipantsService } from './provider-participants.service';
+import type { ParteDeDocumento } from '../shared/subida-por-partes';
 
 @Controller('provider-participants')
 export class ProviderParticipantsController {
@@ -79,5 +80,11 @@ export class ProviderParticipantsController {
     @Body() body: { key: string; dataUrl: string },
   ) {
     return this.service.uploadDocument(id, body.key, body.dataUrl);
+  }
+
+  /** Documento en pedazos: la app reintenta sólo el que se cortó. */
+  @Post(':id/document-part')
+  uploadDocumentPart(@Param('id') id: string, @Body() body: Partial<ParteDeDocumento>) {
+    return this.service.uploadDocumentPart(id, body);
   }
 }

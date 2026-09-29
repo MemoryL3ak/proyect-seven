@@ -9,6 +9,7 @@ import {
 import { welcomeEmailHtml } from '../shared/email-templates';
 import { sendResendEmail } from '../shared/resend';
 import { normalizeStorageUrlsDeep } from '../shared/storage-url';
+import { ParteDeDocumento, recibirParte } from '../shared/subida-por-partes';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient, createClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
@@ -463,6 +464,21 @@ export class ProviderParticipantsService {
     const participant = await this.findOne(id);
     const metadata = { ...(participant.metadata ?? {}), [key]: publicUrl };
 
+    return this.update(id, { metadata });
+  }
+
+  /** Documento por partes (ver shared/subida-por-partes.ts). */
+  async uploadDocumentPart(id: string, body: Partial<ParteDeDocumento>) {
+    const admin = this.getAdminClient();
+    if (!admin) {
+      throw new InternalServerErrorException(
+        'SUPABASE_SERVICE_ROLE_KEY is required to upload documents',
+      );
+    }
+    const resultado = await recibirParte(admin, id, body);
+    if (!resultado.completo) return resultado;
+    const participant = await this.findOne(id);
+    const metadata = { ...(participant.metadata ?? {}), [body.key as string]: resultado.url };
     return this.update(id, { metadata });
   }
 }

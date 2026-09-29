@@ -67,6 +67,7 @@ import { esSalida } from "@/lib/tramos-traslado";
 import { appYaRastrea, clasificarErrorUbicacionNativa } from "@/lib/ubicacion-conductor";
 import QRCode from "qrcode";
 import { mensajeDeSubida, prepararDocumento, prepararFoto } from "@/lib/imagen";
+import { subirPorPartes } from "@/lib/subida-por-partes";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
@@ -430,6 +431,8 @@ export default function DriverPortalPage() {
   const [statusFilter, setStatusFilter] = useState<string>("hoy");
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [uploadingDoc, setUploadingDoc] = useState<string | null>(null);
+  /** Avance de la subida por partes del documento en curso (0 a 1). */
+  const [progresoDoc, setProgresoDoc] = useState<number | null>(null);
   const [destinationFilter, setDestinationFilter] = useState("");
   const [reportDateFrom, setReportDateFrom] = useState("");
   const [reportDateTo, setReportDateTo] = useState("");
@@ -2759,23 +2762,32 @@ export default function DriverPortalPage() {
                                 const file = input.files?.[0];
                                 if (!file || !driverProfile.id) return;
                                 setUploadingDoc(doc.key);
+                                setProgresoDoc(0);
                                 try {
-                                  // La foto se reduce antes de subir: las del
-                                  // iPhone pesan 5-15 MB y por datos móviles la
-                                  // subida se cortaba ("Load failed").
+                                  // La foto se reduce antes de subir (las del
+                                  // iPhone pesan 5-15 MB) y todo va en partes de
+                                  // 512 KB: un corte de señal repite sólo esa
+                                  // parte, no el archivo entero ("Load failed").
                                   const dataUrl = await prepararDocumento(file);
                                   const endpoint = driverProfile._isParticipant
-                                    ? `/provider-participants/${driverProfile.id}/document`
-                                    : `/drivers/${driverProfile.id}/document`;
-                                  const result = await apiFetch<any>(endpoint, {
-                                    method: "POST", headers: { "Content-Type": "application/json" },
-                                    body: JSON.stringify({ key: doc.key, dataUrl }),
-                                  });
+                                    ? `/provider-participants/${driverProfile.id}/document-part`
+                                    : `/drivers/${driverProfile.id}/document-part`;
+                                  const result = await subirPorPartes<any>(dataUrl, async (parte) => {
+                                    const corte = new AbortController();
+                                    const reloj = setTimeout(() => corte.abort(), 60_000);
+                                    try {
+                                      return await apiFetch<any>(endpoint, {
+                                        method: "POST", headers: { "Content-Type": "application/json" },
+                                        body: JSON.stringify({ key: doc.key, ...parte }),
+                                        signal: corte.signal,
+                                      });
+                                    } finally { clearTimeout(reloj); }
+                                  }, { alAvanzar: setProgresoDoc });
                                   const newUrl = result?.metadata?.[doc.key] ?? `uploaded_${Date.now()}`;
-                                  setDriverProfile({ ...driverProfile, metadata: { ...(driverProfile.metadata || {}), [doc.key]: newUrl } });
+                                  setDriverProfile((prev) => prev ? { ...prev, metadata: { ...(prev.metadata || {}), [doc.key]: newUrl } } : prev);
                                   driverNotify.push(`${doc.label} cargado`, "doc");
                                 } catch (err) { console.error("Doc upload error:", err); driverNotify.push(mensajeDeSubida(err, doc.label), "error"); }
-                                finally { setUploadingDoc(null); }
+                                finally { setUploadingDoc(null); setProgresoDoc(null); }
                               };
                               input.click();
                             }}
@@ -2789,7 +2801,7 @@ export default function DriverPortalPage() {
                                 opacity: isUploading ? 0.5 : 1,
                               }}>
                               {isUploading ? (
-                                <span>...</span>
+                                <span>{progresoDoc ? `${Math.round(progresoDoc * 100)}%` : "..."}</span>
                               ) : uploaded ? (
                                 <>
                                   <CameraIcon size={10} strokeWidth={2} />

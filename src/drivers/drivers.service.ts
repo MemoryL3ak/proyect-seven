@@ -16,6 +16,7 @@ import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import { Driver } from './entities/driver.entity';
 import { eventosDePersona } from '../provider-participants/eventos-persona';
+import { ParteDeDocumento, recibirParte } from '../shared/subida-por-partes';
 
 type DriverRow = {
   id: string;
@@ -789,6 +790,21 @@ export class DriversService {
     const driver = await this.findOne(id);
     const currentMeta = (driver as any).metadata ?? {};
     return this.update(id, { metadata: { ...currentMeta, [key]: publicUrl } } as any);
+  }
+
+  /** Documento por partes (ver shared/subida-por-partes.ts). */
+  async uploadDocumentPart(id: string, body: Partial<ParteDeDocumento>) {
+    const admin = this.getAdminClient();
+    if (!admin) {
+      throw new InternalServerErrorException(
+        'SUPABASE_SERVICE_ROLE_KEY is required to upload driver documents',
+      );
+    }
+    const resultado = await recibirParte(admin, id, body);
+    if (!resultado.completo) return resultado;
+    const driver = await this.findOne(id);
+    const currentMeta = (driver as any).metadata ?? {};
+    return this.update(id, { metadata: { ...currentMeta, [body.key as string]: resultado.url } } as any);
   }
 
   /**

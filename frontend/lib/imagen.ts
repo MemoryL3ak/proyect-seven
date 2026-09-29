@@ -124,7 +124,7 @@ export async function prepararDocumento(archivo: File): Promise<string> {
  */
 export function mensajeDeSubida(error: unknown, que: string): string {
   const texto = error instanceof Error ? error.message : String(error ?? "");
-  if (/entity too large|payload too large|\b413\b/i.test(texto)) {
+  if (/entity too large|payload too large|demasiado pesado|\b413\b/i.test(texto)) {
     return `${que}: el archivo es demasiado pesado. Súbelo como foto o envía un PDF más liviano.`;
   }
   if (/no se pudo conectar con la api|load failed|failed to fetch|network|networkerror|conexi[oó]n/i.test(texto)) {

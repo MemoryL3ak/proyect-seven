@@ -7,6 +7,7 @@ import { RequestDriverAccessDto } from './dto/request-driver-access.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import { UploadDriverPhotoDto } from './dto/upload-driver-photo.dto';
 import { DriversService } from './drivers.service';
+import type { ParteDeDocumento } from '../shared/subida-por-partes';
 
 @Controller('drivers')
 export class DriversController {
@@ -60,6 +61,12 @@ export class DriversController {
     @Body() payload: { key: string; dataUrl: string },
   ) {
     return this.driversService.uploadDocument(id, payload.key, payload.dataUrl);
+  }
+
+  /** Documento en pedazos: la app reintenta sólo el que se cortó. */
+  @Post(':id/document-part')
+  uploadDocumentPart(@Param('id') id: string, @Body() payload: Partial<ParteDeDocumento>) {
+    return this.driversService.uploadDocumentPart(id, payload);
   }
 
   @Post(':id/journey-photo')
