@@ -84,6 +84,12 @@ export type ResourceConfig = {
   fields: FieldDef[];
   tableHiddenKeys?: string[];
   tableOrder?: string[];
+  /**
+   * El formulario de alta parte cerrado tras un botón "Nuevo registro"
+   * también en el computador (en el teléfono lo está siempre). AND lo pidió
+   * el 28-09-2026: el formulario ocupaba la pantalla antes de la lista.
+   */
+  formularioPlegado?: boolean;
 };
 
 export const resources: Record<string, ResourceConfig> = {
@@ -159,6 +165,7 @@ export const resources: Record<string, ResourceConfig> = {
     name: "AND",
     description: "Arribos & Salidas: delegación y participantes.",
     endpoint: "/delegations",
+    formularioPlegado: true,
     tableOrder: [
       "eventId",
       "countryCode",

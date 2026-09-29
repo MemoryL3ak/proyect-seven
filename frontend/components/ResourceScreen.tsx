@@ -324,7 +324,8 @@ export default function ResourceScreen({
   const isMobile = useIsMobile();
   const [formOpen, setFormOpen] = useState(false);
   const formRef = useRef<HTMLElement | null>(null);
-  const formCollapsible = isMobile && viewMode === "both";
+  // AND (formularioPlegado) lo pliega también en el computador.
+  const formCollapsible = (isMobile || !!config.formularioPlegado) && viewMode === "both";
   // Tarjetas de la lista en teléfono: qué filas muestran todos sus campos.
   const [expandedRows, setExpandedRows] = useState<Set<string>>(() => new Set());
   const [participantEditingId, setParticipantEditingId] = useState<string | null>(
@@ -2062,6 +2063,8 @@ export default function ResourceScreen({
       if (config.endpoint === "/accommodations") setHotelCoordinadores([]);
       setSuccessMsg(wasEditing ? t("Registro actualizado correctamente") : t("Registro creado correctamente"));
       setTimeout(() => setSuccessMsg(null), 4000);
+      // Guardado: el formulario plegable vuelve a cerrarse y queda la lista.
+      if (formCollapsible) setFormOpen(false);
       loadItems();
       onDataChanged?.();
     } catch (err) {
@@ -3114,7 +3117,8 @@ export default function ResourceScreen({
         <button
           type="button"
           className="btn btn-primary"
-          style={{ width: "100%", padding: "12px 16px", fontSize: "14px" }}
+          // En el computador no ocupa todo el ancho: es un botón, no una franja.
+          style={{ width: isMobile ? "100%" : "auto", padding: "12px 20px", fontSize: "14px" }}
           onClick={() => setFormOpen(true)}
         >
           + {t("Nuevo registro")}
