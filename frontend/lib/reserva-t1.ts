@@ -12,6 +12,12 @@ export type LugarReserva = { tipo: "HOTEL" | "SEDE" | "DIRECCION"; id?: string |
 export type DatosReserva = {
   eventoId: string;
   solicitante: { id: string; userType?: string | null; fullName?: string | null } | null;
+  /**
+   * T1 o VIP: el servicio que se reserva. Se elige en el formulario: las
+   * fichas de AND traen tipos libres ("Staff (VIP)", "Árbitro") y ninguna de
+   * World Rugby era T1 ni VIP tal cual.
+   */
+  tipo: "T1" | "VIP" | "";
   origen: LugarReserva | null;
   destino: LugarReserva | null;
   /** "YYYY-MM-DDTHH:mm" del campo del formulario (hora de Chile). */
@@ -30,8 +36,7 @@ export type DatosReserva = {
 export function errorDeReserva(d: DatosReserva): string | null {
   if (!d.eventoId) return "Elige el evento arriba.";
   if (!d.solicitante) return "Elige para quién es la reserva.";
-  const tipo = normalizeClientType(d.solicitante.userType);
-  if (tipo !== "T1" && tipo !== "VIP") return "Las reservas son para T1 o VIP.";
+  if (d.tipo !== "T1" && d.tipo !== "VIP") return "Elige si el servicio es T1 o VIP.";
   if (!d.origen?.nombre.trim()) return "Indica el origen.";
   if (!d.destino?.nombre.trim()) return "Indica el destino.";
   if (!d.fechaHora || Number.isNaN(new Date(d.fechaHora).getTime())) return "Indica la fecha y hora.";
@@ -60,7 +65,7 @@ export function cuerpoReserva(d: DatosReserva, ahora: Date): Record<string, unkn
     requesterAthleteId: d.solicitante!.id,
     athleteIds: [d.solicitante!.id],
     tripType: d.idaYVuelta ? "VIAJE_IDA_REGRESO" : "VIAJE_IDA",
-    clientType: normalizeClientType(d.solicitante!.userType),
+    clientType: d.tipo,
     requestedVehicleType: d.vehiculo || undefined,
     passengerCount: d.pasajeros,
     origin: origen.nombre.trim(),
@@ -83,4 +88,12 @@ export function cuerpoReserva(d: DatosReserva, ahora: Date): Record<string, unkn
         }
       : {}),
   };
+}
+
+/** T1 o VIP sugerido por el tipo de la ficha ("Staff (VIP)" → VIP). */
+export function tipoSugerido(userType?: string | null): "T1" | "VIP" | "" {
+  const tipo = normalizeClientType(userType);
+  if (tipo === "VIP" || /\bVIP\b/.test(tipo)) return "VIP";
+  if (tipo === "T1" || /\bT1\b/.test(tipo)) return "T1";
+  return "";
 }

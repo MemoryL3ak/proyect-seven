@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch, getStoredUser } from "@/lib/api";
 import StyledSelect from "@/components/StyledSelect";
 import { conductoresParaViaje, TIPOS_FLOTA } from "@/lib/flota-conductor";
-import { cuerpoReserva, errorDeReserva, type LugarReserva } from "@/lib/reserva-t1";
+import { cuerpoReserva, errorDeReserva, tipoSugerido, type LugarReserva } from "@/lib/reserva-t1";
 import { claveDiaEvento, etiquetaDiaEvento } from "@/lib/hora-evento";
 import PageHeader from "@/components/ui/PageHeader";
 import {
@@ -249,6 +249,7 @@ export default function TripRequestsPage() {
   const [guardandoReserva, setGuardandoReserva] = useState(false);
   const [errorReserva, setErrorReserva] = useState<string | null>(null);
   const [rSolicitante, setRSolicitante] = useState("");
+  const [rTipo, setRTipo] = useState<"T1" | "VIP" | "">("");
   const [rOrigen, setROrigen] = useState("");
   const [rOrigenTexto, setROrigenTexto] = useState("");
   const [rDestino, setRDestino] = useState("");
@@ -359,7 +360,9 @@ export default function TripRequestsPage() {
   const personasReserva = useMemo(
     () =>
       personas
-        .filter((p) => (!selectedEventId || p.eventId === selectedEventId) && CLIENT_TYPES_EN_PANTALLA.has(normalizeClientType(p.userType)))
+        // Cualquier persona del evento: las fichas de AND traen tipos libres
+        // ("Staff (VIP)", "Árbitro"); el servicio T1/VIP se elige aparte.
+        .filter((p) => !selectedEventId || p.eventId === selectedEventId)
         .sort((a, b) => String(a.fullName ?? "").localeCompare(String(b.fullName ?? ""), "es")),
     [personas, selectedEventId],
   );
@@ -393,7 +396,7 @@ export default function TripRequestsPage() {
   );
 
   function abrirReserva() {
-    setRSolicitante(""); setROrigen(""); setROrigenTexto(""); setRDestino(""); setRDestinoTexto("");
+    setRSolicitante(""); setRTipo(""); setROrigen(""); setROrigenTexto(""); setRDestino(""); setRDestinoTexto("");
     setRFecha(""); setRPasajeros("1"); setRVehiculo(""); setRIdaVuelta(false); setRRegreso(""); setRNotas(""); setRConductor("");
     setErrorReserva(null);
     setReservando(true);
@@ -405,6 +408,7 @@ export default function TripRequestsPage() {
     const datos = {
       eventoId: selectedEventId ?? "",
       solicitante: persona ? { id: persona.id, userType: persona.userType, fullName: persona.fullName } : null,
+      tipo: rTipo,
       origen: lugarElegido(rOrigen, rOrigenTexto),
       destino: lugarElegido(rDestino, rDestinoTexto),
       fechaHora: rFecha,
@@ -991,9 +995,26 @@ export default function TripRequestsPage() {
             </div>
             <label className="block text-sm">
               <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Para quién")}</span>
-              <StyledSelect value={rSolicitante} onChange={(e) => setRSolicitante(e.target.value)}>
-                <option value="">{t("Elige una persona T1 o VIP")}</option>
+              <StyledSelect
+                value={rSolicitante}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setRSolicitante(id);
+                  // "Staff (VIP)" sugiere VIP; lo demás se elige a mano.
+                  const sugerido = tipoSugerido(personasReserva.find((p) => p.id === id)?.userType);
+                  if (sugerido) setRTipo(sugerido);
+                }}
+              >
+                <option value="">{t("Elige una persona del evento")}</option>
                 {personasReserva.map((p) => <option key={p.id} value={p.id}>{`${p.fullName ?? p.id} · ${clientTypeLabel(p.userType)}`}</option>)}
+              </StyledSelect>
+            </label>
+            <label className="block text-sm">
+              <span className="font-semibold" style={{ color: SURFACE.textSecondary }}>{t("Tipo de servicio")}</span>
+              <StyledSelect value={rTipo} onChange={(e) => setRTipo(e.target.value as "T1" | "VIP" | "")}>
+                <option value="">{t("Elige T1 o VIP")}</option>
+                <option value="T1">T1</option>
+                <option value="VIP">VIP</option>
               </StyledSelect>
             </label>
             {([

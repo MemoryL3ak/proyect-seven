@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { cuerpoReserva, errorDeReserva, type DatosReserva } from "./reserva-t1";
+import { cuerpoReserva, errorDeReserva, tipoSugerido, type DatosReserva } from "./reserva-t1";
 
 /**
  * 28-09-2026: Solicitudes T1/VIP no tenía "acciones para reservar": sólo
@@ -8,7 +8,8 @@ import { cuerpoReserva, errorDeReserva, type DatosReserva } from "./reserva-t1";
 const AHORA = new Date("2026-09-29T12:00:00.000Z");
 const base: DatosReserva = {
   eventoId: "rugby",
-  solicitante: { id: "victor", userType: "T1", fullName: "Víctor González" },
+  solicitante: { id: "victor", userType: "Staff (VIP)", fullName: "Víctor González" },
+  tipo: "T1",
   origen: { tipo: "HOTEL", id: "sheraton", nombre: "Hotel Sheraton Santiago" },
   destino: { tipo: "SEDE", id: "pwcc", nombre: "PWCC · Prince of Wales Country Club" },
   fechaHora: "2026-09-30T09:00",
@@ -52,8 +53,17 @@ describe("reserva T1/VIP desde el panel", () => {
 
   it("revisa el formulario antes de reservar", () => {
     expect(errorDeReserva(base)).toBeNull();
-    expect(errorDeReserva({ ...base, solicitante: { id: "x", userType: "TA" } })).toMatch(/T1 o VIP/);
+    expect(errorDeReserva({ ...base, tipo: "" })).toMatch(/T1 o VIP/);
     expect(errorDeReserva({ ...base, fechaHora: "" })).toMatch(/fecha/);
     expect(errorDeReserva({ ...base, idaYVuelta: true, regreso: "2026-09-30T08:00" })).toMatch(/después/);
+  });
+});
+
+describe("tipo de servicio sugerido", () => {
+  it("las fichas de AND traen tipos libres", () => {
+    expect(tipoSugerido("Staff (VIP)")).toBe("VIP");
+    expect(tipoSugerido("VIP")).toBe("VIP");
+    expect(tipoSugerido("T1")).toBe("T1");
+    expect(tipoSugerido("Árbitro")).toBe("");
   });
 });
