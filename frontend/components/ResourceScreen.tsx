@@ -48,6 +48,7 @@ import {
   type FiltroEstadoAnd,
 } from "@/lib/and-listado";
 import { esDelEvento } from "@/lib/evento-activo";
+import { conductoresParaViaje, tipoFlota } from "@/lib/flota-conductor";
 import { etiquetaDiaEvento } from "@/lib/hora-evento";
 import { isoDesdeLocal } from "@/lib/fecha-local";
 import { avisarEventosCambiaron, useEventoActivo } from "@/lib/evento-activo-provider";
@@ -1017,6 +1018,11 @@ export default function ResourceScreen({
         const cap = meta.vehicleCapacity ? Number(meta.vehicleCapacity) : (vType ? CAPACITY_BY_TYPE[vType] ?? null : null);
         return { plate: meta.vehiclePatente ?? meta.vehiclePlate ?? null, capacity: cap, vehicleType: vType };
       };
+      // Eventos de cada conductor (los de su proveedor, o su evento en la
+      // flota propia): /drivers los trae; /provider-participants no.
+      const eventosDe = new Map(
+        (data || []).map((d) => [String(d.id), { eventIds: d.eventIds ?? null, eventId: d.eventId ?? null }]),
+      );
       const userOptions = [
         ...(data || [])
           .filter((driver) => driver.userId)
@@ -1027,6 +1033,8 @@ export default function ResourceScreen({
               value: driver.userId,
               capacity: vi.capacity,
               vehicleType: vi.vehicleType,
+              eventIds: driver.eventIds ?? null,
+              eventId: driver.eventId ?? null,
             };
           }),
         ...participantDrivers.map((p) => {
@@ -1036,6 +1044,7 @@ export default function ResourceScreen({
             value: p.id,
             capacity: vi.capacity,
             vehicleType: vi.vehicleType,
+            ...(eventosDe.get(String(p.id)) ?? {}),
           };
         }),
       ];
@@ -1219,6 +1228,18 @@ export default function ResourceScreen({
       loadHotelBeds();
     }
   }, [needsHotelBeds]);
+
+  // Viaje manual: si se elige el conductor sin haber pedido vehículo, el
+  // vehículo solicitado toma el tipo de flota del conductor.
+  useEffect(() => {
+    if (config.endpoint !== "/trips") return;
+    const elegido = form.driverId as string | undefined;
+    if (!elegido || form.requestedVehicleType) return;
+    const opcion = (driverUserOptions as Array<Option & { vehicleType?: string | null }>).find((o) => o.value === elegido);
+    const tipo = tipoFlota(opcion?.vehicleType);
+    if (tipo) setForm((prev) => (prev.requestedVehicleType ? prev : { ...prev, requestedVehicleType: tipo }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [config.endpoint, form.driverId, driverUserOptions]);
 
   useEffect(() => {
     if (config.endpoint !== "/trips") return;
@@ -2776,16 +2797,15 @@ export default function ResourceScreen({
     if (source === "drivers") return driverOptions;
     if (source === "driverUsers") {
       if (config.endpoint === "/trips") {
-        const paxCount = Number(form.passengerCount as string) || 0;
-        const reqVehicleType = String(form.requestedVehicleType ?? "");
-        const CAPACITY_ORDER: Record<string, number> = { SEDAN: 4, SUV: 6, VAN_10: 10, VAN_15: 17, VAN_19: 19, MINIBUS: 33, BUS: 46 };
-        const minCapacity = CAPACITY_ORDER[reqVehicleType] ?? 0;
-        const effectiveMin = Math.max(paxCount, minCapacity);
-        if (effectiveMin > 0) {
-          return (driverUserOptions as any[]).filter(
-            (opt) => !opt.capacity || opt.capacity >= effectiveMin
-          );
-        }
+        // Los del evento elegido arriba, del tipo de flota pedido y con cupo
+        // para los pasajeros (lib/flota-conductor). Antes sólo se miraba la
+        // capacidad: con SUV salían también los de Bus y Van.
+        return conductoresParaViaje(driverUserOptions as Array<Option & { capacity?: number | null; vehicleType?: string | null; eventIds?: string[] | null; eventId?: string | null }>, {
+          eventoId,
+          tipo: String(form.requestedVehicleType ?? ""),
+          pasajeros: Number(form.passengerCount as string) || 0,
+          elegido: (form.driverId as string | undefined) ?? null,
+        });
       }
       return driverUserOptions;
     }
