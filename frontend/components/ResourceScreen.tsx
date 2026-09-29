@@ -1197,39 +1197,12 @@ export default function ResourceScreen({
     }
   }, [needsVehicles]);
 
-  useEffect(() => {
-    if (!isTrips) return;
-    const tripType = String(form.tripType ?? "");
-    const vehicleId = String(form.vehicleId ?? "");
-    const requestedVType = String(form.requestedVehicleType ?? "");
-    const vehicleType = vehicleId ? vehicleLookup[vehicleId]?.type : requestedVType;
-    if (!tripType || !vehicleType) return;
-    const costs: Record<string, Record<string, number>> = {
-      TRANSFER_IN_OUT: {
-        SEDAN: 45000, SUV: 55000, VAN_10: 70000, VAN_15: 85000, VAN_19: 95000, MINIBUS: 150000, BUS: 180000,
-        VAN: 70000, MINI_BUS: 150000,
-      },
-      DISPOSICION_12H: {
-        SEDAN: 120000, SUV: 140000, VAN_10: 180000, VAN_15: 200000, VAN_19: 220000, MINIBUS: 300000, BUS: 400000,
-        VAN: 180000, MINI_BUS: 300000,
-      },
-      IDA_VUELTA: {
-        SEDAN: 70000, SUV: 80000, VAN_10: 110000, VAN_15: 125000, VAN_19: 135000, MINIBUS: 160000, BUS: 190000,
-        VAN: 110000, MINI_BUS: 160000,
-      },
-      VIAJE_IDA: {
-        SEDAN: 45000, SUV: 55000, VAN_10: 70000, VAN_15: 85000, VAN_19: 95000, MINIBUS: 150000, BUS: 180000,
-        VAN: 70000, MINI_BUS: 150000,
-      },
-      VIAJE_IDA_REGRESO: {
-        SEDAN: 70000, SUV: 80000, VAN_10: 110000, VAN_15: 125000, VAN_19: 135000, MINIBUS: 160000, BUS: 190000,
-        VAN: 110000, MINI_BUS: 160000,
-      },
-    };
-    const nextCost = costs[tripType]?.[vehicleType];
-    if (!nextCost) return;
-    setForm((prev) => ({ ...prev, tripCost: formatCurrencyCLP(nextCost) }));
-  }, [form.tripType, form.vehicleId, form.requestedVehicleType, isTrips, vehicleLookup]);
+  // El costo del viaje NO se completa solo en el formulario. Había una tabla
+  // de precios fija (Bus 180.000, Van 70.000…) que se copiaba al elegir tipo
+  // de servicio y flota, y quedaba guardada como precio pactado: el panel
+  // financiero la tomaba en vez de la tarifa del proveedor (28-09-2026, "al
+  // crear viajes manuales aparece por defecto 180k"). Vacío, el servidor
+  // pone la tarifa del proveedor (TripsService.lookupClientPrice).
 
   useEffect(() => {
     if (needsDrivers) {

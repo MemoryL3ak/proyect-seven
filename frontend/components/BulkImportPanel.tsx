@@ -9,6 +9,7 @@ import { BRAND } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { claveDeColumna, tituloDeColumna } from "@/lib/columnas-carga";
+import { codigoDePais, paisPorInformar } from "@/lib/paises";
 import {
   columnasConductor,
   columnasExtraTraslado,
@@ -203,35 +204,6 @@ const roomTypes = new Set(["SINGLE", "DOUBLE", "TRIPLE", "SUITE"]);
 const bedStatuses = new Set(["AVAILABLE", "OCCUPIED"]);
 const vehicleTypes = new Set(["SEDAN", "VAN", "MINI_BUS", "BUS"]);
 const tripTypes = new Set(["ARRIVAL", "DEPARTURE"]);
-
-const countryCodeByName: Record<string, string> = {
-  argentina: "ARG",
-  bolivia: "BOL",
-  brasil: "BRA",
-  brazil: "BRA",
-  chile: "CHL",
-  colombia: "COL",
-  ecuador: "ECU",
-  paraguay: "PRY",
-  peru: "PER",
-  uruguay: "URY",
-  venezuela: "VEN",
-  mexico: "MEX",
-  "estados unidos": "USA",
-  "united states": "USA",
-  canada: "CAN",
-  espana: "ESP",
-  spain: "ESP",
-  francia: "FRA",
-  france: "FRA",
-  alemania: "DEU",
-  germany: "DEU",
-  italia: "ITA",
-  italy: "ITA",
-  portugal: "PRT",
-  "reino unido": "GBR",
-  "united kingdom": "GBR"
-};
 
 const normalizeText = (value: unknown) =>
   String(value ?? "")
@@ -448,11 +420,8 @@ const CLIENT_TYPE_REFERENCE: string[][] = CLIENT_TYPE_OPTIONS.map((o) => [
   o.label,
 ]);
 
-const normalizeCountryCode = (value: unknown) => {
-  const text = String(value ?? "").trim().toUpperCase();
-  if (text.length === 3) return text;
-  return countryCodeByName[normalizeText(value)] ?? "";
-};
+/** Código del país escrito en la planilla (código, nombre o "Hong Kong China"). */
+const normalizeCountryCode = (value: unknown) => codigoDePais(value);
 
 /**
  * Clave de comparación de una delegación: minúsculas, sin tildes ni apóstrofos
@@ -778,8 +747,14 @@ export default function BulkImportPanel({
         if (!row.full_name) {
           nextErrors.push({ row: rowNumber, field: "full_name", message: "Requerido" });
         }
-        if (!row.country_code || row.country_code.length !== 3) {
-          nextErrors.push({ row: rowNumber, field: "country_code", message: "Pais/codigo invalido" });
+        // El país puede venir como código o nombre; "Por informar" o vacío
+        // es alguien sin país todavía (queda sin delegación, como un árbitro).
+        if (!normalizeCountryCode(row.country_code) && !paisPorInformar(row.country_code)) {
+          nextErrors.push({
+            row: rowNumber,
+            field: "country_code",
+            message: `País no reconocido: "${String(row.country_code).trim()}". Escribe el nombre o el código de 3 letras (NAM, BEL, HKG).`,
+          });
         }
         if (row.gender) {
           const normalizedGender = normalizeText(row.gender);
@@ -931,7 +906,7 @@ export default function BulkImportPanel({
         const eventId = resolveEventId(row, selectedEventId, eventIdByName) || undefined;
         const countryCode = normalizeCountryCode(row.country_code);
 
-        if (!eventId || !row.full_name || !countryCode) {
+        if (!eventId || !row.full_name || (!countryCode && !paisPorInformar(row.country_code))) {
           rowErrors.push({ row: rowNumber, message: "Faltan campos requeridos" });
           continue;
         }
@@ -955,7 +930,7 @@ export default function BulkImportPanel({
             });
             continue;
           }
-        } else if (!esCoordinadorDeEvento) {
+        } else if (!esCoordinadorDeEvento && countryCode) {
           delegation = delegationCache.get(`${eventId}::${countryCode}`);
           if (!delegation) {
             try {
@@ -1060,7 +1035,8 @@ export default function BulkImportPanel({
           rut: row.rut || undefined,
           email: row.email || undefined,
           phone: row.phone || undefined,
-          countryCode,
+          // Sin país ("Por informar") no se manda: la ficha queda sin país.
+          countryCode: countryCode || undefined,
           passportNumber: row.passport_number || undefined,
           dateOfBirth: row.date_of_birth ? toDateOnly(row.date_of_birth) : undefined,
           userType: row.user_type || undefined,
