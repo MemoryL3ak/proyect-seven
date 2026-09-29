@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { apiFetch } from "@/lib/api";
 import StyledSelect from "@/components/StyledSelect";
-import { PinIcon, ClockIcon, ChevronLeftIcon } from "@/components/ui/Icons";
+import { PinIcon, ClockIcon, ChevronLeftIcon, PencilIcon, TrashIcon } from "@/components/ui/Icons";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { CLIENT_TYPE_OPTIONS } from "@/lib/clientTypes";
@@ -35,6 +36,24 @@ const MEAL_META: Record<MealType, { label: string; icon: React.ReactNode }> = {
   DESAYUNO: { label: "Desayuno", icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg> },
   ALMUERZO: { label: "Almuerzo", icon: <ClockIcon size={12} strokeWidth={2.5} /> },
   CENA:     { label: "Cena",     icon: <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg> },
+};
+
+/**
+ * Botón de ícono de cada plato (editar / borrar), igual que las acciones de
+ * Viajes. Eran dos enlaces subrayados que se veían sueltos (28-09-2026).
+ */
+const ACCION_PLATO: React.CSSProperties = {
+  display: "inline-flex",
+  alignItems: "center",
+  justifyContent: "center",
+  width: "28px",
+  height: "28px",
+  borderRadius: "7px",
+  border: `1px solid ${SURFACE.border}`,
+  background: SURFACE.card,
+  color: SURFACE.textSecondary,
+  cursor: "pointer",
+  flexShrink: 0,
 };
 
 const DIETARY_OPTIONS = [
@@ -336,10 +355,25 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
     await apiFetch(`/food-menus/${id}`, { method: "DELETE" });
     await loadMenus();
   }
+  // Borrar pide confirmación: antes el enlace borraba al primer toque.
+  const [porBorrar, setPorBorrar] = useState<FoodMenu | null>(null);
 
   // ── Render ──
   return (
     <div className="space-y-4">
+      <ConfirmDialog
+        open={!!porBorrar}
+        title={t("Eliminar del menú")}
+        message={porBorrar ? `${t("Se elimina")} "${porBorrar.title}"${porBorrar.description ? ` (${porBorrar.description})` : ""} ${t("de este día.")}` : ""}
+        confirmLabel={t("Eliminar")}
+        cancelLabel={t("Cancelar")}
+        onConfirm={() => {
+          const plato = porBorrar;
+          setPorBorrar(null);
+          if (plato) void handleDelete(plato.id);
+        }}
+        onCancel={() => setPorBorrar(null)}
+      />
 
       {/* TODAY BANNER */}
       <div style={{ borderRadius: "20px", background: SURFACE.card, border: `1px solid ${SURFACE.border}`, padding: isMobile ? "16px" : "24px 28px", boxShadow: "0 1px 4px rgba(15,23,42,0.06)" }}>
@@ -507,9 +541,13 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
                             <p style={{ fontSize: "10px", color: SURFACE.textFaint, marginTop: "2px" }}>Para: {m.clientTypes!.join(", ")}</p>
                           )}
                         </div>
-                        <div style={{ display: "flex", gap: "8px", flexShrink: 0, marginTop: "2px" }}>
-                          <button type="button" onClick={() => startEdit(m)} style={{ fontSize: "11px", color: SURFACE.textMuted, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>{t("editar")}</button>
-                          <button type="button" onClick={() => handleDelete(m.id)} style={{ fontSize: "11px", color: STATE.danger, background: "none", border: "none", cursor: "pointer", textDecoration: "underline" }}>{t("borrar")}</button>
+                        <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
+                          <button type="button" onClick={() => startEdit(m)} title={t("Editar")} aria-label={`${t("Editar")} ${m.title}`} style={ACCION_PLATO}>
+                            <PencilIcon size={13} strokeWidth={1.8} />
+                          </button>
+                          <button type="button" onClick={() => setPorBorrar(m)} title={t("Eliminar")} aria-label={`${t("Eliminar")} ${m.title}`} style={{ ...ACCION_PLATO, color: STATE.danger }}>
+                            <TrashIcon size={13} strokeWidth={1.8} />
+                          </button>
                         </div>
                       </div>
                     </div>
