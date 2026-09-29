@@ -17,6 +17,19 @@ const CALIDAD = 0.85;
 /** Por debajo de esto no vale la pena recomprimir. */
 const YA_ES_CHICA = 350 * 1024;
 
+/**
+ * Documentos (carnet, licencia, certificados): se leen, así que llevan más
+ * resolución que una foto de credencial. A 2000 px el texto de un carnet
+ * fotografiado sigue nítido y el archivo queda bajo 1 MB.
+ */
+const LADO_MAX_DOCUMENTO = 2000;
+/**
+ * Un PDF no se puede achicar en el teléfono. Sobre este peso se frena antes de
+ * enviarlo: en base64 crece un tercio y por datos móviles la subida se corta
+ * a mitad de camino (29-09-2026, conductores: "Load failed").
+ */
+export const MAX_MB_ARCHIVO = 15;
+
 function leerComoDataUrl(archivo: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const lector = new FileReader();
@@ -56,10 +69,10 @@ async function dibujable(archivo: Blob): Promise<{ fuente: CanvasImageSource; an
  * camino devuelve el archivo tal cual: más vale subir una foto pesada que no
  * subir ninguna.
  */
-export async function prepararFoto(archivo: File): Promise<string> {
+export async function prepararFoto(archivo: File, ladoMax = LADO_MAX): Promise<string> {
   try {
     const { fuente, ancho, alto } = await dibujable(archivo);
-    const escala = Math.min(1, LADO_MAX / Math.max(ancho, alto));
+    const escala = Math.min(1, ladoMax / Math.max(ancho, alto));
     if (escala === 1 && archivo.size <= YA_ES_CHICA) {
       return await leerComoDataUrl(archivo);
     }
@@ -76,4 +89,47 @@ export async function prepararFoto(archivo: File): Promise<string> {
   } catch {
     return await leerComoDataUrl(archivo);
   }
+}
+
+/** Fotos de cualquier formato, incluidas las HEIC del iPhone que a veces llegan sin tipo. */
+export function esImagen(archivo: { type?: string; name?: string }): boolean {
+  if ((archivo.type || "").toLowerCase().startsWith("image/")) return true;
+  return /\.(jpe?g|png|heic|heif|webp)$/i.test(archivo.name || "");
+}
+
+/** Mensaje si el archivo no se puede subir tal cual, o null si se puede. */
+export function archivoMuyPesado(archivo: { size: number; type?: string; name?: string }): string | null {
+  if (esImagen(archivo)) return null; // las fotos se achican antes de subir
+  const mb = archivo.size / (1024 * 1024);
+  if (mb <= MAX_MB_ARCHIVO) return null;
+  return `El archivo pesa ${mb.toFixed(1).replace(".", ",")} MB y el máximo es ${MAX_MB_ARCHIVO} MB. Súbelo como foto o envía un PDF más liviano.`;
+}
+
+/**
+ * Documento listo para subir: una foto se reduce a JPEG legible (un carnet
+ * fotografiado pasa de 5-15 MB a menos de 1 MB); un PDF va tal cual, salvo
+ * que pase el máximo, y entonces se avisa sin intentar la subida.
+ */
+export async function prepararDocumento(archivo: File): Promise<string> {
+  const pesado = archivoMuyPesado(archivo);
+  if (pesado) throw new Error(pesado);
+  if (esImagen(archivo)) return prepararFoto(archivo, LADO_MAX_DOCUMENTO);
+  return leerComoDataUrl(archivo);
+}
+
+/**
+ * Qué decirle a la persona cuando una subida falla. El navegador sólo dice
+ * "Load failed" (iPhone) o "Failed to fetch" cuando la conexión se corta a
+ * mitad de la subida; eso no le sirve a un conductor.
+ */
+export function mensajeDeSubida(error: unknown, que: string): string {
+  const texto = error instanceof Error ? error.message : String(error ?? "");
+  if (/entity too large|payload too large|\b413\b/i.test(texto)) {
+    return `${que}: el archivo es demasiado pesado. Súbelo como foto o envía un PDF más liviano.`;
+  }
+  if (/no se pudo conectar con la api|load failed|failed to fetch|network|networkerror|conexi[oó]n/i.test(texto)) {
+    return `No se pudo subir ${que}: se cortó la conexión. Revisa la señal e intenta de nuevo.`;
+  }
+  if (/el archivo pesa/i.test(texto)) return texto;
+  return `No se pudo subir ${que}. Intenta de nuevo.`;
 }

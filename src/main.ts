@@ -28,8 +28,6 @@ async function bootstrap() {
     bodyParser: false,
     ...(httpsOptions ? { httpsOptions } : {}),
   });
-  app.use(require('express').json({ limit: '50mb' }));
-  app.use(require('express').urlencoded({ limit: '50mb', extended: true }));
   const allowedOrigins = new Set([
     'http://localhost:3000',
     'http://localhost:3001',
@@ -72,6 +70,12 @@ async function bootstrap() {
     // sea el doble de espera. Con el permiso guardado, se pregunta una vez.
     maxAge: 86400,
   });
+  // El cuerpo se lee DESPUÉS de CORS (29-09-2026). Al revés, una subida que
+  // pasaba el tope respondía 413 sin la cabecera CORS y el teléfono sólo
+  // mostraba "Load failed" (documentos de conductores): no había forma de
+  // decirle que el archivo era muy pesado.
+  app.use(require('express').json({ limit: '50mb' }));
+  app.use(require('express').urlencoded({ limit: '50mb', extended: true }));
   // Las respuestas de la API no se guardan en el navegador. Esto lo pedia el
   // cliente con cache:'no-store' en cada peticion, pero esa opcion hace que
   // Chrome se salte el permiso guardado de arriba y vuelva a preguntar: un

@@ -66,6 +66,7 @@ import SelectorFiltro from "@/components/portal/SelectorFiltro";
 import { esSalida } from "@/lib/tramos-traslado";
 import { appYaRastrea, clasificarErrorUbicacionNativa } from "@/lib/ubicacion-conductor";
 import QRCode from "qrcode";
+import { mensajeDeSubida, prepararDocumento, prepararFoto } from "@/lib/imagen";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
@@ -955,12 +956,7 @@ export default function DriverPortalPage() {
     if (!journeyPhoto || !driverProfile?.id) return;
     setJourneyUploading(true);
     try {
-      const dataUrl = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error("read"));
-        reader.readAsDataURL(file);
-      });
+      const dataUrl = await prepararFoto(file);
       const saved = await apiFetch<{ url?: string; key?: string }>(`/drivers/${driverProfile.id}/journey-photo`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -989,8 +985,8 @@ export default function DriverPortalPage() {
       const tripId = journeyPhoto.tripId;
       setJourneyPhoto(null);
       if (next) await performUpdateTrip(tripId, next);
-    } catch {
-      driverNotify.push("No se pudo subir la foto. Intenta de nuevo", "error");
+    } catch (err) {
+      driverNotify.push(mensajeDeSubida(err, "la foto"), "error");
     } finally {
       setJourneyUploading(false);
     }
@@ -2764,13 +2760,10 @@ export default function DriverPortalPage() {
                                 if (!file || !driverProfile.id) return;
                                 setUploadingDoc(doc.key);
                                 try {
-                                  const dataUrl = await new Promise<string>((resolve, reject) => {
-                                    const reader = new FileReader();
-                                    reader.onload = () => resolve(reader.result as string);
-                                    reader.onerror = () => reject(new Error("Error leyendo archivo"));
-                                    reader.readAsDataURL(file);
-                                  });
-                                  // Upload document to Supabase storage
+                                  // La foto se reduce antes de subir: las del
+                                  // iPhone pesan 5-15 MB y por datos móviles la
+                                  // subida se cortaba ("Load failed").
+                                  const dataUrl = await prepararDocumento(file);
                                   const endpoint = driverProfile._isParticipant
                                     ? `/provider-participants/${driverProfile.id}/document`
                                     : `/drivers/${driverProfile.id}/document`;
@@ -2781,7 +2774,7 @@ export default function DriverPortalPage() {
                                   const newUrl = result?.metadata?.[doc.key] ?? `uploaded_${Date.now()}`;
                                   setDriverProfile({ ...driverProfile, metadata: { ...(driverProfile.metadata || {}), [doc.key]: newUrl } });
                                   driverNotify.push(`${doc.label} cargado`, "doc");
-                                } catch (err) { console.error("Doc upload error:", err); driverNotify.push(`Error: ${err instanceof Error ? err.message : "No se pudo subir"} ${doc.label}`, "error"); }
+                                } catch (err) { console.error("Doc upload error:", err); driverNotify.push(mensajeDeSubida(err, doc.label), "error"); }
                                 finally { setUploadingDoc(null); }
                               };
                               input.click();
@@ -2839,12 +2832,7 @@ export default function DriverPortalPage() {
                         if (!file || !driverProfile.id) return;
                         setUploadingPhoto(true);
                         try {
-                          const dataUrl = await new Promise<string>((resolve, reject) => {
-                            const reader = new FileReader();
-                            reader.onload = () => resolve(reader.result as string);
-                            reader.onerror = () => reject(new Error("Error leyendo archivo"));
-                            reader.readAsDataURL(file);
-                          });
+                          const dataUrl = await prepararFoto(file);
                           if (driverProfile._isParticipant) {
                             await apiFetch(`/provider-participants/${driverProfile.id}/document`, {
                               method: "POST", headers: { "Content-Type": "application/json" },
@@ -2861,7 +2849,7 @@ export default function DriverPortalPage() {
                             : await apiFetch<Driver>(`/drivers/${driverProfile.id}`);
                           setDriverProfile(updated);
                           driverNotify.push("Foto actualizada", "camera");
-                        } catch { driverNotify.push("No se pudo subir la foto", "error"); }
+                        } catch (err) { driverNotify.push(mensajeDeSubida(err, "la foto"), "error"); }
                         finally { setUploadingPhoto(false); }
                       };
                       input.click();
