@@ -1,7 +1,8 @@
 
 "use client";
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { contarPorDia, empiezaDia } from "@/lib/cortes-por-dia";
 import * as XLSX from "xlsx";
 import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
@@ -1333,6 +1334,10 @@ export default function TripsPage() {
   }, [baseSinConductor, drivers, ongoingDriver, t]);
 
   const ongoingTotalPages = Math.max(1, Math.ceil(ongoingFiltered.length / ONGOING_PAGE_SIZE));
+  // Encabezado por día: con "Todas las jornadas" la lista sólo decía la hora
+  // y después de las 23:39 de un día venían las 13:05 del siguiente.
+  const claveDiaViaje = (trip: Trip) => (trip.scheduledAt ? isoDayKeyLocal(trip.scheduledAt) : "sin-fecha");
+  const viajesPorDia = useMemo(() => contarPorDia(ongoingFiltered, claveDiaViaje), [ongoingFiltered]);
   const ongoingVisible = useMemo(
     () => ongoingFiltered.slice(ongoingPage * ONGOING_PAGE_SIZE, (ongoingPage + 1) * ONGOING_PAGE_SIZE),
     [ongoingFiltered, ongoingPage],
@@ -2659,8 +2664,11 @@ export default function TripsPage() {
                       </span>
                     </div>
 
-                    {ongoingVisible.map((trip) => {
+                    {ongoingVisible.map((trip, indice) => {
                       const sc = STATUS_COLORS[trip.status ?? "SCHEDULED"] ?? STATUS_COLORS.SCHEDULED;
+                      const claveDia = claveDiaViaje(trip);
+                      const nuevoDia = empiezaDia(ongoingVisible, indice, claveDiaViaje);
+                      const cuantosDelDia = viajesPorDia.get(claveDia) ?? 0;
                       const venue = trip.destinationVenueId ? venues[trip.destinationVenueId] : null;
                       const marcado = selectedIds.has(trip.id);
                       const sinChofer = !trip.driverId;
@@ -2676,8 +2684,23 @@ export default function TripsPage() {
                         .filter(Boolean)
                         .join("  ·  ");
                       return (
+                        <Fragment key={trip.id}>
+                        {nuevoDia && (
+                          <div
+                            style={{
+                              display: "flex", alignItems: "baseline", gap: 8,
+                              margin: indice === 0 ? "2px 0 0" : "10px 0 0", paddingLeft: 25,
+                            }}
+                          >
+                            <span style={{ fontSize: 12.5, fontWeight: 800, color: SURFACE.text }}>
+                              {claveDia === "sin-fecha" ? t("Sin fecha") : formatDayLabel(claveDia)}
+                            </span>
+                            <span style={{ fontSize: 11.5, color: SURFACE.textMuted }}>
+                              {cuantosDelDia} {cuantosDelDia === 1 ? t("viaje") : t("viajes")}
+                            </span>
+                          </div>
+                        )}
                         <div
-                          key={trip.id}
                           style={{ display: "flex", alignItems: "center", gap: 10 }}
                         >
                           <input
@@ -2825,6 +2848,7 @@ export default function TripsPage() {
                             </span>
                           </div>
                         </div>
+                        </Fragment>
                       );
                     })}
                   </div>
