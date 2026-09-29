@@ -133,7 +133,6 @@ type Trip = {
   origin?: string | null;
   destination?: string | null;
   tripType?: string | null;
-  tripCost?: number | null;
   clientType?: string | null;
   status?: string | null;
   scheduledAt?: string | null;
@@ -400,6 +399,13 @@ export default function DriverPortalPage() {
   const [driverProfile, setDriverProfile] = useState<Driver | null>(null);
   const [sessionChecked, setSessionChecked] = useState(false);
   const [trips, setTrips] = useState<Trip[]>([]);
+  /**
+   * Valor proveedor de cada viaje: lo que se le paga (29-09-2026). El valor
+   * del viaje (trip_cost) es lo que se le cobra al cliente y el conductor no
+   * lo ve; el servidor ya no se lo manda.
+   */
+  const [valoresProveedor, setValoresProveedor] = useState<Record<string, number | null>>({});
+  const valorProveedor = (trip: Trip) => valoresProveedor[trip.id] ?? null;
   const [events, setEvents] = useState<Record<string, EventItem>>({});
   const [vehicles, setVehicles] = useState<Record<string, VehicleItem>>({});
   const [delegations, setDelegations] = useState<Record<string, DelegationItem>>({});
@@ -747,6 +753,9 @@ export default function DriverPortalPage() {
       }
       const filteredTrips = allLegs.filter((trip) => driverKeys.has(trip.driverId));
       setTrips(filteredTrips);
+      apiFetch<Record<string, number | null>>("/trips/valores-proveedor")
+        .then((v) => setValoresProveedor(v && typeof v === "object" ? v : {}))
+        .catch(() => {});
 
       // Auto-resume tracking if there's already an active trip.
       // Sólo si es de hoy: un viaje que quedó en EN_ROUTE/PICKED_UP hace
@@ -2471,9 +2480,9 @@ export default function DriverPortalPage() {
                                   {tripVehicle.plate.toUpperCase()}
                                 </span>
                               )}
-                              {trip.tripCost != null && (
+                              {valorProveedor(trip) != null && (
                                 <span style={{ fontSize:10,fontWeight:700,padding:"3px 8px",borderRadius:6,background:"#f0fdfb",border:"1px solid rgba(33,208,179,0.2)",color:BRAND.tealInk }}>
-                                  {formatCurrencyCLP(trip.tripCost)}
+                                  {formatCurrencyCLP(valorProveedor(trip)!)}
                                 </span>
                               )}
                             </div>
@@ -2597,7 +2606,7 @@ export default function DriverPortalPage() {
                 return true;
               });
 
-              const totalCost = completed.reduce((sum, t) => sum + (Number(t.tripCost) || 0), 0);
+              const totalCost = completed.reduce((sum, t) => sum + (valorProveedor(t) ?? 0), 0);
               const rated = completed.filter((t) => t.driverRating);
               const avgRating = rated.length > 0 ? (rated.reduce((sum, t) => sum + (t.driverRating || 0), 0) / rated.length).toFixed(1) : null;
               const hasActiveFilters = reportDateFrom || reportDateTo || reportTypeFilter !== "all" || reportRatingFilter !== "all";
@@ -2695,8 +2704,8 @@ export default function DriverPortalPage() {
                                   <span style={{ fontSize:11,fontWeight:700,color:STATE.warning }}>{trip.driverRating}</span>
                                 </div>
                               )}
-                              {trip.tripCost != null && (
-                                <span style={{ fontSize:11,fontWeight:700,color:BRAND.tealInk,flexShrink:0 }}>{formatCurrencyCLP(trip.tripCost)}</span>
+                              {valorProveedor(trip) != null && (
+                                <span style={{ fontSize:11,fontWeight:700,color:BRAND.tealInk,flexShrink:0 }}>{formatCurrencyCLP(valorProveedor(trip)!)}</span>
                               )}
                               <ChevronRightIcon size={14} color={SURFACE.borderStrong} strokeWidth={2} style={{ flexShrink:0 }} />
                             </button>
@@ -3548,7 +3557,7 @@ export default function DriverPortalPage() {
                 {/* Stats principales */}
                 <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8 }}>
                   {stat("Distancia", km != null ? `${km.toFixed(1)} km` : (historyRouteLoading ? "…" : "—"), SURFACE.text)}
-                  {stat("Valor", trip.tripCost != null ? formatCurrencyCLP(trip.tripCost) : "—", BRAND.tealInk)}
+                  {stat("Valor", valorProveedor(trip) != null ? formatCurrencyCLP(valorProveedor(trip)!) : "—", BRAND.tealInk)}
                   {stat("Duración", formatDuration(trip.startedAt, trip.completedAt), SURFACE.text)}
                   {stat("Pasajeros", pax ? String(pax) : "—", SURFACE.text)}
                 </div>

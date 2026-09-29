@@ -67,21 +67,23 @@ export function nivelModulo(p: PermisosPanel, id: string): Nivel {
 }
 
 /**
- * El valor de un viaje (trip_cost) es lo que se le cobra al cliente
- * (29-09-2026: "les aparece el costo del viaje y eso es lo que cobramos
- * nosotros"). Lo ven los usuarios del panel con Finanzas —administradores y
- * BVAN— y el conductor en su app. El Comité, los participantes y cualquier
- * ruta pública no: el servidor lo borra de la respuesta y lo ignora si llega
- * en un cambio (así un guardado desde una pantalla sin el valor no lo pisa).
+ * El valor de un viaje (trip_cost) y el valor cliente de las tarifas son lo
+ * que se le cobra al cliente (29-09-2026: "les aparece el costo del viaje y
+ * eso es lo que cobramos nosotros"). Sólo los ven los usuarios del panel con
+ * Finanzas —administradores y BVAN—. El Comité, los participantes, los
+ * conductores (ven el valor proveedor) y cualquier ruta pública no: el
+ * servidor lo borra de la respuesta y lo ignora si llega en un cambio (así un
+ * guardado desde una pantalla sin el valor no lo pisa).
  */
-export const CAMPOS_DE_COBRO = ['tripCost', 'trip_cost'];
+export const CAMPOS_DE_COBRO = ['tripCost', 'trip_cost', 'clientPrice', 'client_price'];
 
 export function ocultaCobros(
   caller: { type: string; kind?: string; permisos?: PermisosPanel } | null | undefined,
 ): boolean {
   if (!caller) return true;
   if (caller.type === 'staff') return !!caller.permisos && nivelModulo(caller.permisos, 'operacion.finanzas') === 'ninguno';
-  if (caller.type === 'portal') return caller.kind !== 'driver';
+  // El conductor tampoco: lo suyo es el valor proveedor (GET
+  // /trips/valores-proveedor), no lo que se le cobra al cliente.
   return true;
 }
 

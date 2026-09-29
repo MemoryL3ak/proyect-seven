@@ -202,6 +202,28 @@ export class TripsFinanceService {
   }
 
   /**
+   * Valor proveedor de cada viaje de un conductor (29-09-2026): lo que se le
+   * paga, que es lo único que debe ver en su app — no el valor cliente
+   * (trip_cost) ni el de referencia. Misma valorización que el panel, pero
+   * sólo con la tarifa de SU proveedor: el promedio de mercado no es lo que
+   * él cobra. El regreso de un Transfer In Out va incluido en la ida. Sin
+   * tarifa, con tarifa en $0 (la pantalla de tarifas guarda 0 lo que se deja
+   * vacío) o en ese regreso, queda null y la app muestra "—".
+   */
+  async valoresProveedor(driverId: string): Promise<Record<string, number | null>> {
+    if (!UUID.test(driverId)) return {};
+    const filas = await this.dataSource.query<Array<{ id: string; valor: string | number | null }>>(
+      `${this.baseCte()}
+       select c.id,
+              nullif(case when ${TripsFinanceService.TRAMO_INCLUIDO} then 0 else c.rate_provider end, 0) as valor
+         from valorizado c
+        where c.driver_id = $8`,
+      [...this.params({}), driverId],
+    );
+    return Object.fromEntries(filas.map((f) => [f.id, f.valor === null ? null : Number(f.valor)]));
+  }
+
+  /**
    * Km recorridos del universo filtrado, viaje a viaje: la traza GPS real
    * (telemetry.vehicle_positions) cuando el viaje la tiene, y el largo de la
    * ruta planificada como respaldo. Sumar por viaje evita el problema de

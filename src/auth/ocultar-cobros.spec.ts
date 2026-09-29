@@ -42,7 +42,8 @@ describe('valor del viaje: sólo con Finanzas', () => {
     expect(ocultaCobros(comite)).toBe(true);
     expect(ocultaCobros(bvan)).toBe(false);
     expect(ocultaCobros(admin)).toBe(false);
-    expect(ocultaCobros({ type: 'portal', kind: 'driver' })).toBe(false);
+    // el conductor ve el valor proveedor (GET /trips/valores-proveedor), no éste
+    expect(ocultaCobros({ type: 'portal', kind: 'driver' })).toBe(true);
     expect(ocultaCobros({ type: 'portal', kind: 'athlete' })).toBe(true);
     expect(ocultaCobros(null)).toBe(true);
   });

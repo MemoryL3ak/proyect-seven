@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Query, Req } from '@nestjs/common';
 import type { ApiRequest } from '../auth/api-auth.guard';
 import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
@@ -9,6 +9,14 @@ import { TripsService } from './trips.service';
 import { TripsScheduleService } from './trips-schedule.service';
 import { TripsFinanceService } from './trips-finance.service';
 import { StaffScopeService } from '../auth/staff-scope.service';
+import { ocultaCobros } from '../auth/permisos-panel';
+
+/** Los informes de Finanzas traen el valor cliente: sin Finanzas, 403. */
+function exigirCobros(req: ApiRequest) {
+  if (ocultaCobros(req.apiCaller)) {
+    throw new ForbiddenException('Los montos de Finanzas requieren el módulo Finanzas');
+  }
+}
 
 @Controller('trips')
 export class TripsController {
@@ -67,9 +75,22 @@ export class TripsController {
 
   /* ─── Panel financiero ─── */
   // Deben declararse antes de `:id`, o Nest resolvería "finance" como un id.
+  // Traen el valor cliente y el margen: sólo para quien ve cobros (Finanzas).
+
+  /** Valor proveedor de los viajes del conductor: lo que ve en su app. */
+  @Get('valores-proveedor')
+  valoresProveedor(@Req() req: ApiRequest, @Query('driverId') driverId?: string) {
+    const caller = req.apiCaller;
+    if (caller?.type === 'portal' && caller.kind === 'driver') {
+      return this.financeService.valoresProveedor(caller.userId);
+    }
+    if (caller?.type === 'staff' && driverId) return this.financeService.valoresProveedor(driverId);
+    throw new ForbiddenException('Sólo el conductor o el panel');
+  }
 
   @Get('finance/summary')
   financeSummary(
+    @Req() req: ApiRequest,
     @Query('eventId') eventId?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
@@ -78,11 +99,13 @@ export class TripsController {
     @Query('service') service?: string,
     @Query('providerId') providerId?: string,
   ) {
+    exigirCobros(req);
     return this.financeService.summary({ eventId, from, to, clientType, fleet, service, providerId });
   }
 
   @Get('finance/jornadas')
   financeJornadas(
+    @Req() req: ApiRequest,
     @Query('eventId') eventId?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
@@ -91,11 +114,13 @@ export class TripsController {
     @Query('service') service?: string,
     @Query('providerId') providerId?: string,
   ) {
+    exigirCobros(req);
     return this.financeService.jornadas({ eventId, from, to, clientType, fleet, service, providerId });
   }
 
   @Get('finance/detail')
   financeDetail(
+    @Req() req: ApiRequest,
     @Query('eventId') eventId?: string,
     @Query('from') from?: string,
     @Query('to') to?: string,
@@ -104,6 +129,7 @@ export class TripsController {
     @Query('service') service?: string,
     @Query('providerId') providerId?: string,
   ) {
+    exigirCobros(req);
     return this.financeService.detail({ eventId, from, to, clientType, fleet, service, providerId });
   }
 
