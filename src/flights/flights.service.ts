@@ -145,10 +145,11 @@ export class FlightsService {
   }
 
   /**
-   * Pasajeros validados del evento con su vuelo de llegada y de salida, y el
+   * Pasajeros del evento con su vuelo de llegada y de salida, y el
    * traslado de AND de cada tramo (estado y conductor con su teléfono y
    * patente, 28-09-2026). La app agrupa por
-   * vuelo. Mismo criterio que los monitores del panel: sólo fichas validadas.
+   * vuelo. Validadas o no (28-09-2026): las fichas que carga AND quedan
+   * REGISTERED y los coordinadores de BVAN veían un vuelo de 14.
    */
   async vuelosDelEvento(eventId: string) {
     return this.flightRepository.manager.query(
@@ -204,7 +205,6 @@ export class FlightsService {
          ) ts on true
         where a.event_id = $1
           and a.status is distinct from 'DELETED'
-          and (a.status = 'PERSONAL_DATA_VALIDATED' or a.metadata->>'personalDataValidated' = 'true')
           and (a.arrival_time is not null or a.departure_time is not null)
         order by coalesce(a.arrival_time, a.departure_time)`,
       [eventId],

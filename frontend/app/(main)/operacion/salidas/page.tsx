@@ -11,7 +11,7 @@ import { opcionesDeConductores } from "@/lib/opciones-conductores";
 import { estadoAlMarcar, trasladoRealizado } from "@/lib/marcar-traslado";
 import { aplanarTramos, esSalida } from "@/lib/tramos-traslado";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
-import { filterValidatedAthletes } from "@/lib/athletes";
+import { filterPasajerosDeVuelos } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
 import { CalendarIcon, AlertIcon, SearchIcon, RefreshIcon, PlaneIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
@@ -150,7 +150,7 @@ export default function DepartureMonitoringPage() {
       setConductores(Object.fromEntries((conductoresData ?? []).map((d) => [d.id, d.fullName ?? ""])));
       setListaConductores(conductoresData ?? []);
       setAhora(new Date());
-      setAthletes(filterValidatedAthletes(Array.isArray(ath) ? ath : []));
+      setAthletes(filterPasajerosDeVuelos(Array.isArray(ath) ? ath : []));
       // Salidas a monitorear: los Transfer Out y el regreso de cada Transfer
       // In Out, que /trips entrega anidado en su llegada.
       setTransferOutTrips(

@@ -26,7 +26,7 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
-import { filterValidatedAthletes } from "@/lib/athletes";
+import { filterPasajerosDeVuelos } from "@/lib/athletes";
 import StyledSelect from "@/components/StyledSelect";
 import { claveDiaEvento, etiquetaDiaEvento } from "@/lib/hora-evento";
 import { nombreDePais } from "@/lib/paises";
@@ -269,7 +269,7 @@ export default function FlightsPage() {
       setListaConductores(driverData ?? []);
       setFlights(flightData ?? []);
       setEvents(eventData ?? []);
-      setAthletes(filterValidatedAthletes(athleteData ?? []));
+      setAthletes(filterPasajerosDeVuelos(athleteData ?? []));
       // Llegadas a monitorear (aeropuerto → hotel/sede): los Transfer In y la
       // ida de cada Transfer In Out, que trae su salida anidada.
       setTransferInTrips(llegadasDe(tripData ?? []));
@@ -386,6 +386,9 @@ export default function FlightsPage() {
     return filteredFlights.map(f => {
       const normalizedFN = f.flightNumber.replace(/\s+/g, "").toUpperCase();
       const passengers = athletes.filter(a => {
+        // Ahora entran también las fichas sin validar: sólo las del evento
+        // del vuelo, que un mismo número de vuelo existe en otro evento.
+        if (a.eventId && f.eventId && a.eventId !== f.eventId) return false;
         // Match by athlete's direct flightNumber field
         const directFN = (a.flightNumber ?? "").replace(/\s+/g, "").toUpperCase();
         if (directFN && directFN === normalizedFN) return true;
