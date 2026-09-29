@@ -12,6 +12,12 @@
 //
 // Es idempotente: cada fila lleva metadata.fixtureKey (deporte-género-jornada-
 // partido); si ya existe una prueba con esa clave se actualiza, no se duplica.
+//
+// Cruces por definir (29-09-2026, balonmano): "3°C", "1°A", "Ganador P29" o
+// "Perdedor P25" se cargan sin delegación, con ese texto en el nombre, para
+// que la hora y el recinto ya estén en el calendario. Cuando se sepan los
+// equipos, se corrige el CSV y se vuelve a correr: la misma fixtureKey
+// actualiza el partido con sus regiones.
 // Cada prueba deja su evento en core.sports_calendar_events igual que lo hace
 // el API (src/disciplines/prueba-calendario.ts).
 const fs = require('fs');
@@ -108,6 +114,12 @@ function leerCsv(ruta) {
   });
 }
 
+/** "3°C", "1° A", "Ganador P29", "Perdedor P25": el equipo aún no se sabe. */
+function porDefinir(texto) {
+  const t = norm(texto);
+  return /^\d+\s*°?\s*[a-d]$/.test(t) || /^(ganador|perdedor)\s+p\s*\d+$/.test(t);
+}
+
 function unico(lista, que, texto) {
   if (lista.length === 1) return lista[0];
   if (lista.length === 0) throw new Error(`${que} "${texto}" no está en el catálogo`);
@@ -162,6 +174,7 @@ function unico(lista, que, texto) {
         const sede = unico(exactas.length === 1 ? exactas : candidatas, 'Sede', f.recinto);
 
         const delegacionDe = (texto) => {
+          if (porDefinir(texto)) return null;
           // "Arica y P." → "arica"; "Los Lagos" se busca entero (no por palabra:
           // "los" calza con Los Lagos, Los Ríos y Aysén ... del Campo).
           const token = norm(texto).split(/\s+y\s+/)[0].trim();
@@ -180,7 +193,7 @@ function unico(lista, que, texto) {
           d1,
           d2,
           fixtureKey,
-          name: `Fecha ${f.jornada} · P${f.partido} · ${etiquetaGrupo(f.grupo)} · ${nombreCortoRegion(d1.nombre)} vs ${nombreCortoRegion(d2.nombre)}${cancha ? ` · Cancha ${cancha}` : ''}`,
+          name: `Fecha ${f.jornada} · P${f.partido} · ${etiquetaGrupo(f.grupo)} · ${d1 ? nombreCortoRegion(d1.nombre) : f.delegacion_1} vs ${d2 ? nombreCortoRegion(d2.nombre) : f.delegacion_2}${cancha ? ` · Cancha ${cancha}` : ''}`,
           scheduledAt: hhmm(f.hora),
           metadata: {
             fixtureKey,
@@ -191,6 +204,7 @@ function unico(lista, que, texto) {
             hotelDepartureAt: f.salida_hotel ? hhmm(f.salida_hotel) : null,
             hotelReturnAt: f.retorno_hotel ? hhmm(f.retorno_hotel) : null,
             source: path.basename(archivo),
+            ...(!d1 || !d2 ? { porDefinir: [d1 ? null : f.delegacion_1, d2 ? null : f.delegacion_2].filter(Boolean) } : {}),
           },
         });
       } catch (e) {
@@ -200,7 +214,7 @@ function unico(lista, que, texto) {
 
     for (const r of resueltas) {
       console.log(
-        [r.fila.deporte, r.fila.genero, r.name, r.scheduledAt, r.sede.name, r.d1.country_code, r.d2.country_code].join(' | '),
+        [r.fila.deporte, r.fila.genero, r.name, r.scheduledAt, r.sede.name, r.d1?.country_code ?? r.fila.delegacion_1, r.d2?.country_code ?? r.fila.delegacion_2].join(' | '),
       );
     }
     console.log(`\n${resueltas.length} filas resueltas, ${errores.length} con error`);
@@ -223,7 +237,8 @@ function unico(lista, que, texto) {
         "select id from core.disciplines where parent_id = $1 and metadata->>'fixtureKey' = $2",
         [r.padre.id, r.fixtureKey],
       );
-      const valores = [r.name, r.padre.event_id, 'CONVENTIONAL', r.padre.gender, r.padre.id, r.scheduledAt, r.sede.name, [r.d1.id, r.d2.id], JSON.stringify(r.metadata)];
+      const ids = [r.d1?.id, r.d2?.id].filter(Boolean);
+      const valores = [r.name, r.padre.event_id, 'CONVENTIONAL', r.padre.gender, r.padre.id, r.scheduledAt, r.sede.name, ids, JSON.stringify(r.metadata)];
       let id;
       if (existente.rowCount) {
         id = existente.rows[0].id;
@@ -242,7 +257,7 @@ function unico(lista, que, texto) {
         insertadas += 1;
       }
       // Mismo evento de calendario que genera el API (prueba-calendario.ts).
-      const nombres = [r.d1.nombre, r.d2.nombre];
+      const nombres = [r.d1 ? r.d1.nombre : r.fila.delegacion_1, r.d2 ? r.d2.nombre : r.fila.delegacion_2];
       const metaCal = JSON.stringify({
         ...r.metadata,
         title: `🏁 ${r.name}`,
@@ -255,7 +270,7 @@ function unico(lista, que, texto) {
       });
       const externalId = `prueba:${id}`;
       const cal = await db.query('select id from core.sports_calendar_events where external_id = $1', [externalId]);
-      const calValores = [r.padre.event_id, r.padre.name, 'Pruebas', nombres[0], nombres[1], r.sede.name, r.scheduledAt, 'SCHEDULED', externalId, 'PRUEBAS', [r.d1.id, r.d2.id], metaCal];
+      const calValores = [r.padre.event_id, r.padre.name, 'Pruebas', nombres[0], nombres[1], r.sede.name, r.scheduledAt, 'SCHEDULED', externalId, 'PRUEBAS', ids, metaCal];
       if (cal.rowCount) {
         await db.query(
           `update core.sports_calendar_events set event_id=$1, sport=$2, league=$3, home_team=$4, away_team=$5, venue=$6, start_at_utc=$7, status=$8, external_id=$9, source=$10, delegation_ids=$11::uuid[], metadata=$12::jsonb, updated_at=now() where id=$13`,
