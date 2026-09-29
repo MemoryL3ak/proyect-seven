@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { apiFetch } from "@/lib/api";
+import StyledSelect from "@/components/StyledSelect";
 import { PinIcon, ClockIcon, ChevronLeftIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
@@ -390,10 +391,11 @@ export default function FoodCalendar({ mealType }: { mealType: MealType }) {
           </button>
         </div>
         {accommodations.length > 0 && (
-          <select style={{ height: "36px", padding: "0 12px", borderRadius: "10px", border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.text, fontSize: "13px", outline: "none", marginLeft: "auto" }} value={filterAccomm} onChange={(e) => setFilterAccomm(e.target.value)}>
+          // Filtro con el selector del panel, nunca el <select> nativo.
+          <StyledSelect wrapperStyle={{ marginLeft: "auto", width: "auto", minWidth: 200 }} value={filterAccomm} onChange={(e) => setFilterAccomm(e.target.value)}>
             <option value="">{t("Todos los hoteles")}</option>
             {accommodations.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-          </select>
+          </StyledSelect>
         )}
       </div>
 
