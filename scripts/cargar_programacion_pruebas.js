@@ -53,6 +53,8 @@ const ALIAS_RECINTO = {
   'nicolas massu': 'nicolas massu',
   'esc naval': 'escuela naval',
   'renato raggio': 'polideportivo renato raggio',
+  // Básquetbol (29-09-2026): la sede es "Gimnasio PUCV, Campus Curauma".
+  'pucv curauma': 'pucv',
 };
 
 /**
@@ -118,6 +120,14 @@ function leerCsv(ruta) {
 function porDefinir(texto) {
   const t = norm(texto);
   return /^\d+\s*°?\s*[a-d]$/.test(t) || /^(ganador|perdedor)\s+p\s*\d+$/.test(t);
+}
+
+/** "PERDEDOR P 32" → "Perdedor P32"; "3°c" → "3°C": igual en todos los deportes. */
+function textoCruce(texto) {
+  const t = String(texto ?? '').trim().replace(/\s+/g, ' ');
+  const gp = t.match(/^(ganador|perdedor)\s+p\s*(\d+)$/i);
+  if (gp) return `${gp[1][0].toUpperCase()}${gp[1].slice(1).toLowerCase()} P${gp[2]}`;
+  return t.toUpperCase();
 }
 
 function unico(lista, que, texto) {
@@ -193,7 +203,7 @@ function unico(lista, que, texto) {
           d1,
           d2,
           fixtureKey,
-          name: `Fecha ${f.jornada} · P${f.partido} · ${etiquetaGrupo(f.grupo)} · ${d1 ? nombreCortoRegion(d1.nombre) : f.delegacion_1} vs ${d2 ? nombreCortoRegion(d2.nombre) : f.delegacion_2}${cancha ? ` · Cancha ${cancha}` : ''}`,
+          name: `Fecha ${f.jornada} · P${f.partido} · ${etiquetaGrupo(f.grupo)} · ${d1 ? nombreCortoRegion(d1.nombre) : textoCruce(f.delegacion_1)} vs ${d2 ? nombreCortoRegion(d2.nombre) : textoCruce(f.delegacion_2)}${cancha ? ` · Cancha ${cancha}` : ''}`,
           scheduledAt: hhmm(f.hora),
           metadata: {
             fixtureKey,
@@ -204,7 +214,7 @@ function unico(lista, que, texto) {
             hotelDepartureAt: f.salida_hotel ? hhmm(f.salida_hotel) : null,
             hotelReturnAt: f.retorno_hotel ? hhmm(f.retorno_hotel) : null,
             source: path.basename(archivo),
-            ...(!d1 || !d2 ? { porDefinir: [d1 ? null : f.delegacion_1, d2 ? null : f.delegacion_2].filter(Boolean) } : {}),
+            ...(!d1 || !d2 ? { porDefinir: [d1 ? null : textoCruce(f.delegacion_1), d2 ? null : textoCruce(f.delegacion_2)].filter(Boolean) } : {}),
           },
         });
       } catch (e) {
@@ -266,7 +276,7 @@ function unico(lista, que, texto) {
         insertadas += 1;
       }
       // Mismo evento de calendario que genera el API (prueba-calendario.ts).
-      const nombres = [r.d1 ? r.d1.nombre : r.fila.delegacion_1, r.d2 ? r.d2.nombre : r.fila.delegacion_2];
+      const nombres = [r.d1 ? r.d1.nombre : textoCruce(r.fila.delegacion_1), r.d2 ? r.d2.nombre : textoCruce(r.fila.delegacion_2)];
       const metaCal = JSON.stringify({
         ...r.metadata,
         title: `🏁 ${r.name}`,
