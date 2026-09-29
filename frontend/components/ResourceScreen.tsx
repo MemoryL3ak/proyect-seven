@@ -60,9 +60,11 @@ const ENDPOINTS_SIN_EVENTO = new Set(["/events", "/providers", "/drivers"]);
 
 /**
  * Desplegables del formulario que se acotan al evento. Habitaciones y extras
- * no traen evento: se ubican por su hotel.
+ * no traen evento: se ubican por su hotel. Sedes y comedores desde el
+ * 28-09-2026: el viaje manual de World Rugby ofrecía como destino el Estadio
+ * Elías Figueroa y las otras sedes de los Juegos Escolares.
  */
-const FUENTES_POR_EVENTO = new Set(["accommodations", "athletes", "delegations", "hotelRooms", "hotelExtras"]);
+const FUENTES_POR_EVENTO = new Set(["accommodations", "athletes", "delegations", "hotelRooms", "hotelExtras", "venues", "foodLocations"]);
 
 // disciplineIds: el selector de Disciplina de un viaje se acota a las del evento.
 type EventOption = Option & { disciplineIds?: string[] };
@@ -2275,7 +2277,8 @@ export default function ResourceScreen({
         label: venue.name ? `${venue.name}${venue.address ? ` · ${venue.address}` : ""}` : venue.id,
         value: venue.id,
         // SEDE o COMEDOR: el formulario de viajes ofrece uno u otro.
-        venueType: String(venue.venueType ?? "SEDE")
+        venueType: String(venue.venueType ?? "SEDE"),
+        eventId: venue.eventId ?? null,
       }));
       setVenueOptions(options);
       setVenuesRaw(data || []);
