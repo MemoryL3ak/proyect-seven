@@ -438,9 +438,6 @@ export default function DriverPortalPage() {
   const [idError, setIdError] = useState<string | null>(null);
   /** El código existe pero pertenece a otro portal: hay que ofrecer salida. */
   const [wrongPortal, setWrongPortal] = useState<"athlete" | "staff" | null>(null);
-  const [pickupTrip, setPickupTrip] = useState<Trip | null>(null);
-  const [pickupCode, setPickupCode] = useState("");
-  const [pickupError, setPickupError] = useState<string | null>(null);
   const [trackingTripId, setTrackingTripId] = useState<string | null>(null);
   /** Estado del rastreo del shell nativo. null fuera de la app o antes de saberlo. */
   const [shellTracking, setShellTracking] = useState<ShellTrackingState | null>(null);
@@ -1080,32 +1077,6 @@ export default function DriverPortalPage() {
     }
   };
 
-  const getPickupCandidates = (trip: Trip) => {
-    const candidates = new Set<string>();
-    if (trip.requesterAthleteId) {
-      const requesterSuffix = trip.requesterAthleteId.slice(-6);
-      if (requesterSuffix) candidates.add(requesterSuffix);
-    }
-    (trip.athleteIds || []).forEach((athleteId) => {
-      const suffix = athleteId.slice(-6);
-      if (suffix) candidates.add(suffix);
-    });
-    const delegationIds = (trip.athleteIds || [])
-      .map((athleteId) => athletes[athleteId]?.delegationId)
-      .filter((value): value is string => Boolean(value));
-    const uniqueDelegations = Array.from(new Set(delegationIds));
-    uniqueDelegations.forEach((delegationId) => {
-      const lead = Object.values(athletes).find(
-        (athlete) => athlete.delegationId === delegationId && esJefeDelegacion(athlete)
-      );
-      if (lead?.id) {
-        const suffix = lead.id.slice(-6);
-        if (suffix) candidates.add(suffix);
-      }
-    });
-    return candidates;
-  };
-
   // Solicitudes del portal (VIP/T1): el portal las crea como VIAJE_IDA(_REGRESO)
   // con nota "[Portal]". Terminan en un solo paso (COMPLETED); sin esto quedaban
   // colgadas en DROPPED_OFF ("En destino") cuando el conductor no confirmaba
@@ -1116,38 +1087,11 @@ export default function DriverPortalPage() {
     ["VIP", "T1"].includes((trip.clientType || "").toUpperCase());
   const isDisposicion = (trip: Trip) => trip.tripType === "DISPOSICION_12H";
 
+  // Recogida sin código, en todos los viajes (29-09-2026). Antes se le pedía
+  // al conductor el código de usuario del pasajero en los viajes VIP, y eso
+  // frenaba la salida cuando el pasajero no lo tenía a mano.
   const confirmPickup = (trip: Trip) => {
-    // El código de verificación se pide SOLO en viajes VIP. Para el resto
-    // —jefes de misión, TA y los demás tipos— la recogida se confirma directo.
-    // Antes la excepción cubría únicamente a TA en viajes de ida/regreso, así
-    // que al jefe de misión (client_type JEFE_MISION) se le pedía un código
-    // que no tiene a mano, y eso frenaba la salida del bus.
-    const esVip = (trip.clientType || "").toUpperCase() === "VIP";
-    if (!esVip) {
-      void updateTrip(trip.id, "PICKED_UP");
-      return;
-    }
-    setPickupTrip(trip);
-    setPickupCode("");
-    setPickupError(null);
-  };
-
-  const submitPickupCode = async () => {
-    if (!pickupTrip) return;
-    const normalized = pickupCode.trim();
-    if (normalized.length < 6) {
-      setPickupError(t("El código de usuario ingresado no es válido."));
-      return;
-    }
-    const last6 = normalized.slice(-6).toLowerCase();
-    const candidates = getPickupCandidates(pickupTrip);
-    if (!candidates.has(last6) && ![...candidates].some((c) => c.toLowerCase() === last6)) {
-      setPickupError(t("El código no coincide con el usuario del viaje."));
-      return;
-    }
-    setPickupError(null);
-    setPickupTrip(null);
-    await updateTrip(pickupTrip.id, "PICKED_UP");
+    void updateTrip(trip.id, "PICKED_UP");
   };
 
   // `trip` es opcional: el monitoreo necesita la posición desde que el chofer
@@ -3309,53 +3253,6 @@ export default function DriverPortalPage() {
             ))}
           </div>
 
-        </div>
-      )}
-
-      {pickupTrip && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur px-4">
-          <div className="surface w-full max-w-md rounded-3xl p-6 shadow-xl">
-            <div className="space-y-2">
-              <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--text-muted)" }}>
-                {t("Código de verificación")}
-              </p>
-              <h3 className="font-sans font-bold text-2xl" style={{ color: "var(--text)" }}>
-                {pickupTrip && isPortalRequest(pickupTrip) ? t("En curso") : t("Recogido")}
-              </h3>
-              <p className="text-sm" style={{ color: "var(--text-muted)" }}>
-                {t("Ingresa el código de usuario del pasajero para iniciar el viaje.")}
-              </p>
-            </div>
-            <label className="flex flex-col gap-2 text-sm mt-4" style={{ color: "var(--text)" }}>
-              {t("Código de usuario")}
-              <input
-                className="input"
-                value={pickupCode}
-                onChange={(event) => setPickupCode(event.target.value)}
-                placeholder="a1b2c3"
-                inputMode="text"
-                autoCapitalize="none"
-                autoCorrect="off"
-                maxLength={12}
-              />
-            </label>
-            {pickupError && <p className="text-sm text-rose-600 mt-2">{pickupError}</p>}
-            <div className="flex flex-wrap gap-2 mt-5">
-              <button className="btn btn-primary" onClick={submitPickupCode}>
-                {t("Validar")}
-              </button>
-              <button
-                className="btn btn-ghost"
-                onClick={() => {
-                  setPickupTrip(null);
-                  setPickupCode("");
-                  setPickupError(null);
-                }}
-              >
-                {t("Cancelar")}
-              </button>
-            </div>
-          </div>
         </div>
       )}
 

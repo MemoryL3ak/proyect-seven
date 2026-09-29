@@ -5,7 +5,6 @@ import {
   Alert,
   KeyboardAvoidingView,
   Linking,
-  Modal,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -69,9 +68,6 @@ export default function ConductorPortal() {
   const [requestError, setRequestError] = useState<string | null>(null);
   const [destinationFilter, setDestinationFilter] = useState('');
   const [trackingTripId, setTrackingTripId] = useState<string | null>(null);
-  const [pickupTrip, setPickupTrip] = useState<Trip | null>(null);
-  const [pickupCode, setPickupCode] = useState('');
-  const [pickupError, setPickupError] = useState<string | null>(null);
   const trackingInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // ── GPS tracking ────────────────────────────────────────────────────────
@@ -180,29 +176,6 @@ export default function ConductorPortal() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getPickupCandidates = (trip: Trip) => {
-    const candidates = new Set<string>();
-    if (trip.requesterAthleteId) candidates.add(trip.requesterAthleteId.slice(-6));
-    (trip.athleteIds || []).forEach((id) => candidates.add(id.slice(-6)));
-    const delegIds = Array.from(new Set((trip.athleteIds || []).map((id) => athletes[id]?.delegationId).filter(Boolean) as string[]));
-    delegIds.forEach((dId) => {
-      const lead = Object.values(athletes).find((a) => a.delegationId === dId && a.isDelegationLead);
-      if (lead?.id) candidates.add(lead.id.slice(-6));
-    });
-    return candidates;
-  };
-
-  const submitPickup = async () => {
-    if (!pickupTrip) return;
-    const last6 = pickupCode.trim().slice(-6);
-    if (last6.length < 6) { setPickupError('El código no es válido.'); return; }
-    if (!getPickupCandidates(pickupTrip).has(last6)) { setPickupError('El código no coincide con el usuario del viaje.'); return; }
-    setPickupTrip(null);
-    setPickupCode('');
-    setPickupError(null);
-    await updateTrip(pickupTrip.id, 'PICKED_UP');
   };
 
   const requestAccess = async () => {
@@ -406,7 +379,7 @@ export default function ConductorPortal() {
                       <TouchableOpacity style={s.actionBtn} onPress={() => updateTrip(trip.id, 'EN_ROUTE')}>
                         <Text style={s.actionBtnText}>En ruta</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity style={[s.actionBtn, s.actionBtnPrimary]} onPress={() => { setPickupTrip(trip); setPickupCode(''); setPickupError(null); }}>
+                      <TouchableOpacity style={[s.actionBtn, s.actionBtnPrimary]} onPress={() => updateTrip(trip.id, 'PICKED_UP')}>
                         <Text style={[s.actionBtnText, { color: '#fff' }]}>{isPortalReq ? 'En curso' : 'Recogido'}</Text>
                       </TouchableOpacity>
                       {!isPortalReq && trip.tripType !== 'SERVICE' && (
@@ -426,33 +399,6 @@ export default function ConductorPortal() {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ── Pickup code modal ──────────────────── */}
-      <Modal visible={!!pickupTrip} transparent animationType="slide">
-        <View style={s.modalOverlay}>
-          <View style={s.modalBox}>
-            <Text style={s.sectionLabel}>Código de verificación</Text>
-            <Text style={s.nameText}>{pickupTrip?.tripType === 'PORTAL_REQUEST' ? 'En curso' : 'Recogido'}</Text>
-            <Text style={[s.metaText, { marginBottom: 12 }]}>Ingresa el código de usuario del pasajero.</Text>
-            <TextInput
-              style={s.input}
-              value={pickupCode}
-              onChangeText={setPickupCode}
-              placeholder="000000"
-              keyboardType="numeric"
-              maxLength={12}
-            />
-            {pickupError && <Text style={s.errorText}>{pickupError}</Text>}
-            <View style={s.actionRow}>
-              <TouchableOpacity style={[s.actionBtn, s.actionBtnPrimary]} onPress={submitPickup}>
-                <Text style={[s.actionBtnText, { color: '#fff' }]}>Validar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={s.actionBtn} onPress={() => { setPickupTrip(null); setPickupCode(''); setPickupError(null); }}>
-                <Text style={s.actionBtnText}>Cancelar</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
