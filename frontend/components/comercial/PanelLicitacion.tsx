@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Fragment, useMemo, useState } from "react";
+import { Bar, BarChart, Cell, LabelList, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { ACCENT, BRAND, STATE, SURFACE } from "@/lib/design";
 import { useContador } from "@/lib/contador-animado";
 import {
@@ -86,12 +86,16 @@ export default function PanelLicitacion({ eventoId, eventoNombre, cobros, resume
     { nombre: "Programado por realizar", valor: pendienteProgramado, color: BRAND.blue },
     { nombre: "Sin programar", valor: restante, color: SURFACE.borderStrong },
   ];
+  // Por proveedor sólo se mira lo que hizo: lo licitado se reparte por
+  // sistema (buses y vans compartidos) y no se puede atribuir a uno solo.
   const datosProveedor = resumen.porProveedor.map((p) => ({
+    providerId: p.providerId,
     nombre: nombreDe.get(p.providerId) ?? "Proveedor",
     Consumido: p.consumido,
-    Programado: Math.max(0, p.programado - p.consumido),
-    licitado: p.licitadoExclusivo,
-    compartido: p.licitadoCompartido,
+    "Por realizar": Math.max(0, p.programado - p.consumido),
+    total: p.programado,
+    realizados: p.realizados,
+    programados: p.programados,
   }));
 
   const kpis: { etiqueta: string; valor: number; color: string; formato: (v: number) => string; nota: string }[] = [
@@ -226,30 +230,40 @@ export default function PanelLicitacion({ eventoId, eventoNombre, cobros, resume
             <div style={tarjeta(ACCENT.violet, pad)}>
               <div style={franja(ACCENT.violet)} />
               <p style={rotulo(ACCENT.violet)}>Por proveedor</p>
-              <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: "2px 0 10px" }}>Consumido y programado</p>
+              <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: "2px 0 2px" }}>Cuánto lleva cada uno</p>
+              <p style={{ fontSize: 11, color: SURFACE.textMuted, margin: "0 0 10px" }}>
+                Consumido a la fecha y lo agendado que falta realizar, valorizado con el cobro de cada sistema.
+              </p>
               <div style={{ height: 210 + 8 + Math.max(0, datosProveedor.length - 5) * 24 }}>
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={datosProveedor} layout="vertical" margin={{ left: 4, right: 12, top: 4, bottom: 4 }} barCategoryGap={8}>
+                  <BarChart data={datosProveedor} layout="vertical" margin={{ left: 4, right: 56, top: 4, bottom: 4 }} barCategoryGap={8}>
                     <XAxis type="number" hide />
                     <YAxis type="category" dataKey="nombre" width={110} tick={{ fontSize: 10, fill: SURFACE.textSecondary }} tickLine={false} axisLine={false}
                       tickFormatter={(v: string) => (v.length > 16 ? `${v.slice(0, 15)}…` : v)} />
                     <Tooltip content={<TooltipCaja ve={veCobros} />} cursor={{ fill: "rgba(15,23,42,0.04)" }} />
                     <Bar dataKey="Consumido" stackId="a" fill={BRAND.teal} radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="Programado" stackId="a" fill={BRAND.blue} radius={[0, 6, 6, 0]} />
+                    <Bar dataKey="Por realizar" stackId="a" fill={BRAND.blue} radius={[0, 6, 6, 0]}>
+                      <LabelList dataKey="total" position="right" formatter={(v: unknown) => (veCobros ? pesosCortos(Number(v)) : "")} style={{ fontSize: 10, fill: SURFACE.textSecondary, fontWeight: 700 }} />
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
               </div>
-              <ul style={{ listStyle: "none", padding: 0, margin: "6px 0 0", display: "flex", flexDirection: "column", gap: 4 }}>
-                {datosProveedor.slice(0, 8).map((p) => (
-                  <li key={p.nombre} style={{ display: "flex", justifyContent: "space-between", gap: 8, fontSize: 11, color: SURFACE.textSecondary }}>
-                    <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nombre}</span>
-                    <span style={{ fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>
-                      {veCobros ? (p.licitado > 0 ? pesosCortos(p.licitado) : "") : "—"}
-                      {veCobros && p.compartido > 0 && <span style={{ color: SURFACE.textFaint }}> {p.licitado > 0 ? "+ " : ""}comparte {pesosCortos(p.compartido)}</span>}
-                    </span>
-                  </li>
+              <div style={{ display: "flex", gap: 12, fontSize: 10, color: SURFACE.textMuted, margin: "4px 0 8px" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><i style={{ width: 9, height: 9, borderRadius: 3, background: BRAND.teal }} />Consumido</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5 }}><i style={{ width: 9, height: 9, borderRadius: 3, background: BRAND.blue }} />Por realizar</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", columnGap: 10, rowGap: 5, fontSize: 11, alignItems: "baseline" }}>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SURFACE.textFaint }}>Proveedor</span>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SURFACE.textFaint, textAlign: "right" }}>Realizado</span>
+                <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase", color: SURFACE.textFaint, textAlign: "right" }}>Consumido</span>
+                {datosProveedor.map((p) => (
+                  <Fragment key={p.providerId}>
+                    <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", color: SURFACE.textSecondary }}>{p.nombre}</span>
+                    <span style={{ textAlign: "right", color: SURFACE.textMuted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{p.realizados} de {p.programados}</span>
+                    <span style={{ textAlign: "right", fontWeight: 700, color: SURFACE.text, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{veCobros ? pesosCortos(p.Consumido) : "—"}</span>
+                  </Fragment>
                 ))}
-              </ul>
+              </div>
             </div>
           </div>
 
