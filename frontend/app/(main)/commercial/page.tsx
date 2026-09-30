@@ -10,13 +10,20 @@ import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { downloadExcel, downloadPDF } from "@/lib/reports";
+import { useVeCobros } from "@/lib/ve-cobros";
+import { consumoDeCobros, resumenLicitacion, type CobroTransporte } from "@/lib/cobros-transporte";
+import PanelLicitacion from "@/components/comercial/PanelLicitacion";
 import { AreaChart, Area, BarChart as RBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const formatCurrency = (value: number) =>
   new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(value);
 
-type ProviderItem = { id: string; type?: string | null; bidAmount?: number | null; bidTripCount?: number | null };
-type TripItem = { id: string; tripCost?: number | null; status?: string | null; scheduledAt?: string | null; clientType?: string | null; eventId?: string | null };
+type ProviderItem = { id: string; name?: string | null; type?: string | null; bidAmount?: number | null; bidTripCount?: number | null; eventIds?: string[] | null };
+type DriverItem = { id: string; providerId?: string | null };
+type TripItem = {
+  id: string; tripCost?: number | null; status?: string | null; scheduledAt?: string | null; clientType?: string | null; eventId?: string | null;
+  tripType?: string | null; requestedVehicleType?: string | null; driverId?: string | null;
+};
 
 const TEAL     = BRAND.teal;
 const BLUE     = BRAND.blue;
@@ -43,21 +50,59 @@ export default function CommercialDashboardPage() {
   // Las tarjetas llevan el padding en estilos inline; en teléfono se achica.
   const isMobile = useIsMobile();
   const cardPad = isMobile ? "16px 14px" : "22px 20px";
-  const { eventoId } = useEventoActivo();
+  const { eventoId, evento } = useEventoActivo();
+  const veCobros = useVeCobros();
   const [providers, setProviders] = useState<ProviderItem[]>([]);
+  const [drivers, setDrivers] = useState<DriverItem[]>([]);
   const [allTrips, setAllTrips] = useState<TripItem[]>([]);
   const [loaded, setLoaded] = useState(false);
+  // Cobros de licitación del evento activo (Plan de Operación): ver
+  // lib/cobros-transporte y components/comercial/PanelLicitacion.
+  const [cobros, setCobros] = useState<CobroTransporte[]>([]);
+  const [cargandoCobros, setCargandoCobros] = useState(false);
 
   useEffect(() => {
     Promise.all([
       apiFetch<ProviderItem[]>("/providers"),
       apiFetch<TripItem[]>("/trips"),
-    ]).then(([providerList, tripList]) => {
+      apiFetch<DriverItem[]>("/drivers").catch(() => [] as DriverItem[]),
+    ]).then(([providerList, tripList, driverList]) => {
       setProviders(Array.isArray(providerList) ? providerList : []);
       setAllTrips(Array.isArray(tripList) ? tripList : []);
+      setDrivers(Array.isArray(driverList) ? driverList : []);
       setLoaded(true);
     }).catch(() => setLoaded(true));
   }, []);
+
+  useEffect(() => {
+    if (!eventoId) {
+      setCobros([]);
+      return;
+    }
+    let vivo = true;
+    setCargandoCobros(true);
+    apiFetch<CobroTransporte[]>(`/events/${eventoId}/cobros-transporte`)
+      .then((lista) => { if (vivo) setCobros(Array.isArray(lista) ? lista : []); })
+      .catch(() => { if (vivo) setCobros([]); })
+      .finally(() => { if (vivo) setCargandoCobros(false); });
+    return () => { vivo = false; };
+  }, [eventoId]);
+
+  /** Proveedores de transporte del evento activo, para asignar cobros. */
+  const proveedoresEvento = useMemo(
+    () => providers
+      .filter((p) => p.type === "TRANSPORTE" && (!p.eventIds?.length || !eventoId || p.eventIds.includes(eventoId)))
+      .map((p) => ({ id: p.id, name: p.name ?? "Proveedor" }))
+      .sort((a, b) => a.name.localeCompare(b.name, "es")),
+    [providers, eventoId],
+  );
+
+  const resumen = useMemo(() => {
+    const proveedorPorConductor = new Map(drivers.map((d) => [d.id, d.providerId ?? null]));
+    const viajes = allTrips.filter((tr) => esDelEvento(eventoId, tr.eventId));
+    const consumo = consumoDeCobros(cobros, viajes, (driverId) => proveedorPorConductor.get(driverId));
+    return resumenLicitacion(cobros, consumo);
+  }, [cobros, allTrips, drivers, eventoId]);
 
   // Lo adjudicado es de los proveedores (compartidos entre eventos); lo
   // consumido sale sólo de los viajes del evento activo: con dos eventos
@@ -79,8 +124,9 @@ export default function CommercialDashboardPage() {
       ctMap.set(ct, { count: prev.count + 1, cost: prev.cost + (Number(t.tripCost) || 0) });
     });
 
+    const conCobros = cobros.length > 0;
     const bucketList: BucketData[] = [
-      { key: "transport",   label: "Transporte",   awarded: awardedByType("TRANSPORTE"),   consumed: tripConsumed, forecast: tripForecast, accentIndex: 0 },
+      { key: "transport",   label: "Transporte",   awarded: conCobros ? resumen.licitado : awardedByType("TRANSPORTE"),   consumed: conCobros ? resumen.consumido : tripConsumed, forecast: conCobros ? resumen.programado : tripForecast, accentIndex: 0 },
       { key: "hospitality", label: "Hotelería",    awarded: awardedByType("HOTELERIA"),    consumed: 0, forecast: 0, accentIndex: 1 },
       { key: "food",        label: "Alimentación", awarded: awardedByType("ALIMENTACION"), consumed: 0, forecast: 0, accentIndex: 2 },
     ];
@@ -103,7 +149,7 @@ export default function CommercialDashboardPage() {
 
     return {
       buckets: bucketList,
-      tripCounts: { bid: bidTrips, completed: completedCount, total: totalCount },
+      tripCounts: { bid: cobros.length > 0 ? cobros.filter((c) => c.modalidad === "POR_VIAJE").reduce((s, c) => s + c.cantidad, 0) : bidTrips, completed: completedCount, total: totalCount },
       clientTypeBreakdown: Array.from(ctMap.entries()).map(([clientType, data]) => ({ clientType, ...data })).filter((item) => item.cost > 0).sort((a, b) => b.cost - a.cost),
       weeklySpend: Array.from(weekMap.entries()).sort(([a], [b]) => a.localeCompare(b)).slice(-6).map(([, amount], i) => ({ label: `Sem ${i + 1}`, amount })),
       dailySpend: Array.from(dayMap.entries())
@@ -114,7 +160,7 @@ export default function CommercialDashboardPage() {
           ...data,
         })),
     };
-  }, [providers, allTrips, eventoId]);
+  }, [providers, allTrips, eventoId, cobros, resumen]);
 
   const totals = buckets.reduce((a, b) => ({ awarded: a.awarded + b.awarded, consumed: a.consumed + b.consumed, forecast: a.forecast + b.forecast }), { awarded: 0, consumed: 0, forecast: 0 });
   const usePct = totals.awarded > 0 ? Math.round((totals.consumed / totals.awarded) * 100) : 0;
@@ -131,6 +177,13 @@ export default function CommercialDashboardPage() {
     ];
     if (clientTypeBreakdown.length > 0) s.push({ title: "Detalle por tipo de cliente", headers: ["Tipo", "Viajes", "Costo"], rows: clientTypeBreakdown.map((i) => [clientTypeLabel(i.clientType), i.count, f(i.cost)]) });
     if (weeklySpend.length > 0) s.push({ title: "Tendencia semanal", headers: ["Semana", "Monto"], rows: weeklySpend.map((w) => [w.label, f(w.amount)]) });
+    if (resumen.cobros.length > 0) {
+      s.unshift({
+        title: "Cobros de licitación de transporte",
+        headers: ["Sistema", "Modalidad", "Valor", "Licitados", "Realizados", "Programados", "Licitado", "Consumido"],
+        rows: resumen.cobros.map((c) => [c.sistema, c.modalidad === "POR_VIAJE" ? "Por viaje" : "Por vehículo-día", f(c.clientPrice), c.cantidad, c.realizados, c.programados, f(c.licitado), f(c.consumido)]),
+      });
+    }
     return s;
   };
 
@@ -162,33 +215,17 @@ export default function CommercialDashboardPage() {
         </div>
       </div>
 
-      {/* ── Summary KPIs ── */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-        {[
-          { label: t("Adjudicado"), value: formatCurrency(totals.awarded), color: TEAL },
-          { label: t("Consumido"), value: formatCurrency(totals.consumed), color: BLUE },
-          { label: t("Restante"), value: formatCurrency(Math.max(0, totals.awarded - totals.consumed)), color: ACCENT.violetLight },
-          { label: t("Viajes restantes"), value: `${Math.max(0, tripCounts.bid - tripCounts.completed)}`, color: "#fb923c" },
-          { label: t("Uso total"), value: `${usePct}%`, color: totalSem.color },
-        ].map((kpi, i) => (
-          <div key={i}
-            onMouseEnter={e => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = `0 8px 24px ${kpi.color}20`; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = ""; e.currentTarget.style.boxShadow = `0 2px 8px ${kpi.color}10`; }}
-            style={{
-              background: SURFACE.card, border: `1px solid ${kpi.color}25`, borderRadius: 16,
-              padding: "18px 16px", boxShadow: `0 2px 8px ${kpi.color}10`,
-              transition: "all 200ms ease", cursor: "default",
-              animation: "fadeInUp 0.4s ease both", animationDelay: `${i * 0.05}s`,
-            }}>
-            <p style={{ fontSize: "10px", color: SURFACE.textMuted, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>{kpi.label}</p>
-            <div style={{ display: "flex", alignItems: "baseline", gap: 6, marginTop: 8 }}>
-              {/* clamp: en teléfono (2 columnas) los montos en CLP no caben a 1.5rem. */}
-              <p style={{ fontSize: "clamp(1.05rem, 4.2vw, 1.5rem)", fontWeight: 800, color: kpi.color, lineHeight: 1, fontVariantNumeric: "tabular-nums", margin: 0, overflowWrap: "anywhere" }}>{kpi.value}</p>
-              {i === 4 && <span style={{ width: 10, height: 10, borderRadius: "50%", background: totalSem.color, display: "inline-block", boxShadow: `0 0 8px ${totalSem.glow}` }} />}
-            </div>
-          </div>
-        ))}
-      </div>
+      {/* ── Licitación de transporte: cobros del plan y su consumo ── */}
+      <PanelLicitacion
+        eventoId={eventoId ?? null}
+        eventoNombre={evento?.name ?? null}
+        cobros={cobros}
+        resumen={resumen}
+        proveedores={proveedoresEvento}
+        veCobros={veCobros}
+        cargando={cargandoCobros || !loaded}
+        onCobros={setCobros}
+      />
 
       {/* ── Per-service cards ── */}
       <div className="grid gap-4 md:grid-cols-3">

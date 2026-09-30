@@ -9,6 +9,7 @@ import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { Event } from './entities/event.entity';
 import { filasDe } from '../shared/filas-de';
+import { CobroTransporte, cobrosDeConfig, configConCobros, normalizarCobros } from './cobros-transporte';
 
 type EventRow = {
   id: string;
@@ -391,5 +392,19 @@ export class EventsService {
     }
 
     return this.toEntity(rows[0]);
+  }
+
+  /* ─── Cobros de licitación de transporte (core.events.config.cobrosTransporte) ─── */
+
+  async getCobrosTransporte(id: string): Promise<CobroTransporte[]> {
+    const evento = await this.findOne(id);
+    return cobrosDeConfig(evento.config);
+  }
+
+  async setCobrosTransporte(id: string, entrada: unknown): Promise<CobroTransporte[]> {
+    const evento = await this.findOne(id);
+    const cobros = normalizarCobros(entrada);
+    await this.update(id, { config: configConCobros(evento.config, cobros) });
+    return cobros;
   }
 }

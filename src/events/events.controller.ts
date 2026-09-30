@@ -1,7 +1,8 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post, Req } from '@nestjs/common';
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post, Put, Req } from '@nestjs/common';
 import type { ApiRequest } from '../auth/api-auth.guard';
-import { puedeVerEvento } from '../auth/permisos-panel';
+import { ocultaCobros, puedeVerEvento } from '../auth/permisos-panel';
 import { CreateEventDto } from './dto/create-event.dto';
+import { GuardarCobrosTransporteDto } from './dto/cobros-transporte.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 import { EventsService } from './events.service';
 
@@ -41,5 +42,26 @@ export class EventsController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.eventsService.remove(id);
+  }
+
+  /* ─── Cobros de licitación de transporte (dashboard comercial) ─── */
+
+  /** Los valores (clientPrice) los quita el interceptor a quien no tiene Finanzas. */
+  @Get(':id/cobros-transporte')
+  cobrosTransporte(@Param('id') id: string) {
+    return this.eventsService.getCobrosTransporte(id);
+  }
+
+  /** Editarlos es de Finanzas: sin el módulo, 403. */
+  @Put(':id/cobros-transporte')
+  guardarCobrosTransporte(
+    @Req() req: ApiRequest,
+    @Param('id') id: string,
+    @Body() dto: GuardarCobrosTransporteDto,
+  ) {
+    if (ocultaCobros(req.apiCaller)) {
+      throw new ForbiddenException('Los cobros de licitación requieren el módulo Finanzas');
+    }
+    return this.eventsService.setCobrosTransporte(id, dto?.cobros);
   }
 }
