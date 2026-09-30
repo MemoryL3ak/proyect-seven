@@ -9,6 +9,7 @@ import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { esDelEvento } from "@/lib/evento-activo";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { buildDisciplineLabelMap } from "@/lib/discipline-filters";
+import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 
 type FoodLocation = {
   id: string;
@@ -182,6 +183,7 @@ const labelStyle: React.CSSProperties = {
 
 export default function FoodLocationsPage() {
   const { t } = useI18n();
+  const nombresDel = useNombresDelegacion();
   const isMobile = useIsMobile();
   const [todosLosLugares, setLocations] = useState<FoodLocation[]>([]);
   const [accommodations, setAccommodations] = useState<Record<string, Accommodation>>({});
@@ -488,7 +490,7 @@ export default function FoodLocationsPage() {
                 <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
                   <span style={resumenChip}>
                     {(loc.delegationIds?.length ?? 0) === 0
-                      ? t("Todas las regiones")
+                      ? t(nombresDel.todas)
                       : (loc.delegationIds ?? [])
                           .map((id) => {
                             const d = delegaciones.find((x) => x.id === id);

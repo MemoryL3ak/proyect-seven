@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useI18n } from "@/lib/i18n";
+import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 
 /**
  * Asignar hotel a toda una selección: región más deporte, de una vez.
@@ -38,6 +39,7 @@ const nombreCorto = (v: string) => v.replace(/^regi[oó]n\s+(de\s+la\s+|del\s+|d
 
 export default function AsignarPorGrupo({ onAsignado }: { onAsignado?: () => void }) {
   const { t } = useI18n();
+  const nombresDel = useNombresDelegacion();
   // Antes tenía su propio selector de evento y abría solo el primero de la
   // lista; ahora manda el evento activo del panel.
   const { eventoId } = useEventoActivo();
@@ -165,7 +167,7 @@ export default function AsignarPorGrupo({ onAsignado }: { onAsignado?: () => voi
       {/* Tres columnas: la cuarta queda para "Rama" cuando el deporte es mixto. */}
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">
         <label className="flex flex-col gap-1 text-xs text-white/60">
-          {t("Región")}
+          {t(nombresDel.una)}
           <select className="input" value={delegacionId} onChange={(e) => setDelegacionId(e.target.value)}>
             <option value="">{t("Selecciona una opción")}</option>
             {regiones.map((d) => (

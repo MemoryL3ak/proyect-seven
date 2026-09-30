@@ -24,6 +24,7 @@ import {
   CarIcon,
 } from "@/components/ui/Icons";
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
+import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 
 const DriverPresenceMap = dynamic(() => import("@/components/DriverPresenceMap"), {
   ssr: false,
@@ -174,6 +175,7 @@ function clientTypeChip(type: string) {
 
 export default function DriverMonitoringPage() {
   const { t } = useI18n();
+  const nombresDel = useNombresDelegacion();
   const isMobile = useIsMobile();
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);
   const [loading, setLoading] = useState(true);
@@ -818,7 +820,7 @@ export default function DriverMonitoringPage() {
                 <tr>
                   {[
                     "Conductor",
-                    "Región",
+                    nombresDel.una,
                     "Estado",
                     "Ocupación",
                     isToday ? "Viajes hoy" : "Viajes del día",
@@ -1073,6 +1075,7 @@ type FiltersBarProps = {
 
 function FiltersBar(p: FiltersBarProps) {
   const { t } = useI18n();
+  const nombresDel = useNombresDelegacion();
   return (
     <section className="surface rounded-2xl p-5 space-y-3">
       {/* Una sola grilla responsiva — todos los filtros se ven al mismo tiempo */}
@@ -1135,7 +1138,7 @@ function FiltersBar(p: FiltersBarProps) {
 
         {/* Región (flota fija por delegación) */}
         <label className="text-sm block">
-          <span className="block mb-1">{t("Región")}</span>
+          <span className="block mb-1">{t(nombresDel.una)}</span>
           <select
             className="input"
             value={p.regionFilter}
@@ -1147,7 +1150,7 @@ function FiltersBar(p: FiltersBarProps) {
               opacity: p.regionOptions.length === 0 ? 0.6 : 1,
             }}
           >
-            <option value="">{p.regionOptions.length === 0 ? t("Sin regiones asignadas") : t("Todas las regiones")}</option>
+            <option value="">{p.regionOptions.length === 0 ? t("Sin regiones asignadas") : t(nombresDel.todas)}</option>
             {p.regionOptions.map((r) => (
               <option key={r} value={r}>{r}</option>
             ))}

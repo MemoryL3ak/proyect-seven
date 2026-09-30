@@ -6,6 +6,7 @@ import { SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
 import { nombreDePais } from "@/lib/paises";
+import { nombresDelegacion } from "@/lib/delegations";
 
 /**
  * Filtros del Coordinador de Comité: delegación, disciplina y —donde aplica—
@@ -108,15 +109,17 @@ export default function FiltrosComite({
   const conSede = (sedes?.length ?? 0) > 0 && Boolean(onSede);
 
   // Qué nombre mostrar en cada botón lo resuelve el propio SelectorFiltro.
+  // En Rugby las delegaciones son países: "País / Todos los países".
+  const nombres = nombresDelegacion(delegaciones);
   const hayFiltro = Boolean(delegacionId || disciplinaId || (conHotel && hotel) || (conSede && sede));
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       <div style={{ display: "flex", gap: 6, alignItems: "stretch" }}>
         <SelectorFiltro
-          rotulo={t("Región")}
+          rotulo={t(nombres.una)}
           opciones={regiones}
-          etiquetaTodos={t("Todas las regiones")}
+          etiquetaTodos={t(nombres.todas)}
           valor={delegacionId}
           onChange={onDelegacion}
         />

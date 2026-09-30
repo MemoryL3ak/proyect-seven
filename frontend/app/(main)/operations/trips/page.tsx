@@ -25,6 +25,7 @@ import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
 import { delegationLabel, etiquetaDeDelegacion } from "@/lib/delegations";
+import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 import { deporteDeViaje, type DisciplineLike } from "@/lib/discipline-filters";
 import { lugarDeExtremo, lugaresDeViajes, tocaLugar } from "@/lib/lugares";
 import { personasMovilizadas } from "@/lib/movilizadas";
@@ -538,6 +539,8 @@ export default function TripsPage() {
   // primer render, "") lo devolvía al evento más nuevo: con dos eventos, el
   // que se eligiera saltaba al otro.
   const { eventoId: selectedEventId } = useEventoActivo();
+  // "Región" en los Juegos Escolares, "País" en Rugby (29-09-2026).
+  const nombresDel = useNombresDelegacion();
   const [selectedClientType, setSelectedClientType] = useState("");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -1013,12 +1016,12 @@ export default function TripsPage() {
    * su clave propia; sin ninguna, quedan en "Sin región".
    */
   const regionDeViaje = (trip: Trip): { key: string; texto: string } => {
-    if (trip.allDelegations) return { key: ONGOING_TODAS_LAS_REGIONES, texto: t("Todas las regiones") };
+    if (trip.allDelegations) return { key: ONGOING_TODAS_LAS_REGIONES, texto: t(nombresDel.todas) };
     const porPasajeros = trip.requesterAthleteId
       ? athletes[trip.requesterAthleteId]?.delegationId
       : (trip.athleteIds ?? []).map((id) => athletes[id]?.delegationId).find(Boolean);
     const id = trip.delegationId || porPasajeros;
-    if (!id) return { key: ONGOING_SIN_REGION, texto: t("Sin región") };
+    if (!id) return { key: ONGOING_SIN_REGION, texto: t(nombresDel.sin) };
     return { key: id, texto: delegationLabel(delegations[id]) || id };
   };
 
@@ -1250,7 +1253,7 @@ export default function TripsPage() {
       else porRegion.set(region.key, { ...region, total: 1 });
     }
     const especiales = [ONGOING_TODAS_LAS_REGIONES, ONGOING_SIN_REGION];
-    const etiquetaFija = (key: string) => (key === ONGOING_TODAS_LAS_REGIONES ? t("Todas las regiones") : t("Sin región"));
+    const etiquetaFija = (key: string) => (key === ONGOING_TODAS_LAS_REGIONES ? t(nombresDel.todas) : t(nombresDel.sin));
     const fijas = especiales.flatMap((key) => {
       const actual = porRegion.get(key);
       if (actual) return [actual];
@@ -1268,7 +1271,7 @@ export default function TripsPage() {
       })),
     ];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [baseSinRegion, ongoingRegion, delegations, athletes, t]);
+  }, [baseSinRegion, ongoingRegion, delegations, athletes, t, nombresDel]);
 
   // Hoteles y sedes de los filtros: salen de los propios viajes, con la
   // regla compartida con el portal del coordinador (lib/lugares).
@@ -1410,7 +1413,7 @@ export default function TripsPage() {
   };
 
   const resolveDelegation = (trip: Trip) => {
-    if (trip.allDelegations) return t("Todas las regiones");
+    if (trip.allDelegations) return t(nombresDel.todas);
     const athlete = trip.requesterAthleteId ? athletes[trip.requesterAthleteId] : null;
     if (athlete?.delegationId) {
       const delegation = delegations[athlete.delegationId];
@@ -1513,7 +1516,7 @@ export default function TripsPage() {
     const fechaHora = (value?: string | null) => (value ? formatDateTime(value) : "");
     const evento = (trip: Trip) => (trip.eventId ? events[trip.eventId]?.name ?? trip.eventId : "");
     const region = (trip: Trip) => {
-      if (trip.allDelegations) return t("Todas las regiones");
+      if (trip.allDelegations) return t(nombresDel.todas);
       const porViaje = delegationLabel(trip.delegationId ? delegations[trip.delegationId] : null);
       if (porViaje) return porViaje;
       const porPasajeros = resolveDelegation(trip);
@@ -1536,7 +1539,7 @@ export default function TripsPage() {
       [t("Viaje de ida")]: ida?.id ?? "",
       [t("Origen")]: lugarDeExtremo(trip, "origin", nombreDeLugar),
       [t("Destino")]: lugarDeExtremo(trip, "destination", nombreDeLugar),
-      [t("Región")]: region(trip),
+      [t(nombresDel.una)]: region(trip),
       [t("Disciplina")]: trip.discipline ?? "",
       [t("Género")]: generoDeViaje(trip),
       [t("Actividad")]: trip.activity ?? "",
@@ -3323,7 +3326,7 @@ export default function TripsPage() {
         // pasajeros, que es como se resolvían hasta ahora.
         const iporPasajeros = resolveDelegation(infoTrip);
         const iregion = infoTrip.allDelegations
-          ? t("Todas las regiones")
+          ? t(nombresDel.todas)
           : delegationLabel(infoTrip.delegationId ? delegations[infoTrip.delegationId] : null) ||
             (iporPasajeros === "-" ? "" : iporPasajeros);
         const idisciplina = safeText(infoTrip.discipline, "");

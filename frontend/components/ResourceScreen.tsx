@@ -4,6 +4,7 @@ import { Fragment, useEffect, useMemo, useRef, useState, type CSSProperties } fr
 import PageHeader from "@/components/PageHeader";
 import { apiFetch } from "@/lib/api";
 import { useVeCobros } from "@/lib/ve-cobros";
+import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { nombrePropio } from "@/lib/nombres";
 import { AlertIcon, BedIcon, ChevronDownIcon, CameraIcon, UploadIcon, CheckIcon, DownloadIcon } from "@/components/ui/Icons";
@@ -319,6 +320,7 @@ export default function ResourceScreen({
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(() => buildInitial(config.fields));
   const veCobros = useVeCobros();
+  const nombresDel = useNombresDelegacion();
   const [editingId, setEditingId] = useState<string | null>(null);
   // En el teléfono (app staff) el formulario de alta ocupaba varias pantallas
   // antes de llegar a la lista: se pliega tras un botón "Nuevo registro" y se
@@ -2750,6 +2752,10 @@ export default function ResourceScreen({
       }
     }
 
+    // Alcance del viaje: "Un país / Todos los países" en Rugby (29-09-2026).
+    if (field.key === "allDelegations" && field.options) {
+      return field.options.map((o) => ({ ...o, label: o.value === "true" ? nombresDel.todas : nombresDel.unaSola }));
+    }
     if (field.options) return field.options;
     if (source === "events") return eventOptions;
     if (source === "disciplines") return disciplineOptions;

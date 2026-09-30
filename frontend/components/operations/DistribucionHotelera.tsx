@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { esDelEvento } from "@/lib/evento-activo";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useI18n } from "@/lib/i18n";
+import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 
 /**
  * Distribución hotelera por delegación y disciplina.
@@ -104,6 +105,7 @@ const nombreCorto = (v: string) => v.replace(/^regi[oó]n\s+(de\s+la\s+|del\s+|d
 
 export default function DistribucionHotelera() {
   const { t } = useI18n();
+  const nombresDel = useNombresDelegacion();
   const { eventoId } = useEventoActivo();
   const [rama, setRama] = useState<Rama>("DAMAS");
   const [delegaciones, setDelegaciones] = useState<Delegacion[]>([]);
@@ -333,7 +335,7 @@ export default function DistribucionHotelera() {
                     minWidth: 132, borderRight: `1px solid var(--border)`,
                   }}
                 >
-                  {t("Región")}
+                  {t(nombresDel.una)}
                 </th>
                 {columnas.map((d) => (
                   <th

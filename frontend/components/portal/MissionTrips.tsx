@@ -156,6 +156,7 @@ export default function MissionTrips({
   direcciones?: CatalogosDeLugares;
 }) {
   const { t } = useI18n();
+  const todasLasDelegaciones = etiquetaDelegacion === "País" ? "Todos los países" : "Todas las regiones";
   const [disciplinaFiltro, setDisciplinaFiltro] = useState("");
   /**
    * Día del traslado. Arranca en "todas" a propósito: el jefe abre Actividades
@@ -559,7 +560,7 @@ export default function MissionTrips({
                     legTypeShort(tr.legType) ? t(legTypeShort(tr.legType)) : null,
                     disciplina,
                     (tr.passengerCount || pasajeros.length > 0) ? `${tr.passengerCount ?? pasajeros.length} pax` : null,
-                    todas && tr.allDelegations ? t("Todas las regiones") : todas ? nombreDelegacion?.(tr.delegationId) : null,
+                    todas && tr.allDelegations ? t(todasLasDelegaciones) : todas ? nombreDelegacion?.(tr.delegationId) : null,
                   ].filter(Boolean).join(" · ")}
                 </p>
 
@@ -662,7 +663,7 @@ export default function MissionTrips({
                           : (deporteDeViaje(tr, disciplines) ?? tr.discipline ?? null);
                       })();
                       const region = tr.allDelegations
-                        ? t("Todas las regiones")
+                        ? t(todasLasDelegaciones)
                         : (nombreDelegacion?.(tr.delegationId) ?? (delegationName || null));
                       const datos = [
                         { label: t(etiquetaDelegacion), valor: region },

@@ -11,6 +11,7 @@ import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { esDelEvento } from "@/lib/evento-activo";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useI18n } from "@/lib/i18n";
+import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 
 /**
  * Registro de delegaciones del evento (pestaña de Inscripción de Participantes).
@@ -60,6 +61,7 @@ const regionName = (code: string) => CHILE_REGIONS.find((r) => r.value === code)
 
 export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { refreshKey?: number; onChanged?: () => void }) {
   const { t } = useI18n();
+  const nombresDel = useNombresDelegacion();
   const { eventoId } = useEventoActivo();
   const [events, setEvents] = useState<EventRow[]>([]);
   const [delegations, setDelegations] = useState<DelegationRow[]>([]);
@@ -311,7 +313,7 @@ export default function DelegationsRegistry({ refreshKey = 0, onChanged }: { ref
             <table className="w-full text-sm" style={{ borderCollapse: "collapse", minWidth: 560 }}>
               <thead>
                 <tr style={{ textAlign: "left", fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: SURFACE.textMuted }}>
-                  <th style={{ padding: "8px 10px", borderBottom: `1px solid ${SURFACE.border}` }}>{t("Región")}</th>
+                  <th style={{ padding: "8px 10px", borderBottom: `1px solid ${SURFACE.border}` }}>{t(nombresDel.una)}</th>
                   <th style={{ padding: "8px 10px", borderBottom: `1px solid ${SURFACE.border}` }}>{t("Jefe de Delegación")}</th>
                   <th style={{ padding: "8px 10px", borderBottom: `1px solid ${SURFACE.border}` }}>{t("Disciplinas")}</th>
                   <th style={{ padding: "8px 10px", borderBottom: `1px solid ${SURFACE.border}`, textAlign: "right" }}>{t("Participantes")}</th>

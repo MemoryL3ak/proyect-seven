@@ -68,6 +68,7 @@ import { appYaRastrea, clasificarErrorUbicacionNativa } from "@/lib/ubicacion-co
 import QRCode from "qrcode";
 import { mensajeDeSubida, prepararDocumento, prepararFoto } from "@/lib/imagen";
 import { subirPorPartes } from "@/lib/subida-por-partes";
+import { delegationLabel, etiquetaDeDelegacion } from "@/lib/delegations";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
@@ -1528,9 +1529,8 @@ export default function DriverPortalPage() {
    */
   const resolveRegion = (trip: Trip) => {
     const propia = trip.delegationId ? delegations[trip.delegationId] : null;
-    const nombre = propia?.name?.trim();
-    if (nombre) return nombre;
-    if (propia?.countryCode) return countryLabels[propia.countryCode] ?? propia.countryCode;
+    // "CAN" → "Canadá"; "Región de Ñuble" tal cual.
+    if (propia) return delegationLabel(propia);
     const porPasajeros = resolveDelegations(trip);
     return porPasajeros === "-" ? "" : porPasajeros;
   };
@@ -2449,7 +2449,8 @@ export default function DriverPortalPage() {
                               const tipoViaje = tripTypeLabel(trip.tripType);
                               const tramo = legTypeLabel(trip.legType);
                               const detalles: { label: string; value: string }[] = [
-                                ...(region ? [{ label: "Región", value: region }] : []),
+                                // "Región" en los Juegos Escolares, "País" en Rugby.
+                                ...(region ? [{ label: etiquetaDeDelegacion(trip.delegationId ? delegations[trip.delegationId] : null, Object.values(delegations)), value: region }] : []),
                                 ...(disciplina ? [{ label: "Disciplina", value: disciplina }] : []),
                                 ...(tipoViaje ? [{ label: "Tipo de viaje", value: tipoViaje }] : []),
                                 ...(tramo ? [{ label: "Tramo", value: tramo }] : []),

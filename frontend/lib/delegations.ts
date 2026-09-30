@@ -46,8 +46,29 @@ export function etiquetaDeDelegacion(
   delEvento: DelegationLike[] = [],
 ): "Región" | "País" {
   if (delegation) return esRegion(delegation) ? "Región" : "País";
-  if (delEvento.length === 0 || delEvento.some(esRegion)) return "Región";
-  return "País";
+  return nombresDelegacion(delEvento).una;
+}
+
+export type NombresDelegacion = {
+  una: "Región" | "País";
+  varias: "Regiones" | "Países";
+  todas: "Todas las regiones" | "Todos los países";
+  sin: "Sin región" | "Sin país";
+  /** Opción de alcance de un viaje: "Una región" / "Un país". */
+  unaSola: "Una región" | "Un país";
+};
+
+const REGIONES: NombresDelegacion = { una: "Región", varias: "Regiones", todas: "Todas las regiones", sin: "Sin región", unaSola: "Una región" };
+const PAISES_: NombresDelegacion = { una: "País", varias: "Países", todas: "Todos los países", sin: "Sin país", unaSola: "Un país" };
+
+/**
+ * Cómo se nombran las delegaciones de un evento (29-09-2026: "en el evento
+ * de Rugby las regiones acá son países, nombrarlas como país"). Si alguna es
+ * región de Chile, el evento es de regiones; si todas son países, de países.
+ * Sin delegaciones cargadas se queda en "Región", como antes.
+ */
+export function nombresDelegacion(delEvento: DelegationLike[]): NombresDelegacion {
+  return delEvento.length > 0 && !delEvento.some(esRegion) ? PAISES_ : REGIONES;
 }
 
 /** Regiones de Chile (ISO 3166-2), para el maestro de delegaciones. */

@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { delegationLabel, esRegion, etiquetaDeDelegacion } from "./delegations";
+import { delegationLabel, esRegion, etiquetaDeDelegacion, nombresDelegacion } from "./delegations";
 
 /**
  * 29-09-2026, Rugby: el detalle del viaje de "Delegación Canadá" decía
@@ -35,3 +35,27 @@ describe("región o país", () => {
     expect(app).toContain("{ label: t(etiquetaDelegacion), valor: region }");
   });
 });
+
+/**
+ * 29-09-2026: "en el evento de Rugby las regiones (delegaciones) acá son
+ * países. Entonces nombrarlas como país" — el filtro del comité en la app
+ * decía "Región · Todas las regiones".
+ */
+describe("nombre de las delegaciones del evento", () => {
+  it("Rugby: País / Todos los países; Juegos Escolares: Región / Todas las regiones", () => {
+    expect(nombresDelegacion([canada])).toMatchObject({ una: "País", todas: "Todos los países", sin: "Sin país", unaSola: "Un país" });
+    expect(nombresDelegacion([nuble])).toMatchObject({ una: "Región", todas: "Todas las regiones", sin: "Sin región" });
+    expect(nombresDelegacion([]).una).toBe("Región");
+  });
+
+  it("la app (filtro del comité y traslados) y el panel usan el nombre del evento", () => {
+    const leer = (...r: string[]) => readFileSync(join(__dirname, "..", ...r), "utf8");
+    const filtros = leer("components", "portal", "FiltrosComite.tsx");
+    expect(filtros).toContain("rotulo={t(nombres.una)}");
+    expect(filtros).toContain("etiquetaTodos={t(nombres.todas)}");
+    expect(leer("components", "portal", "MissionTrips.tsx")).not.toContain('t("Todas las regiones")');
+    expect(leer("app", "(main)", "operations", "trips", "page.tsx")).not.toContain('t("Todas las regiones")');
+    expect(leer("app", "portal", "conductor", "page.tsx")).not.toContain('{ label: "Región", value: region }');
+  });
+});
+

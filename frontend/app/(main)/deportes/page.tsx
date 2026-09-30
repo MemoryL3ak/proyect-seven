@@ -20,6 +20,7 @@ import { useI18n } from "@/lib/i18n";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { useIsMobile } from "@/lib/useIsMobile";
 import StyledSelect from "@/components/StyledSelect";
+import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 
 type EventExpectedCapacity = {
   disciplineId: string;
@@ -194,6 +195,7 @@ const primaryBtn: React.CSSProperties = {
 
 export default function DeportesPage() {
   const { t } = useI18n();
+  const nombresDel = useNombresDelegacion();
   // Los layouts de esta pantalla van en estilos inline (paddings, grillas de
   // formulario, columna fija del Gantt), así que no pueden usar media queries.
   const isMobile = useIsMobile();
@@ -1169,7 +1171,7 @@ export default function DeportesPage() {
                 {allCalendarPruebas.some((d) => (d.delegationIds ?? []).length > 0) && (
                   <StyledSelect wrapperStyle={{ maxWidth: isMobile ? "100%" : 220 }}
                     value={calDelegationFilter} onChange={(e) => setCalDelegationFilter(e.target.value)}>
-                    <option value="">{t("Todas las regiones")}</option>
+                    <option value="">{t(nombresDel.todas)}</option>
                     {eventDelegations.map((d) => (
                       <option key={d.id} value={d.id}>{nombreCortoRegion(delegationLabel(d)) || d.countryCode || d.id}</option>
                     ))}
