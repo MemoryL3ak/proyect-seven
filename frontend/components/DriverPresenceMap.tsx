@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { STATE, SURFACE, ACCENT } from "@/lib/design";
+import { etiquetaPlataforma } from "@/lib/plataforma-conductor";
 
 export type PresenceMarker = {
   id: string;
@@ -269,7 +270,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
             ${statRow("Última conexión", m.lastSeen)}
             ${statRow("Señal GPS", m.gpsTime)}
             ${statRow("Viajes activos", String(m.activeTrips))}
-            ${m.platform ? statRow("Plataforma", m.platform) : ""}
+            ${m.platform ? statRow("Plataforma", etiquetaPlataforma(m.platform)?.texto ?? m.platform) : ""}
             ${(m.detailRows ?? []).map((r) => statRow(r.label, r.value)).join("")}
           </div>
           <div style="margin-top:6px;padding-top:8px;border-top:1px solid #eef2f7;">

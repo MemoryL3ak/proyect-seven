@@ -6,10 +6,29 @@
  * el 21-09-2026 se renombró esa sede y los 33 viajes importados después
  * quedaron con el texto viejo y sin id, fuera del filtro de sede.
  *
+ * Rugby, 30-09-2026: la planilla de buses dice "CARR", "PWCC", "Hotel
+ * Sheraton" y "UC San Carlos de Apoquindo"; el catálogo, "Parque Mahuida
+ * CARR", "PWCC · Prince of Wales Country Club", "Hotel Sheraton Santiago" y
+ * "Estadio san Carlos de Apoquindo". Ninguno calzaba, los viajes quedaban
+ * sin lugar y la app del conductor mandaba el texto pelado a Waze, que
+ * resolvía "CARR" o "PWCC" en cualquier parte de la ciudad.
+ *
  * Reglas, en orden, y sólo si dejan un único candidato:
- *   1. el mismo nombre (sin tildes, mayúsculas ni dobles espacios);
- *   2. la parte del nombre del catálogo antes de " - " o " (" (el alias corto);
- *   3. el texto es el comienzo del nombre del catálogo (mínimo 8 letras).
+ *   1. el mismo nombre (sin tildes, mayúsculas, puntuación ni dobles
+ *      espacios: "Gimnasio PUCV Campus Curauma" = "Gimnasio PUCV, Campus
+ *      Curauma", que dejaba 32 viajes de JDE sin sede);
+ *   2. un alias del catálogo: cada parte del nombre separada por " - ",
+ *      " · ", " | " o " (" ("PWCC · Prince of Wales Country Club" vale como
+ *      "PWCC" y como "Prince of Wales Country Club");
+ *   3. una sigla del nombre del catálogo: una palabra de 3 a 6 mayúsculas
+ *      ("Parque Mahuida CARR" → "CARR");
+ *   4. el texto es el comienzo del nombre del catálogo (mínimo 8 letras);
+ *   5. el núcleo —el nombre sin su primera palabra genérica (hotel, estadio,
+ *      gimnasio, club, UC…) ni un "hotel" al final— es el mismo en ambos
+ *      lados ("UC San Carlos de Apoquindo" ≈ "Estadio san Carlos de
+ *      Apoquindo", "Magic hotel" ≈ "Hotel Magic");
+ *   6. el núcleo del texto es el comienzo del núcleo del catálogo (mínimo 8
+ *      letras): "Hotel Sheraton" → "Hotel Sheraton Santiago".
  * Ante dos calces no se adivina.
  */
 export type LugarCatalogo = {
@@ -49,12 +68,55 @@ export function claveLugar(raw: string | undefined | null): string {
     .trim();
 }
 
-/** "gimnasio utfsm - jose miguel carrera" → "gimnasio utfsm". */
-const aliasCorto = (clave: string): string => clave.split(/ - | \(/)[0].trim();
+/** "gimnasio pucv, campus curauma" → "gimnasio pucv campus curauma". */
+export function claveCompacta(clave: string): string {
+  return clave.replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+
+/**
+ * Partes del nombre del catálogo que valen como alias:
+ * "gimnasio utfsm - jose miguel carrera" → ["gimnasio utfsm", "jose miguel carrera"],
+ * "pwcc · prince of wales country club" → ["pwcc", "prince of wales country club"].
+ */
+export function aliasDelCatalogo(clave: string): string[] {
+  return clave
+    .split(/\s[-·|]\s|\s\(/)
+    .map((parte) => parte.replace(/\)$/, '').trim())
+    .filter(Boolean);
+}
+
+/**
+ * Siglas del nombre original: "Parque Mahuida CARR" → ["carr"]. Una sigla es
+ * una palabra de 3 a 6 mayúsculas que va sola: dentro de una frase en
+ * mayúsculas ("INSTITUTO NACIONAL DE DEPORTES CHILE") ninguna palabra lo es.
+ */
+export function siglasDelNombre(nombre: string): string[] {
+  const palabras = nombre.split(/\s+/).map((t) => t.replace(/[^\p{L}]/gu, ''));
+  const enMayusculas = (t: string | undefined) =>
+    !!t && t.length >= 2 && t === t.toUpperCase() && /\p{L}/u.test(t);
+  return palabras
+    .filter(
+      (t, i) =>
+        /^[A-ZÁÉÍÓÚÑ]{3,6}$/.test(t) && !enMayusculas(palabras[i - 1]) && !enMayusculas(palabras[i + 1]),
+    )
+    .map((t) => claveLugar(t));
+}
+
+const PALABRA_GENERICA =
+  /^(hotel|hostal|hosteria|apart hotel|estadio|gimnasio|complejo|club|centro|parque|polideportivo|piscina|cancha|recinto|sede|uc|universidad|colegio|liceo|escuela)\s+/;
+
+/**
+ * "uc san carlos de apoquindo" → "san carlos de apoquindo"; "magic hotel" →
+ * "magic". Sólo la primera palabra genérica y un "hotel" al final.
+ */
+export function nucleoLugar(clave: string): string {
+  return claveCompacta(clave).replace(PALABRA_GENERICA, '').replace(/\s+hotel$/, '');
+}
 
 function unico(candidatos: LugarCatalogo[]): LugarResuelto {
-  if (candidatos.length !== 1) return SIN_LUGAR;
-  const [l] = candidatos;
+  const distintos = [...new Set(candidatos)];
+  if (distintos.length !== 1) return SIN_LUGAR;
+  const [l] = distintos;
   return {
     venueId: l.venueId,
     hotelId: l.hotelId,
@@ -73,13 +135,29 @@ export function resolverLugar(
   const exactos = lugares.filter((l) => l.clave === clave);
   if (exactos.length > 0) return unico(exactos);
 
-  const porAlias = lugares.filter((l) => aliasCorto(l.clave) === clave);
+  const compacta = claveCompacta(clave);
+  const sinPuntuacion = lugares.filter((l) => claveCompacta(l.clave) === compacta);
+  if (sinPuntuacion.length > 0) return unico(sinPuntuacion);
+
+  const porAlias = lugares.filter((l) => aliasDelCatalogo(l.clave).includes(clave));
   if (porAlias.length > 0) return unico(porAlias);
+
+  const porSigla = lugares.filter((l) => siglasDelNombre(l.nombre).includes(clave));
+  if (porSigla.length > 0) return unico(porSigla);
 
   // "Hotel Hippocampus" en la planilla, "Hippocampus Resort § Club" en el
   // catálogo: el "hotel" de adelante no es parte del nombre.
   const sinHotel = clave.replace(/^hotel /, '');
-  if (sinHotel.length < MINIMO_PREFIJO) return SIN_LUGAR;
-  const porPrefijo = lugares.filter((l) => l.clave.startsWith(sinHotel));
-  return unico(porPrefijo);
+  if (sinHotel.length >= MINIMO_PREFIJO) {
+    const porPrefijo = lugares.filter((l) => l.clave.startsWith(sinHotel));
+    if (porPrefijo.length > 0) return unico(porPrefijo);
+  }
+
+  const nucleo = nucleoLugar(clave);
+  if (!nucleo) return SIN_LUGAR;
+  const porNucleo = lugares.filter((l) => nucleoLugar(l.clave) === nucleo);
+  if (porNucleo.length > 0) return unico(porNucleo);
+
+  if (nucleo.length < MINIMO_PREFIJO) return SIN_LUGAR;
+  return unico(lugares.filter((l) => nucleoLugar(l.clave).startsWith(nucleo)));
 }

@@ -75,7 +75,8 @@ import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { dlog } from "@/lib/native-debug";
-import { gpsWebNecesario, senalDeCorte, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
+import { debeRearmarRastreo, ESPERAS_ESTADO_SHELL_MS, gpsWebNecesario, mismoEstadoShell, senalDeCorte, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
+import { plataformaConductor, versionShell } from "@/lib/plataforma-conductor";
 import { destinoDeNavegacion, enlacesDeNavegacion, esLugarPorConfirmar, type LugarConDireccion } from "@/lib/navegacion";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
@@ -459,6 +460,13 @@ export default function DriverPortalPage() {
   const [trackingTripId, setTrackingTripId] = useState<string | null>(null);
   /** Estado del rastreo del shell nativo. null fuera de la app o antes de saberlo. */
   const [shellTracking, setShellTracking] = useState<ShellTrackingState | null>(null);
+  // Copia para los temporizadores (el latido) que no se rearman con cada cambio.
+  const shellTrackingRef = useRef<ShellTrackingState | null>(null);
+  useEffect(() => {
+    shellTrackingRef.current = shellTracking;
+  }, [shellTracking]);
+  // Último tracking.start pedido al shell (ver debeRearmarRastreo).
+  const ultimoRearmeRef = useRef(0);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   /** Jornadas que el conductor abrió o cerró a mano, por clave YYYY-MM-DD. */
   const [diasAlternados, setDiasAlternados] = useState<Record<string, boolean>>({});
@@ -1200,30 +1208,52 @@ export default function DriverPortalPage() {
     // puerta la web se puede desplegar antes de que todos actualicen la app:
     // cada teléfono activa el rastreo de fondo recién cuando tiene el build
     // nuevo, y mientras tanto queda exactamente como está hoy.
-    dlog("→ shell tracking.status (detección de versión)");
-    nativeRequest<ShellTrackingState>("tracking.status", undefined, { timeoutMs: 5_000 })
-      .then((status) => {
-        setShellTracking(status ?? null);
-        if (!status || !("backgroundOk" in status)) {
-          dlog("shell 1.0.1: tracking.start omitido (se cuelga); GPS web activo");
-          return;
-        }
-        dlog("→ shell tracking.start");
-        return nativeRequest<ShellTrackingState>("tracking.start", { driverId }, { timeoutMs: 30_000 })
-          .then((res) => {
-            dlog(`shell tracking ${res?.running ? "OK" : "no arrancó"}`);
-            setShellTracking(res ?? null);
-          })
-          .catch((err) => {
-            dlog(`shell tracking sin respuesta (${err?.message ?? err}); consulto estado`);
-            return nativeRequest<ShellTrackingState>("tracking.status", undefined, { timeoutMs: 5_000 })
-              .then((res) => setShellTracking(res ?? null))
-              .catch(() => undefined);
-          });
-      })
-      .catch((err) => {
-        dlog(`shell tracking.status sin respuesta (${err?.message ?? err}); se omite`);
-      });
+    // 30-09-2026: si el shell no responde a tiempo (arrancando, con señal
+    // mala), antes "se omitía" para siempre y el rastreo nativo quedaba sin
+    // armar hasta el próximo login. Ahora se reintenta (ESPERAS_ESTADO_SHELL_MS).
+    const temporizadores: number[] = [];
+    let vivo = true;
+    const consultarEstado = (intento: number) => {
+      dlog(`→ shell tracking.status (detección de versión${intento ? `, reintento ${intento}` : ""})`);
+      nativeRequest<ShellTrackingState>("tracking.status", undefined, { timeoutMs: 5_000 })
+        .then((status) => {
+          if (!vivo) return;
+          setShellTracking(status ?? null);
+          if (!status || !("backgroundOk" in status)) {
+            dlog("shell 1.0.1: tracking.start omitido (se cuelga); GPS web activo");
+            return;
+          }
+          dlog("→ shell tracking.start");
+          ultimoRearmeRef.current = Date.now();
+          return nativeRequest<ShellTrackingState>("tracking.start", { driverId }, { timeoutMs: 30_000 })
+            .then((res) => {
+              dlog(`shell tracking ${res?.running ? "OK" : "no arrancó"}`);
+              if (vivo) setShellTracking(res ?? null);
+            })
+            .catch((err) => {
+              dlog(`shell tracking sin respuesta (${err?.message ?? err}); consulto estado`);
+              return nativeRequest<ShellTrackingState>("tracking.status", undefined, { timeoutMs: 5_000 })
+                .then((res) => {
+                  if (vivo) setShellTracking(res ?? null);
+                })
+                .catch(() => undefined);
+            });
+        })
+        .catch((err) => {
+          const espera = ESPERAS_ESTADO_SHELL_MS[intento];
+          if (!vivo || espera === undefined) {
+            dlog(`shell tracking.status sin respuesta (${err?.message ?? err}); se omite`);
+            return;
+          }
+          dlog(`shell tracking.status sin respuesta (${err?.message ?? err}); reintento en ${Math.round(espera / 1000)} s`);
+          temporizadores.push(window.setTimeout(() => consultarEstado(intento + 1), espera));
+        });
+    };
+    consultarEstado(0);
+    return () => {
+      vivo = false;
+      temporizadores.forEach((id) => window.clearTimeout(id));
+    };
   }, [driverProfile?.id]);
 
   // El shell avisa solo cuando algo cambia: el conductor apagó el GPS desde la
@@ -1232,10 +1262,23 @@ export default function DriverPortalPage() {
   // con la foto del momento del login.
   useEffect(() => {
     if (!isNativeAvailable()) return;
+    const driverId = driverProfile?.id;
     return nativeOn("tracking.statusChanged", (payload) => {
-      setShellTracking(payload as ShellTrackingState);
+      const estado = payload as ShellTrackingState;
+      // El shell lo emite cada 3 s con su último envío: sin cambio de estado
+      // no se vuelve a pintar (ni se rearma el GPS web, que depende de esto).
+      setShellTracking((previo) => (mismoEstadoShell(previo, estado) ? previo : estado));
+      // 30-09-2026: con permiso "todo el tiempo" y GPS encendido, un rastreo
+      // que aparece detenido es que Android lo mató con la app. Se vuelve a
+      // armar, como mucho una vez por minuto; antes nadie lo rearmaba.
+      if (!driverId || !debeRearmarRastreo(estado, Date.now(), ultimoRearmeRef.current)) return;
+      ultimoRearmeRef.current = Date.now();
+      dlog("shell: rastreo detenido con permiso de fondo; → tracking.start");
+      nativeRequest<ShellTrackingState>("tracking.start", { driverId }, { timeoutMs: 30_000 })
+        .then((res) => setShellTracking(res ?? null))
+        .catch((err) => dlog(`rearme sin respuesta (${err?.message ?? err})`));
     });
-  }, []);
+  }, [driverProfile?.id]);
 
   // Wake Lock: keep screen awake while tracking (prevents browser suspension)
   useEffect(() => {
@@ -1485,7 +1528,14 @@ export default function DriverPortalPage() {
         body: JSON.stringify({
           driverId: profile.id,
           eventId: profile.eventId ?? undefined,
-          platform: "web",
+          // 30-09-2026: decía "web" para todos. Ahora el monitor sabe si es
+          // la app o el navegador, y en qué estado está el rastreo nativo.
+          platform: plataformaConductor({
+            userAgent: typeof navigator !== "undefined" ? navigator.userAgent : null,
+            dentroDeLaApp: isNativeAvailable(),
+            shell: shellTrackingRef.current,
+          }),
+          appVersion: versionShell(shellTrackingRef.current) ?? undefined,
           userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
         }),
       }).catch((err) => {

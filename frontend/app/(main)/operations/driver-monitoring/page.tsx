@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import { VENTANA_CONECTADO_MS, useRelojServidor } from "@/lib/presencia";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
+import { etiquetaPlataforma } from "@/lib/plataforma-conductor";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
@@ -342,7 +343,7 @@ export default function DriverMonitoringPage() {
       if (occupancyFilter === "FREE" && d.activeTrips > 0) return false;
       if (q) {
         const matchesName = d.fullName.toLowerCase().includes(q);
-        const matchesPlatform = (d.platform || "").toLowerCase().includes(q);
+        const matchesPlatform = (etiquetaPlataforma(d.platform)?.texto ?? "").toLowerCase().includes(q);
         if (!matchesName && !matchesPlatform) return false;
       }
       return true;
@@ -449,7 +450,7 @@ export default function DriverMonitoringPage() {
         ultima_conexion: d.lastSeenAt ? new Date(d.lastSeenAt).toLocaleString("es-CL") : "Nunca",
         inicio_sesion: d.sessionStartedAt ? new Date(d.sessionStartedAt).toLocaleString("es-CL") : "—",
         latidos: d.heartbeats ?? 0,
-        plataforma: d.platform ?? "—",
+        plataforma: etiquetaPlataforma(d.platform)?.texto ?? "—",
         viajes_activos: d.activeTrips,
         gps: d.gpsAgeSeconds == null ? "sin señal" : `hace ${Math.round(d.gpsAgeSeconds / 60)} min`,
       })),
@@ -754,9 +755,13 @@ export default function DriverMonitoringPage() {
                         <p style={{ fontSize: 14, fontWeight: 700, color: SURFACE.text, margin: 0, lineHeight: 1.2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {d.fullName}
                         </p>
-                        {d.platform && (
-                          <p style={{ fontSize: 11, color: SURFACE.textFaint, margin: "2px 0 0", textTransform: "capitalize" }}>{d.platform}</p>
-                        )}
+                        {(() => {
+                          // Con qué transmite y por qué no llega (lib/plataforma-conductor).
+                          const p = etiquetaPlataforma(d.platform);
+                          return p ? (
+                            <p style={{ fontSize: 11, color: p.alerta ? STATE.warningText : SURFACE.textFaint, fontWeight: p.alerta ? 700 : 400, margin: "2px 0 0" }}>{p.texto}</p>
+                          ) : null;
+                        })()}
                       </div>
                       {pillEstado(d.online)}
                     </div>
@@ -902,11 +907,14 @@ export default function DriverMonitoringPage() {
                             <p style={{ fontSize: 13, fontWeight: 700, color: SURFACE.text, margin: 0, lineHeight: 1.2 }}>
                               {d.fullName}
                             </p>
-                            {d.platform && (
-                              <p style={{ fontSize: 10.5, color: SURFACE.textFaint, margin: "2px 0 0", textTransform: "capitalize" }}>
-                                {d.platform}
-                              </p>
-                            )}
+                            {(() => {
+                              const p = etiquetaPlataforma(d.platform);
+                              return p ? (
+                                <p style={{ fontSize: 10.5, color: p.alerta ? STATE.warningText : SURFACE.textFaint, fontWeight: p.alerta ? 700 : 400, margin: "2px 0 0" }}>
+                                  {p.texto}
+                                </p>
+                              ) : null;
+                            })()}
                           </div>
                         </div>
                       </td>

@@ -43,7 +43,54 @@ export function viajesPorCalificar(
     .map((t) => t.id);
 }
 
-export type EstadoRastreoShell = { running?: boolean; backgroundOk?: boolean } | null | undefined;
+export type EstadoRastreoShell =
+  | { running?: boolean; backgroundOk?: boolean; gpsServices?: boolean; background?: string }
+  | null
+  | undefined;
+
+/**
+ * Esperas entre reintentos de tracking.status cuando el shell no responde a
+ * tiempo (30-09-2026). Antes un solo intento fallido "se omitía" y el rastreo
+ * nativo quedaba sin armar hasta el próximo login.
+ */
+export const ESPERAS_ESTADO_SHELL_MS = [5_000, 15_000, 45_000];
+
+/** Como mucho un rearme del rastreo nativo por minuto. */
+export const ESPERA_REARME_MS = 60_000;
+
+/**
+ * Si hay que volver a pedir tracking.start al shell: tenía permiso "todo el
+ * tiempo" y GPS encendido, pero el rastreo aparece detenido —Android mató el
+ * servicio con la app (30-09-2026: conductores con la app instalada mandaban
+ * un punto cada 5 o 10 minutos, sólo al abrirla). Nadie lo rearmaba hasta el
+ * próximo login. Sin permiso de fondo o con el GPS apagado no se insiste:
+ * tracking.start abriría los diálogos del sistema una y otra vez.
+ */
+export function debeRearmarRastreo(
+  estado: EstadoRastreoShell,
+  ahora: number,
+  ultimoRearme: number,
+  espera = ESPERA_REARME_MS,
+): boolean {
+  if (!estado || estado.running !== false) return false;
+  if (estado.backgroundOk !== true || estado.gpsServices === false) return false;
+  return ahora - ultimoRearme >= espera;
+}
+
+/**
+ * El shell emite tracking.statusChanged cada 3 s aunque no cambie nada (trae
+ * el último envío): sólo estos campos le importan al portal, y con ellos
+ * iguales no se vuelve a pintar la pantalla ni se rearma el GPS web.
+ */
+export function mismoEstadoShell(a: EstadoRastreoShell, b: EstadoRastreoShell): boolean {
+  if (!a || !b) return !a && !b;
+  return (
+    a.running === b.running &&
+    a.backgroundOk === b.backgroundOk &&
+    a.gpsServices === b.gpsServices &&
+    a.background === b.background
+  );
+}
 
 /**
  * Si el portal web tiene que mandar GPS por su cuenta. Dentro de la app, con
