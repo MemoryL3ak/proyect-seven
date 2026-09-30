@@ -76,7 +76,7 @@ import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } fr
 import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { dlog } from "@/lib/native-debug";
 import { gpsWebNecesario, senalDeCorte, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
-import { destinoDeNavegacion, enlacesDeNavegacion, type LugarConDireccion } from "@/lib/navegacion";
+import { destinoDeNavegacion, enlacesDeNavegacion, esLugarPorConfirmar, type LugarConDireccion } from "@/lib/navegacion";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
 import { ChipFilter } from "@/components/ui/FilterControls";
@@ -2396,7 +2396,17 @@ export default function DriverPortalPage() {
                               {/* Navigate with Waze / Google Maps — en ruta a
                                   recoger navega a la recogida; después, al destino */}
                               {(() => {
-                                const target = navTarget(trip, trip.status === "EN_ROUTE" ? "pickup" : "dropoff");
+                                const fase = trip.status === "EN_ROUTE" ? "pickup" : "dropoff";
+                                const target = navTarget(trip, fase);
+                                // Destino (o recogida) "por confirmar": se avisa en vez
+                                // de mandar a Waze a buscar ese texto.
+                                if (!target && esLugarPorConfirmar(fase === "pickup" ? trip.origin : trip.destination)) {
+                                  return (
+                                    <div style={{ marginBottom:10,padding:"10px 12px",borderRadius:10,background:STATE.warningSoft,border:`1px solid ${STATE.warningBorder}`,color:STATE.warningText,fontSize:12,fontWeight:700 }}>
+                                      {fase === "pickup" ? "Punto de recogida por confirmar" : "Destino por confirmar"}: consulta con coordinación a dónde ir.
+                                    </div>
+                                  );
+                                }
                                 if (!target) return null;
                                 return (
                                 <div style={{ display:"flex",gap:6,marginBottom:10 }}>

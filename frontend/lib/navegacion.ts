@@ -37,6 +37,27 @@ export type DestinoNavegacion = {
   fuente: "coordenadas" | "direccion" | "texto";
 };
 
+/**
+ * "x confirmar", "Por confirmar", "Hotel por confirmar", "por definir"…: la
+ * planilla todavía no dice a dónde va (30-09-2026). Mandado como texto,
+ * Waze y Google lo resolvían a cualquier lugar: un conductor de Rugby marcó
+ * "Pasajero recogido" y la app lo mandó a San Antonio.
+ */
+export function esLugarPorConfirmar(texto: unknown): boolean {
+  const v = String(texto ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+  if (!v) return false;
+  return (
+    /^(x|por|a|sin) (confirmar|definir|informar|asignar)$/.test(v) ||
+    /\b(por|a|x) (confirmar|definir)$/.test(v) ||
+    ["tbd", "tbc", "pendiente", "sin destino", "destino por confirmar", "n a"].includes(v)
+  );
+}
+
 const buscar = (lista: LugarConDireccion[] | null | undefined, id?: string | null) =>
   id ? (lista ?? []).find((l) => l.id === id) ?? null : null;
 
@@ -73,7 +94,8 @@ export function destinoDeNavegacion(
     return { consulta: direccion, etiqueta: nombre || texto || direccion, fuente: "direccion" };
   }
   const libre = nombre || texto;
-  if (!libre) return null;
+  // Sin lugar del catálogo y con "por confirmar" no hay a dónde navegar.
+  if (!libre || esLugarPorConfirmar(libre)) return null;
   return { consulta: libre, etiqueta: libre, fuente: "texto" };
 }
 

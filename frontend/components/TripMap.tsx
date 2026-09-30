@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { PinIcon, XIcon } from "@/components/ui/Icons";
+import { esLugarPorConfirmar } from "@/lib/navegacion";
 
 type LatLng = { lat: number; lng: number };
 
@@ -369,8 +370,15 @@ function MapCanvas({
 /*  Main export: inline map + expand button + fullscreen modal         */
 /* ------------------------------------------------------------------ */
 
-export default function TripMap(props: TripMapProps) {
+export default function TripMap(entrada: TripMapProps) {
   const [expanded, setExpanded] = useState(false);
+  // "x confirmar" no es un lugar: no se busca en el mapa ni se traza la ruta
+  // (Google lo ubicaba en cualquier parte; lib/navegacion).
+  const props: TripMapProps = {
+    ...entrada,
+    origin: esLugarPorConfirmar(entrada.origin) ? null : entrada.origin,
+    destination: esLugarPorConfirmar(entrada.destination) ? null : entrada.destination,
+  };
 
   return (
     <>
