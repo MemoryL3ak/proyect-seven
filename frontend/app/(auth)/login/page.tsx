@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { changeTemporaryPassword, login } from "@/lib/api";
 import { BRAND, SURFACE, STATE } from "@/lib/design";
 import { LockIcon, EyeIcon } from "@/components/ui/Icons";
+import { destinoTrasLogin } from "@/lib/destino-login";
 
 type LoginResponse = {
   user?: Record<string, unknown>;
@@ -54,7 +55,7 @@ export default function LoginPage() {
         setRequiresPasswordChange(true);
         return;
       }
-      router.push("/");
+      router.push(destinoTrasLogin(window.location.search));
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo iniciar sesión");
     } finally {
@@ -86,7 +87,7 @@ export default function LoginPage() {
       if (stillRequiresChange) {
         throw new Error("No se pudo finalizar el cambio de contraseña.");
       }
-      router.push("/");
+      router.push(destinoTrasLogin(window.location.search));
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudo actualizar la contraseña.");
     } finally {

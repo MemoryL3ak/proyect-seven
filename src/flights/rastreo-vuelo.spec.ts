@@ -50,4 +50,27 @@ describe('rastreo de vuelos', () => {
     expect(r).toMatchObject({ flightStatus: 'active', liveData: true });
     expect(r.arrEstimated).toContain('2026-09-29T23:28');
   });
+
+  /**
+   * 30-09-2026, AA957 Miami → Santiago en vuelo: AeroDataBox trae la hora de
+   * pista estimada (07:15) y salía como "Aterrizó: 07:15".
+   */
+  it('en vuelo, la hora de pista de llegada es estimada, no un aterrizaje', async () => {
+    const aa957 = {
+      number: 'AA 957',
+      status: 'EnRoute',
+      airline: { name: 'American Airlines', iata: 'AA' },
+      departure: { airport: { iata: 'MIA' }, scheduledTime: { local: '2026-09-29 22:10-04:00' }, runwayTime: { local: '2026-09-29 22:22-04:00' }, quality: ['Basic'] },
+      arrival: { airport: { iata: 'SCL' }, scheduledTime: { local: '2026-09-30 07:25-03:00' }, runwayTime: { local: '2026-09-30 07:15-03:00' }, quality: ['Basic'] },
+    };
+    const siguiente = { ...aa957, status: 'Expected', departure: { ...aa957.departure, scheduledTime: { local: '2026-09-30 22:50-04:00' }, runwayTime: undefined }, arrival: { ...aa957.arrival, scheduledTime: { local: '2026-10-01 08:00-03:00' }, runwayTime: undefined } };
+    const p = proveedor([aa957, siguiente]);
+    const r = await p.trackFlight('AA957', '2026-09-30');
+    expect(r.flightStatus).toBe('active');
+    expect(r.arrActual).toBeNull();
+    expect(r.arrEstimated).toContain('2026-09-30T07:15');
+    expect(r.depActual).toContain('2026-09-29T22:22');
+    expect(r.arrScheduled?.slice(0, 10)).toBe('2026-09-30'); // el aviso de "otro día" no salta
+  });
 });
+

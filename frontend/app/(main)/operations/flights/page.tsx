@@ -1227,7 +1227,9 @@ export default function FlightsPage() {
                         {t("El proveedor de vuelos no tiene seguimiento en vivo de este vuelo: se muestra sólo el itinerario. La hora real de salida y llegada no está disponible.")}
                       </div>
                     )}
-                    {trackResult.requestedDate && trackResult.flightDate && trackResult.requestedDate !== trackResult.flightDate && (
+                    {/* Sólo si el día pedido no es ni el de salida ni el de llegada: el AA957
+                        sale el 29 y llega el 30, y avisaba "No hay datos del 30". */}
+                    {trackResult.requestedDate && trackResult.flightDate && ![trackResult.depScheduled?.slice(0, 10), trackResult.arrScheduled?.slice(0, 10)].includes(trackResult.requestedDate) && (
                       <div style={{ padding: "10px 14px", borderRadius: "12px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", fontSize: "12px", color: STATE.warningText }}>
                         {t("No hay datos del")} <b>{trackResult.requestedDate}</b> {t("para este vuelo (el plan actual de la API sólo entrega el vuelo vigente). Se muestra la operación del")} <b>{trackResult.flightDate}</b>.
                       </div>

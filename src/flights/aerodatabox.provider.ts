@@ -238,15 +238,22 @@ export class AeroDataBoxProvider {
     // promedio estadístico, no una estimación del vuelo real, y no se muestra
     // como hora estimada (CM497: "Est: 23:28" cuando aterrizó a las 23:36).
     const enVivo = [...(dep.quality ?? []), ...(arr.quality ?? [])].some((q) => /live/i.test(q));
+    const status = STATUS_MAP[(row.status ?? '').toLowerCase()] ?? null;
+    // La hora de pista de AeroDataBox también es una estimación mientras el
+    // vuelo no llega: el AA957 "En vuelo" salía con "Aterrizó: 07:15"
+    // (30-09-2026). Es real sólo con el estado que corresponde.
+    const crudo = (row.status ?? '').toLowerCase();
+    const salio = ['departed', 'enroute', 'approaching', 'arrived', 'landed'].includes(crudo);
+    const llego = crudo === 'arrived' || crudo === 'landed';
     const depScheduled = toIso(dep.scheduledTime);
     const depEstimated = toIso(dep.revisedTime) ?? (enVivo ? toIso(dep.predictedTime) : null);
-    const depActual = toIso(dep.runwayTime) ?? toIso(dep.actualTime);
+    const depActual = salio ? toIso(dep.runwayTime) ?? toIso(dep.actualTime) : null;
     const arrScheduled = toIso(arr.scheduledTime);
-    const arrEstimated = toIso(arr.revisedTime) ?? (enVivo ? toIso(arr.predictedTime) : null);
-    const arrActual = toIso(arr.runwayTime) ?? toIso(arr.actualTime);
+    const arrEstimated =
+      toIso(arr.revisedTime) ?? (!llego ? toIso(arr.runwayTime) : null) ?? (enVivo ? toIso(arr.predictedTime) : null);
+    const arrActual = llego ? toIso(arr.runwayTime) ?? toIso(arr.actualTime) : null;
 
     const loc = row.location;
-    const status = STATUS_MAP[(row.status ?? '').toLowerCase()] ?? null;
 
     return {
       flightNumber: row.number?.replace(/\s+/g, '') || normalized,
