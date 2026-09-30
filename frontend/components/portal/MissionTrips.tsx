@@ -101,6 +101,7 @@ export default function MissionTrips({
   sedeFiltro = "",
   titulo,
   nombreDelegacion,
+  etiquetaDelegacion = "Región",
   contactoChofer = false,
   nombreContacto = null,
   direcciones,
@@ -136,6 +137,8 @@ export default function MissionTrips({
   titulo?: string;
   /** Nombre de una región para mostrarlo en cada tarjeta cuando se ven todas. */
   nombreDelegacion?: (delegationId?: string | null) => string | null;
+  /** "Región" (Juegos Escolares) o "País" (Rugby): cómo se llama la delegación. */
+  etiquetaDelegacion?: "Región" | "País";
   /**
    * Contacto directo con el chofer del traslado. Es lo único que separa al
    * Coordinador de Transporte del Coordinador de Comité: los demás perfiles
@@ -662,7 +665,7 @@ export default function MissionTrips({
                         ? t("Todas las regiones")
                         : (nombreDelegacion?.(tr.delegationId) ?? (delegationName || null));
                       const datos = [
-                        { label: t("Región"), valor: region },
+                        { label: t(etiquetaDelegacion), valor: region },
                         { label: t("Disciplina"), valor: deporte },
                         { label: t("Género"), valor: genero || null },
                         { label: t("Tramo"), valor: legTypeShort(tr.legType) ? t(legTypeShort(tr.legType)) : null },

@@ -21,6 +21,7 @@ import {
   proveedoresDelEvento,
 } from '../providers/proveedores-del-evento';
 import { excluidaDelEvento } from '../provider-participants/eventos-persona';
+import { codigoDePais } from '../shared/paises';
 
 const MONTHS_ES: Record<string, number> = {
   ene: 0,
@@ -468,6 +469,15 @@ export class TripsScheduleService {
     // Un tipo de cliente de verdad nunca es una región.
     if (VALID_CLIENT_TYPES.includes(valor.toUpperCase())) return [];
 
+    // Países (Rugby): las delegaciones sólo tienen el código ("CAN") y la
+    // planilla escribe "Canadá", "Delegación Bélgica" o "Hong Kong"
+    // (29-09-2026). Si el texto es un país, manda su código.
+    const pais = codigoDePais(valor.replace(/^\s*delegaci[oó]n\s+(de\s+)?/i, ''));
+    if (pais) {
+      const porPais = delegaciones.filter((d) => d.codigo === pais.toLowerCase());
+      if (porPais.length) return porPais;
+    }
+
     const clave = this.claveRegion(valor);
     const codigo = valor.toLowerCase();
     // Sin espacios ni puntuación: "O Higgins" y "O'Higgins" quedan iguales
@@ -516,11 +526,11 @@ export class TripsScheduleService {
     for (const texto of textos) {
       const candidatas = this.candidatasDelegacion(texto, delegaciones);
       if (candidatas.length > 1) {
-        return `región ambigua: "${texto}" puede ser ${candidatas.map((c) => c.nombre).join(' o ')}`;
+        return `delegación ambigua: "${texto}" puede ser ${candidatas.map((c) => c.nombre).join(' o ')}`;
       }
     }
-    if (textos.length) return `región no reconocida: "${textos.join(' | ')}"`;
-    return 'sin región en la planilla';
+    if (textos.length) return `delegación no reconocida: "${textos.join(' | ')}"`;
+    return 'sin delegación en la planilla';
   }
 
   private resolverTipoCliente(
@@ -1015,7 +1025,7 @@ export class TripsScheduleService {
     regionIssues.forEach((rows, motivo) => {
       const etiqueta = rows.length > 1 ? `Filas ${rows.join(', ')}` : `Fila ${rows[0]}`;
       warnings.push(
-        `${etiqueta}: ${motivo}. El viaje se creó sin delegación — el Jefe de Misión no lo verá ni saldrá en el filtro por región hasta asignarla en Gestión manual.`,
+        `${etiqueta}: ${motivo}. El viaje se creó sin delegación — el Jefe de Misión no lo verá ni saldrá en el filtro por delegación hasta asignarla en Gestión manual.`,
       );
     });
 

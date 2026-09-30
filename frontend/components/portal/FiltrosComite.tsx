@@ -5,6 +5,7 @@ import SelectorFiltro, { BotonQuitarFiltros, type OpcionFiltro } from "@/compone
 import { SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
 import { buildDisciplineLabelMap, type DisciplineLike } from "@/lib/discipline-filters";
+import { nombreDePais } from "@/lib/paises";
 
 /**
  * Filtros del Coordinador de Comité: delegación, disciplina y —donde aplica—
@@ -34,6 +35,10 @@ const CORTO: Record<string, string> = {
 
 export const nombreRegionCorto = (d: Delegacion) =>
   CORTO[d.countryCode ?? ""] ??
+  // País sin nombre propio (Rugby: "CAN" → "Canadá").
+  (/^[A-Za-z]{3}$/.test(d.countryCode ?? "") && (!d.name || d.name.toUpperCase() === d.countryCode?.toUpperCase())
+    ? nombreDePais(d.countryCode)
+    : null) ??
   (d.name ?? d.countryCode ?? "—").replace(/^regi[oó]n\s+(de\s+la\s+|del\s+|de\s+)?/i, "").trim();
 
 export default function FiltrosComite({

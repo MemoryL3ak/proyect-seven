@@ -1,3 +1,5 @@
+import { nombreDePais } from "@/lib/paises";
+
 /**
  * Etiqueta visible de una delegación. En los Juegos Escolares las delegaciones
  * son regiones y llevan nombre ("Región de Valparaíso"); las de países sólo
@@ -13,8 +15,39 @@ export type DelegationLike = {
 export function delegationLabel(delegation?: DelegationLike | null): string {
   if (!delegation) return "";
   const metaName = delegation.metadata?.name;
-  const name = delegation.name ?? (typeof metaName === "string" ? metaName : null);
-  return (name && name.trim()) || delegation.countryCode || delegation.id || "";
+  const name = (delegation.name ?? (typeof metaName === "string" ? metaName : null))?.trim() || "";
+  const codigo = String(delegation.countryCode ?? "").trim();
+  // Delegación de país sin nombre propio (Rugby: "CAN"): el nombre del país.
+  if (/^[A-Za-z]{3}$/.test(codigo) && (!name || name.toUpperCase() === codigo.toUpperCase())) {
+    return nombreDePais(codigo);
+  }
+  return name || codigo || delegation.id || "";
+}
+
+/** Región de Chile (Juegos Escolares) o país (Rugby). */
+export function esRegion(delegation?: DelegationLike | null): boolean {
+  if (!delegation) return false;
+  const metaName = delegation.metadata?.name;
+  const name = delegation.name ?? (typeof metaName === "string" ? metaName : "");
+  return (
+    delegation.metadata?.kind === "REGION" ||
+    /^CL-/i.test(String(delegation.countryCode ?? "")) ||
+    /^regi[oó]n\b/i.test(String(name ?? "").trim())
+  );
+}
+
+/**
+ * Cómo se llama la delegación en pantalla (29-09-2026): en Rugby el detalle
+ * del viaje decía "Región: CAN". Con la delegación del viaje, según sea; sin
+ * ella, según las del evento (si alguna es región, es un evento de regiones).
+ */
+export function etiquetaDeDelegacion(
+  delegation: DelegationLike | null | undefined,
+  delEvento: DelegationLike[] = [],
+): "Región" | "País" {
+  if (delegation) return esRegion(delegation) ? "Región" : "País";
+  if (delEvento.length === 0 || delEvento.some(esRegion)) return "Región";
+  return "País";
 }
 
 /** Regiones de Chile (ISO 3166-2), para el maestro de delegaciones. */

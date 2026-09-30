@@ -191,12 +191,12 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
 
     it('dos regiones en la celda: dice cuáles son', () => {
       expect(svc().motivoSinRegion([undefined, 'Coquimbo / Maule', 'ATHLETE'], regiones())).toBe(
-        'región ambigua: "Coquimbo / Maule" puede ser Región de Coquimbo o Región del Maule',
+        'delegación ambigua: "Coquimbo / Maule" puede ser Región de Coquimbo o Región del Maule',
       );
     });
 
     it('un texto que no es región: lo muestra tal cual, sin los tipos de cliente', () => {
-      expect(svc().motivoSinRegion(['Todas', undefined, 'TA'], regiones())).toBe('región no reconocida: "Todas"');
+      expect(svc().motivoSinRegion(['Todas', undefined, 'TA'], regiones())).toBe('delegación no reconocida: "Todas"');
     });
 
     it('"TODAS LAS REGIONES" es un traslado transversal, no un error', () => {
@@ -207,8 +207,35 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
       expect(svc().esTodasLasRegiones([undefined, '', undefined])).toBe(false);
     });
 
+    /**
+     * 29-09-2026, Rugby: 12 viajes de la planilla de buses quedaron sin
+     * delegación ("región no reconocida: Canadá | Delegación Canadá"): las
+     * delegaciones de países sólo tienen el código.
+     */
+    it('un país por su nombre o "Delegación <país>" encuentra la delegación por su código', () => {
+      type ConBusqueda = { buscarDelegacion: (v: string | undefined, d: Delegacion[]) => string | null };
+      const buscar = (v: string) => (service as unknown as ConBusqueda).buscarDelegacion(v, paises);
+      const pais = (codigo: string): Delegacion => {
+        const clave = svc().claveRegion(codigo);
+        return { id: codigo, nombre: codigo, clave, compacta: clave, codigo: codigo.toLowerCase() };
+      };
+      const paises = ['CAN', 'BEL', 'HKG', 'NAM', 'ROU', 'PRT'].map(pais);
+      expect(buscar('Canadá')).toBe('CAN');
+      expect(buscar('Delegación Canadá')).toBe('CAN');
+      expect(buscar('Delegación Bélgica')).toBe('BEL');
+      expect(buscar('Hong Kong')).toBe('HKG');
+      expect(buscar('Delegación Namibia')).toBe('NAM');
+      expect(buscar('Rumania')).toBe('ROU');
+      expect(buscar('Delegación Portugal')).toBe('PRT');
+      // la fila de la captura: Delegación / Acrónimo / Tipo de cliente
+      type ConResolver = { resolverDelegacion: (a?: string, b?: string, c?: string, d?: Delegacion[]) => string | null };
+      expect(
+        (service as unknown as ConResolver).resolverDelegacion('Canadá', 'Delegación Canadá', 'Delegación Canadá', paises),
+      ).toBe('CAN');
+    });
+
     it('celdas vacías: lo dice', () => {
-      expect(svc().motivoSinRegion([undefined, '', 'VIP'], regiones())).toBe('sin región en la planilla');
+      expect(svc().motivoSinRegion([undefined, '', 'VIP'], regiones())).toBe('sin delegación en la planilla');
     });
   });
 

@@ -37,13 +37,27 @@ export type FichaAnd = {
   metadata?: Record<string, unknown> | null;
 };
 
-/** Tipo de servicio de los dos tramos: el de la tarifa del proveedor. */
+/** Tipo de servicio con llegada y salida: la llegada es el viaje y la salida su regreso. */
 export const TIPO_TRANSFER_IN_OUT = 'TRANSFER_IN_OUT';
+/**
+ * Con un solo tramo (29-09-2026, "dice Transfer In Out y es solo IN"): sólo
+ * llegada es Transfer In; sólo salida, Transfer Out. Se cobran con la tarifa
+ * de Transfer In Out, igual que antes (ver trips-finance y lookupClientPrice).
+ */
+export const TIPO_TRANSFER_IN = 'TRANSFER_IN';
+export const TIPO_TRANSFER_OUT = 'TRANSFER_OUT';
+export type TipoTransfer = typeof TIPO_TRANSFER_IN_OUT | typeof TIPO_TRANSFER_IN | typeof TIPO_TRANSFER_OUT;
+
+/** Tipo de cada tramo según los que tenga la ficha. */
+export function tipoDeTramo(sentido: SentidoAnd, hayLlegada: boolean, haySalida: boolean): TipoTransfer {
+  if (hayLlegada && haySalida) return TIPO_TRANSFER_IN_OUT;
+  return sentido === 'LLEGADA' ? TIPO_TRANSFER_IN : TIPO_TRANSFER_OUT;
+}
 
 export type TramoAnd = {
   sentido: SentidoAnd;
-  /** Transfer In Out: la llegada es el viaje y la salida su regreso. */
-  tipoViaje: typeof TIPO_TRANSFER_IN_OUT;
+  /** Transfer In Out con los dos tramos; Transfer In o Out con uno solo. */
+  tipoViaje: TipoTransfer;
   /** Clave del viaje en su metadata: una ficha tiene a lo más uno por sentido. */
   clave: string;
   vuelo: string;
@@ -147,6 +161,9 @@ export function tramosAnd(ficha: FichaAnd): TramoAnd[] {
       patente: texto(salida.vehiclePlate),
     });
   }
+  const hayLlegada = tramos.some((t) => t.sentido === 'LLEGADA');
+  const haySalida = tramos.some((t) => t.sentido === 'SALIDA');
+  for (const t of tramos) t.tipoViaje = tipoDeTramo(t.sentido, hayLlegada, haySalida);
   return tramos;
 }
 
@@ -174,7 +191,8 @@ export type ArregloTramo = {
  * Cómo tienen que quedar los tramos de una ficha para ser un solo Transfer
  * In Out: con llegada y salida, la llegada es la ida (OUTBOUND, guarda la
  * hora de regreso) y la salida su regreso (RETURN, colgada de la llegada).
- * Con un solo tramo, ése es el viaje, sin regreso. Devuelve sólo los tramos
+ * Con un solo tramo, ése es el viaje, sin regreso, y es Transfer In (sólo
+ * llegada) o Transfer Out (sólo salida). Devuelve sólo los tramos
  * que hay que cambiar; los traslados de antes (Transfer In y Transfer Out
  * separados) también se unen, aunque ya hayan partido: es la forma del
  * viaje, no lo que pasó en la calle.
@@ -187,7 +205,7 @@ export function arregloTransferInOut(
   if (llegada) {
     deseados.push({
       id: llegada.id,
-      tripType: TIPO_TRANSFER_IN_OUT,
+      tripType: tipoDeTramo('LLEGADA', true, Boolean(salida)),
       parentTripId: null,
       legType: salida ? 'OUTBOUND' : null,
       isRoundTrip: Boolean(salida),
@@ -197,7 +215,7 @@ export function arregloTransferInOut(
   if (salida) {
     deseados.push({
       id: salida.id,
-      tripType: TIPO_TRANSFER_IN_OUT,
+      tripType: tipoDeTramo('SALIDA', Boolean(llegada), true),
       parentTripId: llegada ? llegada.id : null,
       legType: llegada ? 'RETURN' : null,
       isRoundTrip: Boolean(llegada),

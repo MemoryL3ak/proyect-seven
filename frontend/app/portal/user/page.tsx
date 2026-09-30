@@ -76,6 +76,7 @@ import MissionTrips from "@/components/portal/MissionTrips";
 import MissionLiveTrips from "@/components/portal/MissionLiveTrips";
 import MissionLiveMap from "@/components/portal/MissionLiveMap";
 import FiltrosComite, { nombreRegionCorto } from "@/components/portal/FiltrosComite";
+import { etiquetaDeDelegacion } from "@/lib/delegations";
 import HotelesComite from "@/components/portal/HotelesComite";
 import { ChipFilter, SegmentedFilter } from "@/components/ui/FilterControls";
 import SelectorFiltro, { BotonQuitarFiltros } from "@/components/portal/SelectorFiltro";
@@ -2293,6 +2294,7 @@ export default function UserPortalPage() {
                   const d = delegacionesEvento.find((x) => x.id === id);
                   return d ? nombreRegionCorto(d) : null;
                 }}
+                etiquetaDelegacion={etiquetaDeDelegacion(null, delegacionesEvento)}
                 trips={delegationTrips}
                 delegationId={null}
                 delegationName=""
@@ -2466,6 +2468,7 @@ export default function UserPortalPage() {
                 trips={delegationTrips}
                 delegationId={athlete.delegationId}
                 delegationName={delegationName}
+                etiquetaDelegacion={etiquetaDeDelegacion(delegation ?? null)}
                 memberIds={[athlete.id, ...delegationMembers.map((m) => m.id)]}
                 disciplines={disciplineParents}
                 venues={venues}

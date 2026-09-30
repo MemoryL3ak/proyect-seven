@@ -24,7 +24,7 @@ import { resources } from "@/lib/resources";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { CLIENT_TYPE_OPTIONS, clientTypeLabel } from "@/lib/clientTypes";
-import { delegationLabel } from "@/lib/delegations";
+import { delegationLabel, etiquetaDeDelegacion } from "@/lib/delegations";
 import { deporteDeViaje, type DisciplineLike } from "@/lib/discipline-filters";
 import { lugarDeExtremo, lugaresDeViajes, tocaLugar } from "@/lib/lugares";
 import { personasMovilizadas } from "@/lib/movilizadas";
@@ -2517,7 +2517,9 @@ export default function TripsPage() {
                 </label>
 
                 <label className="text-sm block" style={{ minWidth: 0 }}>
-                  <span style={ongoingEtiquetaStyle}>{t("Región")}</span>
+                  <span style={ongoingEtiquetaStyle}>
+                    {t(etiquetaDeDelegacion(null, Object.values(delegations).filter((d) => !selectedEventId || d.eventId === selectedEventId)))}
+                  </span>
                   <StyledSelect
                     value={ongoingRegion}
                     onChange={(e) => { setOngoingRegion(e.target.value); setOngoingPage(0); }}
@@ -3339,7 +3341,15 @@ export default function TripsPage() {
         // porque su ausencia también es información: los traslados que entran
         // por la planilla de operatividad no traen delegación.
         const iclases: { label: string; value: string; destacado?: boolean }[] = [
-          { label: "Región", value: iregion || "—", destacado: Boolean(iregion) },
+          // "Región" en los Juegos Escolares, "País" en Rugby (29-09-2026).
+          {
+            label: etiquetaDeDelegacion(
+              infoTrip.delegationId ? delegations[infoTrip.delegationId] : null,
+              Object.values(delegations).filter((d) => d.eventId === infoTrip.eventId),
+            ),
+            value: iregion || "—",
+            destacado: Boolean(iregion),
+          },
           { label: "Disciplina", value: idisciplina || "—", destacado: Boolean(idisciplina) },
           { label: "Género", value: igenero || "—", destacado: Boolean(igenero) },
           { label: "Tipo de viaje", value: itipoViaje || "—", destacado: Boolean(itipoViaje) },

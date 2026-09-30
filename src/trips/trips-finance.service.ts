@@ -112,6 +112,9 @@ export class TripsFinanceService {
           case
             when n.trip_type in ('VIAJE_IDA','VIAJE_REGRESO','VIAJE_IDA_REGRESO','TRANSFER_IN_OUT','DISPOSICION_12H','COMEDOR')
               then n.trip_type
+            -- Un Transfer In o Out suelto (un solo vuelo) se cobra con la
+            -- tarifa de Transfer In Out, como antes de separarlos (29-09-2026).
+            when n.trip_type in ('TRANSFER_IN','TRANSFER_OUT') then 'TRANSFER_IN_OUT'
             when coalesce(n.is_round_trip, false) then 'VIAJE_IDA_REGRESO'
             when n.leg_type = 'RETURN' then 'VIAJE_REGRESO'
             else 'VIAJE_IDA'

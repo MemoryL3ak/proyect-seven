@@ -84,10 +84,24 @@ describe('tramosAnd', () => {
     });
     expect(soloSalida).toHaveLength(1);
     expect(soloSalida[0]).toMatchObject({
-      tipoViaje: 'TRANSFER_IN_OUT',
+      tipoViaje: 'TRANSFER_OUT',
       vuelo: 'LA714',
       conductorId: 'patricia',
     });
+  });
+
+  /**
+   * 29-09-2026, Delegación Canadá (Rugby): "dice Transfer In Out y es solo
+   * IN". Sólo llegada → Transfer In; con llegada y salida, Transfer In Out.
+   */
+  it('sólo llegada es Transfer In; con los dos vuelos, Transfer In Out', () => {
+    const soloLlegada = tramosAnd({
+      id: 'canada',
+      trip_type: 'ARRIVAL',
+      metadata: { arrival: { flightNumber: 'AC92', time: '2026-09-30T10:25:00.000Z', driverId: 'alexander' } },
+    });
+    expect(soloLlegada.map((t) => [t.sentido, t.tipoViaje])).toEqual([['LLEGADA', 'TRANSFER_IN']]);
+    expect(tramosAnd(SERGIO).map((t) => t.tipoViaje)).toEqual(['TRANSFER_IN_OUT', 'TRANSFER_IN_OUT']);
   });
 
   it('la hora editada en la fila manda sobre la de la carga', () => {
@@ -235,11 +249,11 @@ describe('arregloTransferInOut', () => {
     });
   });
 
-  it('con un solo tramo, ése es el viaje, sin regreso', () => {
-    expect(arregloTransferInOut(null, salidaSergio)).toEqual([
+  it('con un solo tramo, ése es el viaje, sin regreso (y un Transfer In Out suelto pasa a Out)', () => {
+    expect(arregloTransferInOut(null, { ...salidaSergio, tripType: 'TRANSFER_IN_OUT' })).toEqual([
       {
         id: 'out-sergio',
-        tripType: 'TRANSFER_IN_OUT',
+        tripType: 'TRANSFER_OUT',
         parentTripId: null,
         legType: null,
         isRoundTrip: false,

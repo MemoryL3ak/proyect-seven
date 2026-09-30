@@ -633,8 +633,11 @@ export class TripsService {
       const normalized = this.normalizeFleetType(fleetType);
       if (!normalized) return null;
 
+      // Un Transfer In o Out suelto usa la tarifa de Transfer In Out: el
+      // catálogo de tarifas no los separa (29-09-2026).
+      const servicio = tripType === 'TRANSFER_IN' || tripType === 'TRANSFER_OUT' ? 'TRANSFER_IN_OUT' : tripType;
       const rate = await this.rateRepository.findOne({
-        where: { providerId, fleetType: normalized, tripType },
+        where: { providerId, fleetType: normalized, tripType: servicio },
       });
       return rate ? Number(rate.clientPrice) : null;
     } catch (err) {
