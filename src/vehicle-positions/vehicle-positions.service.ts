@@ -83,6 +83,40 @@ export class VehiclePositionsService {
     { lat: number; lng: number; at: number; recvAt: number }
   >();
 
+  /**
+   * Marcas de tiempo ya guardadas por chofer, para no guardar dos veces el
+   * mismo fijo. Medido el 30-09-2026: de 189.274 fijos del día, 167.822 eran
+   * el mismo chofer con la misma marca de tiempo. El shell encola el fijo
+   * cuyo POST expiró aunque el servidor ya lo hubiera guardado, y al drenar
+   * la cola lo manda de nuevo; como llega más viejo que el último, la regla
+   * de abajo lo dejaba pasar sin comparar. Cabe ~1 h y media a un fijo cada
+   * 3 s; `primeLastFix` la rellena desde la base tras un reinicio.
+   */
+  private readonly recientes = new Map<string, Set<number>>();
+  private static readonly MAX_RECIENTES = 2000;
+  /** Cuántas marcas de tiempo se leen de la base para rellenar `recientes`. */
+  private static readonly PRIME_RECIENTES = 300;
+
+  /** ¿Ya se guardó un fijo de este chofer con esta marca de tiempo? */
+  private esRepetido(driverId: string, at: number): boolean {
+    return this.recientes.get(driverId)?.has(at) ?? false;
+  }
+
+  private marcarReciente(driverId: string, at: number): void {
+    let marcas = this.recientes.get(driverId);
+    if (!marcas) {
+      marcas = new Set<number>();
+      this.recientes.set(driverId, marcas);
+    }
+    marcas.add(at);
+    // El Set conserva el orden de llegada: se suelta la más antigua.
+    while (marcas.size > VehiclePositionsService.MAX_RECIENTES) {
+      const primera = marcas.values().next().value;
+      if (primera === undefined) break;
+      marcas.delete(primera);
+    }
+  }
+
   constructor(
     @Inject('SUPABASE_CLIENT') private readonly supabase: SupabaseClient,
     @InjectRepository(VehiclePosition)
@@ -240,7 +274,7 @@ export class VehiclePositionsService {
            FROM telemetry.vehicle_positions
           WHERE driver_id = $1
           ORDER BY "timestamp" DESC
-          LIMIT 1`,
+          LIMIT ${VehiclePositionsService.PRIME_RECIENTES}`,
         [driverId],
       )) as Array<{
         lat: number | null;
@@ -248,6 +282,14 @@ export class VehiclePositionsService {
         timestamp: string;
         created_at: string;
       }>;
+      // Las marcas ya guardadas, para que el drenaje de la cola del shell
+      // después de un deploy tampoco las duplique.
+      if (!this.recientes.has(driverId)) {
+        for (const r of [...(rows ?? [])].reverse()) {
+          const t = new Date(r.timestamp).getTime();
+          if (Number.isFinite(t)) this.marcarReciente(driverId, t);
+        }
+      }
       const row = rows?.[0];
       if (!row || row.lat === null || row.lng === null) return;
       const at = new Date(row.timestamp).getTime();
@@ -282,6 +324,12 @@ export class VehiclePositionsService {
       // Reloj del servidor: el momento en que llegó este fijo.
       const recvAt = Date.now();
       await this.primeLastFix(driverId);
+      // El mismo fijo por segunda vez (reenvío de la cola del shell): no se
+      // guarda y se responde OK igual, que es lo que saca el fijo de la cola.
+      if (this.esRepetido(driverId, at)) {
+        return { skipped: true as const, reason: 'repetido' };
+      }
+      this.marcarReciente(driverId, at);
       const reason = this.rejectReason(driverId, lat, lng, at, recvAt);
       if (reason) {
         return { skipped: true as const, reason };
