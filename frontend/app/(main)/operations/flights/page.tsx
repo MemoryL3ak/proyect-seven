@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AirlineLogo from "@/components/AirlineLogo";
 import { apiFetch } from "@/lib/api";
+import { consultaRastreo } from "@/lib/fecha-vuelo";
 import LineaTraslado, { BotonMarcar } from "@/components/LineaTraslado";
 import ConfirmDialog from "@/components/ConfirmDialog";
 import RegistrarTrasladoDialog, { type DatosRegistro } from "@/components/RegistrarTrasladoDialog";
@@ -93,6 +94,8 @@ type TrackResult = {
   airlineIata?: string | null;
   provider?: "aerodatabox" | "aviationstack" | null;
   flightStatus: string | null;
+  /** false: el proveedor sólo tiene el itinerario (sin estado ni horas reales). */
+  liveData?: boolean;
   flightDate: string | null;
   requestedDate?: string | null;
   depTimezone?: string | null;
@@ -128,6 +131,8 @@ type TrackResult = {
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; border: string; pulse: boolean }> = {
   scheduled:  { label: "Programado",  color: STATE.info, bg: "rgba(59,130,246,0.1)",  border: "rgba(59,130,246,0.3)",  pulse: false },
+  // El proveedor no sigue este vuelo en vivo: no se sabe si salió o llegó.
+  unknown:    { label: "Sin datos en vivo", color: SURFACE.textMuted, bg: "rgba(100,116,139,0.08)", border: "rgba(100,116,139,0.25)", pulse: false },
   boarding:   { label: "Embarcando",  color: ACCENT.violetLight, bg: "rgba(139,92,246,0.1)",  border: "rgba(139,92,246,0.3)",  pulse: true  },
   active:     { label: "En vuelo",    color: STATE.success, bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.3)",  pulse: true  },
   approaching:{ label: "Aproximando", color: STATE.success, bg: "rgba(16,185,129,0.1)",  border: "rgba(16,185,129,0.3)",  pulse: true  },
@@ -517,9 +522,8 @@ export default function FlightsPage() {
   const doTrack = async (f: Flight) => {
     setTracking(true); setTrackError(null);
     try {
-      const flightDate = f.arrivalTime ? new Date(f.arrivalTime).toISOString().slice(0, 10) : "";
-      const dateParam = flightDate ? `&flightDate=${flightDate}` : "";
-      const result = await apiFetch<TrackResult>(`/flights/track?flightNumber=${encodeURIComponent(f.flightNumber)}${dateParam}`);
+      // El día del vuelo en hora de Chile, no en UTC (lib/fecha-vuelo).
+      const result = await apiFetch<TrackResult>(consultaRastreo(f.flightNumber, f.arrivalTime));
       setTrackResult(result);
     } catch (e) { setTrackError(e instanceof Error ? e.message : t("Error al rastrear")); setTrackResult(null); }
     finally { setTracking(false); }
@@ -1216,6 +1220,11 @@ export default function FlightsPage() {
                         </span>
                       )}
                     </div>
+                    {trackResult.liveData === false && (
+                      <div style={{ padding: "10px 14px", borderRadius: "12px", background: "rgba(100,116,139,0.08)", border: "1px solid rgba(100,116,139,0.25)", fontSize: "12px", color: pal.textMuted }}>
+                        {t("El proveedor de vuelos no tiene seguimiento en vivo de este vuelo: se muestra sólo el itinerario. La hora real de salida y llegada no está disponible.")}
+                      </div>
+                    )}
                     {trackResult.requestedDate && trackResult.flightDate && trackResult.requestedDate !== trackResult.flightDate && (
                       <div style={{ padding: "10px 14px", borderRadius: "12px", background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.25)", fontSize: "12px", color: STATE.warningText }}>
                         {t("No hay datos del")} <b>{trackResult.requestedDate}</b> {t("para este vuelo (el plan actual de la API sólo entrega el vuelo vigente). Se muestra la operación del")} <b>{trackResult.flightDate}</b>.

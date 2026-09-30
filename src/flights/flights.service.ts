@@ -263,6 +263,7 @@ export class FlightsService {
       // (con un offset +00:00 que no corresponde). No convertir a otra zona.
       timesAreAirportLocal: true as const,
       provider: 'aviationstack' as const,
+      liveData: true,
       depTimezone: dep.timezone ?? null,
       arrTimezone: arr.timezone ?? null,
       depTerminal: dep.terminal ?? null,

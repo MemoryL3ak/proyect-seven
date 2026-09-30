@@ -51,7 +51,8 @@ function minutesBetween(from?: string | null, to?: string | null) {
  */
 const STATUS_MAP: Record<string, string> = {
   expected: 'scheduled',
-  unknown: 'scheduled',
+  // Sin estado: no es "Programado" (30-09-2026, CM497 ya había aterrizado).
+  unknown: 'unknown',
   checkin: 'scheduled',
   boarding: 'boarding',
   gateclosed: 'boarding',
@@ -68,6 +69,27 @@ const STATUS_MAP: Record<string, string> = {
 };
 
 type AdbTime = { local?: string; utc?: string };
+
+/**
+ * Entre los vuelos que devuelve el proveedor para un día, el que corresponde
+ * (30-09-2026, CM497): con varios —un vuelo nocturno sale un día y llega al
+ * otro— se tomaba siempre el último. Primero el que LLEGA ese día (hora local
+ * del aeropuerto: así se guardan las llegadas), luego el que sale ese día.
+ */
+export function elegirVuelo<T extends { departure?: { scheduledTime?: AdbTime }; arrival?: { scheduledTime?: AdbTime } }>(
+  vuelos: T[],
+  fecha?: string,
+): T | undefined {
+  if (!vuelos.length) return undefined;
+  if (fecha) {
+    const dia = (t?: AdbTime) => String(t?.local ?? '').slice(0, 10);
+    const llega = vuelos.find((v) => dia(v.arrival?.scheduledTime) === fecha);
+    if (llega) return llega;
+    const sale = vuelos.find((v) => dia(v.departure?.scheduledTime) === fecha);
+    if (sale) return sale;
+  }
+  return vuelos[vuelos.length - 1];
+}
 type AdbEndpoint = {
   airport?: {
     iata?: string;
@@ -79,6 +101,8 @@ type AdbEndpoint = {
     timeZone?: string;
   };
   scheduledTime?: AdbTime;
+  /** "Basic" = sólo itinerario; "Live" = seguimiento en vivo. */
+  quality?: string[];
   revisedTime?: AdbTime;
   predictedTime?: AdbTime;
   runwayTime?: AdbTime;
@@ -206,15 +230,19 @@ export class AeroDataBoxProvider {
         `No se encontró información para el vuelo ${normalized}. Verifica que el número de vuelo sea correcto (ej: LA180, AA900).`,
       );
 
-    const row = flights[flights.length - 1];
+    const row = elegirVuelo(flights, flightDate)!;
     const dep = row.departure ?? {};
     const arr = row.arrival ?? {};
 
+    // Sin "Live" el proveedor sólo tiene el itinerario: su "predicted" es un
+    // promedio estadístico, no una estimación del vuelo real, y no se muestra
+    // como hora estimada (CM497: "Est: 23:28" cuando aterrizó a las 23:36).
+    const enVivo = [...(dep.quality ?? []), ...(arr.quality ?? [])].some((q) => /live/i.test(q));
     const depScheduled = toIso(dep.scheduledTime);
-    const depEstimated = toIso(dep.revisedTime) ?? toIso(dep.predictedTime);
+    const depEstimated = toIso(dep.revisedTime) ?? (enVivo ? toIso(dep.predictedTime) : null);
     const depActual = toIso(dep.runwayTime) ?? toIso(dep.actualTime);
     const arrScheduled = toIso(arr.scheduledTime);
-    const arrEstimated = toIso(arr.revisedTime) ?? toIso(arr.predictedTime);
+    const arrEstimated = toIso(arr.revisedTime) ?? (enVivo ? toIso(arr.predictedTime) : null);
     const arrActual = toIso(arr.runwayTime) ?? toIso(arr.actualTime);
 
     const loc = row.location;
@@ -226,6 +254,7 @@ export class AeroDataBoxProvider {
       airlineName: row.airline?.name ?? null,
       airlineIata: row.airline?.iata ?? null,
       flightStatus: status,
+      liveData: enVivo || Boolean(depActual || arrActual),
       flightDate: (depScheduled ?? arrScheduled)?.slice(0, 10) ?? null,
       requestedDate: flightDate ?? null,
       timesAreAirportLocal: true,

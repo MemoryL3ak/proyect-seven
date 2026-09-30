@@ -14,6 +14,12 @@ export type FlightTrackResult = {
   airlineName: string | null;
   airlineIata: string | null;
   flightStatus: string | null;
+  /**
+   * El proveedor sigue este vuelo en vivo. false = sólo tiene el itinerario
+   * (AeroDataBox "Basic"): el estado y las horas reales no están, y la app lo
+   * dice en vez de mostrarlo como "Programado".
+   */
+  liveData: boolean;
   flightDate: string | null;
   /** Fecha solicitada por el cliente; si difiere de flightDate no hubo datos de ese día. */
   requestedDate: string | null;

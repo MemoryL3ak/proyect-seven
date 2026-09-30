@@ -3,6 +3,7 @@
 import { Fragment, type MouseEvent, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
+import { consultaRastreo } from "@/lib/fecha-vuelo";
 import {
   PinIcon,
   AlertIcon,
@@ -95,6 +96,8 @@ type FlightTrack = {
   flightNumber: string;
   airlineName: string | null;
   flightStatus: string | null;
+  /** false: el proveedor sólo tiene el itinerario (sin estado ni horas reales). */
+  liveData?: boolean;
   flightDate: string | null;
   depAirport: string | null; depIata: string | null; depCity: string | null;
   depScheduled: string | null; depEstimated?: string | null; depActual: string | null;
@@ -106,6 +109,8 @@ type FlightTrack = {
 
 const FLIGHT_STATUS_ES: Record<string, { label: string; color: string }> = {
   scheduled:   { label: "Programado",  color: STATE.info },
+  // El proveedor no sigue este vuelo en vivo: no se sabe si salió o llegó.
+  unknown:     { label: "Sin datos en vivo", color: SURFACE.textMuted },
   boarding:    { label: "Embarcando",  color: ACCENT.violetLight },
   active:      { label: "En vuelo",    color: STATE.success },
   approaching: { label: "Aproximando", color: STATE.success },
@@ -478,9 +483,8 @@ export default function DriverPortalPage() {
     setTrackError(null);
     setTrackLoading(true);
     try {
-      const flightDate = arrivalTime ? new Date(arrivalTime).toISOString().slice(0, 10) : "";
-      const dateParam = flightDate ? `&flightDate=${flightDate}` : "";
-      const result = await apiFetch<FlightTrack>(`/flights/track?flightNumber=${encodeURIComponent(flightNumber)}${dateParam}`);
+      // El día del vuelo en hora de Chile, no en UTC (lib/fecha-vuelo).
+      const result = await apiFetch<FlightTrack>(consultaRastreo(flightNumber, arrivalTime));
       setTrackInfo(result);
     } catch (err) {
       setTrackError(err instanceof Error ? err.message : "No se pudo rastrear el vuelo.");
@@ -3305,6 +3309,11 @@ export default function DriverPortalPage() {
                     {(trackInfo.depCity || trackInfo.depIata || "Origen")} → {(trackInfo.arrCity || trackInfo.arrIata || "Destino")}
                     {trackInfo.flightDate ? ` · ${trackInfo.flightDate}` : ""}
                   </p>
+                  {trackInfo.liveData === false && (
+                    <p style={{ fontSize:11,color:SURFACE.textMuted,background:SURFACE.bg,border:`1px solid ${SURFACE.border}`,borderRadius:10,padding:"8px 10px",margin:"0 0 12px" }}>
+                      El proveedor de vuelos no sigue este vuelo en vivo: se muestra sólo el itinerario, sin la hora real de salida ni de llegada.
+                    </p>
+                  )}
                   <p style={{ fontSize:10,fontWeight:700,letterSpacing:"0.15em",textTransform:"uppercase",color:BRAND.teal,margin:"0 0 4px" }}>Salida{trackInfo.depIata ? ` · ${trackInfo.depIata}` : ""}</p>
                   <Row label="Aeropuerto" value={trackInfo.depAirport} />
                   <Row label="Programada" value={fmtVueloHora(trackInfo.depScheduled)} />
