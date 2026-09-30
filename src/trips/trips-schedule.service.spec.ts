@@ -232,6 +232,13 @@ describe('TripsScheduleService — conductor escrito en la planilla', () => {
       expect(
         (service as unknown as ConResolver).resolverDelegacion('Canadá', 'Delegación Canadá', 'Delegación Canadá', paises),
       ).toBe('CAN');
+      // y el tipo de cliente es la delegación, no uno por país
+      type ConTipo = { normalizeClientType: (raw?: string) => string | null };
+      const tipo = (v: string) => (service as unknown as ConTipo).normalizeClientType(v);
+      expect(tipo('Delegación Canadá')).toBe('DELEGACIÓN');
+      expect(tipo('DELEGACIÓN HONG KONG')).toBe('DELEGACIÓN');
+      expect(tipo('TA')).toBe('TA');
+      expect(tipo('Delegación Coquimbo')).toBe('DELEGACIÓN COQUIMBO');
     });
 
     it('celdas vacías: lo dice', () => {

@@ -265,7 +265,11 @@ export class TripsScheduleService {
   private normalizeClientType(raw: string | undefined): string | null {
     const v = String(raw || '').trim().toUpperCase();
     if (!v) return null;
-    return VALID_CLIENT_TYPES.includes(v) ? v : v;
+    // "Delegación Canadá" (Rugby): el tipo es la delegación, el país va a la
+    // delegación del viaje. Sin esto quedaba un tipo de cliente por país.
+    const pais = /^DELEGACI[OÓ]N\s+(DE\s+)?(.+)$/.exec(v);
+    if (pais && codigoDePais(pais[2])) return 'DELEGACIÓN';
+    return v;
   }
 
   /**
