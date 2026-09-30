@@ -18,6 +18,8 @@ import { nombrePropio } from "@/lib/nombres";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { esDelEvento } from "@/lib/evento-activo";
+import { choquesDelConductor, columnaDelViaje, DURACION_SUPUESTA_MIN, horaDelViaje } from "@/lib/mapa-calor-conductor";
+import { claveDiaEvento } from "@/lib/hora-evento";
 
 /* ─── Types ─── */
 /** Estados en los que un viaje ya no le exige nada al conductor. */
@@ -66,6 +68,7 @@ type Trip = {
   origin?: string | null;
   destination?: string | null;
   passengerCount?: number | null;
+  travelTimeMinutes?: number | null;
 };
 
 type DriverItem = {
@@ -120,8 +123,9 @@ function nombreConductor(driver: DriverItem | undefined): string {
   return nombrePropio(driver?.fullName) || "Conductor no registrado";
 }
 
+/** Día en hora del evento (Santiago), igual que la hora de cada viaje. */
 function toLocalDate(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return claveDiaEvento(d);
 }
 
 /* ─── Component ─── */
@@ -186,7 +190,7 @@ export default function DriverHeatmapPage() {
   /* ─── ¿Se está viendo el día de hoy? ─── */
   const isViewingToday = useMemo(() => {
     const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const todayStr = toLocalDate(now);
     return selectedDate === todayStr;
   }, [selectedDate]);
 
@@ -257,13 +261,31 @@ export default function DriverHeatmapPage() {
     for (const tr of dayTrips) {
       if (!tr.driverId) continue;
       if (!map.has(tr.driverId)) map.set(tr.driverId, new Map());
-      const rawTime = tr.scheduledAt || tr.startedAt;
-      const hour = rawTime ? new Date(rawTime).getHours() : new Date().getHours();
+      // Hora del evento (Santiago), no la del navegador.
+      const hour = columnaDelViaje(tr);
+      if (hour === null) continue;
       const hm = map.get(tr.driverId)!;
       if (!hm.has(hour)) hm.set(hour, []);
       hm.get(hour)!.push(tr);
     }
+    for (const hm of map.values()) {
+      for (const lista of hm.values()) lista.sort((a, b) => horaDelViaje(a).localeCompare(horaDelViaje(b)));
+    }
     return map;
+  }, [dayTrips]);
+
+  /* ─── Choques: un viaje que empieza antes de que termine otro del mismo conductor ─── */
+  const choques = useMemo(() => {
+    const porConductor = new Map<string, Trip[]>();
+    for (const tr of dayTrips) {
+      if (!tr.driverId) continue;
+      porConductor.set(tr.driverId, [...(porConductor.get(tr.driverId) ?? []), tr]);
+    }
+    const todos = new Map<string, string[]>();
+    for (const lista of porConductor.values()) {
+      for (const [id, horas] of choquesDelConductor(lista)) todos.set(id, horas);
+    }
+    return todos;
   }, [dayTrips]);
 
   /* ─── KPIs ─── */
@@ -272,7 +294,8 @@ export default function DriverHeatmapPage() {
     const avgRating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length) : null;
     const hourCounts = new Map<number, number>();
     for (const tr of dayTrips) {
-      const h = new Date(tr.scheduledAt || tr.startedAt!).getHours();
+      const h = columnaDelViaje(tr);
+      if (h === null) continue;
       hourCounts.set(h, (hourCounts.get(h) || 0) + 1);
     }
     let busiestHour = "—";
@@ -311,7 +334,7 @@ export default function DriverHeatmapPage() {
         const d = new Date(raw);
         return d >= dayStart && d <= dayEnd;
       });
-      const activeHoursSet = new Set(todayDriverTrips.map((tr) => new Date(tr.scheduledAt || tr.startedAt!).getHours()));
+      const activeHoursSet = new Set(todayDriverTrips.map((tr) => columnaDelViaje(tr)).filter((h): h is number => h !== null));
       return {
         driverId,
         name: nombreConductor(drivers[driverId]),
@@ -429,6 +452,10 @@ export default function DriverHeatmapPage() {
                 <span style={{ fontSize: "10px", color: pal.labelColor }}>{l.label}</span>
               </div>
             ))}
+            <div style={{ display: "flex", alignItems: "center", gap: "4px" }} title={"Un viaje empieza antes de que termine el anterior (duración cargada, la real o " + DURACION_SUPUESTA_MIN + " min)"}>
+              <span style={{ width: 12, height: 12, borderRadius: 3, background: "rgba(239,68,68,0.10)", border: "2px solid " + STATE.danger }} />
+              <span style={{ fontSize: "10px", color: pal.labelColor }}>Choque de horario</span>
+            </div>
           </div>
         </div>
 
@@ -480,6 +507,7 @@ export default function DriverHeatmapPage() {
                       const cellTrips = hourMap?.get(h) || [];
                       const count = cellTrips.length;
                       const isHovered = hoveredCell?.driverId === driverId && hoveredCell?.hour === h;
+                      const hayChoque = cellTrips.some((tr) => choques.has(tr.id));
                       return (
                         <div
                           key={h}
@@ -495,12 +523,21 @@ export default function DriverHeatmapPage() {
                             transition: "transform 0.1s",
                             transform: isHovered && count > 0 ? "scale(1.08)" : "scale(1)",
                             boxShadow: isHovered && count > 0 ? "0 2px 12px rgba(33,208,179,0.3)" : "none",
+                            // Choque: borde rojo para verlo sin pasar el mouse.
+                            outline: hayChoque ? "2px solid " + STATE.danger : "none",
+                            outlineOffset: "-2px",
                           }}
                         >
                           {count > 0 && (
-                            <span style={{ fontSize: "13px", fontWeight: 800, color: cellText(count) }}>
-                              {count}
-                            </span>
+                            // La hora real de cada traslado, no cuántos hay.
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1px", padding: "4px 0", lineHeight: 1.15 }}>
+                              {cellTrips.slice(0, 3).map((tr) => (
+                                <span key={tr.id} style={{ fontSize: "11.5px", fontWeight: 800, fontVariantNumeric: "tabular-nums", color: choques.has(tr.id) ? STATE.danger : cellText(count) }}>
+                                  {horaDelViaje(tr) || "—"}
+                                </span>
+                              ))}
+                              {count > 3 && <span style={{ fontSize: "10px", fontWeight: 700, color: cellText(count) }}>+{count - 3}</span>}
+                            </div>
                           )}
                           {/* Tooltip */}
                           {isHovered && count > 0 && (
@@ -511,12 +548,19 @@ export default function DriverHeatmapPage() {
                               pointerEvents: "none",
                             }}>
                               <p style={{ fontWeight: 700, margin: "0 0 4px", color: BRAND.teal }}>
-                                {driver?.fullName} · {String(h).padStart(2, "0")}:00
+                                {driver?.fullName}
                               </p>
                               {cellTrips.map((tr, i) => (
-                                <p key={i} style={{ margin: "2px 0", color: SURFACE.borderStrong }}>
-                                  {tr.origin?.split(",")[0] || "?"} → {tr.destination?.split(",")[0] || "?"} · {tr.passengerCount || 0} pax
-                                </p>
+                                <div key={i} style={{ margin: "2px 0" }}>
+                                  <p style={{ margin: 0, color: SURFACE.borderStrong }}>
+                                    <b style={{ color: SURFACE.card }}>{horaDelViaje(tr) || "—"}</b> · {tr.origin?.split(",")[0] || "?"} → {tr.destination?.split(",")[0] || "?"} · {tr.passengerCount || 0} pax
+                                  </p>
+                                  {choques.has(tr.id) && (
+                                    <p style={{ margin: "1px 0 0", color: "#fca5a5", fontWeight: 700 }}>
+                                      Choca con {choques.get(tr.id)!.join(", ")}
+                                    </p>
+                                  )}
+                                </div>
                               ))}
                               <div style={{ position: "absolute", bottom: "-4px", left: "50%", transform: "translateX(-50%) rotate(45deg)", width: "8px", height: "8px", background: SURFACE.text }} />
                             </div>
