@@ -18,7 +18,8 @@ import { nombrePropio } from "@/lib/nombres";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
 import { esDelEvento } from "@/lib/evento-activo";
-import { choquesDelConductor, columnaDelViaje, DURACION_SUPUESTA_MIN, horaDelViaje } from "@/lib/mapa-calor-conductor";
+import { choquesDelConductor, columnaDelViaje, DURACION_SUPUESTA_MIN, flotaPorHora, horaDelViaje, NOMBRE_FLOTA, SIN_FLOTA } from "@/lib/mapa-calor-conductor";
+import { TIPOS_FLOTA, tipoFlota } from "@/lib/flota-conductor";
 import { claveDiaEvento } from "@/lib/hora-evento";
 
 /* ─── Types ─── */
@@ -128,6 +129,9 @@ function toLocalDate(d: Date): string {
   return claveDiaEvento(d);
 }
 
+/** Tipo de flota del viaje (vehículo pedido), o SIN_FLOTA. */
+const flotaDelViaje = (tr: Trip) => tipoFlota(tr.requestedVehicleType) ?? SIN_FLOTA;
+
 /* ─── Component ─── */
 export default function DriverHeatmapPage() {
   const { t } = useI18n();
@@ -142,8 +146,13 @@ export default function DriverHeatmapPage() {
   );
   const [drivers, setDrivers] = useState<Record<string, DriverItem>>({});
   const [selectedDate, setSelectedDate] = useState(toLocalDate(new Date()));
-  /** Control de jornada: conductor elegido ("" = todos). */
+  /**
+   * Filtros de toda la página (30-09-2026): conductor ("" = todos) y tipo de
+   * flota ("" = todas). Antes el conductor sólo filtraba el Control de
+   * jornada y no había filtro de flota.
+   */
   const [jornadaConductor, setJornadaConductor] = useState("");
+  const [filtroFlota, setFiltroFlota] = useState("");
   const [loading, setLoading] = useState(true);
   const [rankTab, setRankTab] = useState<"trips" | "rating" | "idle">("trips");
   const [hoveredCell, setHoveredCell] = useState<{ driverId: string; hour: number } | null>(null);
@@ -207,6 +216,36 @@ export default function DriverHeatmapPage() {
     }),
   [trips, dayStart, dayEnd, isViewingToday]);
 
+  /**
+   * Viajes del día con los filtros de conductor y flota: los que muestran
+   * los indicadores, el mapa y la flota por hora. Los choques y las jornadas
+   * miran todos los viajes del conductor (un filtro no debe esconderlos).
+   */
+  const viajesVista = useMemo(
+    () => dayTrips.filter((tr) =>
+      (!jornadaConductor || tr.driverId === jornadaConductor) &&
+      (!filtroFlota || flotaDelViaje(tr) === filtroFlota)),
+    [dayTrips, jornadaConductor, filtroFlota],
+  );
+
+  /** Tipos de flota del día, con cuántos viajes tiene cada uno. */
+  const opcionesFlota = useMemo(() => {
+    const cuenta = new Map<string, number>();
+    for (const tr of dayTrips) cuenta.set(flotaDelViaje(tr), (cuenta.get(flotaDelViaje(tr)) ?? 0) + 1);
+    const orden = [...TIPOS_FLOTA, SIN_FLOTA] as string[];
+    return [...cuenta.entries()]
+      .sort((a, b) => orden.indexOf(a[0]) - orden.indexOf(b[0]))
+      .map(([tipo, total]) => ({ tipo, total, nombre: tipo === SIN_FLOTA ? "Sin tipo" : NOMBRE_FLOTA[tipo] ?? tipo }));
+  }, [dayTrips]);
+
+  // Un tipo de flota que el día elegido no tiene deja el mapa vacío: se suelta.
+  useEffect(() => {
+    if (filtroFlota && !opcionesFlota.some((o) => o.tipo === filtroFlota)) setFiltroFlota("");
+  }, [opcionesFlota, filtroFlota]);
+
+  /** Flota en uso por hora: vehículos ocupados en cada hora del mapa. */
+  const flotaHoras = useMemo(() => flotaPorHora(viajesVista, HOURS, flotaDelViaje), [viajesVista]);
+
   /* ─── Jornadas del día: 13 h desde el primer viaje iniciado (lib/jornada) ─── */
   const jornadas = useMemo<Jornada[]>(
     () => calcularJornadas(dayTrips, new Date(), (id) => drivers[id]?.fullName ?? ""),
@@ -247,18 +286,18 @@ export default function DriverHeatmapPage() {
   /* ─── Active driver IDs for the day ─── */
   const activeDriverIds = useMemo(() => {
     const ids = new Set<string>();
-    for (const tr of dayTrips) if (tr.driverId) ids.add(tr.driverId);
+    for (const tr of viajesVista) if (tr.driverId) ids.add(tr.driverId);
     return Array.from(ids).sort((a, b) => {
       const nameA = drivers[a]?.fullName ?? "";
       const nameB = drivers[b]?.fullName ?? "";
       return nameA.localeCompare(nameB);
     });
-  }, [dayTrips, drivers]);
+  }, [viajesVista, drivers]);
 
   /* ─── Heatmap data: driverId → hour → Trip[] ─── */
   const heatmap = useMemo(() => {
     const map = new Map<string, Map<number, Trip[]>>();
-    for (const tr of dayTrips) {
+    for (const tr of viajesVista) {
       if (!tr.driverId) continue;
       if (!map.has(tr.driverId)) map.set(tr.driverId, new Map());
       // Hora del evento (Santiago), no la del navegador.
@@ -272,7 +311,7 @@ export default function DriverHeatmapPage() {
       for (const lista of hm.values()) lista.sort((a, b) => horaDelViaje(a).localeCompare(horaDelViaje(b)));
     }
     return map;
-  }, [dayTrips]);
+  }, [viajesVista]);
 
   /* ─── Choques: un viaje que empieza antes de que termine otro del mismo conductor ─── */
   const choques = useMemo(() => {
@@ -290,10 +329,10 @@ export default function DriverHeatmapPage() {
 
   /* ─── KPIs ─── */
   const kpis = useMemo(() => {
-    const ratings = dayTrips.map((t) => t.driverRating).filter((r): r is number => r != null && r > 0);
+    const ratings = viajesVista.map((t) => t.driverRating).filter((r): r is number => r != null && r > 0);
     const avgRating = ratings.length ? (ratings.reduce((a, b) => a + b, 0) / ratings.length) : null;
     const hourCounts = new Map<number, number>();
-    for (const tr of dayTrips) {
+    for (const tr of viajesVista) {
       const h = columnaDelViaje(tr);
       if (h === null) continue;
       hourCounts.set(h, (hourCounts.get(h) || 0) + 1);
@@ -303,10 +342,10 @@ export default function DriverHeatmapPage() {
     for (const [h, c] of hourCounts) {
       if (c > maxC) { maxC = c; busiestHour = `${String(h).padStart(2, "0")}:00`; }
     }
-    const completed = dayTrips.filter((t) => t.status === "COMPLETED" || t.status === "DROPPED_OFF").length;
-    const cancelled = dayTrips.filter((t) => t.status === "CANCELLED").length;
+    const completed = viajesVista.filter((t) => t.status === "COMPLETED" || t.status === "DROPPED_OFF").length;
+    const cancelled = viajesVista.filter((t) => t.status === "CANCELLED").length;
     return {
-      totalTrips: dayTrips.length,
+      totalTrips: viajesVista.length,
       activeDrivers: activeDriverIds.length,
       avgRating,
       busiestHour,
@@ -315,7 +354,7 @@ export default function DriverHeatmapPage() {
       cancelled,
       ratingsCount: ratings.length,
     };
-  }, [dayTrips, activeDriverIds]);
+  }, [viajesVista, activeDriverIds]);
 
   /* ─── Driver rankings (all time) ─── */
   const rankings = useMemo(() => {
@@ -388,17 +427,45 @@ export default function DriverHeatmapPage() {
           </h1>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            style={{ padding: "8px 14px", borderRadius: "12px", border: `1px solid ${pal.cardBorder}`, fontSize: "13px", fontWeight: 600, color: pal.textPrimary, background: pal.cardBg }}
-          />
           <button type="button" onClick={() => loadData()} disabled={loading}
             style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 38, height: 38, borderRadius: 12, border: `1px solid ${pal.cardBorder}`, background: pal.cardBg, cursor: "pointer", opacity: loading ? 0.5 : 1 }}>
             <RefreshIcon size={14} color={pal.textMuted} strokeWidth={2} />
           </button>
         </div>
+      </div>
+
+      {/* ── Filtros de toda la página: día, conductor y flota ── */}
+      <div style={{ display: "grid", gap: 10, alignItems: "end", gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 260px))" }}>
+        <label className="text-sm block" style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: pal.labelColor, marginBottom: 4 }}>{t("Día")}</span>
+          <StyledSelect value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}>
+            {diasConViajes.map((d) => (
+              <option key={d.key} value={d.key}>
+                {(d.key === toLocalDate(new Date()) ? t("Hoy") + " · " : "") + d.key.split("-").reverse().join("-") + " (" + d.count + ")"}
+              </option>
+            ))}
+          </StyledSelect>
+        </label>
+        <label className="text-sm block" style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: pal.labelColor, marginBottom: 4 }}>{t("Conductor")}</span>
+          <StyledSelect value={jornadaConductor} onChange={(e) => setJornadaConductor(e.target.value)}>
+            <option value="">{t("Todos los conductores") + " (" + jornadas.length + ")"}</option>
+            {conductoresDelDia.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
+          </StyledSelect>
+        </label>
+        <label className="text-sm block" style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: pal.labelColor, marginBottom: 4 }}>{t("Flota")}</span>
+          <StyledSelect value={filtroFlota} onChange={(e) => setFiltroFlota(e.target.value)}>
+            <option value="">{t("Toda la flota") + " (" + dayTrips.length + ")"}</option>
+            {opcionesFlota.map((o) => <option key={o.tipo} value={o.tipo}>{t(o.nombre) + " (" + o.total + ")"}</option>)}
+          </StyledSelect>
+        </label>
+        {(jornadaConductor || filtroFlota) && (
+          <button type="button" className="btn btn-ghost" style={{ justifySelf: "start" }}
+            onClick={() => { setJornadaConductor(""); setFiltroFlota(""); }}>
+            {t("Limpiar filtros")}
+          </button>
+        )}
       </div>
 
       {/* ── KPI Cards ── */}
@@ -478,6 +545,30 @@ export default function DriverHeatmapPage() {
                     {String(h).padStart(2, "0")}
                   </div>
                 ))}
+              </div>
+
+              {/* Flota en uso por hora: vehículos ocupados (duración de cada viaje) */}
+              <div style={{ display: "grid", gridTemplateColumns: "200px repeat(17, 1fr)", gap: "2px", padding: "0 12px 6px" }}>
+                <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", padding: "4px 8px" }}>
+                  <span style={{ fontSize: "11px", fontWeight: 700, color: pal.textPrimary }}>Flota en uso</span>
+                  <span style={{ fontSize: "10px", color: pal.labelColor }}>vehículos por hora</span>
+                </div>
+                {HOURS.map((h) => {
+                  const uso = flotaHoras.get(h);
+                  const detalle = uso && uso.total > 0
+                    ? [...uso.porTipo.entries()]
+                        .map(([tipo, n]) => n + " " + (tipo === SIN_FLOTA ? "sin tipo" : NOMBRE_FLOTA[tipo] ?? tipo))
+                        .join(" · ")
+                    : "Sin vehículos en uso";
+                  return (
+                    <div key={h} title={String(h).padStart(2, "0") + ":00 · " + detalle}
+                      style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "32px", borderRadius: "6px",
+                        background: uso && uso.total > 0 ? "rgba(99,102,241,0.10)" : SURFACE.borderMuted,
+                        fontSize: "12px", fontWeight: 800, color: uso && uso.total > 0 ? ACCENT.indigo : pal.labelColor, fontVariantNumeric: "tabular-nums" }}>
+                      {uso && uso.total > 0 ? uso.total : "—"}
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Driver rows */}
@@ -611,29 +702,7 @@ export default function DriverHeatmapPage() {
           </div>
         </div>
 
-        {/* Filtros: día y conductor. El día es el mismo del resto de la
-            página (el selector de arriba); acá va como desplegable con la
-            cantidad de viajes de cada jornada. */}
-        <div style={{ display: "grid", gap: 10, marginBottom: 14, gridTemplateColumns: isMobile ? "1fr" : "repeat(auto-fit, minmax(200px, 260px))" }}>
-          <label className="text-sm block" style={{ minWidth: 0 }}>
-            <span style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: pal.labelColor, marginBottom: 4 }}>{t("Día")}</span>
-            <StyledSelect value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)}>
-              {diasConViajes.map((d) => (
-                <option key={d.key} value={d.key}>
-                  {`${d.key === toLocalDate(new Date()) ? t("Hoy") + " · " : ""}${d.key.split("-").reverse().join("-")} (${d.count})`}
-                </option>
-              ))}
-            </StyledSelect>
-          </label>
-          <label className="text-sm block" style={{ minWidth: 0 }}>
-            <span style={{ display: "block", fontSize: 10, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: pal.labelColor, marginBottom: 4 }}>{t("Conductor")}</span>
-            <StyledSelect value={jornadaConductor} onChange={(e) => setJornadaConductor(e.target.value)}>
-              <option value="">{`${t("Todos los conductores")} (${jornadas.length})`}</option>
-              {conductoresDelDia.map((c) => <option key={c.id} value={c.id}>{c.nombre}</option>)}
-            </StyledSelect>
-          </label>
-        </div>
-
+        {/* Día y conductor: los filtros de arriba, que valen para toda la página. */}
         {jornadasVisibles.length === 0 ? (
           <div style={{ borderRadius: "14px", border: `1px dashed ${pal.cardBorder}`, padding: "36px 20px", textAlign: "center", color: pal.textMuted, fontSize: "13px" }}>
             {t("Ningún conductor con viajes este día.")}

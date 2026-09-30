@@ -63,3 +63,54 @@ export function choquesDelConductor(viajes: ViajeDelMapa[]): Map<string, string[
   }
   return choques;
 }
+
+/* ─── Filtros y flota por hora (30-09-2026) ─── */
+
+/** Nombre visible de cada tipo de flota (códigos de lib/flota-conductor). */
+export const NOMBRE_FLOTA: Record<string, string> = {
+  SEDAN: "Sedán",
+  SUV: "SUV",
+  VAN_10: "Van 10",
+  VAN_15: "Van 15",
+  VAN_19: "Van 19",
+  MINIBUS: "Minibús",
+  BUS: "Bus",
+};
+/** Valor del filtro para los viajes sin tipo de vehículo reconocido. */
+export const SIN_FLOTA = "__sin_flota__";
+
+/** "10:20" → 620 minutos desde medianoche (hora del evento). */
+const minutoDelDia = (v: ViajeDelMapa) => {
+  const h = horaDelViaje(v);
+  return h ? Number(h.slice(0, 2)) * 60 + Number(h.slice(3, 5)) : null;
+};
+
+/**
+ * Flota en uso por hora: cuántos vehículos (conductores distintos) están
+ * ocupados en cada hora, contando la duración de cada viaje —uno de 10:20 a
+ * 11:50 ocupa las 10 y las 11—, y cuántos de cada tipo. Los cancelados no
+ * ocupan.
+ */
+export function flotaPorHora<T extends ViajeDelMapa & { driverId?: string | null }>(
+  viajes: T[],
+  horas: number[],
+  tipoDe: (v: T) => string,
+): Map<number, { total: number; porTipo: Map<string, number> }> {
+  const resultado = new Map<number, { total: number; porTipo: Map<string, number> }>();
+  for (const h of horas) {
+    const desde = h * 60;
+    const hasta = desde + 60;
+    const conductores = new Map<string, string>();
+    for (const v of viajes) {
+      if (!v.driverId || v.status === "CANCELLED") continue;
+      const inicio = minutoDelDia(v);
+      if (inicio === null) continue;
+      const fin = inicio + duracionDelViaje(v);
+      if (inicio < hasta && fin > desde && !conductores.has(v.driverId)) conductores.set(v.driverId, tipoDe(v));
+    }
+    const porTipo = new Map<string, number>();
+    for (const tipo of conductores.values()) porTipo.set(tipo, (porTipo.get(tipo) ?? 0) + 1);
+    resultado.set(h, { total: conductores.size, porTipo });
+  }
+  return resultado;
+}
