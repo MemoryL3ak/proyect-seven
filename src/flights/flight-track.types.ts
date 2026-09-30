@@ -25,7 +25,7 @@ export type FlightTrackResult = {
   requestedDate: string | null;
   /** Los horarios vienen en hora local de cada aeropuerto. */
   timesAreAirportLocal: true;
-  provider: 'aerodatabox' | 'aviationstack';
+  provider: 'aerodatabox' | 'aviationstack' | 'flightaware';
 
   depAirport: string | null;
   depIata: string | null;
@@ -49,6 +49,8 @@ export type FlightTrackResult = {
   arrScheduled: string | null;
   arrEstimated: string | null;
   arrActual: string | null;
+  /** Llegada a la puerta (FlightAware); arrActual es el aterrizaje. */
+  arrGateActual?: string | null;
   arrBaggage: string | null;
   arrDelayMinutes: number | null;
 

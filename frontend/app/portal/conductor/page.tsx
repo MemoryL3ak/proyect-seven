@@ -105,6 +105,8 @@ type FlightTrack = {
   arrAirport: string | null; arrIata: string | null; arrCity: string | null;
   arrScheduled: string | null; arrEstimated: string | null; arrActual: string | null;
   arrBaggage: string | null; arrTerminal?: string | null; arrDelayMinutes: number | null;
+  /** Llegada a la puerta (FlightAware) y de dónde viene el dato. */
+  arrGateActual?: string | null; provider?: string;
 };
 
 const FLIGHT_STATUS_ES: Record<string, { label: string; color: string }> = {
@@ -3329,12 +3331,18 @@ export default function DriverPortalPage() {
                   {trackInfo.arrActual
                     ? <Row label="Aterrizó" value={fmtVueloHora(trackInfo.arrActual)} />
                     : trackInfo.arrEstimated ? <Row label="Estimada" value={fmtVueloHora(trackInfo.arrEstimated)} /> : null}
+                  {trackInfo.arrGateActual && <Row label="En puerta" value={fmtVueloHora(trackInfo.arrGateActual)} />}
                   {(trackInfo.arrTerminal || trackInfo.arrBaggage) && (
                     <Row label="Terminal / Cinta" value={[trackInfo.arrTerminal, trackInfo.arrBaggage].filter(Boolean).join(" / ")} />
                   )}
                   {typeof trackInfo.arrDelayMinutes === "number" && trackInfo.arrDelayMinutes > 0 && (
                     <p style={{ fontSize:12,fontWeight:700,color:STATE.warningText,margin:"10px 0 0",textAlign:"center" }}>
                       Retraso de llegada: {trackInfo.arrDelayMinutes} min
+                    </p>
+                  )}
+                  {trackInfo.provider && (
+                    <p style={{ fontSize:10,color:SURFACE.textFaint,margin:"10px 0 0",textAlign:"right" }}>
+                      Fuente: {trackInfo.provider === "flightaware" ? "FlightAware" : trackInfo.provider === "aerodatabox" ? "AeroDataBox" : "AviationStack"}
                     </p>
                   )}
                 </>

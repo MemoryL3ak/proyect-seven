@@ -2,12 +2,14 @@ import {
   Inject,
   Injectable,
   InternalServerErrorException,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { SupabaseClient } from '@supabase/supabase-js';
 import { Repository } from 'typeorm';
 import { AeroDataBoxProvider } from './aerodatabox.provider';
+import { FlightAwareProvider } from './flightaware.provider';
 import { CreateFlightDto } from './dto/create-flight.dto';
 import { UpdateFlightDto } from './dto/update-flight.dto';
 import { Flight } from './entities/flight.entity';
@@ -31,7 +33,10 @@ export class FlightsService {
     @InjectRepository(Flight)
     private readonly flightRepository: Repository<Flight>,
     private readonly aeroDataBox: AeroDataBoxProvider,
+    private readonly flightAware: FlightAwareProvider,
   ) {}
+
+  private readonly logger = new Logger(FlightsService.name);
 
   /**
    * Proveedor de datos de vuelo. Se controla con FLIGHT_DATA_PROVIDER
@@ -212,6 +217,16 @@ export class FlightsService {
   }
 
   async trackFlight(flightNumber: string, flightDate?: string) {
+    // FlightAware primero: es el único que tiene la llegada real a Santiago
+    // de todos los vuelos medidos (flightaware.provider.ts). Si falla, no lo
+    // encuentra o se queda sin cupo, sigue el proveedor de antes.
+    if (FlightAwareProvider.isConfigured()) {
+      try {
+        return await this.flightAware.trackFlight(flightNumber, flightDate);
+      } catch (err) {
+        this.logger.warn(`FlightAware sin respuesta para ${flightNumber}: ${err instanceof Error ? err.message : err}`);
+      }
+    }
     if (this.useAeroDataBox())
       return this.aeroDataBox.trackFlight(flightNumber, flightDate);
     const data = await this.fetchAviationStack(flightNumber, flightDate);

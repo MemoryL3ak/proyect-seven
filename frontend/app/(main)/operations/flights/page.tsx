@@ -92,7 +92,7 @@ type TrackResult = {
   flightNumber: string;
   airlineName: string | null;
   airlineIata?: string | null;
-  provider?: "aerodatabox" | "aviationstack" | null;
+  provider?: "aerodatabox" | "aviationstack" | "flightaware" | null;
   flightStatus: string | null;
   /** false: el proveedor sólo tiene el itinerario (sin estado ni horas reales). */
   liveData?: boolean;
@@ -118,6 +118,8 @@ type TrackResult = {
   arrCity: string | null;
   arrScheduled: string | null;
   arrEstimated: string | null;
+  /** Llegada a la puerta (FlightAware). */
+  arrGateActual?: string | null;
   arrActual: string | null;
   arrBaggage: string | null;
   arrDelayMinutes: number | null;
@@ -1255,11 +1257,17 @@ export default function FlightsPage() {
                         <div style={{ marginTop: "10px", fontSize: "12px", color: pal.textMuted, display: "flex", flexDirection: "column", gap: "3px" }}>
                           {trackResult.arrScheduled && <p>{t("Prog:")} <span style={{ fontWeight: 600, color: pal.textPrimary }}>{fmtAirportTime(trackResult.arrScheduled)}</span></p>}
                           {trackResult.arrEstimated && <p>{t("Est:")} <span style={{ fontWeight: 700, color: STATE.info }}>{fmtAirportTime(trackResult.arrEstimated)}</span></p>}
-                          {trackResult.arrActual && <p>{t("Real:")} <span style={{ fontWeight: 700, color: BRAND.teal }}>{fmtAirportTime(trackResult.arrActual)}</span></p>}
+                          {trackResult.arrActual && <p>{t("Aterrizó:")} <span style={{ fontWeight: 700, color: BRAND.teal }}>{fmtAirportTime(trackResult.arrActual)}</span></p>}
+                          {trackResult.arrGateActual && <p>{t("En puerta:")} <span style={{ fontWeight: 700, color: BRAND.teal }}>{fmtAirportTime(trackResult.arrGateActual)}</span></p>}
                           {trackResult.arrTerminal && <p>{t("Terminal:")} <span style={{ fontWeight: 600, color: pal.textPrimary }}>{trackResult.arrTerminal}</span></p>}
                           {trackResult.arrBaggage && <p>{t("Cinta:")} <span style={{ fontWeight: 600, color: pal.textPrimary }}>{trackResult.arrBaggage}</span></p>}
                         </div>
                       </div>
+                      {trackResult.provider && (
+                        <p style={{ gridColumn: "1 / -1", fontSize: "11px", color: pal.textMuted, margin: 0, textAlign: "right" }}>
+                          {t("Fuente:")} {trackResult.provider === "flightaware" ? "FlightAware" : trackResult.provider === "aerodatabox" ? "AeroDataBox" : "AviationStack"}
+                        </p>
+                      )}
                     </div>
                     {trackResult.liveLatitude !== null && (
                       <div style={{ background: "rgba(33,208,179,0.06)", border: "1px solid rgba(33,208,179,0.2)", borderRadius: "14px", padding: "14px 16px" }}>
