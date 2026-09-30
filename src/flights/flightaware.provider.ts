@@ -157,7 +157,9 @@ export function aResultado(v: FaVuelo, numero: string, fechaPedida?: string): Fl
     arrTimezone: zd,
     arrTerminal: v.terminal_destination ?? null,
     arrScheduled,
-    arrEstimated: horaDelAeropuerto(v.estimated_on ?? v.estimated_in, zd),
+    // Puerta, igual que la programada (scheduled_in) y que Google; la de
+    // pista (estimated_on) sólo si no hay otra.
+    arrEstimated: horaDelAeropuerto(v.estimated_in ?? v.estimated_on, zd),
     // Aterrizaje (pista). La llegada a la puerta va aparte: es la que
     // muestra Google como "Llegó".
     arrActual: horaDelAeropuerto(v.actual_on ?? v.actual_in, zd),
@@ -176,6 +178,23 @@ export function aResultado(v: FaVuelo, numero: string, fechaPedida?: string): Fl
     liveSpeedHorizontal: null,
     liveIsGround: null,
   };
+}
+
+/**
+ * Rango de búsqueda para el día pedido, dentro de lo que acepta AeroAPI en
+ * /flights/{ident}: hasta 2 días hacia adelante y 10 hacia atrás. Pedir
+ * "día + 48 h" para un vuelo de hoy pasaba el límite, FlightAware respondía
+ * 400 y el rastreo caía en AeroDataBox (AA957, 30-09-2026). null si el día
+ * queda fuera de lo que FlightAware tiene: lo responde el otro proveedor.
+ */
+export function ventanaConsulta(fecha: string, ahora = Date.now()): { start: string; end: string } | null {
+  const base = new Date(`${fecha}T12:00:00Z`).getTime();
+  if (Number.isNaN(base)) return null;
+  const desde = Math.max(base - 36 * 3600_000, ahora - 10 * 24 * 3600_000 + 3600_000);
+  const hasta = Math.min(base + 48 * 3600_000, ahora + 2 * 24 * 3600_000 - 3600_000);
+  if (hasta <= desde) return null;
+  const iso = (t: number) => new Date(t).toISOString().slice(0, 19) + 'Z';
+  return { start: iso(desde), end: iso(hasta) };
 }
 
 /** Cuánto sirve la respuesta guardada, según el momento del vuelo. */
@@ -205,9 +224,10 @@ export class FlightAwareProvider {
     const url = new URL(`${BASE_URL}/flights/${encodeURIComponent(numero)}`);
     url.searchParams.set('ident_type', 'designator');
     if (fecha && /^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
-      const base = new Date(`${fecha}T12:00:00Z`).getTime();
-      url.searchParams.set('start', new Date(base - 36 * 3600_000).toISOString().slice(0, 19) + 'Z');
-      url.searchParams.set('end', new Date(base + 48 * 3600_000).toISOString().slice(0, 19) + 'Z');
+      const ventana = ventanaConsulta(fecha);
+      if (!ventana) throw new Error(`FlightAware no cubre el ${fecha} (sólo 10 días atrás y 2 adelante)`);
+      url.searchParams.set('start', ventana.start);
+      url.searchParams.set('end', ventana.end);
     }
     const res = await fetch(url, {
       headers: { 'x-apikey': clave, Accept: 'application/json' },

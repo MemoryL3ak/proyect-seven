@@ -1,4 +1,4 @@
-import { FlightAwareProvider, elegirVueloFa, estadoFa, horaDelAeropuerto, type FaVuelo } from './flightaware.provider';
+import { FlightAwareProvider, elegirVueloFa, estadoFa, horaDelAeropuerto, ventanaConsulta, type FaVuelo } from './flightaware.provider';
 import { FlightsService } from './flights.service';
 
 /**
@@ -44,6 +44,22 @@ describe('FlightAware', () => {
     const brasil: FaVuelo = { ...cm497('2026-09-29'), origin: { code_iata: 'MVD', timezone: 'America/Montevideo' }, destination: { code_iata: 'GRU', timezone: 'America/Sao_Paulo' }, scheduled_in: '2026-09-29T15:00:00Z' };
     const chile: FaVuelo = { ...cm497('2026-09-29'), origin: { code_iata: 'GRU', timezone: 'America/Sao_Paulo' }, scheduled_in: '2026-09-29T21:00:00Z' };
     expect(elegirVueloFa([brasil, chile], '2026-09-29')).toBe(chile);
+  });
+
+  /**
+   * 30-09-2026, AA957: para un vuelo de hoy se pedía hasta "día + 48 h",
+   * FlightAware respondía 400 (límite: 2 días adelante) y el rastreo caía en
+   * AeroDataBox.
+   */
+  it('el rango de búsqueda respeta los límites de AeroAPI (2 días adelante, 10 atrás)', () => {
+    const ahora = new Date('2026-09-30T04:45:00Z').getTime();
+    const hoy = ventanaConsulta('2026-09-30', ahora)!;
+    expect(new Date(hoy.end).getTime()).toBeLessThan(ahora + 2 * 24 * 3600_000);
+    expect(hoy.start).toBe('2026-09-29T00:00:00Z');
+    const ayer = ventanaConsulta('2026-09-29', ahora)!;
+    expect(ayer.end).toBe('2026-10-01T12:00:00Z');
+    expect(ventanaConsulta('2026-10-05', ahora)).toBeNull(); // más allá: lo responde AeroDataBox
+    expect(ventanaConsulta('2026-09-10', ahora)).toBeNull();
   });
 
   it('estado: aterrizado, en vuelo, retrasado, cancelado', () => {
