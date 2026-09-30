@@ -28,7 +28,12 @@
  *      lados ("UC San Carlos de Apoquindo" ≈ "Estadio san Carlos de
  *      Apoquindo", "Magic hotel" ≈ "Hotel Magic");
  *   6. el núcleo del texto es el comienzo del núcleo del catálogo (mínimo 8
- *      letras): "Hotel Sheraton" → "Hotel Sheraton Santiago".
+ *      letras): "Hotel Sheraton" → "Hotel Sheraton Santiago";
+ *   7. abreviaturas palabra por palabra, sin "de/del/la/el": cada palabra
+ *      del texto es el comienzo de la palabra del catálogo en la misma
+ *      posición ("UC San Carlos Ap." ≈ "Estadio san Carlos de Apoquindo",
+ *      "OLD GRAN." ≈ "Old Grangonian Club"; así vienen en el Plan de
+ *      Operación de Rugby, Rev_01-sep).
  * Ante dos calces no se adivina.
  */
 export type LugarCatalogo = {
@@ -113,6 +118,28 @@ export function nucleoLugar(clave: string): string {
   return claveCompacta(clave).replace(PALABRA_GENERICA, '').replace(/\s+hotel$/, '');
 }
 
+const PALABRA_VACIA = new Set(['de', 'del', 'la', 'el', 'los', 'las', 'y', 'e', '&']);
+
+/** Palabras del núcleo, sin las de relleno: "san carlos de apoquindo" → ["san","carlos","apoquindo"]. */
+export function palabrasLugar(clave: string): string[] {
+  return nucleoLugar(clave)
+    .split(' ')
+    .filter((p) => p && !PALABRA_VACIA.has(p));
+}
+
+/**
+ * "uc san carlos ap" abrevia "estadio san carlos de apoquindo": al menos dos
+ * palabras de dos letras o más, y cada una es el comienzo de la palabra del
+ * catálogo en su misma posición.
+ */
+export function esAbreviatura(texto: string, catalogo: string): boolean {
+  const t = palabrasLugar(texto);
+  const c = palabrasLugar(catalogo);
+  if (t.length < 2 || t.length > c.length) return false;
+  if (t.join('').length < 6) return false;
+  return t.every((p, i) => p.length >= 2 && c[i].startsWith(p));
+}
+
 function unico(candidatos: LugarCatalogo[]): LugarResuelto {
   const distintos = [...new Set(candidatos)];
   if (distintos.length !== 1) return SIN_LUGAR;
@@ -147,9 +174,9 @@ export function resolverLugar(
 
   // "Hotel Hippocampus" en la planilla, "Hippocampus Resort § Club" en el
   // catálogo: el "hotel" de adelante no es parte del nombre.
-  const sinHotel = clave.replace(/^hotel /, '');
+  const sinHotel = claveCompacta(clave.replace(/^hotel /, ''));
   if (sinHotel.length >= MINIMO_PREFIJO) {
-    const porPrefijo = lugares.filter((l) => l.clave.startsWith(sinHotel));
+    const porPrefijo = lugares.filter((l) => claveCompacta(l.clave).startsWith(sinHotel));
     if (porPrefijo.length > 0) return unico(porPrefijo);
   }
 
@@ -158,6 +185,10 @@ export function resolverLugar(
   const porNucleo = lugares.filter((l) => nucleoLugar(l.clave) === nucleo);
   if (porNucleo.length > 0) return unico(porNucleo);
 
-  if (nucleo.length < MINIMO_PREFIJO) return SIN_LUGAR;
-  return unico(lugares.filter((l) => nucleoLugar(l.clave).startsWith(nucleo)));
+  if (nucleo.length >= MINIMO_PREFIJO) {
+    const porNucleoPrefijo = lugares.filter((l) => nucleoLugar(l.clave).startsWith(nucleo));
+    if (porNucleoPrefijo.length > 0) return unico(porNucleoPrefijo);
+  }
+
+  return unico(lugares.filter((l) => esAbreviatura(clave, l.clave)));
 }

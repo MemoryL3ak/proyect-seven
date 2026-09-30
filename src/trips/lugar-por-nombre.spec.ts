@@ -132,8 +132,19 @@ describe('resolverLugar con la planilla de buses de Rugby', () => {
     expect(resolverLugar('Hotel Torremayor', rugby).hotelId).toBe('torremayor');
   });
 
+  it('los nombres del Plan de Operación (Rev_01-sep) también calzan', () => {
+    // Hojas 2.2 a 2.6 del plan: abreviaturas, mayúsculas y nombres cortos.
+    expect(resolverLugar('UC San Carlos Ap.', rugby).venueId).toBe('san-carlos');
+    expect(resolverLugar('OLD GRAN.', rugby).venueId).toBe('ogc');
+    expect(resolverLugar('Sheraton', rugby).hotelId).toBe('sheraton');
+    expect(resolverLugar('SHERATON', rugby).hotelId).toBe('sheraton');
+    expect(resolverLugar('TORREMAYOR', rugby).hotelId).toBe('torremayor');
+    expect(resolverLugar('Parque Mahuida', rugby).venueId).toBe('carr');
+    expect(resolverLugar('CDA', rugby).venueId).toBe('cda');
+  });
+
   it('lo que no es un lugar queda sin enlace', () => {
-    for (const texto of ['x confirmar', 'Hotel por confirmar', 'Por confirmar', 'Aeropuerto Internacional Arturo Merino Benítez', 'Chile']) {
+    for (const texto of ['x confirmar', 'Hotel por confirmar', 'Por confirmar', 'Hotel Por Confirmar', 'Aeropuerto Internacional Arturo Merino Benítez', 'Aeropuerto AMB SCL', 'Chile', 'Hotel S']) {
       expect(resolverLugar(texto, rugby).nombre).toBeNull();
     }
   });
