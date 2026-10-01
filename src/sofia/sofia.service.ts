@@ -717,9 +717,10 @@ export class SofiaService {
         if (args.countryCode) where.countryCode = args.countryCode;
         if (args.status) where.status = args.status;
         if (args.userType) where.userType = args.userType;
-        if (conHotel === true) where.hotelAccommodationId = Not(IsNull());
+        // "con" / "sin" explícitos; false no filtra (filtro-vehiculo.ts).
         const conHotel = filtroConSin(args.hotel, args.hasHotel);
         const conViaje = filtroConSin(args.viaje, args.hasTrip);
+        if (conHotel === true) where.hotelAccommodationId = Not(IsNull());
         if (conHotel === false) where.hotelAccommodationId = IsNull();
         if (conViaje === true) where.transportTripId = Not(IsNull());
         if (conViaje === false) where.transportTripId = IsNull();
