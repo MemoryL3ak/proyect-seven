@@ -6,6 +6,7 @@ import { PLATFORM_KNOWLEDGE } from './sofia-knowledge';
 import { CUADERNO_CARGO_BVAN } from './sofia-document-knowledge';
 import { SOFIA_TOOLS } from './sofia-tools';
 import { EventoContexto, eventoParaHerramienta } from './evento-de-consulta';
+import { ahoraEn, limitesDelDia, rangoDeFechas } from './rango-fechas';
 import { delegationHotelsSql } from '../shared/delegation-hotels';
 import { delegationDriversCondition } from '../shared/delegation-fleet';
 
@@ -22,7 +23,6 @@ import {
   DataSource,
   ILike,
   IsNull,
-  LessThanOrEqual,
   MoreThanOrEqual,
   Not,
   Repository,
@@ -327,6 +327,15 @@ export class SofiaService {
     } catch {
       return contexto;
     }
+  }
+
+  /** Qué día y hora es en la zona del evento, y los límites ISO de "hoy". */
+  private notaDeFecha(): string {
+    const { desde, hasta } = limitesDelDia();
+    return (
+      `\n\nAHORA: ${ahoraEn()}. "Hoy" es ese día en esa zona: para los viajes o vuelos de hoy usa ` +
+      `fromDate="${desde}" y toDate="${hasta}"; para otro día, sus límites en esa misma zona.`
+    );
   }
 
   /** Instrucción con el evento de la consulta, para que el modelo no elija otro. */
@@ -646,12 +655,14 @@ export class SofiaService {
         if (args.status) where.status = args.status;
         if (args.tripType) where.tripType = args.tripType;
         if (args.clientType) where.clientType = args.clientType;
-        if (args.fromDate) where.scheduledAt = MoreThanOrEqual(new Date(args.fromDate));
-        if (args.toDate) where.scheduledAt = LessThanOrEqual(new Date(args.toDate));
+        // Las dos fechas juntas son un rango (rango-fechas.ts); con fechas
+        // se devuelve en orden de programación, no de creación.
+        const rangoViajes = rangoDeFechas(args.fromDate, args.toDate);
+        if (rangoViajes) where.scheduledAt = rangoViajes;
         return this.tripsRepo.find({
           where,
           take: limit,
-          order: { createdAt: 'DESC' },
+          order: rangoViajes ? { scheduledAt: 'ASC' } : { createdAt: 'DESC' },
           select: [
             'id', 'eventId', 'driverId', 'vehicleId', 'vehiclePlate',
             'origin', 'destination', 'tripType', 'clientType', 'tripCost',
@@ -717,8 +728,8 @@ export class SofiaService {
         if (args.eventId) where.eventId = args.eventId;
         if (args.flightNumber) where.flightNumber = ILike(`%${args.flightNumber}%`);
         if (args.airline) where.airline = ILike(`%${args.airline}%`);
-        if (args.fromDate) where.arrivalTime = MoreThanOrEqual(new Date(args.fromDate));
-        if (args.toDate) where.arrivalTime = LessThanOrEqual(new Date(args.toDate));
+        const rangoVuelos = rangoDeFechas(args.fromDate, args.toDate);
+        if (rangoVuelos) where.arrivalTime = rangoVuelos;
         return this.flightsRepo.find({
           where,
           take: limit,
@@ -2187,7 +2198,7 @@ export class SofiaService {
   ): Promise<SofiaAnswer> {
     const model = this.getModel();
     contexto = await this.completarContexto(contexto, scope);
-    const instructions = this.buildSystemPrompt(locale, scope) + (await this.notaDeEvento(contexto));
+    const instructions = this.buildSystemPrompt(locale, scope) + this.notaDeFecha() + (await this.notaDeEvento(contexto));
     const tools = this.toolsFor(scope);
     const artifacts: SofiaArtifact[] = [];
 
@@ -2282,7 +2293,7 @@ export class SofiaService {
   ): Promise<void> {
     const model = this.getModel();
     contexto = await this.completarContexto(contexto, scope);
-    const instructions = this.buildSystemPrompt(locale, scope) + (await this.notaDeEvento(contexto));
+    const instructions = this.buildSystemPrompt(locale, scope) + this.notaDeFecha() + (await this.notaDeEvento(contexto));
     const tools = this.toolsFor(scope);
 
     let payload: Record<string, unknown> = {
