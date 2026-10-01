@@ -8,6 +8,7 @@ import { SOFIA_TOOLS } from './sofia-tools';
 import { EventoContexto, eventoParaHerramienta } from './evento-de-consulta';
 import { ahoraEn, limitesDelDia, rangoDeFechas } from './rango-fechas';
 import { unificarConductores } from '../drivers/unificar-conductores';
+import { filtroConSin, filtroVehiculo } from './filtro-vehiculo';
 import { delegationHotelsSql } from '../shared/delegation-hotels';
 import { delegationDriversCondition } from '../shared/delegation-fleet';
 
@@ -716,10 +717,12 @@ export class SofiaService {
         if (args.countryCode) where.countryCode = args.countryCode;
         if (args.status) where.status = args.status;
         if (args.userType) where.userType = args.userType;
-        if (args.hasHotel === true) where.hotelAccommodationId = Not(IsNull());
-        if (args.hasHotel === false) where.hotelAccommodationId = IsNull();
-        if (args.hasTrip === true) where.transportTripId = Not(IsNull());
-        if (args.hasTrip === false) where.transportTripId = IsNull();
+        if (conHotel === true) where.hotelAccommodationId = Not(IsNull());
+        const conHotel = filtroConSin(args.hotel, args.hasHotel);
+        const conViaje = filtroConSin(args.viaje, args.hasTrip);
+        if (conHotel === false) where.hotelAccommodationId = IsNull();
+        if (conViaje === true) where.transportTripId = Not(IsNull());
+        if (conViaje === false) where.transportTripId = IsNull();
         return this.athletesRepo.find({
           where,
           take: limit,
@@ -775,7 +778,7 @@ export class SofiaService {
         const conductores = await this.conductoresDelEvento(args.eventId ?? null, {
           nombre: typeof args.fullName === 'string' ? args.fullName : null,
           status: typeof args.status === 'string' ? args.status : null,
-          conVehiculo: typeof args.hasVehicle === 'boolean' ? args.hasVehicle : null,
+          conVehiculo: filtroVehiculo(args),
         });
         return { total: conductores.length, mostrados: Math.min(conductores.length, limit), conductores: conductores.slice(0, limit) };
       }
