@@ -338,7 +338,8 @@ export class SofiaService {
     return (
       `\n\nAHORA: ${ahoraEn()}. "Hoy" es ese día en esa zona: para los viajes o vuelos de hoy usa ` +
       `fromDate="${desde}" y toDate="${hasta}"; para otro día, sus límites en esa misma zona. ` +
-      `Cuando una herramienta devuelva "total", informa ese número: no cuentes la lista a mano.`
+      `Cuando una herramienta devuelva "total", informa ese número: no cuentes la lista a mano. ` +
+      `No rellenes parámetros opcionales que el usuario no pidió (status, filtros con/sin, limit): déjalos fuera.`
     );
   }
 
@@ -724,7 +725,9 @@ export class SofiaService {
         if (conHotel === false) where.hotelAccommodationId = IsNull();
         if (conViaje === true) where.transportTripId = Not(IsNull());
         if (conViaje === false) where.transportTripId = IsNull();
-        return this.athletesRepo.find({
+        // El total lo cuenta la base: la lista va recortada por el límite.
+        const totalParticipantes = await this.athletesRepo.count({ where });
+        const participantes = await this.athletesRepo.find({
           where,
           take: limit,
           order: { createdAt: 'DESC' },
@@ -734,6 +737,12 @@ export class SofiaService {
             'transportTripId', 'arrivalTime', 'isDelegationLead', 'accreditationStatus',
           ],
         });
+        return {
+          total: totalParticipantes,
+          mostrados: participantes.length,
+          nota: totalParticipantes > participantes.length ? `Se muestran ${participantes.length} de ${totalParticipantes}; el total es ${totalParticipantes}.` : `Total: ${totalParticipantes}.`,
+          participantes,
+        };
       }
 
       case 'query_trips': {
