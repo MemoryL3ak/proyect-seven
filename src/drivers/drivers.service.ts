@@ -16,6 +16,7 @@ import { CreateDriverDto } from './dto/create-driver.dto';
 import { UpdateDriverDto } from './dto/update-driver.dto';
 import { Driver } from './entities/driver.entity';
 import { eventosDePersona } from '../provider-participants/eventos-persona';
+import { unificarConductores } from './unificar-conductores';
 import { ParteDeDocumento, recibirParte } from '../shared/subida-por-partes';
 
 type DriverRow = {
@@ -451,31 +452,15 @@ export class DriversService {
         this.providerDrivers(),
       ]);
 
-      // Una misma persona puede estar en las dos fuentes. El chofer se registra
-      // en el proveedor y con esa identidad entra a su portal, asi que esa
-      // manda y se descarta el duplicado de la tabla de flota. Se compara por
-      // id y por nombre normalizado: hoy Alex Arevalo esta en ambas con el
-      // mismo UUID, pero un duplicado con id distinto tambien debe caer.
-      const norm = (value: unknown) =>
-        String(value ?? '')
-          .trim()
-          .toLowerCase();
-      const seenIds = new Set<string>();
-      const seenNames = new Set<string>();
-      const out: Record<string, unknown>[] = [];
-      for (const item of [
-        ...providers,
-        ...fleet.map((d) => ({ ...d, source: 'fleet' })),
-      ] as Record<string, unknown>[]) {
-        const id = String(item.id ?? '');
-        const name = norm(item.fullName);
-        if (id && seenIds.has(id)) continue;
-        if (name && seenNames.has(name)) continue;
-        if (id) seenIds.add(id);
-        if (name) seenNames.add(name);
-        out.push(item);
-      }
-      return out;
+      // Una misma persona puede estar en las dos fuentes: el chofer se registra
+      // en el proveedor y con esa identidad entra a su portal, así que esa
+      // manda y la copia de la flota cae (por id o por nombre). Dos personas
+      // distintas del mismo proveedor nunca se descartan entre sí: ver
+      // unificar-conductores.ts (30-09-2026, Manuel Gonzales ×2).
+      return unificarConductores(
+        providers,
+        fleet.map((d) => ({ ...d, source: 'fleet' })) as Record<string, unknown>[],
+      );
     } catch (error) {
       throw new InternalServerErrorException(
         error instanceof Error ? error.message : 'Error fetching drivers',

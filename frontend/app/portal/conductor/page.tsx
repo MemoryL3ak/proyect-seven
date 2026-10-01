@@ -77,6 +77,7 @@ import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStored
 import { dlog } from "@/lib/native-debug";
 import { debeRearmarRastreo, ESPERAS_ESTADO_SHELL_MS, gpsWebNecesario, mismoEstadoShell, senalDeCorte, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
 import { plataformaConductor, versionShell } from "@/lib/plataforma-conductor";
+import { conductorPorCodigo } from "@/lib/conductor-por-codigo";
 import { destinoDeNavegacion, enlacesDeNavegacion, esLugarPorConfirmar, type LugarConDireccion } from "@/lib/navegacion";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
@@ -713,18 +714,24 @@ export default function DriverPortalPage() {
         // Las cuentas dadas de baja no pueden volver a iniciar sesión.
         .filter((driver) => (driver.status ?? "").toUpperCase() !== "DELETED");
 
-      const normalizedInput = resolvedId.trim().toLowerCase();
-      const driverMatch = allDrivers.find((driver) => {
-        const driverIdLower = (driver.id ?? "").toLowerCase();
-        const userIdLower = (driver.userId ?? "").toLowerCase();
-        return (
-          normalizedInput === driverIdLower ||
-          normalizedInput === userIdLower ||
-          normalizedInput === driverIdLower.slice(-6) ||
-          normalizedInput === userIdLower.slice(-6)
-        );
-      });
+      let driverMatch: Driver | null = conductorPorCodigo(allDrivers, resolvedId);
       dlog(`fetch ok → match=${driverMatch ? `…${driverMatch.id.slice(-6)}` : "NO"}`);
+      if (!driverMatch && resolvedId.length > 8) {
+        // El servidor ya reconoció el código (login OK) pero la ficha no vino
+        // en la lista (30-09-2026: /drivers descartaba homónimos). Se pide
+        // por id: primero como chofer de proveedor, después como flota propia.
+        dlog("ficha no está en /drivers; se pide por id");
+        try {
+          driverMatch = participantToDriver(await apiFetch<ProviderParticipant>(`/provider-participants/${resolvedId}`));
+        } catch {
+          try {
+            driverMatch = { ...(await apiFetch<Driver>(`/drivers/${resolvedId}`)), _isParticipant: false };
+          } catch {
+            driverMatch = null;
+          }
+        }
+        if (driverMatch && (driverMatch.status ?? "").toUpperCase() === "DELETED") driverMatch = null;
+      }
       if (!driverMatch) {
         setDriverProfile(null);
         setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
