@@ -40,10 +40,17 @@ describe('filtro de evento del conductor', () => {
     { id: 'v3', eventId: JDE },
   ];
 
-  it('ofrece sus eventos y los de sus viajes, sin repetir', () => {
-    expect(eventosParaFiltro([JDE, RUGBY], viajes)).toEqual([JDE, RUGBY]);
-    expect(eventosParaFiltro([RUGBY], viajes)).toEqual([RUGBY, JDE]);
-    expect(eventosParaFiltro([RUGBY], [])).toEqual([RUGBY]);
+  it('sólo los eventos donde tiene viajes: con uno solo no hay selector (30-09-2026)', () => {
+    // Alex Arévalo como proveedor está en JDE y Rugby; Manuel Gonzales sólo maneja en Rugby.
+    const soloRugby = [{ eventId: RUGBY, status: 'SCHEDULED' }, { eventId: RUGBY, status: 'COMPLETED' }];
+    expect(eventosParaFiltro([JDE, RUGBY], soloRugby)).toEqual([RUGBY]);
+    // Juan Fernández maneja en los dos: ahí sí hay selector.
+    expect(eventosParaFiltro([JDE, RUGBY], [...soloRugby, { eventId: JDE, status: 'SCHEDULED' }])).toEqual([JDE, RUGBY]);
+    // Un viaje cancelado no cuenta.
+    expect(eventosParaFiltro([JDE, RUGBY], [...soloRugby, { eventId: JDE, status: 'CANCELLED' }])).toEqual([RUGBY]);
+    // Un evento que no es de su proveedor entra si tiene viajes ahí, después de los suyos.
+    expect(eventosParaFiltro([RUGBY], [{ eventId: JDE, status: 'SCHEDULED' }, { eventId: RUGBY, status: 'SCHEDULED' }])).toEqual([RUGBY, JDE]);
+    expect(eventosParaFiltro([RUGBY], [])).toEqual([]);
   });
 
   it('eligiendo Rugby, sólo los viajes, sedes y hoteles de Rugby', () => {

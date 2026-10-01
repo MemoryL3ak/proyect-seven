@@ -524,6 +524,12 @@ export default function DriverPortalPage() {
   }, [eventoElegido, opcionesEvento]);
   /** Sus viajes del evento elegido: listas y contadores. El seguimiento usa todos. */
   const tripsVista = useMemo(() => viajesDelEventoElegido(trips, eventoElegido), [trips, eventoElegido]);
+  // Eventos cuyas sedes, hoteles y documentos ve: el elegido; con un solo
+  // evento con viajes (sin selector), ése; si no, todos los de su proveedor.
+  const eventosVista = useMemo(
+    () => (eventoElegido ? [eventoElegido] : opcionesEvento.length === 1 ? opcionesEvento : eventosConductor),
+    [eventoElegido, opcionesEvento, eventosConductor],
+  );
   const misSedes = useMemo(
     () => venues.filter((v) => enEventoElegido(eventoElegido, eventosConductor, v.eventId)),
     [venues, eventosConductor, eventoElegido],
@@ -2802,7 +2808,7 @@ export default function DriverPortalPage() {
                 <EventDocumentsSection
                   audience="CONDUCTOR"
                   eventId={(driverProfile as { eventId?: string | null }).eventId ?? null}
-                  eventIds={eventoElegido ? [eventoElegido] : eventosConductor}
+                  eventIds={eventosVista}
                 />
 
                 {/* Documents section */}

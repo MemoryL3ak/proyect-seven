@@ -33,17 +33,26 @@ export function enEventosDelConductor(
 /**
  * Eventos entre los que elige un conductor que trabaja en más de uno
  * (28-09-2026, pedido de Ariel: "en el caso de que se repita, que tenga un
- * filtro de evento"). Los de su proveedor y los de sus viajes, sin repetir y
- * en el orden en que aparecen. Con uno solo no hay nada que elegir.
+ * filtro de evento"). Sólo cuentan los eventos donde tiene viajes no
+ * cancelados: su proveedor puede estar en dos eventos (Alex Arévalo, en JDE
+ * y Rugby) y eso le ponía el selector a choferes que manejan en uno solo
+ * (30-09-2026: "si un conductor está asociado a un solo evento, que no
+ * figure el selector"). Van primero los de su proveedor, después los de sus
+ * viajes, sin repetir. Con uno solo no hay nada que elegir.
  */
 export function eventosParaFiltro(
   eventosConductor: string[],
-  viajes: Array<{ eventId?: string | null }>,
+  viajes: Array<{ eventId?: string | null; status?: string | null }>,
 ): string[] {
+  const conViajes = new Set(
+    viajes
+      .filter((v) => v.eventId && String(v.status ?? "").toUpperCase() !== "CANCELLED")
+      .map((v) => v.eventId as string),
+  );
   const vistos = new Set<string>();
   const lista: string[] = [];
   for (const id of [...eventosConductor, ...viajes.map((v) => v.eventId ?? "")]) {
-    if (!id || vistos.has(id)) continue;
+    if (!id || vistos.has(id) || !conViajes.has(id)) continue;
     vistos.add(id);
     lista.push(id);
   }
