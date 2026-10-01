@@ -379,7 +379,12 @@ export class SofiaService {
     filtro: { nombre?: string | null; status?: string | null; conVehiculo?: boolean | null },
   ): Promise<Array<Record<string, unknown>>> {
     const nombre = filtro.nombre ? `%${filtro.nombre}%` : null;
-    const status = filtro.status ?? null;
+    // El modelo pone status "ACTIVE" por costumbre y los choferes de
+    // proveedor están REGISTERED: "activo" significa no dado de baja.
+    const pedido = (filtro.status ?? '').trim().toUpperCase();
+    const activos = ['ACTIVE', 'ACTIVO', 'ACTIVOS', 'DISPONIBLE', 'VIGENTE'].includes(pedido);
+    const status = pedido && !activos ? pedido : null;
+    const soloActivos = activos;
     const conVehiculo = filtro.conVehiculo ?? null;
     const [proveedor, flota] = await Promise.all([
       this.dataSource.query(
@@ -394,10 +399,11 @@ export class SofiaService {
                  or (($1::uuid = any(p.event_ids) or p.event_ids is null or cardinality(p.event_ids) = 0)
                      and not jsonb_exists(coalesce(pp.metadata->'eventosExcluidos', '[]'::jsonb), $1::text)))
             and ($2::text is null or pp.full_name ilike $2)
-            and ($3::text is null or pp.status = $3)
+            and ($3::text is null or upper(pp.status) = $3)
+            and ($5::boolean = false or upper(coalesce(pp.status, '')) not in ('DELETED', 'DISABLED', 'INACTIVE', 'SUSPENDED', 'BLOCKED'))
             and ($4::boolean is null or $4 = ((pp.metadata->>'vehiclePatente') is not null))
           order by pp.full_name`,
-        [eventId, nombre, status, conVehiculo],
+        [eventId, nombre, status, conVehiculo, soloActivos],
       ),
       this.dataSource.query(
         `select d.id, 'fleet' as source, d.full_name as "fullName", d.rut, d.email, d.phone, d.status,
@@ -407,10 +413,11 @@ export class SofiaService {
           where coalesce(d.status, '') <> 'DELETED'
             and ($1::uuid is null or d.event_id = $1::uuid)
             and ($2::text is null or d.full_name ilike $2)
-            and ($3::text is null or d.status = $3)
+            and ($3::text is null or upper(d.status) = $3)
+            and ($5::boolean = false or upper(coalesce(d.status, '')) not in ('DELETED', 'DISABLED', 'INACTIVE', 'SUSPENDED', 'BLOCKED'))
             and ($4::boolean is null or $4 = (d.vehicle_id is not null))
           order by d.full_name`,
-        [eventId, nombre, status, conVehiculo],
+        [eventId, nombre, status, conVehiculo, soloActivos],
       ),
     ]);
     return unificarConductores(

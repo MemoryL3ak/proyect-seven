@@ -105,7 +105,7 @@ export const SOFIA_TOOLS: SofiaTool[] = [
     parameters: obj({
       eventId: str('Filtrar por ID de evento'),
       fullName: str('Buscar por nombre (parcial, case-insensitive)'),
-      status: str('Filtrar por estado (ej: ACTIVE, INACTIVE)'),
+      status: str('Sólo si el usuario pide un estado concreto (REGISTERED, ACCREDITED, INACTIVE…). Para contar o listar a todos, omítelo.'),
       hasVehicle: bool('true = con vehículo, false = sin vehículo'),
       limit,
     }),
