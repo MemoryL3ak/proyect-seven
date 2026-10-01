@@ -334,7 +334,8 @@ export class SofiaService {
     const { desde, hasta } = limitesDelDia();
     return (
       `\n\nAHORA: ${ahoraEn()}. "Hoy" es ese día en esa zona: para los viajes o vuelos de hoy usa ` +
-      `fromDate="${desde}" y toDate="${hasta}"; para otro día, sus límites en esa misma zona.`
+      `fromDate="${desde}" y toDate="${hasta}"; para otro día, sus límites en esa misma zona. ` +
+      `Cuando una herramienta devuelva "total", informa ese número: no cuentes la lista a mano.`
     );
   }
 
@@ -659,16 +660,27 @@ export class SofiaService {
         // se devuelve en orden de programación, no de creación.
         const rangoViajes = rangoDeFechas(args.fromDate, args.toDate);
         if (rangoViajes) where.scheduledAt = rangoViajes;
-        return this.tripsRepo.find({
-          where,
-          take: limit,
-          order: rangoViajes ? { scheduledAt: 'ASC' } : { createdAt: 'DESC' },
-          select: [
-            'id', 'eventId', 'driverId', 'vehicleId', 'vehiclePlate',
-            'origin', 'destination', 'tripType', 'clientType', 'tripCost',
-            'passengerCount', 'status', 'scheduledAt', 'startedAt', 'completedAt',
-          ],
-        });
+        // El total lo cuenta la base: el modelo contaba la lista a mano y
+        // decia 23 o 27 donde habia 26 (01-10-2026).
+        const [viajes, total] = await Promise.all([
+          this.tripsRepo.find({
+            where,
+            take: limit,
+            order: rangoViajes ? { scheduledAt: 'ASC' } : { createdAt: 'DESC' },
+            select: [
+              'id', 'eventId', 'driverId', 'vehicleId', 'vehiclePlate',
+              'origin', 'destination', 'tripType', 'clientType', 'tripCost',
+              'passengerCount', 'status', 'scheduledAt', 'startedAt', 'completedAt',
+            ],
+          }),
+          this.tripsRepo.count({ where }),
+        ]);
+        return {
+          total,
+          mostrados: viajes.length,
+          nota: total > viajes.length ? `Se muestran ${viajes.length} de ${total}; el total es ${total}.` : `Total: ${total}.`,
+          viajes,
+        };
       }
 
       case 'query_drivers': {

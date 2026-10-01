@@ -36,6 +36,11 @@ describe('hoy en la zona del evento', () => {
       desde: '2026-10-01T03:00:00.000Z',
       hasta: '2026-10-02T02:59:59.999Z',
     });
+    // Un instante con milisegundos no corre los límites.
+    expect(limitesDelDia('America/Santiago', new Date('2026-10-01T07:22:13.841Z'))).toEqual({
+      desde: '2026-10-01T03:00:00.000Z',
+      hasta: '2026-10-02T02:59:59.999Z',
+    });
     const viaje = new Date('2026-10-02T01:30:00.000Z'); // 22:30 de Chile
     const { desde, hasta } = limitesDelDia('America/Santiago', instante);
     expect(viaje >= new Date(desde) && viaje <= new Date(hasta)).toBe(true);

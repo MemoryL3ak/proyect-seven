@@ -53,10 +53,15 @@ function partesEn(zona: string, instante: Date): Partes {
   };
 }
 
-/** Desfase de la zona respecto de UTC en ese instante (ms). */
+/**
+ * Desfase de la zona respecto de UTC en ese instante (ms), redondeado al
+ * minuto: las partes no traen milisegundos y sin redondear los límites del
+ * día salían como 03:00:00.841Z.
+ */
 function desfaseMs(zona: string, instante: Date): number {
   const p = partesEn(zona, instante);
-  return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - instante.getTime();
+  const bruto = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - instante.getTime();
+  return Math.round(bruto / 60_000) * 60_000;
 }
 
 /** "miércoles 2026-10-01 23:30 (America/Santiago)": el modelo sabe qué día es hoy. */
