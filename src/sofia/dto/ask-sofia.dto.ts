@@ -13,4 +13,9 @@ export class AskSofiaDto {
   @IsString()
   @IsOptional()
   locale?: string;
+
+  /** Evento que el panel tiene en pantalla (01-10-2026). Ver evento-de-consulta.ts. */
+  @IsString()
+  @IsOptional()
+  eventId?: string;
 }

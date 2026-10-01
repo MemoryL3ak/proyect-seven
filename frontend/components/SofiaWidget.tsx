@@ -20,6 +20,8 @@ import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { DownloadIcon, UndoIcon, XIcon, CheckCircleIcon, AlertIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
+import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { cuerpoConsultaSofia } from "@/lib/sofia-consulta";
 import { downloadCSV, downloadChartPng, slugify } from "@/lib/export";
 
 /* ── Sparkle icon ── */
@@ -810,6 +812,13 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
   const [toolInfo, setToolInfo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [responseId, setResponseId] = useState<string | null>(null);
+  // Evento en pantalla (01-10-2026): va en cada consulta para que SofIA
+  // responda sobre él. Fuera del panel no hay proveedor y queda null.
+  const { eventoId } = useEventoActivo();
+  useEffect(() => {
+    // Con otro evento en pantalla la conversación anterior ya no aplica.
+    setResponseId(null);
+  }, [eventoId]);
   const [showWelcome, setShowWelcome] = useState(false);
 
   const abortRef = useRef<AbortController | null>(null);
@@ -937,7 +946,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
         try {
           await fetchStream(
             "/sofia/ask-stream",
-            { question, previousResponseId: responseId, locale },
+            cuerpoConsultaSofia({ question, previousResponseId: responseId, locale, eventoId }),
             (chunk) => {
               streamWorked = true;
               switch (chunk.type) {
@@ -983,7 +992,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
                 {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ question, previousResponseId: responseId, locale }),
+                  body: JSON.stringify(cuerpoConsultaSofia({ question, previousResponseId: responseId, locale, eventoId })),
                 },
               );
               setMessages((p) => {
@@ -1018,7 +1027,7 @@ export default function SofiaWidget({ compact = false }: SofiaWidgetProps) {
             {
               method: "POST",
               headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ question, previousResponseId: responseId, locale }),
+              body: JSON.stringify(cuerpoConsultaSofia({ question, previousResponseId: responseId, locale, eventoId })),
             },
           );
           setMessages((p) => {

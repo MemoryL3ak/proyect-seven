@@ -5,6 +5,7 @@ import { randomUUID, randomBytes } from 'node:crypto';
 import { PLATFORM_KNOWLEDGE } from './sofia-knowledge';
 import { CUADERNO_CARGO_BVAN } from './sofia-document-knowledge';
 import { SOFIA_TOOLS } from './sofia-tools';
+import { EventoContexto, eventoParaHerramienta } from './evento-de-consulta';
 import { delegationHotelsSql } from '../shared/delegation-hotels';
 import { delegationDriversCondition } from '../shared/delegation-fleet';
 
@@ -309,6 +310,45 @@ export class SofiaService {
   }
 
   /** Resolve an event id: explicit → active event → most recent. */
+  /**
+   * Un Jefe de Misión entra por el portal, sin evento en pantalla: el suyo es
+   * el de su delegación. Sin eso SofIA le contestaba con el evento ACTIVE
+   * más reciente, que puede ser otro.
+   */
+  private async completarContexto(
+    contexto: EventoContexto | null,
+    scope?: SofiaScope | null,
+  ): Promise<EventoContexto | null> {
+    if (contexto?.actual || !scope?.delegationId) return contexto;
+    try {
+      const delegacion = await this.delegationsRepo.findOne({ where: { id: scope.delegationId } });
+      if (!delegacion?.eventId) return contexto;
+      return { actual: delegacion.eventId, permitidos: [delegacion.eventId] };
+    } catch {
+      return contexto;
+    }
+  }
+
+  /** Instrucción con el evento de la consulta, para que el modelo no elija otro. */
+  private async notaDeEvento(contexto: EventoContexto | null): Promise<string> {
+    if (!contexto?.actual) return '';
+    let nombre = contexto.actual;
+    try {
+      const evento = await this.eventsRepo.findOne({ where: { id: contexto.actual } });
+      if (evento?.name) nombre = `${evento.name} (id ${contexto.actual})`;
+    } catch {
+      /* el id basta */
+    }
+    const acotado = contexto.permitidos && contexto.permitidos.length > 0;
+    return (
+      `\n\nEVENTO DE ESTA CONVERSACIÓN: ${nombre}. Todas las consultas, cifras y acciones se refieren a este evento` +
+      (acotado
+        ? '; el usuario sólo puede ver este evento, no hables de otros.'
+        : ', salvo que el usuario nombre explícitamente otro evento.') +
+      ` Pasa eventId="${contexto.actual}" en cada herramienta.`
+    );
+  }
+
   private async resolveEventId(provided?: string): Promise<string | null> {
     if (provided) return provided;
     const active = await this.eventsRepo.findOne({
@@ -447,8 +487,17 @@ export class SofiaService {
     locale?: string,
     scope?: SofiaScope | null,
     sinCobros = false,
+    contexto: EventoContexto | null = null,
   ): Promise<{ output: string; artifact?: SofiaArtifact }> {
     const args = this.sanitizeArgs(rawArgs);
+    // El evento de la consulta manda sobre lo que puso el modelo, salvo que
+    // el usuario pueda ver el que pidió (evento-de-consulta.ts). Sin evento,
+    // se borra la clave para que cada herramienta use su propio respaldo.
+    if (contexto) {
+      const evento = eventoParaHerramienta(args.eventId, contexto);
+      if (evento) args.eventId = evento;
+      else delete args.eventId;
+    }
     // Cinturón y tirantes: aunque el catálogo ya viene filtrado, ninguna
     // herramienta fuera del alcance llega a ejecutarse.
     if (scope && !this.MISSION_HEAD_TOOLS.has(name)) {
@@ -2134,9 +2183,11 @@ export class SofiaService {
     locale?: string,
     scope?: SofiaScope | null,
     sinCobros = false,
+    contexto: EventoContexto | null = null,
   ): Promise<SofiaAnswer> {
     const model = this.getModel();
-    const instructions = this.buildSystemPrompt(locale, scope);
+    contexto = await this.completarContexto(contexto, scope);
+    const instructions = this.buildSystemPrompt(locale, scope) + (await this.notaDeEvento(contexto));
     const tools = this.toolsFor(scope);
     const artifacts: SofiaArtifact[] = [];
 
@@ -2176,7 +2227,7 @@ export class SofiaService {
           try {
             parsed = JSON.parse(fc.arguments);
           } catch { /* empty args */ }
-          const { output, artifact } = await this.executeTool(fc.name, parsed, locale, scope, sinCobros);
+          const { output, artifact } = await this.executeTool(fc.name, parsed, locale, scope, sinCobros, contexto);
           if (artifact) artifacts.push(artifact);
           return { type: 'function_call_output' as const, call_id: fc.callId, output };
         }),
@@ -2209,9 +2260,10 @@ export class SofiaService {
     locale?: string,
     scope?: SofiaScope | null,
     sinCobros = false,
+    contexto: EventoContexto | null = null,
   ): Subject<SofiaStreamChunk> {
     const subject = new Subject<SofiaStreamChunk>();
-    this.runStreamLoop(subject, question, previousResponseId, locale, scope, sinCobros).catch((err) => {
+    this.runStreamLoop(subject, question, previousResponseId, locale, scope, sinCobros, contexto).catch((err) => {
       this.logger.error(`Stream error: ${err}`);
       subject.next({ type: 'error', content: String(err) });
       subject.complete();
@@ -2226,9 +2278,11 @@ export class SofiaService {
     locale?: string,
     scope?: SofiaScope | null,
     sinCobros = false,
+    contexto: EventoContexto | null = null,
   ): Promise<void> {
     const model = this.getModel();
-    const instructions = this.buildSystemPrompt(locale, scope);
+    contexto = await this.completarContexto(contexto, scope);
+    const instructions = this.buildSystemPrompt(locale, scope) + (await this.notaDeEvento(contexto));
     const tools = this.toolsFor(scope);
 
     let payload: Record<string, unknown> = {
@@ -2268,7 +2322,7 @@ export class SofiaService {
           try {
             parsed = JSON.parse(fc.arguments);
           } catch { /* empty */ }
-          const { output, artifact } = await this.executeTool(fc.name, parsed, locale, scope, sinCobros);
+          const { output, artifact } = await this.executeTool(fc.name, parsed, locale, scope, sinCobros, contexto);
           if (artifact) {
             subject.next({ type: 'render', content: artifact.kind, artifact });
           }

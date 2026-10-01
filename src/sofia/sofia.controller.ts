@@ -16,6 +16,7 @@ import {
 import { Req } from '@nestjs/common';
 import type { Response } from 'express';
 import { AskSofiaDto } from './dto/ask-sofia.dto';
+import { EventoContexto, eventoDeConsulta } from './evento-de-consulta';
 import { SofiaService } from './sofia.service';
 
 @Protected()
@@ -40,12 +41,26 @@ export class SofiaController {
       : null;
   }
 
+  /**
+   * Evento al que se refiere la consulta: el que el panel tiene en pantalla
+   * si el usuario puede verlo; para una cuenta acotada a un evento, ése
+   * (01-10-2026: las coordinadoras de World Rugby recibían datos de los
+   * Juegos Escolares, el evento ACTIVE más reciente).
+   */
+  private contextoDe(req: ApiRequest, dto: AskSofiaDto): EventoContexto {
+    const caller = req.apiCaller as { type?: string; permisos?: { eventIds?: string[] | null } | null } | undefined;
+    const propios = caller?.type === 'staff' ? caller.permisos?.eventIds ?? null : null;
+    const permitidos = propios && propios.length > 0 ? propios : null;
+    return { actual: eventoDeConsulta(dto.eventId, permitidos), permitidos };
+  }
+
   /** Classic non-streaming endpoint (backward-compatible). */
   @Post('ask')
   async ask(@Body() dto: AskSofiaDto, @Req() req: ApiRequest) {
     const scope = await this.scopeOf(req);
+    const contexto = this.contextoDe(req, dto);
     try {
-      return await this.sofiaService.ask(dto.question, dto.previousResponseId, dto.locale, scope, ocultaCobros(req.apiCaller));
+      return await this.sofiaService.ask(dto.question, dto.previousResponseId, dto.locale, scope, ocultaCobros(req.apiCaller), contexto);
     } catch (err) {
       // El detalle (modelo inválido, clave vencida, timeout del proveedor…)
       // queda en el log del servidor; al cliente le llega un 503 accionable
@@ -61,6 +76,7 @@ export class SofiaController {
   @Post('ask-stream')
   async stream(@Body() dto: AskSofiaDto, @Res() res: Response, @Req() req: ApiRequest) {
     const scope = await this.scopeOf(req);
+    const contexto = this.contextoDe(req, dto);
     res.setHeader('Content-Type', 'text/event-stream');
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
@@ -74,6 +90,7 @@ export class SofiaController {
         dto.locale,
         scope,
         ocultaCobros(req.apiCaller),
+        contexto,
       );
       const subscription = subject.subscribe({
         next: (chunk) => res.write(`data: ${JSON.stringify(chunk)}\n\n`),
