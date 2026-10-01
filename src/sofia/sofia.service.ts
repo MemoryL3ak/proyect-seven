@@ -7,6 +7,7 @@ import { CUADERNO_CARGO_BVAN } from './sofia-document-knowledge';
 import { SOFIA_TOOLS } from './sofia-tools';
 import { EventoContexto, eventoParaHerramienta } from './evento-de-consulta';
 import { ahoraEn, limitesDelDia, rangoDeFechas } from './rango-fechas';
+import { unificarConductores } from '../drivers/unificar-conductores';
 import { delegationHotelsSql } from '../shared/delegation-hotels';
 import { delegationDriversCondition } from '../shared/delegation-fleet';
 
@@ -23,6 +24,7 @@ import {
   DataSource,
   ILike,
   IsNull,
+  In,
   MoreThanOrEqual,
   Not,
   Repository,
@@ -359,6 +361,64 @@ export class SofiaService {
     );
   }
 
+  /** Proveedores del evento (sin eventos = vale para todos), o todos sin evento. */
+  private async proveedoresDelEvento(eventId: string | null): Promise<Array<{ id: string }>> {
+    const todos = await this.providersRepo.find({ select: ['id', 'eventIds'] });
+    if (!eventId) return todos;
+    return todos.filter((p) => !p.eventIds?.length || p.eventIds.includes(eventId));
+  }
+
+  /**
+   * Conductores del evento con la misma regla que /drivers: flota propia
+   * (transport.drivers) más choferes de proveedor (provider_participants
+   * con isDriver, de proveedores del evento, menos los quitados del evento),
+   * sin homónimos descartados entre proveedores.
+   */
+  private async conductoresDelEvento(
+    eventId: string | null,
+    filtro: { nombre?: string | null; status?: string | null; conVehiculo?: boolean | null },
+  ): Promise<Array<Record<string, unknown>>> {
+    const nombre = filtro.nombre ? `%${filtro.nombre}%` : null;
+    const status = filtro.status ?? null;
+    const conVehiculo = filtro.conVehiculo ?? null;
+    const [proveedor, flota] = await Promise.all([
+      this.dataSource.query(
+        `select pp.id, 'provider' as source, pp.full_name as "fullName", pp.rut, pp.email, pp.phone, pp.status,
+                p.name as "providerName", pp.metadata->>'vehiclePatente' as "vehiclePlate",
+                pp.metadata->>'vehicleTipo' as "vehicleType"
+           from core.provider_participants pp
+           join core.providers p on p.id = pp.provider_id
+          where (pp.metadata->>'isDriver') = 'true'
+            and coalesce(pp.status, '') <> 'DELETED'
+            and ($1::uuid is null
+                 or (($1::uuid = any(p.event_ids) or p.event_ids is null or cardinality(p.event_ids) = 0)
+                     and not jsonb_exists(coalesce(pp.metadata->'eventosExcluidos', '[]'::jsonb), $1::text)))
+            and ($2::text is null or pp.full_name ilike $2)
+            and ($3::text is null or pp.status = $3)
+            and ($4::boolean is null or $4 = ((pp.metadata->>'vehiclePatente') is not null))
+          order by pp.full_name`,
+        [eventId, nombre, status, conVehiculo],
+      ),
+      this.dataSource.query(
+        `select d.id, 'fleet' as source, d.full_name as "fullName", d.rut, d.email, d.phone, d.status,
+                null::text as "providerName", v.plate as "vehiclePlate", v.type as "vehicleType"
+           from transport.drivers d
+           left join transport.vehicles v on v.id = d.vehicle_id
+          where coalesce(d.status, '') <> 'DELETED'
+            and ($1::uuid is null or d.event_id = $1::uuid)
+            and ($2::text is null or d.full_name ilike $2)
+            and ($3::text is null or d.status = $3)
+            and ($4::boolean is null or $4 = (d.vehicle_id is not null))
+          order by d.full_name`,
+        [eventId, nombre, status, conVehiculo],
+      ),
+    ]);
+    return unificarConductores(
+      proveedor as Array<Record<string, unknown>>,
+      flota as Array<Record<string, unknown>>,
+    );
+  }
+
   private async resolveEventId(provided?: string): Promise<string | null> {
     if (provided) return provided;
     const active = await this.eventsRepo.findOne({
@@ -507,6 +567,8 @@ export class SofiaService {
       const evento = eventoParaHerramienta(args.eventId, contexto);
       if (evento) args.eventId = evento;
       else delete args.eventId;
+      // query_events: una cuenta acotada sólo lista sus eventos.
+      if (contexto.permitidos?.length) args.eventIds = contexto.permitidos;
     }
     // Cinturón y tirantes: aunque el catálogo ya viene filtrado, ninguna
     // herramienta fuera del alcance llega a ejecutarse.
@@ -584,26 +646,42 @@ export class SofiaService {
     switch (name) {
       /* ---------- LECTURA ---------- */
       case 'get_summary': {
-        const [events, delegations, athletes, trips, drivers, vehicles, accommodations, flights, providers] =
+        // Con evento, las cifras son de ese evento (01-10-2026: a los
+        // coordinadores les salían los totales de toda la plataforma).
+        const eventId: string | null = args.eventId ?? null;
+        const porEvento = eventId ? { where: { eventId } } : {};
+        const [evento, delegations, athletes, trips, conductores, vehicles, accommodations, flights, proveedores] =
           await Promise.all([
-            this.eventsRepo.count(),
-            this.delegationsRepo.count(),
-            this.athletesRepo.count(),
-            this.tripsRepo.count(),
-            this.driversRepo.count(),
-            this.transportsRepo.count(),
-            this.accommodationsRepo.count(),
-            this.flightsRepo.count(),
-            this.providersRepo.count(),
+            eventId ? this.eventsRepo.findOne({ where: { id: eventId } }) : null,
+            this.delegationsRepo.count(porEvento),
+            this.athletesRepo.count(porEvento),
+            this.tripsRepo.count(porEvento),
+            this.conductoresDelEvento(eventId, {}),
+            this.transportsRepo.count(porEvento),
+            this.accommodationsRepo.count(porEvento),
+            this.flightsRepo.count(porEvento),
+            this.proveedoresDelEvento(eventId),
           ]);
         return {
           timestamp: new Date().toISOString(),
-          counts: { events, delegations, athletes, trips, drivers, vehicles, accommodations, flights, providers },
+          evento: evento ? { id: evento.id, name: evento.name, status: evento.status } : null,
+          counts: {
+            events: eventId ? 1 : await this.eventsRepo.count(),
+            delegations,
+            athletes,
+            trips,
+            drivers: conductores.length,
+            vehicles,
+            accommodations,
+            flights,
+            providers: proveedores.length,
+          },
         };
       }
 
       case 'query_events': {
         const where: Record<string, any> = {};
+        if (Array.isArray(args.eventIds) && args.eventIds.length) where.id = In(args.eventIds);
         if (args.status) where.status = args.status;
         if (args.name) where.name = ILike(`%${args.name}%`);
         return this.eventsRepo.find({
@@ -684,18 +762,15 @@ export class SofiaService {
       }
 
       case 'query_drivers': {
-        const where: Record<string, any> = {};
-        if (args.eventId) where.eventId = args.eventId;
-        if (args.fullName) where.fullName = ILike(`%${args.fullName}%`);
-        if (args.status) where.status = args.status;
-        if (args.hasVehicle === true) where.vehicleId = Not(IsNull());
-        if (args.hasVehicle === false) where.vehicleId = IsNull();
-        return this.driversRepo.find({
-          where,
-          take: limit,
-          order: { createdAt: 'DESC' },
-          select: ['id', 'eventId', 'fullName', 'rut', 'email', 'phone', 'vehicleId', 'budgetAmount', 'status'],
+        // Flota propia y choferes de proveedor, como /drivers (01-10-2026: sólo
+        // miraba transport.drivers y en Rugby, donde todos son de proveedor,
+        // decía que no había conductores).
+        const conductores = await this.conductoresDelEvento(args.eventId ?? null, {
+          nombre: typeof args.fullName === 'string' ? args.fullName : null,
+          status: typeof args.status === 'string' ? args.status : null,
+          conVehiculo: typeof args.hasVehicle === 'boolean' ? args.hasVehicle : null,
         });
+        return { total: conductores.length, mostrados: Math.min(conductores.length, limit), conductores: conductores.slice(0, limit) };
       }
 
       case 'query_vehicles': {
@@ -755,12 +830,16 @@ export class SofiaService {
         if (args.name) where.name = ILike(`%${args.name}%`);
         if (args.type) where.type = args.type;
         if (args.rut) where.rut = args.rut;
-        return this.providersRepo.find({
+        const lista = await this.providersRepo.find({
           where,
-          take: limit,
           order: { createdAt: 'DESC' },
-          select: ['id', 'name', 'type', 'subtype', 'email', 'rut'],
+          select: ['id', 'name', 'type', 'subtype', 'email', 'rut', 'eventIds'],
         });
+        // Un proveedor sin eventos vale para todos, como en el panel.
+        const delEvento = args.eventId
+          ? lista.filter((p) => !p.eventIds?.length || p.eventIds.includes(args.eventId))
+          : lista;
+        return { total: delEvento.length, proveedores: delEvento.slice(0, limit).map(({ eventIds: _e, ...p }) => p) };
       }
 
       case 'query_vehicle_positions': {
