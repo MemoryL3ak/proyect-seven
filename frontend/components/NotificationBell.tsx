@@ -451,6 +451,7 @@ export default function NotificationBell({
         ref={bellRef}
         type="button"
         onClick={toggle}
+        aria-label="Notificaciones"
         style={{
           position: "relative",
           display: "flex",
