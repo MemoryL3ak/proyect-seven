@@ -74,11 +74,12 @@ import { delegationLabel, etiquetaDeDelegacion } from "@/lib/delegations";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
-import { claimPortalSession, clearPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { claimPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { dlog } from "@/lib/native-debug";
 import { debeRearmarRastreo, ESPERAS_ESTADO_SHELL_MS, gpsWebNecesario, mismoEstadoShell, senalDeCorte, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
-import { plataformaConductor, versionShell } from "@/lib/plataforma-conductor";
+import { esSesionDesplazada, plataformaConductor, versionShell } from "@/lib/plataforma-conductor";
 import { conductorPorCodigo } from "@/lib/conductor-por-codigo";
+import { siguientePasoDelViaje, viajeEnCursoDeHoy } from "@/lib/viaje-en-curso";
 import { destinoDeNavegacion, enlacesDeNavegacion, esLugarPorConfirmar, type LugarConDireccion } from "@/lib/navegacion";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
@@ -594,6 +595,8 @@ export default function DriverPortalPage() {
   // día y hace scroll hasta la tarjeta. Si los viajes aún no cargaron, queda
   // pendiente y se aplica cuando llegan.
   const viajeNotificadoRef = useRef<string | null>(null);
+  /** Viaje en curso que loadTrips ya dejó abierto (una vez por viaje). */
+  const viajeAbiertoAlCargarRef = useRef<string | null>(null);
   const mostrarViajeNotificado = (tripId: string) => {
     setActiveTab("actividades");
     setSelectedTripId(tripId);
@@ -812,16 +815,17 @@ export default function DriverPortalPage() {
       // viaje viejo ni aparecía para poder cerrarlo: bloqueo sin salida.
       // Mismo criterio de "hoy" que el filtro de la lista, para que un viaje
       // que sí bloquea esté siempre a la vista.
-      const hoy = chileDay();
-      const activeTrip = filteredTrips.find((trip) => {
-        if (trip.status !== "EN_ROUTE" && trip.status !== "PICKED_UP") return false;
-        // Agendado hoy O iniciado hoy: un viaje agendado para mañana que el
-        // conductor ya arrancó sigue siendo un viaje en curso.
-        if (!trip.scheduledAt && !trip.startedAt) return true;
-        return chileDay(trip.scheduledAt) === hoy || chileDay(trip.startedAt) === hoy;
-      });
+      const activeTrip = viajeEnCursoDeHoy(filteredTrips, chileDay(), chileDay);
       if (activeTrip) {
         setTrackingTripId(activeTrip.id);
+        // Y queda abierto, con su siguiente paso a la vista: el botón
+        // "Llegamos al destino" vive dentro de la tarjeta y al volver a la
+        // app la tarjeta aparecía plegada (02-10-2026, Juan Villegas). Una
+        // vez por viaje: si el conductor la pliega, no se le reabre.
+        if (viajeAbiertoAlCargarRef.current !== activeTrip.id) {
+          viajeAbiertoAlCargarRef.current = activeTrip.id;
+          setSelectedTripId((actual) => actual ?? activeTrip.id);
+        }
       }
 
       setEvents(
@@ -870,6 +874,7 @@ export default function DriverPortalPage() {
     } catch (err) {
       dlog(`loadTrips ERR: ${err instanceof Error ? err.message.slice(0, 90) : String(err).slice(0, 90)}`);
       setError(err instanceof Error ? err.message : t("No se pudo cargar"));
+      if (driverProfile && esSesionDesplazada(err)) setSesionDesplazada(true);
     } finally {
       setLoading(false);
       dlog("loadTrips fin");
@@ -877,6 +882,33 @@ export default function DriverPortalPage() {
   };
 
   const [showLocationBlockedModal, setShowLocationBlockedModal] = useState(false);
+  // Otro teléfono entró con el mismo código y esta sesión dejó de valer
+  // (02-10-2026: Juan Villegas, un iPhone en Concón y su Android en
+  // Santiago). Antes los botones fallaban en silencio y el conductor
+  // creía que "no aparecía el último paso". Ahora se avisa y se ofrece
+  // volver a entrar, que recupera la sesión para este teléfono.
+  const [sesionDesplazada, setSesionDesplazada] = useState(false);
+  const [reingresos, setReingresos] = useState(0);
+  const volverAEntrar = async () => {
+    if (!driverProfile?.id) return;
+    const claim = await claimPortalSession("driver", driverProfile.id);
+    if (claim.activeElsewhere) {
+      setError(SESSION_ACTIVE_ELSEWHERE_MSG);
+      return;
+    }
+    setSesionDesplazada(false);
+    setReingresos((n) => n + 1);
+    await loadTrips(driverProfile.id);
+  };
+  const salirPorSesionDesplazada = async () => {
+    try { sessionStorage.removeItem("portal_conductor_id"); } catch {}
+    clearPersistedTabs();
+    setActiveTab("actividades");
+    // La sesión ya es de otro teléfono: el servidor ignora esta liberación y
+    // sólo se limpia la credencial local.
+    if (driverProfile) await releasePortalSession("driver", driverProfile.id);
+    mobileAwareLogout();
+  };
   const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
   const [credentialPdf, setCredentialPdf] = useState<CredentialPdfData | null>(null);
   const [credentialPdfView, setCredentialPdfView] = useState<string | null>(null);
@@ -1127,6 +1159,7 @@ export default function DriverPortalPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo actualizar"));
+      if (esSesionDesplazada(err)) setSesionDesplazada(true);
     } finally {
       setLoading(false);
     }
@@ -1575,6 +1608,8 @@ export default function DriverPortalPage() {
         // — transport.driver_sessions lleva meses vacía y este catch mudo era
         // la razón de que nadie lo notara.
         dlog(`heartbeat falló: ${err instanceof Error ? err.message : String(err)}`);
+        // El latido es la señal más rápida de que otro teléfono tomó la sesión.
+        if (esSesionDesplazada(err)) setSesionDesplazada(true);
       });
     };
 
@@ -1873,17 +1908,16 @@ export default function DriverPortalPage() {
       <PushTokenSync userKind="driver" userId={driverProfile?.id || null} />
       {driverProfile && (
         <PortalSessionGuard
+          // Al volver a entrar se monta de nuevo: el guardián avisa una sola
+          // vez por montaje.
+          key={reingresos}
           kind="driver"
           userId={driverProfile.id}
           onInvalid={() => {
-            dlog("sesión invalidada (otro claim) → logout");
-            clearPortalSession("driver", driverProfile.id);
-            try { sessionStorage.removeItem("portal_conductor_id"); } catch {}
-            clearPersistedTabs();
-            setActiveTab("actividades");
-            setDriverProfile(null);
-            setTrips([]);
-            setIdError("Tu sesión expiró y esta cuenta inició sesión en otro dispositivo.");
+            // Antes expulsaba al login pidiendo el código de nuevo, en medio
+            // del viaje. Ahora se explica qué pasó y se vuelve con un toque.
+            dlog("sesión invalidada (otro claim) → aviso");
+            setSesionDesplazada(true);
           }}
         />
       )}
@@ -2127,8 +2161,12 @@ export default function DriverPortalPage() {
               const enViaje = trips.find((tp) => tp.status === "EN_ROUTE" || tp.status === "PICKED_UP");
               if (!enViaje) return null;
               const enCurso = enViaje.status === "PICKED_UP";
+              const paso = siguientePasoDelViaje(enViaje.status, { disposicion: isDisposicion(enViaje), solicitudPortal: isPortalRequest(enViaje) });
               return (
-                <button type="button" onClick={() => { setSelectedTripId(enViaje.id); markTripSeen(enViaje.id); }}
+                // Lleva hasta la tarjeta del viaje, abierta y con el botón del
+                // siguiente paso: antes sólo la marcaba y, si estaba en otra
+                // pestaña o más abajo, el conductor no veía ningún cambio.
+                <button type="button" onClick={() => { mostrarViajeNotificado(enViaje.id); markTripSeen(enViaje.id); }}
                   style={{ width:"100%",textAlign:"left",display:"flex",alignItems:"center",gap:12,padding:"14px 16px",marginBottom:16,borderRadius:18,border:"1px solid rgba(52,243,198,0.35)",cursor:"pointer",
                     background:`linear-gradient(135deg,${BRAND.navyLight} 0%,#0a3356 55%,${BRAND.navyLight} 100%)`,boxShadow:"0 8px 28px rgba(6,34,64,0.35)",position:"relative",overflow:"hidden" }}>
                   <span style={{ position:"absolute",inset:0,backgroundImage:"linear-gradient(90deg,transparent,rgba(52,243,198,0.10),transparent)",backgroundSize:"200% 100%",animation:"pc-shimmer 2.4s linear infinite",pointerEvents:"none" }} />
@@ -2148,6 +2186,11 @@ export default function DriverPortalPage() {
                     <span style={{ display:"block",fontSize:14,fontWeight:700,color:SURFACE.card,margin:"4px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
                       {isDisposicion(enViaje) ? "Disposición 12h" : `${enViaje.origin?.split(",")[0] || "—"} → ${enViaje.destination?.split(",")[0] || "—"}`}
                     </span>
+                    {paso && (
+                      <span style={{ display:"block",fontSize:11.5,fontWeight:700,color:BRAND.tealLight,margin:"3px 0 0",overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap" }}>
+                        {t("Siguiente paso")}: {t(paso)}
+                      </span>
+                    )}
                   </span>
                   <ChevronRightIcon size={18} color="rgba(255,255,255,0.6)" strokeWidth={2} style={{ position:"relative",flexShrink:0 }} />
                 </button>
@@ -3739,6 +3782,30 @@ export default function DriverPortalPage() {
         );
       })()}
 
+      {sesionDesplazada && driverProfile && (
+        <div style={{ position:"fixed",inset:0,background:"rgba(4,26,46,0.72)",display:"flex",alignItems:"center",justifyContent:"center",padding:20,zIndex:90 }}>
+          <div style={{ background:SURFACE.card,borderRadius:24,width:"100%",maxWidth:380,padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>
+            <div style={{ width:56,height:56,borderRadius:"50%",background:STATE.warningSoft,display:"flex",alignItems:"center",justifyContent:"center",margin:"0 auto 16px" }}>
+              <AlertIcon size={28} color={STATE.warningText} strokeWidth={2} />
+            </div>
+            <h3 style={{ fontSize:18,fontWeight:800,color:SURFACE.text,margin:"0 0 8px" }}>{t("Tu sesión se abrió en otro teléfono")}</h3>
+            <p style={{ fontSize:13,color:SURFACE.textMuted,lineHeight:1.5,margin:"0 0 8px" }}>
+              {t("Alguien entró con tu código de conductor desde otro dispositivo y esta app quedó desconectada: los botones del viaje no van a funcionar hasta que vuelvas a entrar.")}
+            </p>
+            <p style={{ fontSize:12,color:SURFACE.textSecondary,lineHeight:1.5,margin:"0 0 20px" }}>
+              {t("Si no fuiste tú, avisa a coordinación: tu código es personal y nadie más debe usarlo.")}
+            </p>
+            <button type="button" onClick={() => { void volverAEntrar(); }}
+              style={{ width:"100%",padding:14,borderRadius:14,border:"none",background:`linear-gradient(135deg,${BRAND.tealLight},${BRAND.teal})`,color:SURFACE.text,fontSize:14,fontWeight:800,cursor:"pointer" }}>
+              {t("Volver a entrar en este teléfono")}
+            </button>
+            <button type="button" onClick={() => { void salirPorSesionDesplazada(); }}
+              style={{ width:"100%",marginTop:8,padding:10,borderRadius:12,border:`1px solid ${SURFACE.border}`,background:SURFACE.bg,color:SURFACE.textMuted,fontSize:12,fontWeight:600,cursor:"pointer" }}>
+              {t("Salir")}
+            </button>
+          </div>
+        </div>
+      )}
       {showLocationBlockedModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
           <div style={{ background:SURFACE.card,borderRadius:"24px",width:"100%",maxWidth:"380px",padding:"32px 28px",boxShadow:"0 8px 40px rgba(15,23,42,0.2)",textAlign:"center" }}>

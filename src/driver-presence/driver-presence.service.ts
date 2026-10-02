@@ -34,6 +34,8 @@ export interface DriverPresenceRow {
   activeTripId: string | null;
   activeTripStatus: string | null;
   gpsAgeSeconds: number | null;
+  /** Tipos de teléfono con sesión hoy ("iPhone", "Android"): más de uno = código compartido. */
+  dispositivosHoy: string[];
   lat: number | null;
   lng: number | null;
   gpsTimestamp: string | null;
@@ -174,6 +176,7 @@ export class DriverPresenceService {
          g.lng          as gps_lng,
          g.timestamp    as gps_timestamp,
          extract(epoch from (now() - g.timestamp))::int as gps_age,
+         coalesce(disp.dispositivos, '{}'::text[]) as dispositivos_hoy,
          coalesce(disc.disciplines, '{}'::text[]) as disciplines
        -- Drivers live in core.provider_participants flagged isDriver; the legacy
        -- transport.drivers table is essentially empty, so sourcing from it hid
@@ -202,6 +205,18 @@ export class DriverPresenceService {
          order by vp.timestamp desc
          limit 1
        ) g on true
+       left join lateral (
+         -- Teléfonos distintos con sesión hoy (día de Chile): un código en
+         -- dos teléfonos desplaza la sesión del otro y mezcla el GPS
+         -- (02-10-2026, Juan Villegas).
+         select array_agg(distinct case
+                  when ds.user_agent ilike '%iphone%' or ds.user_agent ilike '%ipad%' then 'iPhone'
+                  when ds.user_agent ilike '%android%' then 'Android'
+                  else 'otro' end) as dispositivos
+         from transport.driver_sessions ds
+         where ds.driver_id = d.id
+           and ds.started_at >= (date_trunc('day', now() at time zone 'America/Santiago') at time zone 'America/Santiago')
+       ) disp on true
        left join lateral (
          select count(*)::int as day_trip_count
          from transport.trips tr
@@ -267,6 +282,7 @@ export class DriverPresenceService {
       gpsTimestamp: r.gps_timestamp ?? null,
       allowedClientTypes: Array.isArray(r.allowed_client_types) ? r.allowed_client_types : [],
       disciplines: Array.isArray(r.disciplines) ? r.disciplines : [],
+      dispositivosHoy: Array.isArray(r.dispositivos_hoy) ? r.dispositivos_hoy.filter((x: unknown): x is string => typeof x === 'string') : [],
     }));
   }
 

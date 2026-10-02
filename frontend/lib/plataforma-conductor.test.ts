@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { etiquetaPlataforma, plataformaConductor, sistemaDelTelefono, versionShell } from "./plataforma-conductor";
+import { avisoCodigoCompartido, esSesionDesplazada, etiquetaPlataforma, plataformaConductor, sistemaDelTelefono, versionShell } from "./plataforma-conductor";
 
 const ANDROID_APP = "Mozilla/5.0 (Linux; Android 16; SM-S928B Build/BP4A.251205.006; wv) AppleWebKit/537.36 Chrome/153.0.8010.36 Mobile Safari/537.36";
 const ANDROID_SAMSUNG = "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36";
@@ -45,5 +45,21 @@ describe("plataformaConductor", () => {
     expect(etiquetaPlataforma("web")).toEqual({ texto: "Web", alerta: false });
     expect(etiquetaPlataforma("raro")).toEqual({ texto: "raro", alerta: false });
     expect(etiquetaPlataforma(null)).toBeNull();
+  });
+});
+
+describe("código compartido y sesión desplazada", () => {
+  it("avisa cuando el código tuvo sesión en dos tipos de teléfono el mismo día", () => {
+    // Juan Villegas, 02-10-2026: iPhone en Concón y Android en Santiago.
+    expect(avisoCodigoCompartido(["iPhone", "Android"])).toBe("Código en 2 teléfonos hoy: iPhone y Android");
+    expect(avisoCodigoCompartido(["Android", "Android"])).toBeNull();
+    expect(avisoCodigoCompartido(["Android", "otro"])).toBeNull();
+    expect(avisoCodigoCompartido(null)).toBeNull();
+  });
+
+  it("un 401 de la API es la sesión tomada por otro teléfono", () => {
+    expect(esSesionDesplazada(Object.assign(new Error("Autenticación requerida"), { status: 401 }))).toBe(true);
+    expect(esSesionDesplazada(Object.assign(new Error("Error"), { status: 500 }))).toBe(false);
+    expect(esSesionDesplazada(new Error("red"))).toBe(false);
   });
 });

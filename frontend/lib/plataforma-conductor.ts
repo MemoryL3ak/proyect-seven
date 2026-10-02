@@ -88,3 +88,21 @@ export function etiquetaPlataforma(codigo: string | null | undefined): { texto: 
   if (!e) return { texto: `${nombreMedio} · ${estado}`, alerta: false };
   return { texto: `${nombreMedio} · ${e.texto}`, alerta: e.alerta };
 }
+
+/**
+ * Código de conductor usado en más de un teléfono el mismo día (02-10-2026:
+ * Juan Villegas, un iPhone en Concón y su Android en Santiago; cada login
+ * desplaza la sesión del otro y el GPS se mezcla). `dispositivos` son los
+ * tipos de teléfono con sesión hoy; con uno solo no hay aviso.
+ */
+export function avisoCodigoCompartido(dispositivos: string[] | null | undefined): string | null {
+  const distintos = Array.from(new Set((dispositivos ?? []).filter((d) => d && d !== "otro")));
+  if (distintos.length < 2) return null;
+  return `Código en ${distintos.length} teléfonos hoy: ${distintos.join(" y ")}`;
+}
+
+/** ¿El error de la API dice que esta sesión de portal ya no vale (otro teléfono la tomó)? */
+export function esSesionDesplazada(err: unknown): boolean {
+  const status = (err as { status?: unknown } | null)?.status;
+  return status === 401;
+}

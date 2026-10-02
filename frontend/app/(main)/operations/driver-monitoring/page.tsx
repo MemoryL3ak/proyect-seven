@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { apiFetch } from "@/lib/api";
 import { VENTANA_CONECTADO_MS, useRelojServidor } from "@/lib/presencia";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
-import { etiquetaPlataforma } from "@/lib/plataforma-conductor";
+import { avisoCodigoCompartido, etiquetaPlataforma } from "@/lib/plataforma-conductor";
 import { useI18n } from "@/lib/i18n";
 import { useIsMobile } from "@/lib/useIsMobile";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
@@ -54,6 +54,7 @@ type PresenceDriver = {
   gpsTimestamp: string | null;
   allowedClientTypes: string[];
   disciplines: string[];
+  dispositivosHoy?: string[];
   /** Flota fija por delegación (región). */
   delegationId?: string | null;
   delegationName?: string | null;
@@ -451,6 +452,7 @@ export default function DriverMonitoringPage() {
         inicio_sesion: d.sessionStartedAt ? new Date(d.sessionStartedAt).toLocaleString("es-CL") : "—",
         latidos: d.heartbeats ?? 0,
         plataforma: etiquetaPlataforma(d.platform)?.texto ?? "—",
+        telefonos_hoy: (d.dispositivosHoy || []).join(" | "),
         viajes_activos: d.activeTrips,
         gps: d.gpsAgeSeconds == null ? "sin señal" : `hace ${Math.round(d.gpsAgeSeconds / 60)} min`,
       })),
@@ -762,6 +764,9 @@ export default function DriverMonitoringPage() {
                             <p style={{ fontSize: 11, color: p.alerta ? STATE.warningText : SURFACE.textFaint, fontWeight: p.alerta ? 700 : 400, margin: "2px 0 0" }}>{p.texto}</p>
                           ) : null;
                         })()}
+                        {avisoCodigoCompartido(d.dispositivosHoy) && (
+                          <p style={{ fontSize: 11, color: STATE.dangerText, fontWeight: 700, margin: "2px 0 0" }}>{avisoCodigoCompartido(d.dispositivosHoy)}</p>
+                        )}
                       </div>
                       {pillEstado(d.online)}
                     </div>
@@ -915,6 +920,9 @@ export default function DriverMonitoringPage() {
                                 </p>
                               ) : null;
                             })()}
+                            {avisoCodigoCompartido(d.dispositivosHoy) && (
+                              <p style={{ fontSize: 10.5, color: STATE.dangerText, fontWeight: 700, margin: "2px 0 0" }}>{avisoCodigoCompartido(d.dispositivosHoy)}</p>
+                            )}
                           </div>
                         </div>
                       </td>
