@@ -587,12 +587,40 @@ export default function DriverPortalPage() {
   }, []);
 
   // Deep-link desde notificaciones (URL, pendiente o toque en caliente):
-  // abre Actividades con el viaje notificado. Ver lib/use-deep-link.
-  useDeepLink((d) => {
-    if (!d.tripId) return;
+  // abre Actividades con el viaje notificado A LA VISTA. Ver lib/use-deep-link.
+  // 02-10-2026: antes sólo lo seleccionaba y la pestaña seguía en "Hoy": un
+  // viaje de mañana quedaba bajo "Programados" y el conductor veía "No hay
+  // viajes asignados aún". Ahora cambia a la pestaña que lo contiene, abre su
+  // día y hace scroll hasta la tarjeta. Si los viajes aún no cargaron, queda
+  // pendiente y se aplica cuando llegan.
+  const viajeNotificadoRef = useRef<string | null>(null);
+  const mostrarViajeNotificado = (tripId: string) => {
     setActiveTab("actividades");
-    setSelectedTripId(d.tripId);
+    setSelectedTripId(tripId);
+    const viaje = trips.find((t) => t.id === tripId);
+    if (!viaje) {
+      viajeNotificadoRef.current = tripId;
+      return;
+    }
+    viajeNotificadoRef.current = null;
+    const status = viaje.status || "SCHEDULED";
+    const enCurso = status === "EN_ROUTE" || status === "PICKED_UP";
+    const dia = chileDay(viaje.scheduledAt || viaje.startedAt) || "sin-fecha";
+    const esHoy = dia === chileDay();
+    setStatusFilter(enCurso ? "en_curso" : esHoy ? "hoy" : "todos");
+    if (!enCurso && !esHoy) setDiasAlternados((prev) => ({ ...prev, [dia]: true }));
+    window.setTimeout(() => {
+      document.getElementById(`viaje-${tripId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 450);
+  };
+  useDeepLink((d) => {
+    if (d.tripId) mostrarViajeNotificado(d.tripId);
   }, !!driverProfile);
+  useEffect(() => {
+    const pendiente = viajeNotificadoRef.current;
+    if (pendiente && trips.some((t) => t.id === pendiente)) mostrarViajeNotificado(pendiente);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trips]);
 
   // Al abrir "Cuenta" se refresca el perfil desde el backend: si operaciones
   // modificó los accesos o reemitió la credencial mientras la sesión estaba
@@ -2373,7 +2401,7 @@ export default function DriverPortalPage() {
                         );
                       })()}
                       {abierta && (
-                      <div style={{
+                      <div id={`viaje-${trip.id}`} style={{
                         borderRadius:14,
                         border: isSelected ? "1px solid rgba(33,208,179,0.4)" : isNew ? "1px solid rgba(59,130,246,0.3)" : `1px solid ${SURFACE.borderMuted}`,
                         background: isNew ? "rgba(59,130,246,0.03)" : SURFACE.card,
