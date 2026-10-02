@@ -1113,8 +1113,15 @@ export default function DriverPortalPage() {
   const performUpdateTrip = async (tripId: string, status: string) => {
     // Request GPS permission before any trip action that requires location
     if (["EN_ROUTE", "PICKED_UP", "DROPPED_OFF", "COMPLETED"].includes(status)) {
+      // El botón queda en espera mientras se consulta la ubicación: sin GPS
+      // la respuesta tarda hasta 35 s y antes no se veía ningún cambio, como
+      // si el toque no hubiera entrado.
+      setLoading(true);
       const hasLocation = await requestLocationPermission();
-      if (!hasLocation) return;
+      if (!hasLocation) {
+        setLoading(false);
+        return;
+      }
     }
 
     setLoading(true);
