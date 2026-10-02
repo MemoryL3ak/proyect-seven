@@ -6,6 +6,7 @@ import { ThemeProvider } from "@/lib/theme";
 // Side-effect import: registers window.__sevenNativeReceive so the native
 // shell can push messages into the WebView from anywhere in the SPA.
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
+import DeepLinkDesdePush from "@/components/DeepLinkDesdePush";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -20,7 +21,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <ThemeProvider>
-      <LanguageProvider>{children}</LanguageProvider>
+      <LanguageProvider>
+        <DeepLinkDesdePush />
+        {children}
+      </LanguageProvider>
     </ThemeProvider>
   );
 }

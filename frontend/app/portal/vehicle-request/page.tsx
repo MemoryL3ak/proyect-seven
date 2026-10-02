@@ -55,6 +55,7 @@ import { deletePortalAccount } from "@/lib/account-deletion";
 import CuadernoCargoSection from "@/components/CuadernoCargoSection";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
+import { useDeepLink } from "@/lib/use-deep-link";
 import VipLocationReporter from "@/components/VipLocationReporter";
 import VenueMap from "@/components/VenueMap";
 import CredentialQrCard from "@/components/CredentialQrCard";
@@ -1241,47 +1242,28 @@ export default function VehicleRequestPortalPage() {
     return () => window.clearInterval(timer);
   }, [athlete?.id]);
 
-  // Deep-link desde notificaciones: ?tripId= abre el detalle de ese viaje.
-  // Si el viaje notificado ya no está en la lista (completado/filtrado), igual
-  // se abre Actividades y se limpia la URL — antes el efecto reintentaba para
-  // siempre y el usuario quedaba mirando una pantalla que "no hacía nada".
-  useEffect(() => {
-    if (deepLinkHandled.current || trips.length === 0) return;
-    const params = new URLSearchParams(window.location.search);
-    const tripId = params.get("tripId");
-    if (!tripId) { deepLinkHandled.current = true; return; }
+  // Deep-link desde notificaciones (URL, pendiente o toque en caliente):
+  // abre Actividades y el detalle del viaje notificado si está en la lista.
+  // Ver lib/use-deep-link. Se atiende con los viajes ya cargados.
+  useDeepLink((d) => {
+    if (!d.tripId) return;
     deepLinkHandled.current = true;
     setActiveTab("actividades");
-    const target = trips.find((t) => t.id === tripId);
+    const target = trips.find((t) => t.id === d.tripId);
     if (target) setTripModal(target);
-    // Limpiar el parámetro de la URL: si queda, un refresh posterior vuelve a
-    // abrir el detalle de la notificación en vez de mantener el tab actual.
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("tripId");
-      window.history.replaceState(window.history.state, "", url.toString());
-    } catch {}
-  }, [trips]);
+  }, trips.length > 0);
 
   // Deep-link desde notificaciones de premiación: ?premiacionId= abre el tab
   // y destaca la premiación específica (vista lista + scroll + resaltado).
-  useEffect(() => {
-    if (!athlete) return;
-    const params = new URLSearchParams(window.location.search);
-    const premId = params.get("premiacionId");
-    if (!premId) return;
+  useDeepLink((d) => {
+    if (!d.premiacionId) return;
     setActiveTab("premiaciones");
     setPremView("list");
-    setPremFocusId(premId);
+    setPremFocusId(d.premiacionId);
     // La premiación notificada debe ser visible: abre ambas secciones.
     setPremPendingOpen(true);
     setPremDoneOpen(true);
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("premiacionId");
-      window.history.replaceState(window.history.state, "", url.toString());
-    } catch {}
-  }, [athlete]);
+  }, !!athlete);
 
   // Con los datos ya cargados, hace scroll hasta la premiación notificada y
   // la deja resaltada unos segundos.

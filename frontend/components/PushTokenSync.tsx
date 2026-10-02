@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { isAvailable, on } from "@/lib/native-bridge";
+import { isAvailable } from "@/lib/native-bridge";
 import {
   fetchNativePushToken,
   registerDeviceToken,
@@ -24,7 +23,6 @@ type Props = {
  * Renders nothing. No-op outside of the WebView.
  */
 export default function PushTokenSync({ userKind, userId }: Props) {
-  const router = useRouter();
 
   useEffect(() => {
     if (!isAvailable() || !userId) return;
@@ -45,28 +43,7 @@ export default function PushTokenSync({ userKind, userId }: Props) {
     };
   }, [userKind, userId]);
 
-  useEffect(() => {
-    if (!isAvailable()) return;
-    const unsub = on("push.tap", (payload) => {
-      const data = (payload as { url?: unknown; tripId?: unknown; premiacionId?: unknown } | undefined) ?? {};
-      const url = typeof data.url === "string" ? data.url : null;
-      if (!url) return;
-      // Internal app routes only — never navigate to external URLs from a tap.
-      if (url.startsWith("/")) {
-        // Adjunta el contexto (viaje / premiación) igual que la campanita, para
-        // que el portal abra el detalle o el tab correspondiente.
-        let href = url;
-        if (typeof data.tripId === "string" && data.tripId) {
-          href += (href.includes("?") ? "&" : "?") + `tripId=${encodeURIComponent(data.tripId)}`;
-        }
-        if (typeof data.premiacionId === "string" && data.premiacionId) {
-          href += (href.includes("?") ? "&" : "?") + `premiacionId=${encodeURIComponent(data.premiacionId)}`;
-        }
-        router.push(href);
-      }
-    });
-    return unsub;
-  }, [router]);
-
+  // El toque de la push lo atiende DeepLinkDesdePush (Providers): desde
+  // 02-10-2026 llega aunque la app esté cerrada y el portal todavía no cargue.
   return null;
 }

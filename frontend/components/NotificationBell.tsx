@@ -3,6 +3,8 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { apiFetch } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { abrirDeepLink, destinoDeNotificacion, type DestinoNotificacion } from "@/lib/deep-link";
 import {
   FileTextIcon,
   XIcon,
@@ -31,6 +33,8 @@ export type AppNotification = {
   read: boolean;
   /** Destino al pinchar la notificación (módulo/contexto relacionado). */
   href?: string;
+  /** A dónde lleva (viaje, premiación): lo atiende la página sin recargar. */
+  destino?: DestinoNotificacion;
 };
 
 type ServerNotificationRow = {
@@ -86,6 +90,7 @@ function rowToNotification(row: ServerNotificationRow): AppNotification {
     timestamp: new Date(row.created_at).getTime(),
     read: row.read_at !== null,
     href: hrefFromData(row.data),
+    destino: destinoDeNotificacion(row.data),
   };
 }
 
@@ -250,17 +255,23 @@ export default function NotificationBell({
     return () => document.removeEventListener("mousedown", handler);
   }, [open]);
 
+  const router = useRouter();
   const toggle = () => {
     if (!open && unreadCount > 0) onMarkAllRead();
     setOpen((v) => !v);
   };
 
+  // 02-10-2026: antes recargaba la página entera con window.location y, si
+  // ya se estaba en ella, el viaje no se abría. Ahora el destino se emite y
+  // la página lo atiende (use-deep-link.ts); a otra página se navega con el
+  // destino pendiente.
   const handleNotifClick = (n: AppNotification) => {
-    if (!n.href) return;
+    if (!n.href && !n.destino) return;
     setOpen(false);
-    if (typeof window !== "undefined") {
-      window.location.href = n.href;
-    }
+    if (typeof window === "undefined") return;
+    const destino = n.destino ?? destinoDeNotificacion({ url: n.href });
+    const resultado = abrirDeepLink(destino, (url) => router.push(url), window.location.pathname);
+    if (resultado === "nada" && n.href) window.location.href = n.href;
   };
 
   const formatTime = (ts: number) => {

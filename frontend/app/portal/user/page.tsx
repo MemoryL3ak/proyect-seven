@@ -84,6 +84,7 @@ import TarjetaLugar from "@/components/portal/TarjetaLugar";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import EmergencyNumbersSection from "@/components/EmergencyNumbersSection";
 import PushTokenSync from "@/components/PushTokenSync";
+import { useDeepLink } from "@/lib/use-deep-link";
 import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { isAvailable as isNativeShell } from "@/lib/native-bridge";
@@ -584,26 +585,29 @@ export default function UserPortalPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [athlete?.id]);
 
-  // Deep-link desde notificaciones de premiación: ?premiacionId= abre el tab
-  // y destaca la premiación específica (vista lista + scroll + resaltado).
-  useEffect(() => {
-    if (!athlete) return;
-    const params = new URLSearchParams(window.location.search);
-    const premId = params.get("premiacionId");
-    if (!premId) return;
-    setActiveTab("premiaciones");
-    setPremView("list");
-    setPremFocusId(premId);
-    // La premiación notificada debe ser visible: abre ambas secciones.
-    setPremPendingOpen(true);
-    setPremDoneOpen(true);
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("premiacionId");
-      window.history.replaceState(window.history.state, "", url.toString());
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [athlete?.id]);
+  // Deep-link desde notificaciones (URL, pendiente o toque en caliente):
+  // premiación → tab Premiaciones con la premiación destacada; viaje → tab
+  // Actividades con el detalle. Ver lib/use-deep-link.
+  const tripDeepLinkId = useRef<string | null>(null);
+  useDeepLink((d) => {
+    if (d.premiacionId) {
+      setActiveTab("premiaciones");
+      setPremView("list");
+      setPremFocusId(d.premiacionId);
+      // La premiación notificada debe ser visible: abre ambas secciones.
+      setPremPendingOpen(true);
+      setPremDoneOpen(true);
+      return;
+    }
+    if (d.tripId) {
+      tripDeepLinkId.current = d.tripId;
+      setActiveTab("actividades");
+      if (trip?.id === d.tripId) {
+        setShowTripModal(true);
+        tripDeepLinkId.current = null;
+      }
+    }
+  }, !!athlete);
 
   // Con los datos ya cargados, hace scroll hasta la premiación notificada y
   // la deja resaltada unos segundos.
@@ -616,24 +620,7 @@ export default function UserPortalPage() {
     return () => { window.clearTimeout(scrollTimer); window.clearTimeout(clearTimer); };
   }, [premFocusId, activeTab, premiaciones.length]);
 
-  // Deep-link desde notificaciones de viaje: ?tripId= abre Actividades (y el
-  // detalle si es el viaje propio). Antes el parámetro se ignoraba y el
-  // usuario aterrizaba en el home sin ver nada.
-  const tripDeepLinkId = useRef<string | null>(null);
-  useEffect(() => {
-    if (!athlete) return;
-    const params = new URLSearchParams(window.location.search);
-    const tripId = params.get("tripId");
-    if (!tripId) return;
-    tripDeepLinkId.current = tripId;
-    setActiveTab("actividades");
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("tripId");
-      window.history.replaceState(window.history.state, "", url.toString());
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [athlete?.id]);
+  // Con el viaje ya cargado, abre el detalle del viaje notificado.
   useEffect(() => {
     if (!tripDeepLinkId.current || !trip) return;
     if (trip.id === tripDeepLinkId.current) setShowTripModal(true);

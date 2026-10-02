@@ -57,6 +57,7 @@ import {
   send as nativeSend,
 } from "@/lib/native-bridge";
 import PushTokenSync from "@/components/PushTokenSync";
+import { useDeepLink } from "@/lib/use-deep-link";
 import {
   enEventoElegido,
   eventosDelConductor,
@@ -585,23 +586,13 @@ export default function DriverPortalPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Deep-link desde notificaciones: ?tripId= abre Actividades y deja limpia
-  // la URL. Antes el parámetro se ignoraba y el conductor aterrizaba en el
-  // portal sin ver el viaje notificado.
-  useEffect(() => {
-    if (!driverProfile) return;
-    const params = new URLSearchParams(window.location.search);
-    const tripId = params.get("tripId");
-    if (!tripId) return;
+  // Deep-link desde notificaciones (URL, pendiente o toque en caliente):
+  // abre Actividades con el viaje notificado. Ver lib/use-deep-link.
+  useDeepLink((d) => {
+    if (!d.tripId) return;
     setActiveTab("actividades");
-    setSelectedTripId(tripId);
-    try {
-      const url = new URL(window.location.href);
-      url.searchParams.delete("tripId");
-      window.history.replaceState(window.history.state, "", url.toString());
-    } catch {}
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [driverProfile?.id]);
+    setSelectedTripId(d.tripId);
+  }, !!driverProfile);
 
   // Al abrir "Cuenta" se refresca el perfil desde el backend: si operaciones
   // modificó los accesos o reemitió la credencial mientras la sesión estaba
