@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { isAvailable, on, request } from "@/lib/native-bridge";
+import { getStoredPortalSessionId } from "@/lib/portal-session";
+import { cargaDeRastreo } from "@/lib/sesion-shell";
 import { SatelliteIcon } from "@/components/ui/Icons";
 import { BRAND, SURFACE, STATE } from "@/lib/design";
 
@@ -85,7 +87,7 @@ export default function TrackingToggle({ driverId }: Props) {
     try {
       const res = await request<StartResult>(
         "tracking.start",
-        { driverId },
+        cargaDeRastreo(driverId, getStoredPortalSessionId("driver", driverId)),
         { timeoutMs: 30_000 },
       );
       setGpsServices(res.gpsServices);

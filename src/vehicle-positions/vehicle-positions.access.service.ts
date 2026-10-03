@@ -64,6 +64,18 @@ export class VehiclePositionsAccessService {
     );
   }
 
+  /**
+   * ¿La petición trae credenciales de portal? Se mira aparte de `identify`
+   * porque en el modo transicional de la ingesta un POST SIN credenciales se
+   * acepta (shell antiguo), pero uno CON credenciales que no valen se
+   * rechaza: es un teléfono cuya sesión ya tomó otro con el mismo código
+   * (02-10-2026, un iPhone en Concón mandaba "el bus" de Juan Villegas, que
+   * iba por Santiago). Aceptarlo mezclaba los dos GPS en el mapa.
+   */
+  hasPortalCredentials(req: VpRequest): boolean {
+    return Boolean(headerValue(req.headers, 'x-portal-session'));
+  }
+
   async identify(req: VpRequest): Promise<VpCaller | null> {
     // 1. JWT de Supabase emitido por /auth/login. OJO: no todo usuario de
     //    Supabase Auth es staff — a los conductores con email se les crea una

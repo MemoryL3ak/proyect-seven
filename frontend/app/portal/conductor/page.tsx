@@ -80,6 +80,7 @@ import { debeRearmarRastreo, ESPERAS_ESTADO_SHELL_MS, gpsWebNecesario, mismoEsta
 import { esSesionDesplazada, plataformaConductor, versionShell } from "@/lib/plataforma-conductor";
 import { conductorPorCodigo } from "@/lib/conductor-por-codigo";
 import { siguientePasoDelViaje, viajeEnCursoDeHoy } from "@/lib/viaje-en-curso";
+import { cargaDeRastreo, informarSesionAlShell } from "@/lib/sesion-shell";
 import { destinoDeNavegacion, enlacesDeNavegacion, esLugarPorConfirmar, type LugarConDireccion } from "@/lib/navegacion";
 import PortalSessionGuard from "@/components/PortalSessionGuard";
 import PdfViewerOverlay from "@/components/PdfViewerOverlay";
@@ -224,6 +225,8 @@ type ShellTrackingState = {
   gpsServices?: boolean;
   background?: "granted" | "denied" | "undetermined" | "blocked";
   backgroundOk?: boolean;
+  /** Shell 1.0.3+ (Android): true si el ahorro de batería sigue activo. */
+  batteryOptimized?: boolean | null;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -898,6 +901,7 @@ export default function DriverPortalPage() {
     }
     setSesionDesplazada(false);
     setReingresos((n) => n + 1);
+    if (isNativeAvailable()) informarSesionAlShell(driverProfile.id);
     await loadTrips(driverProfile.id);
   };
   const salirPorSesionDesplazada = async () => {
@@ -1297,7 +1301,7 @@ export default function DriverPortalPage() {
           }
           dlog("→ shell tracking.start");
           ultimoRearmeRef.current = Date.now();
-          return nativeRequest<ShellTrackingState>("tracking.start", { driverId }, { timeoutMs: 30_000 })
+          return nativeRequest<ShellTrackingState>("tracking.start", cargaDeRastreo(driverId, getStoredPortalSessionId("driver", driverId)), { timeoutMs: 30_000 })
             .then((res) => {
               dlog(`shell tracking ${res?.running ? "OK" : "no arrancó"}`);
               if (vivo) setShellTracking(res ?? null);
@@ -1346,7 +1350,7 @@ export default function DriverPortalPage() {
       if (!driverId || !debeRearmarRastreo(estado, Date.now(), ultimoRearmeRef.current)) return;
       ultimoRearmeRef.current = Date.now();
       dlog("shell: rastreo detenido con permiso de fondo; → tracking.start");
-      nativeRequest<ShellTrackingState>("tracking.start", { driverId }, { timeoutMs: 30_000 })
+      nativeRequest<ShellTrackingState>("tracking.start", cargaDeRastreo(driverId, getStoredPortalSessionId("driver", driverId)), { timeoutMs: 30_000 })
         .then((res) => setShellTracking(res ?? null))
         .catch((err) => dlog(`rearme sin respuesta (${err?.message ?? err})`));
     });
@@ -1818,6 +1822,37 @@ export default function DriverPortalPage() {
             style={{ marginTop:8,padding:"6px 12px",borderRadius:8,border:`1px solid ${STATE.warning}`,background:SURFACE.card,color:STATE.warningText,fontSize:11,fontWeight:800,cursor:"pointer" }}
           >
             {t("Abrir Ajustes")}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
+  /**
+   * Ahorro de batería activo (shell 1.0.3+, Android): el sistema corta el
+   * servicio de ubicación a los minutos de minimizar, aunque el permiso sea
+   * "Permitir todo el tiempo". El botón abre el diálogo del sistema que lo
+   * desactiva para esta app.
+   */
+  const renderBatteryNotice = () => {
+    if (!isNativeAvailable()) return null;
+    if (!shellTracking || shellTracking.batteryOptimized !== true) return null;
+    return (
+      <div style={{ display:"flex",gap:10,alignItems:"flex-start",padding:"10px 12px",borderRadius:12,background:STATE.warningSoft,border:`1px solid ${STATE.warningBorder}`,marginBottom:12 }}>
+        <span style={{ display:"inline-flex" }}><AlertIcon size={16} /></span>
+        <div style={{ flex:1,minWidth:0 }}>
+          <p style={{ fontSize:12,fontWeight:800,color:STATE.warningText,margin:0 }}>
+            {t("El ahorro de batería puede cortar tu ubicación")}
+          </p>
+          <p style={{ fontSize:11,color:STATE.warningText,margin:"3px 0 0",lineHeight:1.45 }}>
+            {t("Android detiene el rastreo a los minutos de minimizar la app. Tocá el botón y elegí \"Permitir\" para que Seven Arena quede sin restricciones.")}
+          </p>
+          <button
+            type="button"
+            onClick={() => nativeSend("device.battery-optimization")}
+            style={{ marginTop:8,padding:"6px 12px",borderRadius:8,border:`1px solid ${STATE.warning}`,background:SURFACE.card,color:STATE.warningText,fontSize:11,fontWeight:800,cursor:"pointer" }}
+          >
+            {t("Desactivar ahorro de batería")}
           </button>
         </div>
       </div>
@@ -2368,6 +2403,7 @@ export default function DriverPortalPage() {
               </div>
 
               {renderBackgroundLocationNotice()}
+              {renderBatteryNotice()}
 
               {/* Status filter tabs */}
               <div style={{ display:"flex",gap:4,marginBottom:12,background:SURFACE.borderMuted,borderRadius:10,padding:3 }}>

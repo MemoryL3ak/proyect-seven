@@ -44,7 +44,7 @@ export function viajesPorCalificar(
 }
 
 export type EstadoRastreoShell =
-  | { running?: boolean; backgroundOk?: boolean; gpsServices?: boolean; background?: string }
+  | { running?: boolean; backgroundOk?: boolean; gpsServices?: boolean; background?: string; batteryOptimized?: boolean | null }
   | null
   | undefined;
 
@@ -88,7 +88,8 @@ export function mismoEstadoShell(a: EstadoRastreoShell, b: EstadoRastreoShell): 
     a.running === b.running &&
     a.backgroundOk === b.backgroundOk &&
     a.gpsServices === b.gpsServices &&
-    a.background === b.background
+    a.background === b.background &&
+    (a.batteryOptimized ?? null) === (b.batteryOptimized ?? null)
   );
 }
 

@@ -11,7 +11,7 @@
  */
 
 export type EstadoShell =
-  | { running?: boolean; backgroundOk?: boolean; gpsServices?: boolean; background?: string }
+  | { running?: boolean; backgroundOk?: boolean; gpsServices?: boolean; background?: string; batteryOptimized?: boolean | null }
   | null
   | undefined;
 
@@ -47,6 +47,9 @@ export function plataformaConductor(args: {
   if (s.gpsServices === false) return `${base}:gps-apagado`;
   if (s.backgroundOk === false) return `${base}:sin-fondo`;
   if (s.running === false) return `${base}:detenido`;
+  // Shell 1.0.3+: con el ahorro de batería activo Android corta el servicio a
+  // los minutos de minimizar aunque tenga "Permitir todo el tiempo".
+  if (s.batteryOptimized === true) return `${base}:ahorro-bateria`;
   return `${base}:fondo-ok`;
 }
 
@@ -65,6 +68,7 @@ const ESTADO: Record<string, { texto: string; alerta: boolean }> = {
   "sin-fondo": { texto: "sin permiso \"todo el tiempo\": se corta al minimizar", alerta: true },
   "gps-apagado": { texto: "GPS apagado", alerta: true },
   detenido: { texto: "rastreo detenido", alerta: true },
+  "ahorro-bateria": { texto: "ahorro de batería activo: Android corta el rastreo al minimizar", alerta: true },
   antigua: { texto: "versión antigua, sin rastreo de fondo: actualizar", alerta: true },
   "sin-respuesta": { texto: "estado del rastreo desconocido", alerta: false },
 };

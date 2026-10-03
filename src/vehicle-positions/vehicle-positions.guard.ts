@@ -32,7 +32,10 @@ export class VehiclePositionsGuard implements CanActivate {
     if (
       req.method === 'POST' &&
       context.getHandler().name === 'create' &&
-      !this.access.ingestEnforced()
+      !this.access.ingestEnforced() &&
+      // Con credenciales que no valen no hay transición que valga: la
+      // sesión de ese teléfono la tomó otro (ver hasPortalCredentials).
+      !this.access.hasPortalCredentials(req)
     ) {
       req.vpCaller = null;
       return true;
