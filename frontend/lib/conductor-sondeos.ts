@@ -44,9 +44,46 @@ export function viajesPorCalificar(
 }
 
 export type EstadoRastreoShell =
-  | { running?: boolean; backgroundOk?: boolean; gpsServices?: boolean; background?: string; batteryOptimized?: boolean | null }
+  | {
+      running?: boolean;
+      backgroundOk?: boolean;
+      gpsServices?: boolean;
+      background?: string;
+      batteryOptimized?: boolean | null;
+      /** Último intento de envío de un fijo por el shell (reloj del teléfono). */
+      lastPush?: { lastAttemptAt?: number | null } | null;
+      /** Calculado por el portal con shellSinFijos: "dice que rastrea, no entrega". */
+      sinFijos?: boolean;
+    }
   | null
   | undefined;
+
+/**
+ * Cuánto puede pasar sin que el shell intente mandar un fijo antes de darlo
+ * por mudo. Rastreando manda uno cada 3 s (con red o sin ella: el intento
+ * fallido también cuenta), así que 45 s es quince veces la cadencia.
+ */
+export const UMBRAL_SIN_FIJOS_MS = 45_000;
+
+/**
+ * El shell dice que rastrea (`running: true`) pero no entrega posiciones.
+ * 07-10-2026, Armando Soza (Galaxy S25, app abierta, "rastreo en segundo
+ * plano"): dos fijos al abrir y nada más, y como el portal confiaba en
+ * `running` apagaba su propio GPS. En seis días pasó en 91 de 293 sesiones
+ * Android (iPhone: 5 de 382). La tarea queda registrada en Android pero el
+ * servicio en primer plano no vuelve a arrancar, y el sistema entrega un
+ * puñado de posiciones por hora.
+ *
+ * `sinIntentosDesde`: cuándo se vio por primera vez `running` sin ningún
+ * intento registrado (tras reiniciar la app el contador parte vacío).
+ */
+export function shellSinFijos(estado: EstadoRastreoShell, ahora: number, sinIntentosDesde: number | null): boolean {
+  if (!estado || estado.running !== true) return false;
+  const intento = estado.lastPush?.lastAttemptAt ?? null;
+  const referencia = intento ?? sinIntentosDesde;
+  if (referencia == null) return false;
+  return ahora - referencia > UMBRAL_SIN_FIJOS_MS;
+}
 
 /**
  * Esperas entre reintentos de tracking.status cuando el shell no responde a
@@ -72,7 +109,12 @@ export function debeRearmarRastreo(
   ultimoRearme: number,
   espera = ESPERA_REARME_MS,
 ): boolean {
-  if (!estado || estado.running !== false) return false;
+  if (!estado) return false;
+  // Detenido, o "andando" sin entregar nada (shellSinFijos): en ambos casos
+  // hay que volver a armar. El segundo se rearma con tracking.stop +
+  // tracking.start, porque el shell responde "ya está corriendo" a un start
+  // solo.
+  if (estado.running !== false && estado.sinFijos !== true) return false;
   if (estado.backgroundOk !== true || estado.gpsServices === false) return false;
   return ahora - ultimoRearme >= espera;
 }
@@ -89,7 +131,8 @@ export function mismoEstadoShell(a: EstadoRastreoShell, b: EstadoRastreoShell): 
     a.backgroundOk === b.backgroundOk &&
     a.gpsServices === b.gpsServices &&
     a.background === b.background &&
-    (a.batteryOptimized ?? null) === (b.batteryOptimized ?? null)
+    (a.batteryOptimized ?? null) === (b.batteryOptimized ?? null) &&
+    (a.sinFijos ?? false) === (b.sinFijos ?? false)
   );
 }
 
@@ -101,7 +144,9 @@ export function mismoEstadoShell(a: EstadoRastreoShell, b: EstadoRastreoShell): 
  */
 export function gpsWebNecesario(shell: EstadoRastreoShell, dentroDeLaApp: boolean): boolean {
   if (!dentroDeLaApp) return true;
-  return !(shell?.running === true && shell.backgroundOk === true);
+  // Un shell que dice rastrear pero no entrega (sinFijos) no cuenta como
+  // cobertura: la web vuelve a mandar mientras la app esté a la vista.
+  return !(shell?.running === true && shell.backgroundOk === true && shell.sinFijos !== true);
 }
 
 /** Señal de corte para una petición periódica; sin soporte del navegador, ninguna. */

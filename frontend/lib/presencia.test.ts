@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { VENTANA_CONECTADO_MS, desfaseReloj, estadoConexion } from "./presencia";
+import { VENTANA_CONECTADO_MS, desfaseReloj, estadoConexion, rotuloMarcador } from "./presencia";
 
 /**
  * El estado conectado/sin conexión parpadeaba porque la ventana (15 s) era
@@ -41,5 +41,14 @@ describe("desfaseReloj", () => {
 
   it("con una hora inválida no corrige nada", () => {
     expect(desfaseReloj("", 1, 2)).toBe(0);
+  });
+});
+
+describe("rotuloMarcador", () => {
+  it("app abierta sin GPS se dice así, no 'Desconectado' (Armando Soza, 07-10-2026)", () => {
+    expect(rotuloMarcador({ onTrip: false, gpsVivo: false, conectado: true })).toBe("Conectado · sin GPS");
+    expect(rotuloMarcador({ onTrip: false, gpsVivo: false, conectado: false })).toBe("Desconectado");
+    expect(rotuloMarcador({ onTrip: false, gpsVivo: true, conectado: true })).toBe("En línea");
+    expect(rotuloMarcador({ onTrip: true, gpsVivo: true, conectado: true, tripLabel: "Pasajero a bordo" })).toBe("Pasajero a bordo");
   });
 });

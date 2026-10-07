@@ -3,13 +3,17 @@
 import { useEffect, useRef, useState } from "react";
 import { STATE, SURFACE, ACCENT } from "@/lib/design";
 import { etiquetaPlataforma } from "@/lib/plataforma-conductor";
+import { rotuloMarcador } from "@/lib/presencia";
 
 export type PresenceMarker = {
   id: string;
   lat: number;
   lng: number;
   name: string;
+  /** Posición reciente (menos de un minuto). */
   online: boolean;
+  /** App abierta y latiendo, tenga o no GPS. */
+  conectado?: boolean;
   // True when the driver is currently on an active trip (heading to pickup or
   // with the passenger aboard). Drives the "En viaje" green highlight.
   onTrip: boolean;
@@ -66,9 +70,7 @@ function markerAccent(m: PresenceMarker): string {
 }
 
 function markerStatusLabel(m: PresenceMarker): string {
-  if (m.onTrip) return m.tripLabel || "En viaje";
-  if (m.online) return "En línea";
-  return "Desconectado";
+  return rotuloMarcador({ onTrip: m.onTrip, gpsVivo: m.online, conectado: m.conectado, tripLabel: m.tripLabel });
 }
 
 type Props = {

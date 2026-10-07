@@ -399,6 +399,7 @@ export default function DriverMonitoringPage() {
             lng,
             name: d.fullName,
             online: reporting,
+            conectado: d.online,
             onTrip,
             tripLabel: rawTripLabel ? t(rawTripLabel) : rawTripLabel,
             lastSeen: ago(d.secondsSinceSeen),

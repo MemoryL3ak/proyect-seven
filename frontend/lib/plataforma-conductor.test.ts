@@ -24,6 +24,8 @@ describe("plataformaConductor", () => {
     expect(app({ running: true, backgroundOk: false, gpsServices: true })).toBe("app-android:sin-fondo");
     expect(app({ running: false, backgroundOk: true, gpsServices: false })).toBe("app-android:gps-apagado");
     expect(app({ running: false, backgroundOk: true, gpsServices: true })).toBe("app-android:detenido");
+    // Armando Soza (07-10-2026): el shell decía rastrear y no entregaba nada.
+    expect(app({ running: true, backgroundOk: true, gpsServices: true, sinFijos: true })).toBe("app-android:sin-fijos");
     // Shell 1.0.3: informa si el ahorro de batería sigue activo.
     expect(app({ running: true, backgroundOk: true, gpsServices: true, batteryOptimized: true })).toBe("app-android:ahorro-bateria");
     expect(app({ running: true, backgroundOk: true, gpsServices: true, batteryOptimized: false })).toBe("app-android:fondo-ok");
@@ -46,6 +48,7 @@ describe("plataformaConductor", () => {
     expect(etiquetaPlataforma("app-android:antigua")?.texto).toContain("actualizar");
     expect(etiquetaPlataforma("app-iphone:gps-apagado")).toEqual({ texto: "App iPhone · GPS apagado", alerta: true });
     expect(etiquetaPlataforma("app-android:ahorro-bateria")?.alerta).toBe(true);
+    expect(etiquetaPlataforma("app-android:sin-fijos")).toEqual({ texto: "App Android · la app dice que rastrea pero no entrega posiciones", alerta: true });
     // Latidos anteriores al 30-09-2026 y códigos desconocidos se muestran tal cual.
     expect(etiquetaPlataforma("web")).toEqual({ texto: "Web", alerta: false });
     expect(etiquetaPlataforma("raro")).toEqual({ texto: "raro", alerta: false });

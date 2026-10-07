@@ -76,7 +76,7 @@ import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { dlog } from "@/lib/native-debug";
-import { debeRearmarRastreo, ESPERAS_ESTADO_SHELL_MS, gpsWebNecesario, mismoEstadoShell, senalDeCorte, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
+import { debeRearmarRastreo, ESPERAS_ESTADO_SHELL_MS, gpsWebNecesario, mismoEstadoShell, senalDeCorte, shellSinFijos, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
 import { esSesionDesplazada, plataformaConductor, versionShell } from "@/lib/plataforma-conductor";
 import { conductorPorCodigo } from "@/lib/conductor-por-codigo";
 import { siguientePasoDelViaje, viajeEnCursoDeHoy } from "@/lib/viaje-en-curso";
@@ -227,6 +227,10 @@ type ShellTrackingState = {
   backgroundOk?: boolean;
   /** Shell 1.0.3+ (Android): true si el ahorro de batería sigue activo. */
   batteryOptimized?: boolean | null;
+  /** Último intento de envío del shell (reloj del teléfono). */
+  lastPush?: { lastAttemptAt?: number | null } | null;
+  /** Lo calcula el portal: dice que rastrea pero no entrega (shellSinFijos). */
+  sinFijos?: boolean;
 };
 
 type EventItem = { id: string; name?: string | null };
@@ -473,6 +477,9 @@ export default function DriverPortalPage() {
   }, [shellTracking]);
   // Último tracking.start pedido al shell (ver debeRearmarRastreo).
   const ultimoRearmeRef = useRef(0);
+  // Desde cuándo el shell dice `running` sin ningún intento de envío
+  // registrado (ver shellSinFijos).
+  const sinIntentosDesdeRef = useRef<number | null>(null);
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null);
   /** Jornadas que el conductor abrió o cerró a mano, por clave YYYY-MM-DD. */
   const [diasAlternados, setDiasAlternados] = useState<Record<string, boolean>>({});
@@ -1340,18 +1347,38 @@ export default function DriverPortalPage() {
     if (!isNativeAvailable()) return;
     const driverId = driverProfile?.id;
     return nativeOn("tracking.statusChanged", (payload) => {
-      const estado = payload as ShellTrackingState;
+      const crudo = payload as ShellTrackingState;
+      const ahora = Date.now();
+      // 07-10-2026: `running: true` no garantiza que lleguen posiciones
+      // (Armando Soza). Se mira si el shell INTENTÓ mandar algo hace poco;
+      // si no, se trata como rastreo mudo: la web vuelve a mandar GPS, el
+      // latido lo informa y se rearma el nativo.
+      const intento = crudo?.lastPush?.lastAttemptAt ?? null;
+      if (intento != null || crudo?.running !== true) sinIntentosDesdeRef.current = null;
+      else if (sinIntentosDesdeRef.current == null) sinIntentosDesdeRef.current = ahora;
+      const estado: ShellTrackingState = { ...crudo, sinFijos: shellSinFijos(crudo, ahora, sinIntentosDesdeRef.current) };
       // El shell lo emite cada 3 s con su último envío: sin cambio de estado
       // no se vuelve a pintar (ni se rearma el GPS web, que depende de esto).
       setShellTracking((previo) => (mismoEstadoShell(previo, estado) ? previo : estado));
       // 30-09-2026: con permiso "todo el tiempo" y GPS encendido, un rastreo
       // que aparece detenido es que Android lo mató con la app. Se vuelve a
       // armar, como mucho una vez por minuto; antes nadie lo rearmaba.
-      if (!driverId || !debeRearmarRastreo(estado, Date.now(), ultimoRearmeRef.current)) return;
-      ultimoRearmeRef.current = Date.now();
-      dlog("shell: rastreo detenido con permiso de fondo; → tracking.start");
-      nativeRequest<ShellTrackingState>("tracking.start", cargaDeRastreo(driverId, getStoredPortalSessionId("driver", driverId)), { timeoutMs: 30_000 })
-        .then((res) => setShellTracking(res ?? null))
+      if (!driverId || !debeRearmarRastreo(estado, ahora, ultimoRearmeRef.current)) return;
+      ultimoRearmeRef.current = ahora;
+      const carga = cargaDeRastreo(driverId, getStoredPortalSessionId("driver", driverId));
+      // Mudo con `running: true`: a un start solo el shell responde "ya está
+      // corriendo" sin tocar nada; stop + start lo registra de nuevo y vuelve
+      // a levantar el servicio en primer plano.
+      const detener = estado.sinFijos === true
+        ? nativeRequest("tracking.stop", undefined, { timeoutMs: 10_000 }).catch(() => undefined)
+        : Promise.resolve();
+      dlog(estado.sinFijos ? "shell: rastrea sin entregar fijos; → tracking.stop + start" : "shell: rastreo detenido con permiso de fondo; → tracking.start");
+      detener
+        .then(() => nativeRequest<ShellTrackingState>("tracking.start", carga, { timeoutMs: 30_000 }))
+        .then((res) => {
+          sinIntentosDesdeRef.current = null;
+          setShellTracking(res ?? null);
+        })
         .catch((err) => dlog(`rearme sin respuesta (${err?.message ?? err})`));
     });
   }, [driverProfile?.id]);

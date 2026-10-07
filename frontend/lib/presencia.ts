@@ -32,6 +32,21 @@ export function desfaseReloj(serverNowIso: string, t0: number, t1: number): numb
 export type EstadoConexion = { ageMs: number; conectado: boolean; sinSenal: boolean };
 
 /**
+ * Rótulo del marcador en el mapa. Hay dos señales distintas y el rótulo
+ * tiene que decir cuál falta: `gpsVivo` es una posición reciente, `conectado`
+ * es que la app está abierta y latiendo. 07-10-2026: Armando Soza salía
+ * "Desconectado" en el globo del mapa y "Conectado · hace 3 s" en la tabla
+ * de al lado; las dos cosas eran ciertas (app abierta, GPS mudo) y el mapa
+ * las resumía mal.
+ */
+export function rotuloMarcador(m: { onTrip: boolean; gpsVivo: boolean; conectado?: boolean; tripLabel?: string | null }): string {
+  if (m.onTrip) return m.tripLabel || "En viaje";
+  if (m.gpsVivo) return "En línea";
+  if (m.conectado) return "Conectado · sin GPS";
+  return "Desconectado";
+}
+
+/**
  * Estado de una posición según cuándo la recibió el servidor y qué hora es en
  * el servidor. Las dos horas son del servidor: el reloj del teléfono puede ir
  * minutos corrido y el del PC del operador unos segundos, y cualquiera de los
