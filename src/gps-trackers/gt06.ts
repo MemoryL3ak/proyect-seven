@@ -155,6 +155,9 @@ export function comandoEnLinea(texto: string, serie: number, marca = 0): Buffer 
   const contenido = Buffer.concat([
     Buffer.from([4 + cmd.length, (marca >>> 24) & 0xff, (marca >>> 16) & 0xff, (marca >>> 8) & 0xff, marca & 0xff]),
     cmd,
+    // Idioma de la respuesta (0x0001 inglés): los firmwares nuevos lo
+    // esperan después del texto; el largo del comando no lo cuenta.
+    Buffer.from([0x00, 0x01]),
   ]);
   return respuesta(PROTOCOLO.COMANDO, serie, contenido);
 }

@@ -76,6 +76,8 @@ const CACHE_ATRIBUCION_MS = 60 * 1000;
 const INACTIVIDAD_MS = 15 * 60 * 1000;
 /** Cada cuánto se refresca last_seen_at en la base por equipo (sobrevive a reinicios). */
 const REGISTRO_MS = 60 * 1000;
+/** Un comando en cola sale este tiempo después del login, cuando el equipo ya mandó su latido. */
+const ESPERA_COMANDO_MS = 6_000;
 
 /** "JJ JC 74", "jjjc-74" y "JJJC74" son la misma patente. */
 export const normalizarPatente = (valor: string | null | undefined): string | null => {
@@ -228,8 +230,14 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     if (!c.imei) return;
     const cola = this.comandosPendientes.get(c.imei);
     if (!cola || cola.length === 0) return;
-    this.comandosPendientes.delete(c.imei);
-    for (const texto of cola) this.escribirComando(socket, c, texto);
+    // Uno por conexión y unos segundos después del login: el G500LS recibió
+    // dos comandos pegados a la respuesta del login y cortó sin contestar ni
+    // latir (09-10-2026, 02:51).
+    const texto = cola.shift() as string;
+    if (cola.length === 0) this.comandosPendientes.delete(c.imei);
+    setTimeout(() => {
+      if (!socket.destroyed) this.escribirComando(socket, c, texto);
+    }, ESPERA_COMANDO_MS);
   }
 
   /**

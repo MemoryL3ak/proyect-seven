@@ -113,10 +113,11 @@ describe('GT06', () => {
 
   it('un comando en línea (0x80) lleva largo, marca del servidor y el texto; la respuesta (0x15) devuelve el texto', () => {
     const c = comandoEnLinea('PARAM#', 9, 0x00000001);
-    expect(c.subarray(0, 4)).toEqual(Buffer.from([0x78, 0x78, 1 + 1 + 4 + 6 + 4, 0x80])); // protocolo + largo + marca + texto + serie y CRC
+    expect(c.subarray(0, 4)).toEqual(Buffer.from([0x78, 0x78, 1 + 1 + 4 + 6 + 2 + 4, 0x80])); // protocolo + largo + marca + texto + idioma + serie y CRC
     expect(c[4]).toBe(4 + 6); // largo del comando: marca + texto
     expect(c.subarray(5, 9)).toEqual(Buffer.from([0, 0, 0, 1]));
     expect(c.subarray(9, 15).toString('ascii')).toBe('PARAM#');
+    expect(c.subarray(15, 17)).toEqual(Buffer.from([0x00, 0x01]));
     expect(separarTramas(c).tramas[0].crcOk).toBe(true);
     // Respuesta del equipo: 0x15 con largo, marca y texto, más idioma al final.
     const texto = Buffer.from('TIMER:10,60;', 'ascii');
