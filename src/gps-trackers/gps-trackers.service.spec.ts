@@ -127,6 +127,14 @@ describe('GpsTrackersService', () => {
     expect(service.ultimosPaquetes('123456789012345').map((p) => p.tipo).filter((t) => t !== 'bytes')).toEqual(['posicion', 'login']);
   });
 
+  it('al quitar la patente desaparecen el conductor, el viaje y el evento atribuidos', async () => {
+    await service.asignar('123456789012345', null);
+    const [equipo] = (await service.listar()).equipos;
+    expect(equipo).toMatchObject({ vehiclePlate: null, conductorId: null, conductorNombre: null, tripId: null, eventId: null });
+    await service.asignar('123456789012345', 'KBGB58');
+    expect((await service.listar()).equipos[0].conductorNombre).toBe('juan villegas');
+  });
+
   it('el latido se contesta y la trama queda registrada', async () => {
     socket.write(LATIDO);
     await esperar(() => recibido.length >= 3);

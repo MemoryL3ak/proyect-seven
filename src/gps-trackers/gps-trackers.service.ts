@@ -442,8 +442,12 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     }
     for (const e of this.equipos.values()) {
       if (!e.vehiclePlate) {
+        // Sin patente no hay a quién atribuirlo; se limpia todo lo derivado
+        // (09-10-2026: al quitar la patente quedaba el nombre anterior).
         e.conductorId = null;
+        e.conductorNombre = null;
         e.tripId = null;
+        e.eventId = null;
         continue;
       }
       const c = await this.conductorDePatente(e.vehiclePlate);
@@ -452,11 +456,12 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
       e.eventId = c.eventId;
     }
     const conductores = Array.from(new Set(Array.from(this.equipos.values()).map((e) => e.conductorId).filter((v): v is string => Boolean(v))));
+    const nombrePor = new Map<string, string | null>();
     if (conductores.length > 0) {
       const nombres = (await this.dataSource.query(`select id, full_name from core.provider_participants where id = any($1)`, [conductores])) as Array<{ id: string; full_name: string | null }>;
-      const nombrePor = new Map(nombres.map((n) => [n.id, n.full_name]));
-      for (const e of this.equipos.values()) e.conductorNombre = e.conductorId ? (nombrePor.get(e.conductorId) ?? null) : null;
+      for (const n of nombres) nombrePor.set(n.id, n.full_name);
     }
+    for (const e of this.equipos.values()) e.conductorNombre = e.conductorId ? (nombrePor.get(e.conductorId) ?? null) : null;
     const equipos = Array.from(this.equipos.values()).sort((x, y) => (y.ultimoPaquete ?? '').localeCompare(x.ultimoPaquete ?? ''));
     return { puerto: this.puerto, tabla: this.tablaDisponible, equipos };
   }
@@ -497,7 +502,9 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     const e = this.equipo(imei);
     e.vehiclePlate = normalizada;
     e.conductorId = null;
+    e.conductorNombre = null;
     e.tripId = null;
+    e.eventId = null;
     return e;
   }
 }
