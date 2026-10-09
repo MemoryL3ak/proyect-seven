@@ -93,7 +93,6 @@ type Snapshot = {
 type OccupancyFilter = "" | "BUSY" | "FREE";
 /** De dónde sale la posición: la app del conductor, el GPS del vehículo (rastreador OBD) o ambas. */
 type Fuente = "" | "app" | "gps";
-type VehiculoItem = { id: string; plate?: string | null; eventId?: string | null };
 
 type PositionItem = {
   id: string;
@@ -201,7 +200,7 @@ export default function DriverMonitoringPage() {
   // junto a los conductores o solos, con el filtro "Fuente".
   const [fuente, setFuente] = useState<Fuente>("");
   const [equipos, setEquipos] = useState<EquipoGps[]>([]);
-  const [vehiculos, setVehiculos] = useState<VehiculoItem[]>([]);
+  const [patentes, setPatentes] = useState<string[]>([]);
 
   const isToday = selectedDate === today;
 
@@ -253,10 +252,12 @@ export default function DriverMonitoringPage() {
     return () => clearInterval(interval);
   }, [load, isToday]);
 
-  // Vehículos del evento, para asignarle uno a cada equipo GPS.
+  // Patentes conocidas del evento (viajes y fichas), para asignarle una a cada equipo GPS.
   useEffect(() => {
-    apiFetch<VehiculoItem[]>("/transports").then((v) => setVehiculos(v || [])).catch(() => {});
-  }, []);
+    apiFetch<string[]>(`/gps-trackers/patentes${eventoId ? `?eventId=${encodeURIComponent(eventoId)}` : ""}`)
+      .then((v) => setPatentes(Array.isArray(v) ? v : []))
+      .catch(() => {});
+  }, [eventoId]);
 
   // Live GPS layer: Supabase Realtime pushes every new position the instant it
   // lands; a fast poll backs it up where Realtime isn't connected. This is the
@@ -446,10 +447,6 @@ export default function DriverMonitoringPage() {
   );
   // Qué va al mapa según la fuente elegida.
   const marcadoresMapa = fuente === "gps" ? marcadoresEquipos : fuente === "app" ? markers : [...markers, ...marcadoresEquipos];
-  const vehiculosDelEvento = useMemo(
-    () => vehiculos.filter((v) => !eventoId || !v.eventId || v.eventId === eventoId),
-    [vehiculos, eventoId],
-  );
 
   const onTripCount = useMemo(
     () => drivers.filter((d) => d.activeTrips > 0).length,
@@ -468,12 +465,12 @@ export default function DriverMonitoringPage() {
     setFuente("");
   };
 
-  const asignarEquipo = async (imei: string, vehicleId: string | null) => {
+  const asignarEquipo = async (imei: string, plate: string | null) => {
     try {
       await apiFetch(`/gps-trackers/${imei}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ vehicleId }),
+        body: JSON.stringify({ plate }),
       });
       await load();
     } catch (err) {
@@ -723,7 +720,7 @@ export default function DriverMonitoringPage() {
       )}
 
       {fuente !== "app" && (fuente === "gps" || equipos.length > 0) && (
-        <SeccionEquiposGps equipos={equipos} vehiculos={vehiculosDelEvento} ahora={nowTick} onAsignar={asignarEquipo} />
+        <SeccionEquiposGps equipos={equipos} patentes={patentes} ahora={nowTick} onAsignar={asignarEquipo} />
       )}
 
       {fuente !== "gps" && (loading && !snapshot ? (
@@ -1114,19 +1111,29 @@ export default function DriverMonitoringPage() {
 // SeccionEquiposGps — rastreadores GPS de vehículo (09-10-2026)
 // ────────────────────────────────────────────────────────────────────────────
 
+const OTRA_PATENTE = "__otra__";
+
 function SeccionEquiposGps({
   equipos,
-  vehiculos,
+  patentes,
   ahora,
   onAsignar,
 }: {
   equipos: EquipoGps[];
-  vehiculos: VehiculoItem[];
+  patentes: string[];
   ahora: number;
-  onAsignar: (imei: string, vehicleId: string | null) => Promise<void>;
+  onAsignar: (imei: string, plate: string | null) => Promise<void>;
 }) {
   const { t } = useI18n();
   const [guardando, setGuardando] = useState<string | null>(null);
+  // "Otra patente…": una que no está en los viajes ni en las fichas (el
+  // auto de prueba, por ejemplo). Se escribe a mano y se guarda.
+  const [otraDe, setOtraDe] = useState<string | null>(null);
+  const [otraTexto, setOtraTexto] = useState("");
+  const guardar = (imei: string, plate: string | null) => {
+    setGuardando(imei);
+    onAsignar(imei, plate).finally(() => { setGuardando(null); setOtraDe(null); setOtraTexto(""); });
+  };
   const pill = (texto: string, activo: boolean) => (
     <span
       className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
@@ -1186,21 +1193,40 @@ function SeccionEquiposGps({
                       <div style={{ fontSize: 11, color: SURFACE.textFaint }}>IMEI {e.imei}</div>
                       {e.ultimoError && <div style={{ fontSize: 11, color: STATE.dangerText }}>{e.ultimoError}</div>}
                     </td>
-                    <td className="p-3" style={{ minWidth: 180 }}>
-                      <StyledSelect
-                        value={e.vehicleId ?? ""}
-                        disabled={guardando === e.imei}
-                        onChange={(ev) => {
-                          const v = ev.target.value || null;
-                          setGuardando(e.imei);
-                          onAsignar(e.imei, v).finally(() => setGuardando(null));
-                        }}
-                      >
-                        <option value="">{t("Sin vehículo")}</option>
-                        {vehiculos.map((v) => (
-                          <option key={v.id} value={v.id}>{v.plate || v.id.slice(0, 8)}</option>
-                        ))}
-                      </StyledSelect>
+                    <td className="p-3" style={{ minWidth: 200 }}>
+                      {otraDe === e.imei ? (
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <input
+                            type="text"
+                            className="input"
+                            placeholder={t("Patente")}
+                            value={otraTexto}
+                            autoFocus
+                            onChange={(ev) => setOtraTexto(ev.target.value.toUpperCase())}
+                            onKeyDown={(ev) => { if (ev.key === "Enter" && otraTexto.trim()) guardar(e.imei, otraTexto); if (ev.key === "Escape") setOtraDe(null); }}
+                            style={{ width: 120 }}
+                          />
+                          <button type="button" className="btn btn-primary" disabled={!otraTexto.trim() || guardando === e.imei} onClick={() => guardar(e.imei, otraTexto)}>
+                            {t("Guardar")}
+                          </button>
+                        </div>
+                      ) : (
+                        <StyledSelect
+                          value={e.vehiclePlate ?? ""}
+                          disabled={guardando === e.imei}
+                          onChange={(ev) => {
+                            const v = ev.target.value;
+                            if (v === OTRA_PATENTE) { setOtraDe(e.imei); setOtraTexto(""); return; }
+                            guardar(e.imei, v || null);
+                          }}
+                        >
+                          <option value="">{t("Sin patente")}</option>
+                          {(e.vehiclePlate && !patentes.includes(e.vehiclePlate) ? [e.vehiclePlate, ...patentes] : patentes).map((p) => (
+                            <option key={p} value={p}>{p}</option>
+                          ))}
+                          <option value={OTRA_PATENTE}>{t("Otra patente…")}</option>
+                        </StyledSelect>
+                      )}
                     </td>
                     <td className="p-3" style={{ whiteSpace: "nowrap", color: e.conductorNombre ? SURFACE.text : SURFACE.textFaint }}>
                       {e.conductorNombre ?? "—"}

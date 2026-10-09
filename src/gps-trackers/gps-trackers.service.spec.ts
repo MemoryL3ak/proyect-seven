@@ -1,11 +1,12 @@
 import * as net from 'net';
-import { GpsTrackersService } from './gps-trackers.service';
+import { GpsTrackersService, normalizarPatente } from './gps-trackers.service';
 import { respuesta } from './gt06';
 
 /**
  * El receptor de punta a punta, con un equipo simulado por TCP: contesta el
- * login y el latido, y una posición de un IMEI asignado a un vehículo entra
- * a telemetry.vehicle_positions con el conductor del viaje en curso.
+ * login y el latido, y una posición de un IMEI asignado a una patente entra
+ * a telemetry.vehicle_positions con el conductor del viaje en curso que
+ * lleva esa patente.
  */
 const hex = (s: string) => Buffer.from(s.replace(/\s+/g, ''), 'hex');
 const LOGIN = hex('78 78 0D 01 01 23 45 67 89 01 23 45 00 01 8C DD 0D 0A');
@@ -26,6 +27,15 @@ const bloqueGps = (fecha: Date, lat: number, lng: number, vel: number, rumbo: nu
 
 const PUERTO = 17018 + Math.floor(Math.random() * 1000);
 
+describe('normalizarPatente', () => {
+  it('"JJ JC 74", "jjjc-74" y "JJJC74" son la misma patente (así vienen en los viajes de Rugby)', () => {
+    expect(normalizarPatente('JJ JC 74')).toBe('JJJC74');
+    expect(normalizarPatente('jjjc-74')).toBe('JJJC74');
+    expect(normalizarPatente('  ')).toBeNull();
+    expect(normalizarPatente(null)).toBeNull();
+  });
+});
+
 describe('GpsTrackersService', () => {
   const inserts: Array<Record<string, unknown>> = [];
   const upserts: Array<Record<string, unknown>> = [];
@@ -35,20 +45,23 @@ describe('GpsTrackersService', () => {
         upsert: (fila: Record<string, unknown>) => { upserts.push(fila); return Promise.resolve({ error: null }); },
         insert: (fila: Record<string, unknown>) => { inserts.push(fila); return Promise.resolve({ error: null }); },
         select: () => ({
-          eq: () => ({ maybeSingle: () => Promise.resolve({ data: { vehicle_id: 'veh-1' }, error: null }) }),
+          eq: () => ({ maybeSingle: () => Promise.resolve({ data: { plate: 'kbgb-58' }, error: null }) }),
           order: () => Promise.resolve({ data: [], error: null }),
         }),
       }),
     }),
   };
+  const consultas: string[] = [];
   const dataSource = {
-    query: jest.fn((sql: string) =>
-      Promise.resolve(
-        sql.includes('transport.vehicles')
-          ? [{ id: 'veh-1', plate: 'KBGB58', event_id: 'ev-1' }]
-          : [{ id: 'trip-1', driver_id: 'drv-1', event_id: 'ev-1', status: 'PICKED_UP' }],
-      ),
-    ),
+    query: jest.fn((sql: string, params?: unknown[]) => {
+      consultas.push(sql);
+      if (sql.includes('transport.trips')) {
+        expect(params?.[0]).toBe('KBGB58');
+        return Promise.resolve([{ id: 'trip-1', driver_id: 'drv-1', event_id: 'ev-1', status: 'PICKED_UP' }]);
+      }
+      if (sql.includes('full_name')) return Promise.resolve([{ id: 'drv-1', full_name: 'juan villegas' }]);
+      return Promise.resolve([]);
+    }),
   };
   let service: GpsTrackersService;
   let socket: net.Socket;
@@ -91,26 +104,26 @@ describe('GpsTrackersService', () => {
     expect(lista.equipos[0].conectado).toBe(true);
   });
 
-  it('una posición del equipo entra como posición del vehículo, con el conductor del viaje en curso', async () => {
+  it('una posición entra como posición del conductor del viaje en curso con esa patente', async () => {
     const fecha = new Date('2026-10-09T15:04:05Z');
     const pos = respuesta(0x12, 2, Buffer.concat([bloqueGps(fecha, -33.4543, -70.5186, 42, 143), Buffer.alloc(8)]));
     socket.write(pos);
     await esperar(() => inserts.length >= 1);
     const fila = inserts[0] as { location: { coordinates: number[] }; speed: number };
-    expect(fila).toMatchObject({ event_id: 'ev-1', vehicle_id: 'veh-1', driver_id: 'drv-1', trip_id: 'trip-1', timestamp: '2026-10-09T15:04:05.000Z', heading: 143 });
+    expect(fila).toMatchObject({ event_id: 'ev-1', vehicle_id: null, driver_id: 'drv-1', trip_id: 'trip-1', timestamp: '2026-10-09T15:04:05.000Z', heading: 143 });
     expect(fila.location.coordinates[0]).toBeCloseTo(-70.5186, 5);
     expect(fila.location.coordinates[1]).toBeCloseTo(-33.4543, 5);
     expect(fila.speed).toBeCloseTo(42 / 3.6, 3);
+    // La última posición también queda en la tabla del equipo (sobrevive a reinicios).
+    expect(upserts.some((u) => u.last_lat === -33.4543 || Math.abs(Number(u.last_lat) + 33.4543) < 1e-5)).toBe(true);
     await esperar(() => recibido.length >= 2);
     expect(recibido[1]).toEqual(respuesta(0x12, 2));
     const [equipo] = (await service.listar()).equipos;
     expect(equipo.posicionesGuardadas).toBe(1);
     expect(equipo.vehiclePlate).toBe('KBGB58');
     expect(equipo.conductorId).toBe('drv-1');
+    expect(equipo.conductorNombre).toBe('juan villegas');
     expect(equipo.tripId).toBe('trip-1');
-    // Filtrado por evento: el vehículo es del evento ev-1, no de otro.
-    expect((await service.listar('ev-1')).equipos.length).toBe(1);
-    expect((await service.listar('otro')).equipos.length).toBe(0);
     expect(service.ultimosPaquetes('123456789012345').map((p) => p.tipo)).toEqual(['posicion', 'login']);
   });
 

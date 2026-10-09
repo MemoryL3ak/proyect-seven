@@ -14,7 +14,7 @@ export type EquipoGps = {
   ultimaPosicion: { fecha: string; satelites: number; lat: number; lng: number; velocidad: number; rumbo: number; valido: boolean; recibida: string } | null;
   paquetes: number;
   posicionesGuardadas: number;
-  vehicleId: string | null;
+  /** Patente asignada (normalizada); los viajes identifican al vehículo por patente. */
   vehiclePlate: string | null;
   eventId: string | null;
   label: string | null;

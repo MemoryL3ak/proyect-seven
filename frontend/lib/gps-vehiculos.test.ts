@@ -11,7 +11,6 @@ const base: EquipoGps = {
   ultimaPosicion: { fecha: iso(T - 30_000), satelites: 9, lat: -33.4543, lng: -70.5186, velocidad: 42, rumbo: 143, valido: true, recibida: iso(T - 28_000) },
   paquetes: 12,
   posicionesGuardadas: 10,
-  vehicleId: "veh-1",
   vehiclePlate: "KBGB58",
   eventId: "ev-1",
   label: null,
