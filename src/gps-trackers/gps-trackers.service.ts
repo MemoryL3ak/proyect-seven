@@ -48,6 +48,8 @@ export type PaqueteRegistrado = {
   hex: string;
   respuesta: string | null;
   posicion: PosicionGt06 | null;
+  /** Para los eventos de conexión: quién cerró y por qué. */
+  nota?: string;
 };
 
 type Conexion = { buffer: Buffer; imei: string | null; desde: Date; origen: string };
@@ -102,13 +104,27 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
   private atender(socket: net.Socket) {
     const origen = `${socket.remoteAddress ?? '?'}:${socket.remotePort ?? '?'}`;
     this.conexiones.set(socket, { buffer: Buffer.alloc(0), imei: null, desde: new Date(), origen });
-    socket.setTimeout(INACTIVIDAD_MS, () => socket.destroy());
+    // El ciclo de la conexión también queda en el registro: un equipo que
+    // conecta, hace login y corta se diagnostica por acá (09-10-2026, el
+    // G500LS de Ariel cortó 1 s después del login y no volvió).
+    this.registrar({ en: new Date().toISOString(), imei: null, origen, protocolo: null, tipo: 'conexion', serie: null, crcOk: null, hex: '', respuesta: null, posicion: null, nota: 'abierta' });
+    socket.setTimeout(INACTIVIDAD_MS, () => {
+      this.registrar({ en: new Date().toISOString(), imei: this.conexiones.get(socket)?.imei ?? null, origen, protocolo: null, tipo: 'conexion', serie: null, crcOk: null, hex: '', respuesta: null, posicion: null, nota: `cerrada por inactividad (${INACTIVIDAD_MS / 60000} min)` });
+      socket.destroy();
+    });
+    socket.on('end', () => {
+      this.registrar({ en: new Date().toISOString(), imei: this.conexiones.get(socket)?.imei ?? null, origen, protocolo: null, tipo: 'conexion', serie: null, crcOk: null, hex: '', respuesta: null, posicion: null, nota: 'el equipo cerró (FIN)' });
+    });
     socket.on('data', (datos) => {
       this.recibir(socket, datos).catch((err) => this.logger.warn(`Receptor GPS ${origen}: ${err instanceof Error ? err.message : err}`));
     });
-    socket.on('error', (err) => this.logger.warn(`Receptor GPS ${origen}: ${err.message}`));
-    socket.on('close', () => {
+    socket.on('error', (err) => {
+      this.logger.warn(`Receptor GPS ${origen}: ${err.message}`);
+      this.registrar({ en: new Date().toISOString(), imei: this.conexiones.get(socket)?.imei ?? null, origen, protocolo: null, tipo: 'conexion', serie: null, crcOk: null, hex: '', respuesta: null, posicion: null, nota: `error: ${err.message}` });
+    });
+    socket.on('close', (conError) => {
       const c = this.conexiones.get(socket);
+      this.registrar({ en: new Date().toISOString(), imei: c?.imei ?? null, origen, protocolo: null, tipo: 'conexion', serie: null, crcOk: null, hex: '', respuesta: null, posicion: null, nota: conError ? 'cerrada con error' : 'cerrada' });
       if (c?.imei) {
         const e = this.equipos.get(c.imei);
         if (e) e.conectado = false;
