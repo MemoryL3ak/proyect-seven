@@ -42,12 +42,17 @@ export type MensajeGt06 =
   | { tipo: 'latido'; trama: TramaGt06 }
   | { tipo: 'posicion'; posicion: PosicionGt06 | null; alarma: boolean; trama: TramaGt06 }
   | { tipo: 'hora'; trama: TramaGt06 }
+  /** Respuesta del equipo a un comando en línea (0x80): el mismo texto que contestaría por SMS. */
+  | { tipo: 'respuesta'; texto: string; trama: TramaGt06 }
   | { tipo: 'otro'; trama: TramaGt06 };
 
 export const PROTOCOLO = {
   LOGIN: 0x01,
   LATIDO: 0x13,
   LATIDO_2: 0x23,
+  COMANDO: 0x80,
+  RESPUESTA_COMANDO: 0x15,
+  RESPUESTA_COMANDO_2: 0x21,
   HORA: 0x8a,
 } as const;
 
@@ -138,6 +143,30 @@ export function decodificarGps(contenido: Buffer): PosicionGt06 | null {
   return { fecha, satelites, lat, lng, velocidad, rumbo, valido };
 }
 
+/**
+ * Comando en línea al equipo (0x80): el mismo texto de los comandos SMS
+ * (PARAM#, WHERE#, TIMER,10,60#) pero por el socket, sin depender de que
+ * la SIM pueda mandar o recibir SMS. Contenido: largo (4 + texto), marca
+ * del servidor (4 bytes, el equipo la devuelve en la respuesta) y el texto
+ * en ASCII. El equipo contesta con 0x15 (o 0x21).
+ */
+export function comandoEnLinea(texto: string, serie: number, marca = 0): Buffer {
+  const cmd = Buffer.from(texto, 'ascii');
+  const contenido = Buffer.concat([
+    Buffer.from([4 + cmd.length, (marca >>> 24) & 0xff, (marca >>> 16) & 0xff, (marca >>> 8) & 0xff, marca & 0xff]),
+    cmd,
+  ]);
+  return respuesta(PROTOCOLO.COMANDO, serie, contenido);
+}
+
+/** Texto de la respuesta a un comando (0x15 / 0x21): después del largo y la marca del servidor. */
+export function textoDeRespuesta(contenido: Buffer): string {
+  if (contenido.length < 5) return '';
+  const largo = contenido[0];
+  const texto = contenido.subarray(5, Math.min(contenido.length, 5 + Math.max(0, largo - 4)));
+  return texto.toString('latin1').replace(/[^\x20-\x7e\r\n]/g, '').trim();
+}
+
 export function interpretar(trama: TramaGt06): MensajeGt06 {
   const { protocolo, contenido } = trama;
   if (protocolo === PROTOCOLO.LOGIN) {
@@ -145,6 +174,9 @@ export function interpretar(trama: TramaGt06): MensajeGt06 {
   }
   if (protocolo === PROTOCOLO.LATIDO || protocolo === PROTOCOLO.LATIDO_2) return { tipo: 'latido', trama };
   if (protocolo === PROTOCOLO.HORA) return { tipo: 'hora', trama };
+  if (protocolo === PROTOCOLO.RESPUESTA_COMANDO || protocolo === PROTOCOLO.RESPUESTA_COMANDO_2) {
+    return { tipo: 'respuesta', texto: textoDeRespuesta(contenido), trama };
+  }
   if (CON_GPS.has(protocolo)) {
     return { tipo: 'posicion', posicion: decodificarGps(contenido), alarma: ALARMAS.has(protocolo), trama };
   }
@@ -179,6 +211,6 @@ export function respuestaHora(serie: number, ahora = new Date()): Buffer {
  */
 export function respuestaPara(m: MensajeGt06, ahora = new Date()): Buffer | null {
   if (m.tipo === 'hora') return respuestaHora(m.trama.serie, ahora);
-  if (m.tipo === 'otro') return null;
+  if (m.tipo === 'otro' || m.tipo === 'respuesta') return null;
   return respuesta(m.trama.protocolo, m.trama.serie);
 }

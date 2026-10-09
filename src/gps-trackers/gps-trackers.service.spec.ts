@@ -132,4 +132,17 @@ describe('GpsTrackersService', () => {
     await esperar(() => recibido.length >= 3);
     expect(recibido[2]).toEqual(respuesta(0x13, 0x000f));
   });
+
+  it('un comando en línea sale por el socket del equipo conectado y su respuesta queda con el texto', async () => {
+    expect(service.enviarComando('123456789012345', 'PARAM#')).toEqual({ enviado: true, enCola: false });
+    await esperar(() => recibido.length >= 4);
+    expect(recibido[3][3]).toBe(0x80);
+    expect(recibido[3].subarray(9, 15).toString('ascii')).toBe('PARAM#');
+    const texto = Buffer.from('TIMER:10,60;', 'ascii');
+    socket.write(respuesta(0x15, 20, Buffer.concat([Buffer.from([4 + texto.length, 0, 0, 0, 1]), texto])));
+    await esperar(() => service.ultimosPaquetes('123456789012345').some((p) => p.tipo === 'respuesta'));
+    expect(service.ultimosPaquetes('123456789012345').find((p) => p.tipo === 'respuesta')?.nota).toBe('TIMER:10,60;');
+    // Equipo desconectado: el comando espera al próximo login.
+    expect(service.enviarComando('999999999999999', 'WHERE#')).toEqual({ enviado: false, enCola: true });
+  });
 });

@@ -1,4 +1,4 @@
-import { crcItu, decodificarGps, imeiDeBcd, interpretar, respuesta, respuestaPara, separarTramas } from './gt06';
+import { comandoEnLinea, crcItu, decodificarGps, imeiDeBcd, interpretar, respuesta, respuestaPara, separarTramas, textoDeRespuesta } from './gt06';
 
 /**
  * El login y su respuesta son las tramas de ejemplo del documento oficial
@@ -109,5 +109,22 @@ describe('GT06', () => {
     const [trama] = separarTramas(respuesta(0x8a, 2)).tramas;
     const r = respuestaPara(interpretar(trama), new Date('2026-10-09T15:04:05Z'));
     expect(r?.subarray(4, 10)).toEqual(Buffer.from([26, 10, 9, 15, 4, 5]));
+  });
+
+  it('un comando en línea (0x80) lleva largo, marca del servidor y el texto; la respuesta (0x15) devuelve el texto', () => {
+    const c = comandoEnLinea('PARAM#', 9, 0x00000001);
+    expect(c.subarray(0, 4)).toEqual(Buffer.from([0x78, 0x78, 1 + 1 + 4 + 6 + 4, 0x80])); // protocolo + largo + marca + texto + serie y CRC
+    expect(c[4]).toBe(4 + 6); // largo del comando: marca + texto
+    expect(c.subarray(5, 9)).toEqual(Buffer.from([0, 0, 0, 1]));
+    expect(c.subarray(9, 15).toString('ascii')).toBe('PARAM#');
+    expect(separarTramas(c).tramas[0].crcOk).toBe(true);
+    // Respuesta del equipo: 0x15 con largo, marca y texto, más idioma al final.
+    const texto = Buffer.from('TIMER:10,60;', 'ascii');
+    const contenido = Buffer.concat([Buffer.from([4 + texto.length, 0, 0, 0, 1]), texto, Buffer.from([0x00, 0x01])]);
+    const m = interpretar(separarTramas(respuesta(0x15, 10, contenido)).tramas[0]);
+    expect(m.tipo).toBe('respuesta');
+    if (m.tipo === 'respuesta') expect(m.texto).toBe('TIMER:10,60;');
+    expect(respuestaPara(m)).toBeNull();
+    expect(textoDeRespuesta(Buffer.from([1]))).toBe('');
   });
 });

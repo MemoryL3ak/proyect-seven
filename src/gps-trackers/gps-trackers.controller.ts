@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { StaffOnly } from '../auth/staff-only.decorator';
 import { GpsTrackersService } from './gps-trackers.service';
 
@@ -24,6 +24,16 @@ export class GpsTrackersController {
   paquetes(@Query('imei') imei?: string, @Query('limite') limite?: string) {
     const n = Math.min(Math.max(Number(limite) || 100, 1), 300);
     return this.service.ultimosPaquetes(imei?.trim() || undefined, n);
+  }
+
+  /** Comando en línea al equipo (texto de los comandos SMS, termina en #). La respuesta queda en /paquetes. */
+  @Post(':imei/comando')
+  comando(@Param('imei') imei: string, @Body() body: { texto?: string }) {
+    const limpio = String(imei ?? '').trim();
+    if (!/^\d{14,16}$/.test(limpio)) throw new BadRequestException('IMEI inválido');
+    const texto = String(body?.texto ?? '').trim();
+    if (!/^[\x20-\x7e]{2,100}#$/.test(texto)) throw new BadRequestException('El comando va en ASCII y termina en #');
+    return this.service.enviarComando(limpio, texto);
   }
 
   @Put(':imei')

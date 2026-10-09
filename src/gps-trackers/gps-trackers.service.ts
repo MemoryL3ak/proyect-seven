@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdo
 import { SupabaseClient } from '@supabase/supabase-js';
 import * as net from 'net';
 import { DataSource } from 'typeorm';
-import { interpretar, MensajeGt06, PosicionGt06, respuestaPara, separarTramas, TramaGt06 } from './gt06';
+import { comandoEnLinea, interpretar, MensajeGt06, PosicionGt06, respuestaPara, separarTramas, TramaGt06 } from './gt06';
 
 /**
  * Receptor de rastreadores GPS de vehículo (OBD, protocolo GT06) por TCP.
@@ -95,6 +95,9 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
   private readonly atribuciones = new Map<string, Atribucion>();
   private readonly paquetes: PaqueteRegistrado[] = [];
   private readonly ultimoRegistro = new Map<string, number>();
+  /** Comandos en línea esperando a que el equipo se conecte (se mandan tras el login). */
+  private readonly comandosPendientes = new Map<string, string[]>();
+  private serieComando = 1;
   /** null = todavía no se intentó leer telemetry.gps_devices. */
   private tablaDisponible: boolean | null = null;
 
@@ -206,8 +209,46 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
       respuesta: respuesta ? respuesta.toString('hex') : null,
       posicion: mensaje.tipo === 'posicion' ? mensaje.posicion : null,
     });
+    if (mensaje.tipo === 'respuesta') {
+      // El texto de la respuesta queda a la vista en el registro (nota).
+      this.paquetes[this.paquetes.length - 1].nota = mensaje.texto;
+    }
     if (c.imei) await this.registrarEquipo(c.imei, mensaje.tipo === 'login');
+    if (mensaje.tipo === 'login') this.despacharComandos(socket, c);
     if (mensaje.tipo === 'posicion' && c.imei) await this.guardarPosicion(c.imei, mensaje);
+  }
+
+  private escribirComando(socket: net.Socket, c: Conexion, texto: string) {
+    const trama = comandoEnLinea(texto, this.serieComando++ & 0xffff, 1);
+    socket.write(trama);
+    this.registrar({ en: new Date().toISOString(), imei: c.imei, origen: c.origen, protocolo: 0x80, tipo: 'comando', serie: null, crcOk: null, hex: trama.toString('hex'), respuesta: null, posicion: null, nota: texto });
+  }
+
+  private despacharComandos(socket: net.Socket, c: Conexion) {
+    if (!c.imei) return;
+    const cola = this.comandosPendientes.get(c.imei);
+    if (!cola || cola.length === 0) return;
+    this.comandosPendientes.delete(c.imei);
+    for (const texto of cola) this.escribirComando(socket, c, texto);
+  }
+
+  /**
+   * Manda un comando al equipo por el socket (los mismos textos de los SMS:
+   * PARAM#, WHERE#, TIMER,10,60#…). Si está conectado sale ahora; si no,
+   * queda en cola y sale apenas haga login. La respuesta aparece en el
+   * registro de paquetes como tipo "respuesta", con el texto en `nota`.
+   */
+  enviarComando(imei: string, texto: string): { enviado: boolean; enCola: boolean } {
+    for (const [socket, c] of this.conexiones) {
+      if (c.imei === imei && !socket.destroyed) {
+        this.escribirComando(socket, c, texto);
+        return { enviado: true, enCola: false };
+      }
+    }
+    const cola = this.comandosPendientes.get(imei) ?? [];
+    cola.push(texto);
+    this.comandosPendientes.set(imei, cola.slice(-10));
+    return { enviado: false, enCola: true };
   }
 
   private registrar(p: PaqueteRegistrado) {
