@@ -149,8 +149,13 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
       this.evento(socket, origen, `error: ${err.message}`);
     });
     socket.on('close', (conError) => {
-      this.evento(socket, origen, conError ? 'cerrada con error' : 'cerrada');
       const c = this.conexiones.get(socket);
+      // Lo que quedó sin tramar al cerrar: una trama a medias o un formato
+      // que el separador no reconoce.
+      if (c && c.buffer.length > 0) {
+        this.registrar({ en: new Date().toISOString(), imei: c.imei, origen, protocolo: null, tipo: 'resto', serie: null, crcOk: null, hex: c.buffer.subarray(0, 160).toString('hex'), respuesta: null, posicion: null, nota: `${c.buffer.length} bytes sin tramar al cerrar` });
+      }
+      this.evento(socket, origen, conError ? 'cerrada con error' : 'cerrada');
       if (c?.imei) {
         const e = this.equipos.get(c.imei);
         if (e) e.conectado = false;
@@ -162,6 +167,11 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
   private async recibir(socket: net.Socket, datos: Buffer) {
     const c = this.conexiones.get(socket);
     if (!c) return;
+    // Cada trozo TCP tal cual llega, antes de interpretarlo. 09-10-2026: el
+    // G500LS consumía 6–9 números de serie entre un latido y el próximo
+    // login sin que viéramos ninguna trama; con esto se ve si esos bytes
+    // llegan y cómo son, aunque el separador no los entienda.
+    this.registrar({ en: new Date().toISOString(), imei: c.imei, origen: c.origen, protocolo: null, tipo: 'bytes', serie: null, crcOk: null, hex: datos.subarray(0, 160).toString('hex'), respuesta: null, posicion: null, nota: `${datos.length} bytes` });
     const { tramas, resto, basura } = separarTramas(Buffer.concat([c.buffer, datos]));
     c.buffer = resto.length > MAX_BUFFER ? Buffer.alloc(0) : resto;
     for (const b of basura) {

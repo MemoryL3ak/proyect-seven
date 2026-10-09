@@ -124,7 +124,7 @@ describe('GpsTrackersService', () => {
     expect(equipo.conductorId).toBe('drv-1');
     expect(equipo.conductorNombre).toBe('juan villegas');
     expect(equipo.tripId).toBe('trip-1');
-    expect(service.ultimosPaquetes('123456789012345').map((p) => p.tipo)).toEqual(['posicion', 'login']);
+    expect(service.ultimosPaquetes('123456789012345').map((p) => p.tipo).filter((t) => t !== 'bytes')).toEqual(['posicion', 'login']);
   });
 
   it('el latido se contesta y la trama queda registrada', async () => {
