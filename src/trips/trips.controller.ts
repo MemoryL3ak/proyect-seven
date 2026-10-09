@@ -4,6 +4,7 @@ import { CreateTripDto } from './dto/create-trip.dto';
 import { UpdateTripDto } from './dto/update-trip.dto';
 import { BulkFromScheduleDto } from './dto/bulk-from-schedule.dto';
 import { BulkDeleteTripsDto } from './dto/bulk-delete-trips.dto';
+import { aplicarCambioMasivo, validarCambioMasivo } from './cambio-estado-masivo';
 import { AutoAssignDriversDto } from './dto/auto-assign-drivers.dto';
 import { TripsService } from './trips.service';
 import { TripsScheduleService } from './trips-schedule.service';
@@ -44,6 +45,16 @@ export class TripsController {
   @Post('bulk-delete')
   bulkDelete(@Body() dto: BulkDeleteTripsDto) {
     return this.tripsService.removeMany(dto.ids);
+  }
+
+  /**
+   * Cambio de estado en lote desde la lista de Viajes. Cada viaje pasa por
+   * el mismo update que el cambio de a uno (bitácora, inicio/cierre, avisos).
+   */
+  @Post('bulk-status')
+  bulkStatus(@Body() cuerpo: unknown, @Req() req: ApiRequest) {
+    const { ids, status } = validarCambioMasivo(cuerpo);
+    return aplicarCambioMasivo(ids, (id) => this.tripsService.update(id, { status } as UpdateTripDto, req.apiCaller));
   }
 
   @Post()

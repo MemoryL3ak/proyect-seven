@@ -8,6 +8,7 @@ import Link from "next/link";
 import PageHeader from "@/components/PageHeader";
 import ResourceScreen from "@/components/ResourceScreen";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { esEstadoCambio, etiquetaEstado, mensajeConfirmarCambio, mensajeResultadoCambio, OPCIONES_CAMBIO_ESTADO, type EstadoCambio } from "@/lib/cambio-estado-viajes";
 import StyledSelect from "@/components/StyledSelect";
 import { openExternal, whatsappHref } from "@/lib/external-link";
 import { generoDeViaje as generoDeViajeCompartido } from "@/lib/genero-viaje";
@@ -674,6 +675,8 @@ export default function TripsPage() {
   // Selección múltiple para borrado en lote.
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+  // Cambio de estado en lote (09-10-2026): estado elegido pendiente de confirmar.
+  const [bulkStatus, setBulkStatus] = useState<EstadoCambio | null>(null);
   const [bulkBusy, setBulkBusy] = useState(false);
   const [bulkNotice, setBulkNotice] = useState<string | null>(null);
   // Columnas del tablero desplegadas: el "+N más" era texto muerto y no había
@@ -916,6 +919,33 @@ export default function TripsPage() {
       await loadData(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "No se pudieron eliminar los viajes seleccionados.");
+    } finally {
+      setBulkBusy(false);
+    }
+  };
+
+  // Cambio de estado en lote: una llamada, el backend pasa cada viaje por el
+  // mismo update que el cambio de a uno (bitácora, inicio/cierre, avisos).
+  const runBulkStatus = async () => {
+    if (bulkBusy || selectedIds.size === 0 || !bulkStatus) return;
+    const status = bulkStatus;
+    setBulkBusy(true);
+    setError(null);
+    try {
+      const result = await apiFetch<{ requestedCount: number; updatedCount: number; errores: { id: string; mensaje: string }[] }>(
+        "/trips/bulk-status",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ids: Array.from(selectedIds), status }),
+        },
+      );
+      setBulkNotice(mensajeResultadoCambio(result, status));
+      clearSelection();
+      setBulkStatus(null);
+      await loadData(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "No se pudo cambiar el estado de los viajes seleccionados.");
     } finally {
       setBulkBusy(false);
     }
@@ -3753,6 +3783,18 @@ export default function TripsPage() {
           >
             Limpiar
           </button>
+          {/* Cambiar estado de los seleccionados: se elige y se confirma. */}
+          <div style={{ minWidth: 190 }}>
+            <StyledSelect
+              value=""
+              onChange={(e) => { const v = e.target.value; if (esEstadoCambio(v)) setBulkStatus(v); }}
+            >
+              <option value="">Cambiar estado…</option>
+              {OPCIONES_CAMBIO_ESTADO.map((s) => (
+                <option key={s} value={s}>{etiquetaEstado(s)}</option>
+              ))}
+            </StyledSelect>
+          </div>
           <button
             type="button"
             onClick={() => setBulkDeleteOpen(true)}
@@ -3789,6 +3831,18 @@ export default function TripsPage() {
           </button>
         </div>
       )}
+
+      {/* ── Confirmación de cambio de estado en lote ── */}
+      <ConfirmDialog
+        open={!!bulkStatus}
+        danger={bulkStatus === "CANCELLED"}
+        title={bulkStatus ? mensajeConfirmarCambio(selectedIds.size, bulkStatus).titulo : ""}
+        message={bulkStatus ? mensajeConfirmarCambio(selectedIds.size, bulkStatus).mensaje : ""}
+        confirmLabel={bulkBusy ? "Cambiando…" : "Cambiar"}
+        cancelLabel="Volver"
+        onConfirm={runBulkStatus}
+        onCancel={() => { if (!bulkBusy) setBulkStatus(null); }}
+      />
 
       {/* ── Confirmación de borrado en lote ── */}
       <ConfirmDialog
