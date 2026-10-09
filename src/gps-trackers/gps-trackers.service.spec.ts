@@ -106,6 +106,11 @@ describe('GpsTrackersService', () => {
     const [equipo] = (await service.listar()).equipos;
     expect(equipo.posicionesGuardadas).toBe(1);
     expect(equipo.vehiclePlate).toBe('KBGB58');
+    expect(equipo.conductorId).toBe('drv-1');
+    expect(equipo.tripId).toBe('trip-1');
+    // Filtrado por evento: el vehículo es del evento ev-1, no de otro.
+    expect((await service.listar('ev-1')).equipos.length).toBe(1);
+    expect((await service.listar('otro')).equipos.length).toBe(0);
     expect(service.ultimosPaquetes('123456789012345').map((p) => p.tipo)).toEqual(['posicion', 'login']);
   });
 

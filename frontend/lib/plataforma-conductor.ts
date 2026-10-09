@@ -64,6 +64,7 @@ const MEDIO: Record<string, string> = {
   "navegador-iphone": "Navegador iPhone",
   navegador: "Navegador",
   web: "Web",
+  "gps-vehiculo": "GPS del vehículo",
 };
 
 const ESTADO: Record<string, { texto: string; alerta: boolean }> = {

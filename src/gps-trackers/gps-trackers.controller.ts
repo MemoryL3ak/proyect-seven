@@ -9,8 +9,8 @@ export class GpsTrackersController {
   constructor(private readonly service: GpsTrackersService) {}
 
   @Get()
-  listar() {
-    return this.service.listar();
+  listar(@Query('eventId') eventId?: string) {
+    return this.service.listar(eventId?.trim() || undefined);
   }
 
   /** Últimas tramas recibidas (hex), para reconocer un equipo nuevo o depurar. */

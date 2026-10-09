@@ -51,6 +51,7 @@ describe("plataformaConductor", () => {
     expect(etiquetaPlataforma("app-android:sin-fijos")).toEqual({ texto: "App Android · la app dice que rastrea pero no entrega posiciones", alerta: true });
     // Latidos anteriores al 30-09-2026 y códigos desconocidos se muestran tal cual.
     expect(etiquetaPlataforma("web")).toEqual({ texto: "Web", alerta: false });
+    expect(etiquetaPlataforma("gps-vehiculo")).toEqual({ texto: "GPS del vehículo", alerta: false });
     expect(etiquetaPlataforma("raro")).toEqual({ texto: "raro", alerta: false });
     expect(etiquetaPlataforma(null)).toBeNull();
   });

@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/Icons";
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
+import StyledSelect from "@/components/StyledSelect";
+import { estadoDeEquipo, hace, marcadorDeEquipo, nombreEquipo, type EquipoGps } from "@/lib/gps-vehiculos";
 
 const DriverPresenceMap = dynamic(() => import("@/components/DriverPresenceMap"), {
   ssr: false,
@@ -89,6 +91,9 @@ type Snapshot = {
 };
 
 type OccupancyFilter = "" | "BUSY" | "FREE";
+/** De dónde sale la posición: la app del conductor, el GPS del vehículo (rastreador OBD) o ambas. */
+type Fuente = "" | "app" | "gps";
+type VehiculoItem = { id: string; plate?: string | null; eventId?: string | null };
 
 type PositionItem = {
   id: string;
@@ -192,6 +197,11 @@ export default function DriverMonitoringPage() {
   const [disciplineFilter, setDisciplineFilter] = useState<string>("");
   const [regionFilter, setRegionFilter] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  // 09-10-2026: rastreadores GPS en los vehículos (src/gps-trackers). Se ven
+  // junto a los conductores o solos, con el filtro "Fuente".
+  const [fuente, setFuente] = useState<Fuente>("");
+  const [equipos, setEquipos] = useState<EquipoGps[]>([]);
+  const [vehiculos, setVehiculos] = useState<VehiculoItem[]>([]);
 
   const isToday = selectedDate === today;
 
@@ -223,6 +233,10 @@ export default function DriverMonitoringPage() {
       const data = await apiFetch<Snapshot>(url);
       setSnapshot(data);
       setError(null);
+      // Equipos GPS de vehículo: vienen aparte de la presencia de la app.
+      apiFetch<{ equipos: EquipoGps[] }>(`/gps-trackers${eventoId ? `?eventId=${encodeURIComponent(eventoId)}` : ""}`)
+        .then((r) => setEquipos(r?.equipos ?? []))
+        .catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar el monitoreo."));
     } finally {
@@ -238,6 +252,11 @@ export default function DriverMonitoringPage() {
     const interval = setInterval(load, 8000);
     return () => clearInterval(interval);
   }, [load, isToday]);
+
+  // Vehículos del evento, para asignarle uno a cada equipo GPS.
+  useEffect(() => {
+    apiFetch<VehiculoItem[]>("/transports").then((v) => setVehiculos(v || [])).catch(() => {});
+  }, []);
 
   // Live GPS layer: Supabase Realtime pushes every new position the instant it
   // lands; a fast poll backs it up where Realtime isn't connected. This is the
@@ -421,6 +440,17 @@ export default function DriverMonitoringPage() {
     [visibleDrivers, livePositions, nowTick, t],
   );
 
+  const marcadoresEquipos = useMemo(
+    () => equipos.map((e) => marcadorDeEquipo(e, nowTick)).filter((m): m is PresenceMarker => m !== null),
+    [equipos, nowTick],
+  );
+  // Qué va al mapa según la fuente elegida.
+  const marcadoresMapa = fuente === "gps" ? marcadoresEquipos : fuente === "app" ? markers : [...markers, ...marcadoresEquipos];
+  const vehiculosDelEvento = useMemo(
+    () => vehiculos.filter((v) => !eventoId || !v.eventId || v.eventId === eventoId),
+    [vehiculos, eventoId],
+  );
+
   const onTripCount = useMemo(
     () => drivers.filter((d) => d.activeTrips > 0).length,
     [drivers],
@@ -428,13 +458,27 @@ export default function DriverMonitoringPage() {
 
   const busyCount = useMemo(() => drivers.filter((d) => d.activeTrips > 0).length, [drivers]);
   const freeCount = useMemo(() => drivers.filter((d) => d.activeTrips === 0).length, [drivers]);
-  const hasFilters = !!(clientTypeFilter || occupancyFilter || disciplineFilter || regionFilter || searchQuery);
+  const hasFilters = !!(clientTypeFilter || occupancyFilter || disciplineFilter || regionFilter || searchQuery || fuente);
   const clearFilters = () => {
     setClientTypeFilter("");
     setOccupancyFilter("");
     setDisciplineFilter("");
     setRegionFilter("");
     setSearchQuery("");
+    setFuente("");
+  };
+
+  const asignarEquipo = async (imei: string, vehicleId: string | null) => {
+    try {
+      await apiFetch(`/gps-trackers/${imei}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ vehicleId }),
+      });
+      await load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("No se pudo asignar el equipo"));
+    }
   };
 
   const exportCsv = () => {
@@ -613,6 +657,8 @@ export default function DriverMonitoringPage() {
         isToday={isToday}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        fuente={fuente}
+        setFuente={setFuente}
         occupancyFilter={occupancyFilter}
         setOccupancyFilter={setOccupancyFilter}
         clientTypeFilter={clientTypeFilter}
@@ -632,7 +678,7 @@ export default function DriverMonitoringPage() {
         clearFilters={clearFilters}
       />
 
-      {visibleDrivers.length > 0 && (
+      {(fuente === "gps" ? marcadoresEquipos.length > 0 : visibleDrivers.length > 0 || marcadoresEquipos.length > 0) && (
         <section
           className="rounded-2xl overflow-hidden"
           style={{
@@ -646,7 +692,7 @@ export default function DriverMonitoringPage() {
               {t("Mapa de conductores")}
             </h2>
             <span className="text-xs" style={{ color: SURFACE.textFaint }}>
-              {markers.length} {t("con señal GPS")}
+              {marcadoresMapa.length} {t("con señal GPS")}
               {onTripCount > 0 && (
                 <>
                   {" · "}
@@ -657,7 +703,7 @@ export default function DriverMonitoringPage() {
               )}
             </span>
           </div>
-          {markers.length === 0 ? (
+          {marcadoresMapa.length === 0 ? (
             <div
               className="rounded-xl flex items-center justify-center text-center px-4 m-4"
               style={{ height: 280, background: SURFACE.borderMuted }}
@@ -670,13 +716,17 @@ export default function DriverMonitoringPage() {
             </div>
           ) : (
             <div style={{ padding: isMobile ? 8 : 16 }}>
-              <DriverPresenceMap markers={markers} height={isMobile ? 340 : 420} />
+              <DriverPresenceMap markers={marcadoresMapa} height={isMobile ? 340 : 420} />
             </div>
           )}
         </section>
       )}
 
-      {loading && !snapshot ? (
+      {fuente !== "app" && (fuente === "gps" || equipos.length > 0) && (
+        <SeccionEquiposGps equipos={equipos} vehiculos={vehiculosDelEvento} ahora={nowTick} onAsignar={asignarEquipo} />
+      )}
+
+      {fuente !== "gps" && (loading && !snapshot ? (
         <section className="surface rounded-2xl p-8">
           <p className="text-sm" style={{ color: "var(--text-muted)" }}>{t("Cargando monitoreo…")}</p>
         </section>
@@ -1055,8 +1105,134 @@ export default function DriverMonitoringPage() {
           </div>
           )}
         </div>
-      )}
+      ))}
     </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// SeccionEquiposGps — rastreadores GPS de vehículo (09-10-2026)
+// ────────────────────────────────────────────────────────────────────────────
+
+function SeccionEquiposGps({
+  equipos,
+  vehiculos,
+  ahora,
+  onAsignar,
+}: {
+  equipos: EquipoGps[];
+  vehiculos: VehiculoItem[];
+  ahora: number;
+  onAsignar: (imei: string, vehicleId: string | null) => Promise<void>;
+}) {
+  const { t } = useI18n();
+  const [guardando, setGuardando] = useState<string | null>(null);
+  const pill = (texto: string, activo: boolean) => (
+    <span
+      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
+      style={{
+        background: activo ? STATE.successSoft : SURFACE.borderMuted,
+        color: activo ? STATE.successText : SURFACE.textMuted,
+        border: `1px solid ${activo ? STATE.successBorder : SURFACE.border}`,
+        whiteSpace: "nowrap",
+      }}
+    >
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: activo ? STATE.success : SURFACE.textFaint }} />
+      {texto}
+    </span>
+  );
+  const th = (texto: string) => (
+    <th className="text-left p-3 text-xs font-semibold uppercase tracking-wider" style={{ color: SURFACE.textMuted, whiteSpace: "nowrap" }}>{texto}</th>
+  );
+  return (
+    <section
+      className="rounded-2xl overflow-hidden"
+      style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, boxShadow: "0 1px 4px rgba(15,23,42,0.04)" }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2 p-4" style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
+        <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: SURFACE.textSecondary }}>
+          {t("GPS de vehículos")}
+        </h2>
+        <span style={{ fontSize: 11.5, color: SURFACE.textFaint, fontWeight: 500 }}>
+          {equipos.length} {equipos.length === 1 ? t("equipo") : t("equipos")}
+        </span>
+      </div>
+      {equipos.length === 0 ? (
+        <p className="p-6 text-sm" style={{ color: SURFACE.textMuted, margin: 0 }}>
+          {t("Ningún equipo GPS se ha conectado todavía. Al apuntarlo al servidor (SMS SERVER) aparece acá con su IMEI, y se le asigna un vehículo.")}
+        </p>
+      ) : (
+        <div style={{ overflowX: "auto" }}>
+          <table className="w-full text-sm">
+            <thead>
+              <tr style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
+                {th(t("Equipo"))}
+                {th(t("Vehículo"))}
+                {th(t("Conductor"))}
+                {th(t("Conexión"))}
+                {th(t("GPS"))}
+                {th(t("Última posición"))}
+                {th(t("Velocidad"))}
+              </tr>
+            </thead>
+            <tbody>
+              {equipos.map((e) => {
+                const estado = estadoDeEquipo(e, ahora);
+                const p = e.ultimaPosicion;
+                return (
+                  <tr key={e.imei} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
+                    <td className="p-3">
+                      <div style={{ fontWeight: 700, color: SURFACE.text }}>{nombreEquipo(e)}</div>
+                      <div style={{ fontSize: 11, color: SURFACE.textFaint }}>IMEI {e.imei}</div>
+                      {e.ultimoError && <div style={{ fontSize: 11, color: STATE.dangerText }}>{e.ultimoError}</div>}
+                    </td>
+                    <td className="p-3" style={{ minWidth: 180 }}>
+                      <StyledSelect
+                        value={e.vehicleId ?? ""}
+                        disabled={guardando === e.imei}
+                        onChange={(ev) => {
+                          const v = ev.target.value || null;
+                          setGuardando(e.imei);
+                          onAsignar(e.imei, v).finally(() => setGuardando(null));
+                        }}
+                      >
+                        <option value="">{t("Sin vehículo")}</option>
+                        {vehiculos.map((v) => (
+                          <option key={v.id} value={v.id}>{v.plate || v.id.slice(0, 8)}</option>
+                        ))}
+                      </StyledSelect>
+                    </td>
+                    <td className="p-3" style={{ whiteSpace: "nowrap", color: e.conductorNombre ? SURFACE.text : SURFACE.textFaint }}>
+                      {e.conductorNombre ?? "—"}
+                      {e.tripId && <div style={{ fontSize: 11, color: STATE.successText, fontWeight: 700 }}>{t("En viaje")}</div>}
+                    </td>
+                    <td className="p-3" style={{ whiteSpace: "nowrap" }}>
+                      {pill(estado.conectado ? t("Conectado") : t("Sin conexión"), estado.conectado)}
+                      <div style={{ fontSize: 11, color: SURFACE.textFaint, marginTop: 3 }}>{hace(estado.edadPaqueteS)}</div>
+                    </td>
+                    <td className="p-3" style={{ whiteSpace: "nowrap" }}>
+                      {pill(estado.gpsVivo ? t("Con señal") : t("Sin señal"), estado.gpsVivo)}
+                      <div style={{ fontSize: 11, color: SURFACE.textFaint, marginTop: 3 }}>{hace(estado.edadGpsS)}</div>
+                    </td>
+                    <td className="p-3" style={{ whiteSpace: "nowrap", fontSize: 12, color: SURFACE.textSecondary }}>
+                      {p ? `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}` : "—"}
+                      {p && (
+                        <div style={{ fontSize: 11, color: SURFACE.textFaint }}>
+                          {new Date(p.fecha).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} · {p.satelites > 0 ? `${p.satelites} sat.` : t("guardada")}
+                        </div>
+                      )}
+                    </td>
+                    <td className="p-3" style={{ whiteSpace: "nowrap", color: SURFACE.textSecondary }}>
+                      {p ? `${Math.round(p.velocidad)} km/h` : "—"}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -1071,6 +1247,8 @@ type FiltersBarProps = {
   isToday: boolean;
   searchQuery: string;
   setSearchQuery: (s: string) => void;
+  fuente: Fuente;
+  setFuente: (f: Fuente) => void;
   occupancyFilter: OccupancyFilter;
   setOccupancyFilter: (o: OccupancyFilter) => void;
   clientTypeFilter: string;
@@ -1112,6 +1290,16 @@ function FiltersBar(p: FiltersBarProps) {
               fontWeight: 600,
             }}
           />
+        </label>
+
+        {/* Fuente de la posición: app del conductor o GPS del vehículo */}
+        <label className="text-sm block">
+          <span className="block mb-1">{t("Fuente")}</span>
+          <StyledSelect value={p.fuente} onChange={(e) => p.setFuente(e.target.value as Fuente)}>
+            <option value="">{t("App y GPS del vehículo")}</option>
+            <option value="app">{t("Sólo app del conductor")}</option>
+            <option value="gps">{t("Sólo GPS del vehículo")}</option>
+          </StyledSelect>
         </label>
 
         {/* Buscar */}

@@ -29,6 +29,11 @@ export type EstadoEquipo = {
   vehicleId: string | null;
   vehiclePlate: string | null;
   eventId: string | null;
+  label: string | null;
+  /** Conductor al que se atribuye la posición (viaje en curso o viaje de hoy con ese vehículo). */
+  conductorId: string | null;
+  conductorNombre: string | null;
+  tripId: string | null;
   ultimoError: string | null;
 };
 
@@ -52,6 +57,8 @@ const MAX_PAQUETES = 300;
 const MAX_BUFFER = 4096;
 const CACHE_ASIGNACION_MS = 5 * 60 * 1000;
 const INACTIVIDAD_MS = 15 * 60 * 1000;
+/** Cada cuánto se refresca last_seen_at en la base por equipo (sobrevive a reinicios). */
+const REGISTRO_MS = 60 * 1000;
 
 @Injectable()
 export class GpsTrackersService implements OnApplicationBootstrap, OnApplicationShutdown {
@@ -61,6 +68,7 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
   private readonly equipos = new Map<string, EstadoEquipo>();
   private readonly asignaciones = new Map<string, Asignacion>();
   private readonly paquetes: PaqueteRegistrado[] = [];
+  private readonly ultimoRegistro = new Map<string, number>();
   /** null = todavía no se intentó leer telemetry.gps_devices. */
   private tablaDisponible: boolean | null = null;
 
@@ -146,7 +154,7 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
       respuesta: respuesta ? respuesta.toString('hex') : null,
       posicion: mensaje.tipo === 'posicion' ? mensaje.posicion : null,
     });
-    if (mensaje.tipo === 'login') await this.registrarEquipo(mensaje.imei);
+    if (c.imei) await this.registrarEquipo(c.imei, mensaje.tipo === 'login');
     if (mensaje.tipo === 'posicion' && c.imei) await this.guardarPosicion(c.imei, mensaje);
   }
 
@@ -158,7 +166,7 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
   private equipo(imei: string): EstadoEquipo {
     let e = this.equipos.get(imei);
     if (!e) {
-      e = { imei, conectado: false, conectadoDesde: null, ultimoPaquete: null, ultimaPosicion: null, paquetes: 0, posicionesGuardadas: 0, vehicleId: null, vehiclePlate: null, eventId: null, ultimoError: null };
+      e = { imei, conectado: false, conectadoDesde: null, ultimoPaquete: null, ultimaPosicion: null, paquetes: 0, posicionesGuardadas: 0, vehicleId: null, vehiclePlate: null, eventId: null, label: null, conductorId: null, conductorNombre: null, tripId: null, ultimoError: null };
       this.equipos.set(imei, e);
     }
     return e;
@@ -170,8 +178,11 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     return Boolean(error && (error.code === '42P01' || /gps_devices/.test(error.message ?? '') && /not find|does not exist|schema cache/i.test(error.message ?? '')));
   }
 
-  private async registrarEquipo(imei: string) {
+  private async registrarEquipo(imei: string, forzar = false) {
     if (this.tablaDisponible === false) return;
+    const ahora = Date.now();
+    if (!forzar && ahora - (this.ultimoRegistro.get(imei) ?? 0) < REGISTRO_MS) return;
+    this.ultimoRegistro.set(imei, ahora);
     const { error } = await this.supabase
       .schema('telemetry')
       .from('gps_devices')
@@ -249,6 +260,8 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     equipo.eventId = a.eventId;
     if (!a.vehicleId) return; // equipo sin vehículo: queda a la vista en el panel para asignarlo
     const c = await this.conductorDelVehiculo(a.vehicleId);
+    equipo.conductorId = c.driverId;
+    equipo.tripId = c.tripId;
     const fila = {
       event_id: c.eventId ?? a.eventId,
       vehicle_id: a.vehicleId,
@@ -272,8 +285,14 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
 
   // ── Panel ───────────────────────────────────────────────────────────────
 
-  async listar(): Promise<{ puerto: number; tabla: boolean | null; equipos: EstadoEquipo[] }> {
-    const equipos = Array.from(this.equipos.values());
+  /**
+   * Equipos para el panel (Monitoreo de conductores, filtro "GPS del
+   * vehículo"). Mezcla lo que hay en memoria con la tabla, completa la
+   * última posición desde la base cuando el proceso se reinició, y atribuye
+   * cada vehículo a su conductor. Con `eventId` se muestran los vehículos
+   * de ese evento y los equipos aún sin vehículo (hay que poder asignarlos).
+   */
+  async listar(eventId?: string): Promise<{ puerto: number; tabla: boolean | null; equipos: EstadoEquipo[] }> {
     if (this.tablaDisponible !== false) {
       const { data, error } = await this.supabase
         .schema('telemetry')
@@ -285,6 +304,7 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
         for (const fila of data as Array<{ imei: string; vehicle_id: string | null; label: string | null; last_seen_at: string | null }>) {
           const e = this.equipo(fila.imei);
           e.vehicleId = fila.vehicle_id;
+          e.label = fila.label;
           if (!e.ultimoPaquete && fila.last_seen_at) e.ultimoPaquete = fila.last_seen_at;
         }
       } else if (this.esTablaAusente(error)) {
@@ -295,13 +315,40 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     if (ids.length > 0) {
       const filas = (await this.dataSource.query(`select id, plate, event_id from transport.vehicles where id = any($1)`, [ids])) as Array<{ id: string; plate: string | null; event_id: string | null }>;
       const porId = new Map(filas.map((f) => [f.id, f]));
+      // Última posición guardada por vehículo (tras un reinicio la memoria está vacía).
+      const ultimas = (await this.dataSource.query(
+        `select distinct on (vehicle_id) vehicle_id, lat, lng, "timestamp", created_at, speed, heading
+           from telemetry.vehicle_positions
+          where vehicle_id = any($1) and "timestamp" > now() - interval '2 days'
+          order by vehicle_id, "timestamp" desc`,
+        [ids],
+      )) as Array<{ vehicle_id: string; lat: number | null; lng: number | null; timestamp: string; created_at: string; speed: number | null; heading: number | null }>;
+      const ultimaPor = new Map(ultimas.map((u) => [u.vehicle_id, u]));
       for (const e of this.equipos.values()) {
         const v = e.vehicleId ? porId.get(e.vehicleId) : undefined;
         e.vehiclePlate = v?.plate ?? null;
         e.eventId = v?.event_id ?? null;
+        const u = e.vehicleId ? ultimaPor.get(e.vehicleId) : undefined;
+        if (u && u.lat != null && u.lng != null && (!e.ultimaPosicion || new Date(u.timestamp) > e.ultimaPosicion.fecha)) {
+          e.ultimaPosicion = { fecha: new Date(u.timestamp), satelites: 0, lat: u.lat, lng: u.lng, velocidad: Math.round((u.speed ?? 0) * 3.6), rumbo: u.heading ?? 0, valido: true, recibida: u.created_at };
+        }
+        if (e.vehicleId) {
+          const c = await this.conductorDelVehiculo(e.vehicleId);
+          e.conductorId = c.driverId;
+          e.tripId = c.tripId;
+        }
+      }
+      const conductores = Array.from(new Set(Array.from(this.equipos.values()).map((e) => e.conductorId).filter((v): v is string => Boolean(v))));
+      if (conductores.length > 0) {
+        const nombres = (await this.dataSource.query(`select id, full_name from core.provider_participants where id = any($1)`, [conductores])) as Array<{ id: string; full_name: string | null }>;
+        const nombrePor = new Map(nombres.map((n) => [n.id, n.full_name]));
+        for (const e of this.equipos.values()) e.conductorNombre = e.conductorId ? (nombrePor.get(e.conductorId) ?? null) : null;
       }
     }
-    return { puerto: this.puerto, tabla: this.tablaDisponible, equipos: Array.from(this.equipos.values()).sort((x, y) => (y.ultimoPaquete ?? '').localeCompare(x.ultimoPaquete ?? '')) };
+    const equipos = Array.from(this.equipos.values())
+      .filter((e) => !eventId || !e.vehicleId || e.eventId === eventId)
+      .sort((x, y) => (y.ultimoPaquete ?? '').localeCompare(x.ultimoPaquete ?? ''));
+    return { puerto: this.puerto, tabla: this.tablaDisponible, equipos };
   }
 
   ultimosPaquetes(imei?: string, limite = 100): PaqueteRegistrado[] {
