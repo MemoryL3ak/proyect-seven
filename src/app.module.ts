@@ -50,6 +50,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { WorkforceModule } from './workforce/workforce.module';
 import { CouponsModule } from './coupons/coupons.module';
 import { DriverPresenceModule } from './driver-presence/driver-presence.module';
+import { GpsTrackersModule } from './gps-trackers/gps-trackers.module';
 import { IncidentsModule } from './incidents/incidents.module';
 import { FleetModule } from './fleet/fleet.module';
 import { TripRequestsModule } from './trip-requests/trip-requests.module';
@@ -117,6 +118,7 @@ import { VipMonitoringModule } from './vip-monitoring/vip-monitoring.module';
     WorkforceModule,
     CouponsModule,
     DriverPresenceModule,
+    GpsTrackersModule,
     IncidentsModule,
     FleetModule,
     TripRequestsModule,
