@@ -95,14 +95,14 @@ describe('GT06', () => {
     expect(decodificarGps(bloque)).toBeNull();
   });
 
-  it('el latido se contesta con su mismo protocolo y serie; a lo desconocido no se contesta', () => {
+  it('el latido y lo desconocido (0x94 de identificación) se contestan con su mismo protocolo y serie', () => {
     const [trama] = separarTramas(LATIDO).tramas;
     const m = interpretar(trama);
     expect(m.tipo).toBe('latido');
     expect(respuestaPara(m)).toEqual(respuesta(0x13, 0x000f));
     const desconocida = separarTramas(respuesta(0x94, 7)).tramas[0];
     expect(interpretar(desconocida).tipo).toBe('otro');
-    expect(respuestaPara(interpretar(desconocida))).toBeNull();
+    expect(respuestaPara(interpretar(desconocida))).toEqual(respuesta(0x94, 7));
   });
 
   it('la petición de hora se contesta con la fecha UTC del servidor', () => {

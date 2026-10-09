@@ -136,6 +136,9 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
 
   private atender(socket: net.Socket) {
     const origen = `${socket.remoteAddress ?? '?'}:${socket.remotePort ?? '?'}`;
+    // Las respuestas son de 10 bytes y el equipo las espera: sin Nagle salen
+    // en el acto, no cuando el sistema junte más datos.
+    socket.setNoDelay(true);
     this.conexiones.set(socket, { buffer: Buffer.alloc(0), imei: null, desde: new Date(), origen });
     // El ciclo de la conexión también queda en el registro: un equipo que
     // conecta, hace login y corta se diagnostica por acá (09-10-2026: el

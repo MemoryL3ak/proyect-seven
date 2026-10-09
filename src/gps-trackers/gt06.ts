@@ -214,6 +214,9 @@ export function respuestaHora(serie: number, ahora = new Date()): Buffer {
  */
 export function respuestaPara(m: MensajeGt06, ahora = new Date()): Buffer | null {
   if (m.tipo === 'hora') return respuestaHora(m.trama.serie, ahora);
-  if (m.tipo === 'otro' || m.tipo === 'respuesta') return null;
+  if (m.tipo === 'respuesta') return null;
+  // A lo desconocido también se le contesta con su protocolo y serie: los
+  // equipos 4G mandan 0x94 (identificación) tras el login y algunos esperan
+  // el acuse; un acuse de más no molesta a ninguno.
   return respuesta(m.trama.protocolo, m.trama.serie);
 }
