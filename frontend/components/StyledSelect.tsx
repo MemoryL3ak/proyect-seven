@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { BRAND, SURFACE } from "@/lib/design";
 import { ChevronDownIcon, CheckIcon } from "@/components/ui/Icons";
+import { altoEstimadoDeLista, direccionDeLista, type DireccionLista } from "@/lib/desplegable";
 
 type Option = { value: string; label: string; disabled?: boolean };
 
@@ -39,11 +40,23 @@ export default function StyledSelect({
 }: Props) {
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(false);
+  // Hacia dónde se abre la lista: hacia arriba cuando abajo no cabe (barra
+  // flotante al pie de Viajes, 09-10-2026).
+  const [direccion, setDireccion] = useState<DireccionLista>("abajo");
   const ref = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
   const options = parseOptions(children);
   const selected = options.find((o) => o.value === value);
+
+  const alternar = () => {
+    if (disabled) return;
+    if (!open && ref.current && typeof window !== "undefined") {
+      const r = ref.current.getBoundingClientRect();
+      setDireccion(direccionDeLista(window.innerHeight - r.bottom, r.top, altoEstimadoDeLista(options.length)));
+    }
+    setOpen((v) => !v);
+  };
 
   // Close on outside click
   useEffect(() => {
@@ -61,7 +74,7 @@ export default function StyledSelect({
     const idx = options.findIndex((o) => o.value === value);
     if (e.key === "Enter" || e.key === " ") {
       e.preventDefault();
-      setOpen((v) => !v);
+      alternar();
     } else if (e.key === "Escape") {
       setOpen(false);
     } else if (e.key === "ArrowDown") {
@@ -85,6 +98,7 @@ export default function StyledSelect({
   const active = open || focused;
   const borderColor = active ? BRAND.teal : SURFACE.border;
   const shadow = open ? "0 0 0 3px rgba(33,208,179,0.12)" : "none";
+  const arriba = open && direccion === "arriba";
 
   return (
     <div
@@ -100,20 +114,20 @@ export default function StyledSelect({
         tabIndex={disabled ? -1 : 0}
         onFocus={() => setFocused(true)}
         onBlur={() => { setFocused(false); }}
-        onMouseDown={(e) => { e.preventDefault(); if (!disabled) setOpen((v) => !v); }}
+        onMouseDown={(e) => { e.preventDefault(); alternar(); }}
         onKeyDown={handleKeyDown}
         style={{
           display: "flex",
           alignItems: "center",
           justifyContent: "space-between",
           padding: "7px 12px",
-          borderRadius: open ? "10px 10px 0 0" : "10px",
+          borderRadius: open ? (arriba ? "0 0 10px 10px" : "10px 10px 0 0") : "10px",
           // Sólo longhands: mezclar `border` con `borderBottom` hace que React
           // avise "Updating a style property during rerender" al abrir/cerrar.
-          borderTop: `1px solid ${borderColor}`,
+          borderTop: open && arriba ? `1px solid ${SURFACE.border}` : `1px solid ${borderColor}`,
           borderRight: `1px solid ${borderColor}`,
           borderLeft: `1px solid ${borderColor}`,
-          borderBottom: open ? `1px solid ${SURFACE.border}` : `1px solid ${borderColor}`,
+          borderBottom: open && !arriba ? `1px solid ${SURFACE.border}` : `1px solid ${borderColor}`,
           background: SURFACE.bg,
           fontSize: "13px",
           lineHeight: "1.5",
@@ -140,15 +154,15 @@ export default function StyledSelect({
           role="listbox"
           style={{
             position: "absolute",
-            top: "100%",
+            ...(arriba ? { bottom: "100%" } : { top: "100%" }),
             left: 0,
             right: 0,
             zIndex: 200,
             background: SURFACE.card,
             border: `1px solid ${BRAND.teal}`,
-            borderTop: "none",
-            borderRadius: "0 0 10px 10px",
-            boxShadow: "0 8px 24px rgba(15,23,42,0.12)",
+            ...(arriba ? { borderBottom: "none" } : { borderTop: "none" }),
+            borderRadius: arriba ? "10px 10px 0 0" : "0 0 10px 10px",
+            boxShadow: arriba ? "0 -8px 24px rgba(15,23,42,0.12)" : "0 8px 24px rgba(15,23,42,0.12)",
             // 200px cortaba la lista en la sexta fila: los tipos de cliente
             // quedaban ocultos tras el scroll y parecian no existir.
             maxHeight: "320px",
