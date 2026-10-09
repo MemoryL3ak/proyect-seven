@@ -1,4 +1,4 @@
-import { comandoEnLinea, crcItu, decodificarGps, imeiDeBcd, interpretar, respuesta, respuestaPara, separarTramas, textoDeRespuesta } from './gt06';
+import { comandoEnLinea, crcItu, decodificarGps, imeiDeBcd, interpretar, respuesta, respuestaPara, separarTramas, textoDeRespuesta, valeGuardar } from './gt06';
 
 /**
  * El login y su respuesta son las tramas de ejemplo del documento oficial
@@ -127,5 +127,19 @@ describe('GT06', () => {
     if (m.tipo === 'respuesta') expect(m.texto).toBe('TIMER:10,60;');
     expect(respuestaPara(m)).toBeNull();
     expect(textoDeRespuesta(Buffer.from([1]))).toBe('');
+  });
+
+  it('detenido se guarda una posición por minuto; en movimiento, cada 15 m; lo reenviado viejo no pisa lo nuevo', () => {
+    const t0 = new Date('2026-10-09T17:29:14Z');
+    const casa = { lat: -33.57856, lng: -70.7105, fecha: t0 };
+    expect(valeGuardar(null, casa)).toBe(true);
+    // 2 s después, sin moverse: no.
+    expect(valeGuardar(casa, { ...casa, fecha: new Date(t0.getTime() + 2000) })).toBe(false);
+    // 60 s después, sin moverse: sí (señal de vida).
+    expect(valeGuardar(casa, { ...casa, fecha: new Date(t0.getTime() + 60000) })).toBe(true);
+    // 2 s después, 20 m más al norte: sí.
+    expect(valeGuardar(casa, { lat: -33.57838, lng: -70.7105, fecha: new Date(t0.getTime() + 2000) })).toBe(true);
+    // Una posición acumulada de hace una hora, reenviada ahora: no pisa la actual.
+    expect(valeGuardar(casa, { lat: -33.6, lng: -70.7, fecha: new Date(t0.getTime() - 3600000) })).toBe(false);
   });
 });

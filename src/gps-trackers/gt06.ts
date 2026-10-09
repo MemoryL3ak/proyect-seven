@@ -220,3 +220,29 @@ export function respuestaPara(m: MensajeGt06, ahora = new Date()): Buffer | null
   // el acuse; un acuse de más no molesta a ninguno.
   return respuesta(m.trama.protocolo, m.trama.serie);
 }
+
+/** Distancia en metros entre dos coordenadas (haversine). */
+export function metrosEntre(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const R = 6371000;
+  const rad = (g: number) => (g * Math.PI) / 180;
+  const dLat = rad(bLat - aLat);
+  const dLng = rad(bLng - aLng);
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(rad(aLat)) * Math.cos(rad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+export type PuntoGuardado = { lat: number; lng: number; fecha: Date };
+
+/**
+ * Si vale la pena guardar esta posición. El G500LS manda una cada 2 s aunque
+ * esté detenido (09-10-2026): se guarda cuando se movió al menos 15 m o
+ * pasaron 60 s desde la última guardada, y nunca una más antigua que la ya
+ * guardada (al recuperar la señal reenvía lo acumulado, mezclado con lo
+ * actual). Misma regla que la ingesta de la app.
+ */
+export function valeGuardar(previa: PuntoGuardado | null, p: PuntoGuardado, minMetros = 15, minSegundos = 60): boolean {
+  if (!previa) return true;
+  if (p.fecha.getTime() < previa.fecha.getTime()) return false;
+  const segundos = (p.fecha.getTime() - previa.fecha.getTime()) / 1000;
+  return metrosEntre(previa.lat, previa.lng, p.lat, p.lng) >= minMetros || segundos >= minSegundos;
+}

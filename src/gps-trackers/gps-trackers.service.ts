@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdo
 import { SupabaseClient } from '@supabase/supabase-js';
 import * as net from 'net';
 import { DataSource } from 'typeorm';
-import { comandoEnLinea, interpretar, MensajeGt06, PosicionGt06, respuestaPara, separarTramas, TramaGt06 } from './gt06';
+import { comandoEnLinea, interpretar, MensajeGt06, PosicionGt06, PuntoGuardado, respuestaPara, separarTramas, TramaGt06, valeGuardar } from './gt06';
 
 /**
  * Receptor de rastreadores GPS de vehículo (OBD, protocolo GT06) por TCP.
@@ -97,6 +97,8 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
   private readonly atribuciones = new Map<string, Atribucion>();
   private readonly paquetes: PaqueteRegistrado[] = [];
   private readonly ultimoRegistro = new Map<string, number>();
+  /** Última posición guardada por IMEI (para no guardar una cada 2 s detenido). */
+  private readonly ultimaGuardada = new Map<string, PuntoGuardado>();
   /** Comandos en línea esperando a que el equipo se conecte (se mandan tras el login). */
   private readonly comandosPendientes = new Map<string, string[]>();
   private serieComando = 1;
@@ -369,7 +371,14 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     const equipo = this.equipo(imei);
     const p = m.posicion;
     if (!p || !p.valido) return; // sin fijo satelital: la lat/lng es la última conocida
-    equipo.ultimaPosicion = { ...p, recibida: new Date().toISOString() };
+    // Al recuperar señal el equipo reenvía lo acumulado mezclado con lo
+    // actual: la "última" posición es la más nueva, no la última en llegar.
+    if (!equipo.ultimaPosicion || p.fecha >= equipo.ultimaPosicion.fecha) {
+      equipo.ultimaPosicion = { ...p, recibida: new Date().toISOString() };
+    }
+    const punto: PuntoGuardado = { lat: p.lat, lng: p.lng, fecha: p.fecha };
+    if (!valeGuardar(this.ultimaGuardada.get(imei) ?? null, punto)) return;
+    this.ultimaGuardada.set(imei, punto);
     void this.escribirEquipo(imei, { last_lat: p.lat, last_lng: p.lng, last_fix_at: p.fecha.toISOString(), last_speed: p.velocidad / 3.6, last_heading: p.rumbo });
     const plate = await this.patenteDe(imei);
     equipo.vehiclePlate = plate;
