@@ -1237,7 +1237,10 @@ function SeccionEquiposGps({
                     </td>
                     <td className="p-3" style={{ whiteSpace: "nowrap" }}>
                       {pill(estado.conectado ? t("Conectado") : t("Sin conexión"), estado.conectado)}
-                      <div style={{ fontSize: 11, color: SURFACE.textFaint, marginTop: 3 }}>{hace(estado.edadPaqueteS)}</div>
+                      <div style={{ fontSize: 11, color: SURFACE.textFaint, marginTop: 3 }}>
+                        {hace(estado.edadPaqueteS)}
+                        {estado.conectado && e.contacto != null && ` · ${e.contacto ? t("contacto puesto") : t("contacto apagado")}`}
+                      </div>
                     </td>
                     <td className="p-3" style={{ whiteSpace: "nowrap" }}>
                       {pill(estado.gpsVivo ? t("Con señal") : t("Sin señal"), estado.gpsVivo)}

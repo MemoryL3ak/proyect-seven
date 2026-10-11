@@ -37,6 +37,8 @@ export type PosicionEquipo = {
   rumbo: number;
   valido: boolean;
   recibida: string;
+  /** Contacto puesto según el equipo (JT808). */
+  contacto?: boolean | null;
   extras?: ExtrasVehiculo | null;
 };
 
@@ -59,6 +61,12 @@ export type EquipoGps = {
   conductorNombre: string | null;
   tripId: string | null;
   ultimoError: string | null;
+  /** Del último latido (GT06) o posición (JT808): contacto puesto y si lo alimenta el auto. */
+  contacto?: boolean | null;
+  energiaExterna?: boolean | null;
+  /** Señal celular y batería interna, 0–100. */
+  senalPct?: number | null;
+  bateriaPct?: number | null;
 };
 
 /** Sin paquete en 5 minutos, el equipo está sin conexión. */
@@ -124,6 +132,92 @@ export function datosVehiculo(p: PosicionEquipo | null | undefined): { label: st
   return filas;
 }
 
+/** Marca a partir de los tres primeros caracteres del VIN (código de fabricante). */
+const MARCAS_VIN: Record<string, string> = {
+  ZFA: "Fiat", "9BD": "Fiat", "8AP": "Fiat",
+  WVW: "Volkswagen", WV1: "Volkswagen", WV2: "Volkswagen", "9BW": "Volkswagen", "3VW": "Volkswagen", "8AW": "Volkswagen", LSV: "Volkswagen",
+  KMH: "Hyundai", KMF: "Hyundai", KMJ: "Hyundai", KNA: "Kia", KNM: "Kia", KND: "Kia",
+  JTD: "Toyota", JTE: "Toyota", JTM: "Toyota", JTN: "Toyota", JTH: "Lexus", MR0: "Toyota", "8AJ": "Toyota", "9BR": "Toyota", MHF: "Toyota",
+  "1HG": "Honda", "2HG": "Honda", JHM: "Honda", "93H": "Honda",
+  MA3: "Suzuki", JS2: "Suzuki", JS3: "Suzuki",
+  JN1: "Nissan", JN8: "Nissan", "3N1": "Nissan", "3N6": "Nissan", "94D": "Nissan", MNT: "Nissan",
+  MMB: "Mitsubishi", MMC: "Mitsubishi", JA3: "Mitsubishi", JMY: "Mitsubishi",
+  WBA: "BMW", WBS: "BMW", WBY: "BMW", WDD: "Mercedes-Benz", WDB: "Mercedes-Benz", WDC: "Mercedes-Benz", WDF: "Mercedes-Benz", W1K: "Mercedes-Benz", W1V: "Mercedes-Benz", "8AC": "Mercedes-Benz",
+  YV1: "Volvo", YV4: "Volvo", VF1: "Renault", "8A1": "Renault", "93Y": "Renault", VF3: "Peugeot", VR3: "Peugeot", VF7: "Citroën", VR7: "Citroën", WAU: "Audi", TRU: "Audi",
+  "1FA": "Ford", "1FT": "Ford", "1FM": "Ford", "3FA": "Ford", "9BF": "Ford", WF0: "Ford", "8AF": "Ford", MAJ: "Ford", MNB: "Ford",
+  "1G1": "Chevrolet", "1GC": "Chevrolet", KL1: "Chevrolet", KL8: "Chevrolet", "9BG": "Chevrolet", "8AG": "Chevrolet", LZW: "Chevrolet", "3GN": "Chevrolet", "3GC": "Chevrolet",
+  MPA: "Isuzu", JAA: "Isuzu", MP1: "Isuzu",
+  LGX: "BYD", LC0: "BYD", LJ1: "JAC", L6T: "Geely", LB3: "Geely", LVV: "Chery", LGW: "Great Wall", LGB: "Nissan", LSJ: "MG", LSG: "Chevrolet", LMG: "GAC", LDC: "Dongfeng", LFV: "Volkswagen",
+  SAL: "Land Rover", ZAR: "Alfa Romeo", VSS: "Seat", TMB: "Škoda", WP0: "Porsche", JF1: "Subaru", "4S4": "Subaru", JM1: "Mazda", JMZ: "Mazda", "3MZ": "Mazda", MM8: "Mazda",
+  "1C4": "Jeep", "1J4": "Jeep", ZAC: "Jeep", "3C4": "Jeep", "5YJ": "Tesla", LRW: "Tesla", KPT: "SsangYong", NMT: "Toyota", NLH: "Hyundai",
+};
+
+export function marcaDeVin(vin: string | null | undefined): string | null {
+  if (!vin || vin.length < 3) return null;
+  return MARCAS_VIN[vin.slice(0, 3).toUpperCase()] ?? null;
+}
+
+export type Situacion = { texto: string; tono: "movimiento" | "motor" | "detenido" | "sinConexion" };
+
+/**
+ * Qué está haciendo el vehículo, en una frase: en movimiento, detenido con el
+ * motor encendido (contacto o rpm), detenido, o sin conexión. Es el titular
+ * de la ficha del equipo en el mapa (11-10-2026).
+ */
+export function situacionEquipo(e: EquipoGps, ahoraMs: number): Situacion {
+  const estado = estadoDeEquipo(e, ahoraMs);
+  if (!estado.conectado) return { texto: "Sin conexión", tono: "sinConexion" };
+  const p = e.ultimaPosicion;
+  if (estado.gpsVivo && p && p.velocidad >= 3) return { texto: "En movimiento", tono: "movimiento" };
+  const motor = (p?.extras?.rpm ?? 0) > 0 || e.contacto === true || p?.contacto === true;
+  if (motor) return { texto: "Detenido, motor encendido", tono: "motor" };
+  if (!estado.gpsVivo) return { texto: "Conectado, sin señal GPS", tono: "detenido" };
+  return { texto: "Detenido", tono: "detenido" };
+}
+
+export type SeccionFicha = { titulo: string; filas: { label: string; value: string }[] };
+
+const horaCorta = (iso: string) => new Date(iso).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+
+/**
+ * La ficha del equipo en el mapa, por secciones: el vehículo (patente, marca,
+ * conductor, viaje), lo que pasa ahora (velocidad, motor, combustible…) y el
+ * equipo (modelo, identificador, señal, última posición y conexión).
+ */
+export function fichaEquipo(e: EquipoGps, ahoraMs: number): SeccionFicha[] {
+  const estado = estadoDeEquipo(e, ahoraMs);
+  const p = e.ultimaPosicion;
+  const x = p?.extras;
+  const marca = marcaDeVin(x?.vin);
+  const contacto = e.contacto ?? p?.contacto ?? null;
+  const vehiculo = [
+    { label: "Patente", value: e.vehiclePlate ?? "sin asignar" },
+    ...(marca ? [{ label: "Marca", value: marca }] : []),
+    ...(x?.vin ? [{ label: "VIN", value: x.vin }] : []),
+    { label: "Conductor", value: e.conductorNombre ?? "—" },
+    { label: "Viaje", value: e.tripId ? "En viaje" : "Sin viaje en curso" },
+  ];
+  const ahora = [
+    ...(p ? [{ label: "Velocidad GPS", value: `${Math.round(p.velocidad)} km/h` }] : []),
+    ...datosVehiculo(p),
+    ...(contacto != null ? [{ label: "Contacto", value: contacto ? "puesto" : "apagado" }] : []),
+  ];
+  const equipo = [
+    { label: "Equipo", value: e.modelo?.trim().split(" ")[0] || (e.protocolo === "JT808" ? "SEG-9888G" : "Rastreador GT06") },
+    { label: e.protocolo === "JT808" ? "ID" : "IMEI", value: e.imei },
+    ...(e.senalPct != null ? [{ label: "Señal celular", value: `${e.senalPct} %` }] : []),
+    ...(p && p.satelites > 0 ? [{ label: "Satélites", value: String(p.satelites) }] : []),
+    { label: "Última posición", value: p ? `${horaCorta(p.fecha)} · ${hace(estado.edadGpsS)}` : "nunca" },
+    { label: "Última conexión", value: hace(estado.edadPaqueteS) },
+    ...(e.energiaExterna != null ? [{ label: "Energía", value: e.energiaExterna ? "del vehículo" : "batería interna" }] : []),
+  ];
+  return [
+    { titulo: "Vehículo", filas: vehiculo },
+    { titulo: "Ahora", filas: ahora },
+    { titulo: "Equipo", filas: equipo },
+  ].filter((s) => s.filas.length > 0);
+}
+
 /** Marcador del mapa; null si el equipo nunca mandó una posición. */
 export function marcadorDeEquipo(e: EquipoGps, ahoraMs: number): PresenceMarker | null {
   const p = e.ultimaPosicion;
@@ -142,15 +236,19 @@ export function marcadorDeEquipo(e: EquipoGps, ahoraMs: number): PresenceMarker 
     lat: p.lat,
     lng: p.lng,
     name: nombreEquipo(e),
+    // En el pin: la patente, o "GPS" mientras no la tenga.
+    iniciales: e.vehiclePlate ? e.vehiclePlate.slice(0, 4) : "GPS",
     online: estado.gpsVivo,
     conectado: estado.conectado,
     onTrip: Boolean(e.tripId) && estado.gpsVivo,
     tripLabel: e.tripId ? "En viaje" : null,
+    estadoTexto: situacionEquipo(e, ahoraMs).texto,
     lastSeen: hace(estado.edadPaqueteS),
-    gpsTime: new Date(p.fecha).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }),
+    gpsTime: horaCorta(p.fecha),
     activeTrips: e.tripId ? 1 : 0,
     platform: "gps-vehiculo",
     clientTypes: [],
     detailRows,
+    secciones: fichaEquipo(e, ahoraMs),
   };
 }

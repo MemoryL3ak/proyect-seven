@@ -5,10 +5,10 @@ const REGISTRO = Buffer.from('7e0100002d019210285072000e000000003730313132534547
 const AHORA = new Date('2026-10-11T04:20:00Z');
 
 const bcd = (n: number) => ((Math.floor(n / 10) << 4) | n % 10) & 0xff;
-const cuerpoPosicion = (p: { lat: number; lng: number; vel: number; rumbo: number; horaUtc: Date; valido?: boolean; sats?: number }) => {
+const cuerpoPosicion = (p: { lat: number; lng: number; vel: number; rumbo: number; horaUtc: Date; valido?: boolean; sats?: number; acc?: boolean }) => {
   const b = Buffer.alloc(28);
   b.writeUInt32BE(0, 0); // alarma
-  const estado = ((p.valido ?? true) ? 0x02 : 0) | (p.lat < 0 ? 0x04 : 0) | (p.lng < 0 ? 0x08 : 0) | 0x01;
+  const estado = ((p.valido ?? true) ? 0x02 : 0) | (p.lat < 0 ? 0x04 : 0) | (p.lng < 0 ? 0x08 : 0) | ((p.acc ?? true) ? 0x01 : 0);
   b.writeUInt32BE(estado, 4);
   b.writeUInt32BE(Math.round(Math.abs(p.lat) * 1e6), 8);
   b.writeUInt32BE(Math.round(Math.abs(p.lng) * 1e6), 12);
@@ -108,7 +108,7 @@ describe('JT808', () => {
     const m = interpretarJt808(separarTramasJt808(t).tramas[0], new Date('2026-10-11T13:03:27Z'));
     expect(m.tipo).toBe('posicion');
     if (m.tipo !== 'posicion') return;
-    expect(m.posicion).toMatchObject({ valido: true, satelites: 11, velocidad: 33.3, rumbo: 106 });
+    expect(m.posicion).toMatchObject({ valido: true, contacto: true, satelites: 11, velocidad: 33.3, rumbo: 106 });
     expect(m.posicion?.lat).toBeCloseTo(-33.587033, 6);
     expect(m.posicion?.lng).toBeCloseTo(-70.70382, 6);
     expect(m.posicion?.fecha.toISOString()).toBe('2026-10-11T13:03:24.000Z');
@@ -135,12 +135,13 @@ describe('JT808', () => {
 
   it('por USB, sin auto: voltaje 0 y SIM en blanco no se informan, y el bloque OBD vacío no deja rastro', () => {
     const cuerpo = Buffer.concat([
-      cuerpoPosicion({ lat: 0, lng: 0, vel: 0, rumbo: 0, horaUtc: new Date('2026-10-11T04:44:51Z'), valido: false }),
+      cuerpoPosicion({ lat: 0, lng: 0, vel: 0, rumbo: 0, horaUtc: new Date('2026-10-11T04:44:51Z'), valido: false, acc: false }),
       Buffer.from('010400000000' + 'cc140000000000000000000000000000000000000000' + '300100' + '310100' + '82020000' + 'a000', 'hex'),
     ]);
     const m = interpretarJt808(separarTramasJt808(construirTrama(MSG.POSICION, Buffer.from('019210285072', 'hex'), 1, cuerpo)).tramas[0], AHORA);
     if (m.tipo !== 'posicion') throw new Error(m.tipo);
     expect(m.posicion?.valido).toBe(false);
+    expect(m.posicion?.contacto).toBe(false);
     expect(m.posicion?.extras).toEqual({ odometroEquipoKm: 0, senal: 0, crudos: {} });
   });
 

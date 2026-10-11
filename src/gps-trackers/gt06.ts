@@ -71,13 +71,43 @@ export type PosicionGt06 = {
   rumbo: number;
   /** Bit "posicionado" del equipo: sin él la lat/lng es la última conocida. */
   valido: boolean;
+  /** Contacto puesto según el equipo (JT808: bit 0 del estado). */
+  contacto?: boolean;
   /** Sólo los equipos OBD que hablan JT808 los traen. */
   extras?: ExtrasVehiculo;
 };
 
+/**
+ * Estado que viaja en cada latido (0x13): byte de información del terminal
+ * (bit 1 ACC, bit 2 energía externa/cargando, bit 6 GPS activo), nivel de
+ * batería (0–6) y señal GSM (0–4). Es lo que permite saber si el auto tiene
+ * el contacto puesto aunque no se mueva (11-10-2026).
+ */
+export type EstadoLatido = {
+  contacto: boolean;
+  energiaExterna: boolean;
+  gpsActivo: boolean;
+  /** 0 sin energía … 6 llena. */
+  bateria: number;
+  /** 0 sin señal … 4 fuerte. */
+  senal: number;
+};
+
+export function decodificarLatido(contenido: Buffer): EstadoLatido | null {
+  if (contenido.length < 3) return null;
+  const info = contenido[0];
+  return {
+    contacto: (info & 0x02) !== 0,
+    energiaExterna: (info & 0x04) !== 0,
+    gpsActivo: (info & 0x40) !== 0,
+    bateria: Math.min(6, contenido[1]),
+    senal: Math.min(4, contenido[2]),
+  };
+}
+
 export type MensajeGt06 =
   | { tipo: 'login'; imei: string; trama: TramaGt06 }
-  | { tipo: 'latido'; trama: TramaGt06 }
+  | { tipo: 'latido'; estado: EstadoLatido | null; trama: TramaGt06 }
   | { tipo: 'posicion'; posicion: PosicionGt06 | null; alarma: boolean; trama: TramaGt06 }
   | { tipo: 'hora'; trama: TramaGt06 }
   /** Respuesta del equipo a un comando en línea (0x80): el mismo texto que contestaría por SMS. */
@@ -213,7 +243,7 @@ export function interpretar(trama: TramaGt06): MensajeGt06 {
   if (protocolo === PROTOCOLO.LOGIN) {
     return { tipo: 'login', imei: imeiDeBcd(contenido.subarray(0, 8)), trama };
   }
-  if (protocolo === PROTOCOLO.LATIDO || protocolo === PROTOCOLO.LATIDO_2) return { tipo: 'latido', trama };
+  if (protocolo === PROTOCOLO.LATIDO || protocolo === PROTOCOLO.LATIDO_2) return { tipo: 'latido', estado: decodificarLatido(contenido), trama };
   if (protocolo === PROTOCOLO.HORA) return { tipo: 'hora', trama };
   if (protocolo === PROTOCOLO.RESPUESTA_COMANDO || protocolo === PROTOCOLO.RESPUESTA_COMANDO_2) {
     return { tipo: 'respuesta', texto: textoDeRespuesta(contenido), trama };

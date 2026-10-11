@@ -28,6 +28,16 @@ export type PresenceMarker = {
   // Filas extra para el recuadro de detalle (label → valor). Permite que cada
   // monitor (conductores, VIP…) enriquezca el popup sin tocar este componente.
   detailRows?: { label: string; value: string }[];
+  /**
+   * Ficha por secciones (GPS de vehículo, 11-10-2026). Cuando viene, reemplaza
+   * al cuerpo del conductor: sin "viajes activos", "plataforma" ni tipos de
+   * cliente, que no tienen sentido para un equipo instalado en el auto.
+   */
+  secciones?: { titulo: string; filas: { label: string; value: string }[] }[];
+  /** Titular del estado bajo el nombre ("En movimiento", "Detenido, motor encendido"…). */
+  estadoTexto?: string;
+  /** Texto del pin cuando las iniciales del nombre no sirven (patente, "GPS"). */
+  iniciales?: string;
 };
 
 // Colores de chip por tipo de cliente — mismos tonos que la tabla de monitoreo.
@@ -243,9 +253,9 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
     });
 
     markers.forEach((m) => {
-      const initials = getInitials(m.name);
+      const initials = m.iniciales ?? getInitials(m.name);
       const accent = markerAccent(m);
-      const statusLabel = markerStatusLabel(m);
+      const statusLabel = m.estadoTexto ?? markerStatusLabel(m);
       const zIndex = m.onTrip ? 30 : m.online ? 20 : 10;
       const pos = { lat: m.lat, lng: m.lng };
 
@@ -268,6 +278,13 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
               </div>
             </div>
           </div>
+          ${m.secciones
+            ? m.secciones.map((s, i) => `
+          <div style="padding:${i === 0 ? "6px" : "8px"} 0 2px;${i === 0 ? "" : "margin-top:4px;border-top:1px solid #eef2f7;"}">
+            <div style="font-size:9.5px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:2px;">${s.titulo}</div>
+            ${s.filas.map((r) => statRow(r.label, r.value)).join("")}
+          </div>`).join("")
+            : `
           <div style="padding:6px 0 2px;">
             ${statRow("Última conexión", m.lastSeen)}
             ${statRow("Señal GPS", m.gpsTime)}
@@ -278,7 +295,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
           <div style="margin-top:6px;padding-top:8px;border-top:1px solid #eef2f7;">
             <div style="font-size:9.5px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:5px;">Tipos de cliente</div>
             ${clientTypeChipsHtml(m.clientTypes)}
-          </div>
+          </div>`}
         </div>
       `;
 

@@ -160,7 +160,7 @@ export function decodificarPosicionJt808(cuerpo: Buffer, ahora = new Date()): Po
   const fecha = corregirHora(new Date(Date.UTC(anio, mes - 1, dia, bcd2(h[3]), bcd2(h[4]), bcd2(h[5]))), ahora);
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
   const { satelites, extras } = leerExtras(cuerpo.subarray(28));
-  return { fecha, satelites, lat, lng, velocidad, rumbo, valido: (estado & 0x02) !== 0, ...(extras ? { extras } : {}) };
+  return { fecha, satelites, lat, lng, velocidad, rumbo, valido: (estado & 0x02) !== 0, contacto: (estado & 0x01) !== 0, ...(extras ? { extras } : {}) };
 }
 
 const texto = (b: Buffer) => b.toString('latin1').replace(/\0+$/g, '').trim();

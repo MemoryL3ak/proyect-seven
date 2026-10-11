@@ -100,6 +100,19 @@ describe('GT06', () => {
     const m = interpretar(trama);
     expect(m.tipo).toBe('latido');
     expect(respuestaPara(m)).toEqual(respuesta(0x13, 0x000f));
+  });
+
+  it('el latido trae contacto, energía externa, batería y señal (SZCS …849561 en el auto, 11-10-2026)', () => {
+    // 46 = ACC + cargando + GPS activo; batería 6/6; señal 4/4.
+    const [enAuto] = separarTramas(Buffer.from('78780a1346060400010033779a0d0a', 'hex')).tramas;
+    const m = interpretar(enAuto);
+    if (m.tipo !== 'latido') throw new Error(m.tipo);
+    expect(m.estado).toEqual({ contacto: true, energiaExterna: true, gpsActivo: true, bateria: 6, senal: 4 });
+    // 00 = desenchufado, con batería interna (G500LS …669224 por USB, 10-10-2026).
+    const [enBateria] = separarTramas(respuesta(0x13, 1, Buffer.from([0x00, 0x03, 0x02, 0x00, 0x01]))).tramas;
+    const b = interpretar(enBateria);
+    if (b.tipo !== 'latido') throw new Error(b.tipo);
+    expect(b.estado).toEqual({ contacto: false, energiaExterna: false, gpsActivo: false, bateria: 3, senal: 2 });
     const desconocida = separarTramas(respuesta(0x94, 7)).tramas[0];
     expect(interpretar(desconocida).tipo).toBe('otro');
     expect(respuestaPara(interpretar(desconocida))).toEqual(respuesta(0x94, 7));

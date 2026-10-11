@@ -44,6 +44,15 @@ export type EstadoEquipo = {
   conductorNombre: string | null;
   tripId: string | null;
   ultimoError: string | null;
+  /** Contacto puesto, según el último latido (GT06) o posición (JT808). */
+  contacto: boolean | null;
+  /** Alimentado por el vehículo (true) o por su batería interna (false). */
+  energiaExterna: boolean | null;
+  /** Señal celular 0–100. */
+  senalPct: number | null;
+  /** Batería interna del equipo 0–100 (sólo GT06). */
+  bateriaPct: number | null;
+  estadoDesde: string | null;
 };
 
 export type PaqueteRegistrado = {
@@ -236,6 +245,15 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
       equipo.conectadoDesde = equipo.conectadoDesde ?? c.desde.toISOString();
       equipo.ultimoPaquete = new Date().toISOString();
       equipo.paquetes += 1;
+      if (mensaje.tipo === 'latido' && mensaje.estado) {
+        // Contacto y energía del auto: lo que permite distinguir "detenido con
+        // motor encendido" de "apagado" en el monitoreo (11-10-2026).
+        equipo.contacto = mensaje.estado.contacto;
+        equipo.energiaExterna = mensaje.estado.energiaExterna;
+        equipo.senalPct = Math.round((mensaje.estado.senal / 4) * 100);
+        equipo.bateriaPct = Math.round((mensaje.estado.bateria / 6) * 100);
+        equipo.estadoDesde = new Date().toISOString();
+      }
     }
     this.registrar({
       en: new Date().toISOString(),
@@ -276,6 +294,15 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     equipo.paquetes += 1;
     if (mensaje.tipo === 'registro') equipo.modelo = `${mensaje.registro.modelo} ${mensaje.registro.terminalId}`.trim();
     const posicion = mensaje.tipo === 'posicion' ? mensaje.posicion : mensaje.tipo === 'posiciones' ? mensaje.posiciones[mensaje.posiciones.length - 1] ?? null : null;
+    if (posicion) {
+      if (posicion.contacto != null) equipo.contacto = posicion.contacto;
+      if (posicion.extras) {
+        // Sin voltaje del auto el equipo va por USB o por su propia batería.
+        equipo.energiaExterna = posicion.extras.voltaje != null;
+        if (posicion.extras.senal != null) equipo.senalPct = Math.round((posicion.extras.senal / 31) * 100);
+      }
+      equipo.estadoDesde = new Date().toISOString();
+    }
     this.registrar({
       en: new Date().toISOString(),
       imei: c.imei,
@@ -344,7 +371,7 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
   private equipo(imei: string): EstadoEquipo {
     let e = this.equipos.get(imei);
     if (!e) {
-      e = { imei, protocolo: null, modelo: null, conectado: false, conectadoDesde: null, ultimoPaquete: null, ultimaPosicion: null, paquetes: 0, posicionesGuardadas: 0, vehiclePlate: null, eventId: null, label: null, conductorId: null, conductorNombre: null, tripId: null, ultimoError: null };
+      e = { imei, protocolo: null, modelo: null, conectado: false, conectadoDesde: null, ultimoPaquete: null, ultimaPosicion: null, paquetes: 0, posicionesGuardadas: 0, vehiclePlate: null, eventId: null, label: null, conductorId: null, conductorNombre: null, tripId: null, ultimoError: null, contacto: null, energiaExterna: null, senalPct: null, bateriaPct: null, estadoDesde: null };
       this.equipos.set(imei, e);
     }
     return e;
