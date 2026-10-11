@@ -490,6 +490,16 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     return lista.slice(-limite).reverse();
   }
 
+  /** Quita un equipo del panel (p. ej., el IMEI del simulador de pruebas). Si vuelve a conectarse, reaparece. */
+  async eliminar(imei: string): Promise<{ eliminado: boolean }> {
+    const { error } = await this.supabase.schema('telemetry').from('gps_devices').delete().eq('imei', imei);
+    if (error && !this.esTablaAusente(error)) throw new Error(error.message);
+    this.equipos.delete(imei);
+    this.placas.delete(imei);
+    this.comandosPendientes.delete(imei);
+    return { eliminado: true };
+  }
+
   async asignar(imei: string, plate: string | null, label?: string | null): Promise<EstadoEquipo> {
     const normalizada = normalizarPatente(plate);
     const { error } = await this.supabase

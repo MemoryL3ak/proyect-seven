@@ -1,4 +1,4 @@
-import { BadRequestException, Body, Controller, Get, Param, Post, Put, Query } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { StaffOnly } from '../auth/staff-only.decorator';
 import { GpsTrackersService } from './gps-trackers.service';
 
@@ -45,6 +45,17 @@ export class GpsTrackersController {
       return await this.service.asignar(limpio, plate, body?.label);
     } catch (err) {
       throw new BadRequestException(err instanceof Error ? err.message : 'No se pudo asignar');
+    }
+  }
+
+  @Delete(':imei')
+  async eliminar(@Param('imei') imei: string) {
+    const limpio = String(imei ?? '').trim();
+    if (!/^\d{14,16}$/.test(limpio)) throw new BadRequestException('IMEI inválido');
+    try {
+      return await this.service.eliminar(limpio);
+    } catch (err) {
+      throw new BadRequestException(err instanceof Error ? err.message : 'No se pudo eliminar');
     }
   }
 }

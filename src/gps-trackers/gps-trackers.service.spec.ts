@@ -42,6 +42,7 @@ describe('GpsTrackersService', () => {
   const supabase = {
     schema: () => ({
       from: () => ({
+        delete: () => ({ eq: () => Promise.resolve({ error: null }) }),
         upsert: (fila: Record<string, unknown>) => { upserts.push(fila); return Promise.resolve({ error: null }); },
         insert: (fila: Record<string, unknown>) => { inserts.push(fila); return Promise.resolve({ error: null }); },
         select: () => ({
@@ -152,5 +153,10 @@ describe('GpsTrackersService', () => {
     expect(service.ultimosPaquetes('123456789012345').find((p) => p.tipo === 'respuesta')?.nota).toBe('TIMER:10,60;');
     // Equipo desconectado: el comando espera al próximo login.
     expect(service.enviarComando('999999999999999', 'WHERE#')).toEqual({ enviado: false, enCola: true });
+  });
+
+  it('eliminar saca el equipo del panel', async () => {
+    await service.eliminar('123456789012345');
+    expect((await service.listar()).equipos.find((e) => e.imei === '123456789012345')).toBeUndefined();
   });
 });
