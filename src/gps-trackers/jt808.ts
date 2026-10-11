@@ -9,7 +9,7 @@
  * [subpaquete (4)] | cuerpo | suma (XOR de todo lo anterior salvo el 7E) | 7E.
  * Dentro de la trama, 0x7E se escribe 7D 02 y 0x7D se escribe 7D 01.
  */
-import type { PosicionGt06 } from './gt06';
+import type { ExtrasVehiculo, PosicionGt06 } from './gt06';
 
 export type TramaJt808 = {
   cruda: Buffer;
@@ -40,6 +40,8 @@ export const MSG = {
   RESPUESTA_REGISTRO: 0x8100,
   AUTENTICACION: 0x0102,
   POSICION: 0x0200,
+  /** Del fabricante del SEG-9888G: una posición más al dar el contacto, con el mismo cuerpo que 0x0200. */
+  POSICION_EVENTO: 0x0202,
   POSICIONES: 0x0704,
 } as const;
 
@@ -156,19 +158,52 @@ export function decodificarPosicionJt808(cuerpo: Buffer, ahora = new Date()): Po
   const dia = bcd2(h[2]);
   if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
   const fecha = corregirHora(new Date(Date.UTC(anio, mes - 1, dia, bcd2(h[3]), bcd2(h[4]), bcd2(h[5]))), ahora);
-  let satelites = 0;
-  let i = 28;
-  while (i + 2 <= cuerpo.length) {
-    const id = cuerpo[i];
-    const largo = cuerpo[i + 1];
-    if (id === 0x31 && largo >= 1 && i + 2 < cuerpo.length) satelites = cuerpo[i + 2];
-    i += 2 + largo;
-  }
   if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
-  return { fecha, satelites, lat, lng, velocidad, rumbo, valido: (estado & 0x02) !== 0 };
+  const { satelites, extras } = leerExtras(cuerpo.subarray(28));
+  return { fecha, satelites, lat, lng, velocidad, rumbo, valido: (estado & 0x02) !== 0, ...(extras ? { extras } : {}) };
 }
 
 const texto = (b: Buffer) => b.toString('latin1').replace(/\0+$/g, '').trim();
+
+/**
+ * Información adicional de la posición: lista de [id (1) largo (1) valor].
+ * Los ids 0x01–0x31 son de la norma; 0x80–0x8E y 0xCC son del fabricante
+ * del SEG-9888G (ver ExtrasVehiculo). 0x9F (celda) y los vacíos se omiten.
+ */
+export function leerExtras(b: Buffer): { satelites: number; extras: ExtrasVehiculo | null } {
+  let satelites = 0;
+  const extras: ExtrasVehiculo = { crudos: {} };
+  let hay = false;
+  let i = 0;
+  while (i + 2 <= b.length) {
+    const id = b[i];
+    const largo = b[i + 1];
+    const v = b.subarray(i + 2, i + 2 + largo);
+    i += 2 + largo;
+    if (v.length !== largo) break; // TLV cortado
+    hay = true;
+    if (v.length === 0) continue;
+    const n = v.readUIntBE(0, Math.min(v.length, 6));
+    switch (id) {
+      case 0x01: extras.odometroEquipoKm = n / 10; break;
+      case 0x03: extras.velocidadObd = n / 10; break;
+      case 0x30: extras.senal = n; break;
+      case 0x31: satelites = n; break;
+      case 0x80: extras.cargaMotor = n; break;
+      case 0x81: extras.rpm = n; break;
+      case 0x82: if (n > 0) extras.voltaje = n / 10; break;
+      case 0x83: extras.velocidadObd = n; break;
+      case 0x84: extras.temperaturaMotor = n; break;
+      case 0x8b: if (texto(v)) extras.vin = texto(v); break;
+      case 0x8c: extras.kmObd = n / 10; break;
+      case 0x8e: extras.combustiblePct = n; break;
+      case 0xcc: if (texto(v)) extras.iccid = texto(v); break;
+      case 0x9f: break;
+      default: extras.crudos[id.toString(16).padStart(2, '0')] = v.toString('hex');
+    }
+  }
+  return { satelites, extras: hay ? extras : null };
+}
 
 export function interpretarJt808(trama: TramaJt808, ahora = new Date()): MensajeJt808 {
   const { msgId, cuerpo } = trama;
@@ -184,7 +219,7 @@ export function interpretarJt808(trama: TramaJt808, ahora = new Date()): Mensaje
   }
   if (msgId === MSG.AUTENTICACION) return { tipo: 'autenticacion', codigo: texto(cuerpo), trama };
   if (msgId === MSG.LATIDO) return { tipo: 'latido', trama };
-  if (msgId === MSG.POSICION) return { tipo: 'posicion', posicion: decodificarPosicionJt808(cuerpo, ahora), trama };
+  if (msgId === MSG.POSICION || msgId === MSG.POSICION_EVENTO) return { tipo: 'posicion', posicion: decodificarPosicionJt808(cuerpo, ahora), trama };
   if (msgId === MSG.POSICIONES) {
     // cantidad(2) tipo(1) y luego [largo(2) cuerpo de 0x0200] repetido.
     const posiciones: PosicionGt06[] = [];

@@ -94,6 +94,54 @@ describe('JT808', () => {
     expect(corregirHora(new Date('2026-10-11T03:40:00Z'), ahora).toISOString()).toBe('2026-10-11T03:40:00.000Z');
   });
 
+  it('con el auto andando (11-10-2026 10:03) trae los datos OBD: rpm, velocidad del auto, temperatura, voltaje, kilometraje, VIN', () => {
+    // Cuerpo real del 0x0200 de las 13:03:24Z (serie 0x57), con los TLV del fabricante.
+    const cuerpo = Buffer.from(
+      '000000000000004f02007f590436dacc0004014d006a261011210324' +
+      '010400000010' + 'cc14383935363033323235313734313732393734390d' + '300118' + '31010b' +
+      '9f143733302c30332c433335422c38323832312c3234' + '82020093' + '80011e' + '8102036f' + '830116' + '84016c' +
+      '85021b92' + '86013a' + '880141' + '89011a' + '8b115a46413333343030304a50363733353632' + '8c040003c172' + '8d0200b6' + '8e011c' + 'a000',
+      'hex',
+    );
+    expect(cuerpo.length).toBe(0x94);
+    const t = construirTrama(MSG.POSICION, Buffer.from('019210285072', 'hex'), 0x57, cuerpo);
+    const m = interpretarJt808(separarTramasJt808(t).tramas[0], new Date('2026-10-11T13:03:27Z'));
+    expect(m.tipo).toBe('posicion');
+    if (m.tipo !== 'posicion') return;
+    expect(m.posicion).toMatchObject({ valido: true, satelites: 11, velocidad: 33.3, rumbo: 106 });
+    expect(m.posicion?.lat).toBeCloseTo(-33.587033, 6);
+    expect(m.posicion?.lng).toBeCloseTo(-70.70382, 6);
+    expect(m.posicion?.fecha.toISOString()).toBe('2026-10-11T13:03:24.000Z');
+    expect(m.posicion?.extras).toEqual({
+      odometroEquipoKm: 1.6,
+      senal: 24,
+      voltaje: 14.7,
+      cargaMotor: 30,
+      rpm: 879,
+      velocidadObd: 22,
+      temperaturaMotor: 108,
+      kmObd: 24613,
+      combustiblePct: 28,
+      vin: 'ZFA334000JP673562',
+      iccid: '8956032251741729749',
+      crudos: { '85': '1b92', '86': '3a', '88': '41', '89': '1a', '8d': '00b6' },
+    });
+    // 0x0202 (al dar el contacto) es una posición más.
+    const e = interpretarJt808(separarTramasJt808(construirTrama(MSG.POSICION_EVENTO, Buffer.from('019210285072', 'hex'), 0x20, cuerpo)).tramas[0], new Date('2026-10-11T13:03:27Z'));
+    expect(e.tipo).toBe('posicion');
+  });
+
+  it('por USB, sin auto: voltaje 0 y SIM en blanco no se informan, y el bloque OBD vacío no deja rastro', () => {
+    const cuerpo = Buffer.concat([
+      cuerpoPosicion({ lat: 0, lng: 0, vel: 0, rumbo: 0, horaUtc: new Date('2026-10-11T04:44:51Z'), valido: false }),
+      Buffer.from('010400000000' + 'cc140000000000000000000000000000000000000000' + '300100' + '310100' + '82020000' + 'a000', 'hex'),
+    ]);
+    const m = interpretarJt808(separarTramasJt808(construirTrama(MSG.POSICION, Buffer.from('019210285072', 'hex'), 1, cuerpo)).tramas[0], AHORA);
+    if (m.tipo !== 'posicion') throw new Error(m.tipo);
+    expect(m.posicion?.valido).toBe(false);
+    expect(m.posicion?.extras).toEqual({ odometroEquipoKm: 0, senal: 0, crudos: {} });
+  });
+
   it('varias posiciones juntas (0x0704) y una sin fijo satelital', () => {
     const a = cuerpoPosicion({ lat: -33.45, lng: -70.52, vel: 10, rumbo: 90, horaUtc: new Date('2026-10-11T04:10:00Z') });
     const b = cuerpoPosicion({ lat: -33.46, lng: -70.53, vel: 12, rumbo: 95, horaUtc: new Date('2026-10-11T04:11:00Z'), valido: false });

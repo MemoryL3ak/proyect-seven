@@ -196,7 +196,8 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     // G500LS consumía 6–9 números de serie entre un latido y el próximo
     // login sin que viéramos ninguna trama; con esto se ve si esos bytes
     // llegan y cómo son, aunque el separador no los entienda.
-    this.registrar({ en: new Date().toISOString(), imei: c.imei, origen: c.origen, protocolo: null, tipo: 'bytes', serie: null, crcOk: null, hex: datos.subarray(0, 160).toString('hex'), respuesta: null, posicion: null, nota: `${datos.length} bytes` });
+    // 400 bytes: la posición del SEG-9888G con datos OBD mide 164 y a 160 se cortaba.
+    this.registrar({ en: new Date().toISOString(), imei: c.imei, origen: c.origen, protocolo: null, tipo: 'bytes', serie: null, crcOk: null, hex: datos.subarray(0, 400).toString('hex'), respuesta: null, posicion: null, nota: `${datos.length} bytes` });
     const todo = Buffer.concat([c.buffer, datos]);
     // El protocolo se decide con el primer byte de la conexión: 7E es JT808
     // (SEG-9888G, 11-10-2026), 78/79 es GT06 (G500LS).
@@ -283,7 +284,7 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
       tipo: mensaje.tipo,
       serie: trama.serie,
       crcOk: trama.sumaOk,
-      hex: trama.cruda.subarray(0, 96).toString('hex'),
+      hex: trama.cruda.subarray(0, 400).toString('hex'),
       respuesta: respuesta.toString('hex'),
       posicion,
       nota: `JT808 0x${trama.msgId.toString(16).padStart(4, '0')}${mensaje.tipo === 'registro' ? ` ${mensaje.registro.modelo} ${mensaje.registro.terminalId}` : ''}${mensaje.tipo === 'posiciones' ? ` ${mensaje.posiciones.length} posiciones` : ''}`,

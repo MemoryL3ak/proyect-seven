@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { estadoDeEquipo, marcadorDeEquipo, nombreEquipo, type EquipoGps } from "./gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, marcadorDeEquipo, nombreEquipo, type EquipoGps } from "./gps-vehiculos";
 
 const T = Date.parse("2026-10-09T05:00:00.000Z");
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -45,5 +45,20 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     expect(m?.detailRows?.map((r) => r.value)).toEqual(["862667088669224", "KBGB58", "juan villegas", "42 km/h"]);
     expect(marcadorDeEquipo({ ...base, tripId: null }, T)?.onTrip).toBe(false);
     expect(marcadorDeEquipo({ ...base, ultimaPosicion: null }, T)).toBeNull();
+  });
+
+  it("el SEG-9888G en el auto de Ariel (11-10-2026) muestra lo que lee por OBD: velocidad del auto, rpm, temperatura, batería, kilometraje, combustible y VIN", () => {
+    const extras = { odometroEquipoKm: 1.6, senal: 24, voltaje: 14.7, cargaMotor: 30, rpm: 879, velocidadObd: 22, temperaturaMotor: 108, kmObd: 24613, combustiblePct: 28, vin: "ZFA334000JP673562", iccid: "8956032251741729749", crudos: { "85": "1b92" } };
+    const seg: EquipoGps = { ...base, imei: "019210285072", protocolo: "JT808", modelo: "SEG-9888G 0285072", vehiclePlate: null, conductorNombre: null, tripId: null, ultimaPosicion: { ...base.ultimaPosicion!, velocidad: 33.3, extras } };
+    expect(datosVehiculo(seg.ultimaPosicion).map((r) => r.value)).toEqual(["22 km/h", "879 rpm", "108 °C", "14,7 V", "24.613 km", "28 %"]);
+    expect(marcadorDeEquipo(seg, T)?.detailRows?.map((r) => `${r.label}: ${r.value}`)).toEqual([
+      "IMEI: 019210285072", "Vehículo: sin asignar", "Velocidad: 33 km/h",
+      "Velocidad (auto): 22 km/h", "Motor: 879 rpm", "Temp. motor: 108 °C", "Batería: 14,7 V", "Odómetro: 24.613 km", "Combustible: 28 %", "VIN: ZFA334000JP673562",
+    ]);
+    // Con el motor apagado (por USB) sólo hay odómetro del equipo y señal: nada que mostrar del auto.
+    expect(datosVehiculo({ ...base.ultimaPosicion!, extras: { odometroEquipoKm: 0, senal: 0, crudos: {} } })).toEqual([]);
+    expect(datosVehiculo({ ...base.ultimaPosicion!, extras: { rpm: 0, voltaje: 12.2, crudos: {} } }).map((r) => r.value)).toEqual(["apagado", "12,2 V"]);
+    // Los G500LS (GT06) no traen extras.
+    expect(datosVehiculo(base.ultimaPosicion)).toEqual([]);
   });
 });

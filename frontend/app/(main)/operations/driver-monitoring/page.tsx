@@ -27,7 +27,7 @@ import {
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 import StyledSelect from "@/components/StyledSelect";
-import { estadoDeEquipo, hace, marcadorDeEquipo, nombreEquipo, type EquipoGps } from "@/lib/gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, hace, marcadorDeEquipo, nombreEquipo, type EquipoGps } from "@/lib/gps-vehiculos";
 
 const DriverPresenceMap = dynamic(() => import("@/components/DriverPresenceMap"), {
   ssr: false,
@@ -1180,6 +1180,7 @@ function SeccionEquiposGps({
                 {th(t("GPS"))}
                 {th(t("Última posición"))}
                 {th(t("Velocidad"))}
+                {th(t("Vehículo (OBD)"))}
               </tr>
             </thead>
             <tbody>
@@ -1252,6 +1253,11 @@ function SeccionEquiposGps({
                     </td>
                     <td className="p-3" style={{ whiteSpace: "nowrap", color: SURFACE.textSecondary }}>
                       {p ? `${Math.round(p.velocidad)} km/h` : "—"}
+                    </td>
+                    {/* Lo que el auto informa por OBD (SEG-9888G, 11-10-2026); los G500LS no lo traen. */}
+                    <td className="p-3" style={{ fontSize: 12, color: SURFACE.textSecondary, minWidth: 170, maxWidth: 260 }}>
+                      {datosVehiculo(p).length ? datosVehiculo(p).map((r) => r.value).join(" · ") : "—"}
+                      {p?.extras?.vin && <div style={{ fontSize: 11, color: SURFACE.textFaint }}>VIN {p.extras.vin}</div>}
                     </td>
                   </tr>
                 );

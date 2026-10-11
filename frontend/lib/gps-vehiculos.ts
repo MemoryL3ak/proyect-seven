@@ -6,6 +6,39 @@
  */
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 
+/**
+ * Datos del vehículo que agregan los equipos OBD que hablan JT808 (SEG-9888G,
+ * 11-10-2026): lo que lee del computador del auto con el motor encendido.
+ * Mismos nombres que ExtrasVehiculo en src/gps-trackers/gt06.ts.
+ */
+export type ExtrasVehiculo = {
+  odometroEquipoKm?: number;
+  senal?: number;
+  voltaje?: number;
+  rpm?: number;
+  velocidadObd?: number;
+  temperaturaMotor?: number;
+  cargaMotor?: number;
+  kmObd?: number;
+  combustiblePct?: number;
+  vin?: string;
+  iccid?: string;
+  crudos?: Record<string, string>;
+};
+
+export type PosicionEquipo = {
+  fecha: string;
+  satelites: number;
+  lat: number;
+  lng: number;
+  /** km/h, por GPS. */
+  velocidad: number;
+  rumbo: number;
+  valido: boolean;
+  recibida: string;
+  extras?: ExtrasVehiculo | null;
+};
+
 export type EquipoGps = {
   /** IMEI (GT06) o teléfono/ID del terminal (JT808). */
   imei: string;
@@ -14,7 +47,7 @@ export type EquipoGps = {
   conectado: boolean;
   conectadoDesde: string | null;
   ultimoPaquete: string | null;
-  ultimaPosicion: { fecha: string; satelites: number; lat: number; lng: number; velocidad: number; rumbo: number; valido: boolean; recibida: string } | null;
+  ultimaPosicion: PosicionEquipo | null;
   paquetes: number;
   posicionesGuardadas: number;
   /** Patente asignada (normalizada); los viajes identifican al vehículo por patente. */
@@ -70,6 +103,26 @@ export function hace(segundos: number | null): string {
   return `hace ${Math.floor(segundos / 86400)} d`;
 }
 
+const miles = (n: number) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+
+/**
+ * Lo que el auto informa por OBD, en el orden en que se muestra: velocidad del
+ * tablero, motor, temperatura, batería, kilometraje y combustible. Vacío para
+ * los equipos que sólo mandan GPS (G500LS) o con el motor apagado.
+ */
+export function datosVehiculo(p: PosicionEquipo | null | undefined): { label: string; value: string }[] {
+  const x = p?.extras;
+  if (!x) return [];
+  const filas: { label: string; value: string }[] = [];
+  if (x.velocidadObd != null) filas.push({ label: "Velocidad (auto)", value: `${Math.round(x.velocidadObd)} km/h` });
+  if (x.rpm != null) filas.push({ label: "Motor", value: x.rpm > 0 ? `${x.rpm} rpm` : "apagado" });
+  if (x.temperaturaMotor != null) filas.push({ label: "Temp. motor", value: `${Math.round(x.temperaturaMotor)} °C` });
+  if (x.voltaje != null) filas.push({ label: "Batería", value: `${x.voltaje.toFixed(1).replace(".", ",")} V` });
+  if (x.kmObd != null) filas.push({ label: "Odómetro", value: `${miles(x.kmObd)} km` });
+  if (x.combustiblePct != null) filas.push({ label: "Combustible", value: `${Math.round(x.combustiblePct)} %` });
+  return filas;
+}
+
 /** Marcador del mapa; null si el equipo nunca mandó una posición. */
 export function marcadorDeEquipo(e: EquipoGps, ahoraMs: number): PresenceMarker | null {
   const p = e.ultimaPosicion;
@@ -80,6 +133,8 @@ export function marcadorDeEquipo(e: EquipoGps, ahoraMs: number): PresenceMarker 
     { label: "Vehículo", value: e.vehiclePlate ?? "sin asignar" },
     ...(e.conductorNombre ? [{ label: "Conductor", value: e.conductorNombre }] : []),
     { label: "Velocidad", value: `${Math.round(p.velocidad)} km/h` },
+    ...datosVehiculo(p),
+    ...(p.extras?.vin ? [{ label: "VIN", value: p.extras.vin }] : []),
   ];
   return {
     id: `gps:${e.imei}`,

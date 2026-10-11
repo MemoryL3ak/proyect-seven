@@ -23,6 +23,40 @@ export type TramaGt06 = {
   crcOk: boolean;
 };
 
+/**
+ * Datos del vehículo que un equipo OBD agrega a la posición (TLV del JT808;
+ * el SEG-9888G los manda con el motor encendido, 11-10-2026). Los campos del
+ * fabricante (0x80–0x8E) se descifraron comparando 6 minutos de muestras con
+ * la velocidad GPS: rpm en ralentí ~900, temperatura subiendo de 80 a 108 °C
+ * al calentar, kilometraje que avanzó 1,0 km junto con el GPS.
+ */
+export type ExtrasVehiculo = {
+  /** Kilometraje del propio equipo desde que se encendió (TLV 0x01, en décimas de km). */
+  odometroEquipoKm?: number;
+  /** Señal celular 0–31 (TLV 0x30). */
+  senal?: number;
+  /** Voltios de la batería del auto (0x82, en décimas): 12,2 con el motor apagado, 13–15 cargando. */
+  voltaje?: number;
+  /** Revoluciones del motor (0x81). */
+  rpm?: number;
+  /** Velocidad que informa el computador del auto, km/h (0x83, o 0x03 estándar en décimas). */
+  velocidadObd?: number;
+  /** Temperatura del refrigerante, °C (0x84). */
+  temperaturaMotor?: number;
+  /** Carga del motor, % (0x80). */
+  cargaMotor?: number;
+  /** Kilometraje del tablero del auto, km (0x8C, en décimas). */
+  kmObd?: number;
+  /** Combustible restante, % (0x8E). */
+  combustiblePct?: number;
+  /** Número de chasis que entrega el auto (0x8B). */
+  vin?: string;
+  /** Número de la SIM instalada (0xCC). */
+  iccid?: string;
+  /** Lo que aún no se interpreta, id hex → valor hex. */
+  crudos: Record<string, string>;
+};
+
 export type PosicionGt06 = {
   /** Hora que reporta el equipo (se asume UTC). */
   fecha: Date;
@@ -35,6 +69,8 @@ export type PosicionGt06 = {
   rumbo: number;
   /** Bit "posicionado" del equipo: sin él la lat/lng es la última conocida. */
   valido: boolean;
+  /** Sólo los equipos OBD que hablan JT808 los traen. */
+  extras?: ExtrasVehiculo;
 };
 
 export type MensajeGt06 =
