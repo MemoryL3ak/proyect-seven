@@ -1190,7 +1190,9 @@ function SeccionEquiposGps({
                   <tr key={e.imei} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
                     <td className="p-3">
                       <div style={{ fontWeight: 700, color: SURFACE.text }}>{nombreEquipo(e)}</div>
-                      <div style={{ fontSize: 11, color: SURFACE.textFaint }}>IMEI {e.imei}</div>
+                      <div style={{ fontSize: 11, color: SURFACE.textFaint }}>
+                        {e.protocolo === "JT808" ? "ID" : "IMEI"} {e.imei}{e.protocolo ? ` · ${e.protocolo}` : ""}
+                      </div>
                       {e.ultimoError && <div style={{ fontSize: 11, color: STATE.dangerText }}>{e.ultimoError}</div>}
                     </td>
                     <td className="p-3" style={{ minWidth: 200 }}>

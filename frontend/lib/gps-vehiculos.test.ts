@@ -35,6 +35,8 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     expect(nombreEquipo(base)).toBe("KBGB58");
     expect(nombreEquipo({ ...base, vehiclePlate: null })).toBe("GPS ·669224");
     expect(nombreEquipo({ ...base, vehiclePlate: null, label: "Auto de Ariel" })).toBe("Auto de Ariel");
+    // JT808: el terminal se identifica por teléfono/ID y declara su modelo.
+    expect(nombreEquipo({ ...base, imei: "019210285072", vehiclePlate: null, protocolo: "JT808", modelo: "SEG-9888G 0285072" })).toBe("SEG-9888G ·285072");
   });
 
   it("el marcador va en viaje sólo con viaje en curso y GPS vivo, y lleva IMEI, vehículo y conductor", () => {

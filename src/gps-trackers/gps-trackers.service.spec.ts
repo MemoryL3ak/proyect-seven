@@ -1,6 +1,7 @@
 import * as net from 'net';
 import { GpsTrackersService, normalizarPatente } from './gps-trackers.service';
 import { respuesta } from './gt06';
+import { construirTrama, MSG, separarTramasJt808 } from './jt808';
 
 /**
  * El receptor de punta a punta, con un equipo simulado por TCP: contesta el
@@ -153,6 +154,43 @@ describe('GpsTrackersService', () => {
     expect(service.ultimosPaquetes('123456789012345').find((p) => p.tipo === 'respuesta')?.nota).toBe('TIMER:10,60;');
     // Equipo desconectado: el comando espera al próximo login.
     expect(service.enviarComando('999999999999999', 'WHERE#')).toEqual({ enviado: false, enCola: true });
+  });
+
+  it('un terminal JT808 (SEG-9888G) se registra, se le contesta 0x8100 y su posición entra como la de los GT06', async () => {
+    const REGISTRO = Buffer.from('7e0100002d019210285072000e0000000037303131325345472d3938383847000000000000000000000030323835303732003130323835303732957e', 'hex');
+    const recibido2: Buffer[] = [];
+    const s2 = await new Promise<net.Socket>((resolve) => { const s = net.createConnection({ host: '127.0.0.1', port: PUERTO }, () => resolve(s)); s.on('data', (d) => recibido2.push(d)); });
+    try {
+      s2.write(REGISTRO);
+      await esperar(() => recibido2.length >= 1);
+      const [r] = separarTramasJt808(recibido2[0]).tramas;
+      expect(r.msgId).toBe(MSG.RESPUESTA_REGISTRO);
+      expect(r.telefono).toBe('019210285072');
+      const equipo = (await service.listar()).equipos.find((e) => e.imei === '019210285072');
+      expect(equipo).toMatchObject({ protocolo: 'JT808', modelo: 'SEG-9888G 0285072', conectado: true });
+      // Posición 0x0200 en Santiago, hora de Pekín.
+      const cuerpo = Buffer.alloc(28);
+      cuerpo.writeUInt32BE(0x02 | 0x04 | 0x08 | 0x01, 4);
+      cuerpo.writeUInt32BE(33454300, 8);
+      cuerpo.writeUInt32BE(70518600, 12);
+      cuerpo.writeUInt16BE(425, 18);
+      cuerpo.writeUInt16BE(143, 20);
+      const pk = new Date(Date.now() + 8 * 3_600_000);
+      const bcd = (n: number) => ((Math.floor(n / 10) << 4) | n % 10) & 0xff;
+      Buffer.from([bcd(pk.getUTCFullYear() - 2000), bcd(pk.getUTCMonth() + 1), bcd(pk.getUTCDate()), bcd(pk.getUTCHours()), bcd(pk.getUTCMinutes()), bcd(pk.getUTCSeconds())]).copy(cuerpo, 22);
+      const antes = inserts.length;
+      s2.write(construirTrama(MSG.POSICION, Buffer.from('019210285072', 'hex'), 20, cuerpo));
+      await esperar(() => inserts.length > antes);
+      const fila = inserts[inserts.length - 1] as { location: { coordinates: number[] }; speed: number; driver_id: string };
+      expect(fila.location.coordinates[0]).toBeCloseTo(-70.5186, 5);
+      expect(fila.location.coordinates[1]).toBeCloseTo(-33.4543, 5);
+      expect(fila.speed).toBeCloseTo(42.5 / 3.6, 3);
+      expect(fila.driver_id).toBe('drv-1');
+      await esperar(() => recibido2.length >= 2);
+      expect(separarTramasJt808(recibido2[1]).tramas[0].msgId).toBe(MSG.RESPUESTA_GENERAL);
+    } finally {
+      s2.destroy();
+    }
   });
 
   it('eliminar saca el equipo del panel', async () => {

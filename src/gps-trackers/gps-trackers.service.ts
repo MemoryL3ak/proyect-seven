@@ -2,7 +2,8 @@ import { Inject, Injectable, Logger, OnApplicationBootstrap, OnApplicationShutdo
 import { SupabaseClient } from '@supabase/supabase-js';
 import * as net from 'net';
 import { DataSource } from 'typeorm';
-import { comandoEnLinea, interpretar, MensajeGt06, PosicionGt06, PuntoGuardado, respuestaPara, separarTramas, TramaGt06, valeGuardar } from './gt06';
+import { comandoEnLinea, interpretar, PosicionGt06, PuntoGuardado, respuestaPara, separarTramas, TramaGt06, valeGuardar } from './gt06';
+import { interpretarJt808, respuestaParaJt808, separarTramasJt808, TramaJt808 } from './jt808';
 
 /**
  * Receptor de rastreadores GPS de vehículo (OBD, protocolo GT06) por TCP.
@@ -22,7 +23,12 @@ import { comandoEnLinea, interpretar, MensajeGt06, PosicionGt06, PuntoGuardado, 
  */
 
 export type EstadoEquipo = {
+  /** Identificador del equipo: IMEI (GT06) o teléfono/ID del terminal (JT808). */
   imei: string;
+  /** Protocolo con el que habla: GT06 (G500LS) o JT808 (SEG-9888G). */
+  protocolo: 'GT06' | 'JT808' | null;
+  /** Modelo que el equipo declara al registrarse (JT808). */
+  modelo: string | null;
   conectado: boolean;
   conectadoDesde: string | null;
   ultimoPaquete: string | null;
@@ -55,7 +61,16 @@ export type PaqueteRegistrado = {
   nota?: string;
 };
 
-type Conexion = { buffer: Buffer; imei: string | null; desde: Date; origen: string };
+type Conexion = {
+  buffer: Buffer;
+  imei: string | null;
+  desde: Date;
+  origen: string;
+  /** Se decide con el primer byte: 7E = JT808, 78/79 = GT06. */
+  protocolo: 'gt06' | 'jt808' | null;
+  /** Serie de los mensajes que el servidor manda por esta conexión (JT808). */
+  serieServidor: number;
+};
 type Atribucion = { driverId: string | null; tripId: string | null; eventId: string | null; leidaEn: number };
 type FilaEquipo = {
   imei: string;
@@ -141,7 +156,7 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     // Las respuestas son de 10 bytes y el equipo las espera: sin Nagle salen
     // en el acto, no cuando el sistema junte más datos.
     socket.setNoDelay(true);
-    this.conexiones.set(socket, { buffer: Buffer.alloc(0), imei: null, desde: new Date(), origen });
+    this.conexiones.set(socket, { buffer: Buffer.alloc(0), imei: null, desde: new Date(), origen, protocolo: null, serieServidor: 1 });
     // El ciclo de la conexión también queda en el registro: un equipo que
     // conecta, hace login y corta se diagnostica por acá (09-10-2026: el
     // G500LS con el motor apagado conecta, late y cierra cada ~45 s).
@@ -182,7 +197,23 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     // login sin que viéramos ninguna trama; con esto se ve si esos bytes
     // llegan y cómo son, aunque el separador no los entienda.
     this.registrar({ en: new Date().toISOString(), imei: c.imei, origen: c.origen, protocolo: null, tipo: 'bytes', serie: null, crcOk: null, hex: datos.subarray(0, 160).toString('hex'), respuesta: null, posicion: null, nota: `${datos.length} bytes` });
-    const { tramas, resto, basura } = separarTramas(Buffer.concat([c.buffer, datos]));
+    const todo = Buffer.concat([c.buffer, datos]);
+    // El protocolo se decide con el primer byte de la conexión: 7E es JT808
+    // (SEG-9888G, 11-10-2026), 78/79 es GT06 (G500LS).
+    if (!c.protocolo) {
+      if (todo[0] === 0x7e) c.protocolo = 'jt808';
+      else if (todo[0] === 0x78 || todo[0] === 0x79) c.protocolo = 'gt06';
+    }
+    if (c.protocolo === 'jt808') {
+      const r = separarTramasJt808(todo);
+      c.buffer = r.resto.length > MAX_BUFFER ? Buffer.alloc(0) : r.resto;
+      for (const b of r.basura) {
+        this.registrar({ en: new Date().toISOString(), imei: c.imei, origen: c.origen, protocolo: null, tipo: 'desconocido', serie: null, crcOk: null, hex: b.subarray(0, 96).toString('hex'), respuesta: null, posicion: null });
+      }
+      for (const trama of r.tramas) await this.procesarJt808(socket, c, trama);
+      return;
+    }
+    const { tramas, resto, basura } = separarTramas(todo);
     c.buffer = resto.length > MAX_BUFFER ? Buffer.alloc(0) : resto;
     for (const b of basura) {
       // Bytes que no son GT06: se registran para reconocer un equipo que
@@ -199,6 +230,7 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     if (mensaje.tipo === 'login') c.imei = mensaje.imei;
     const equipo = c.imei ? this.equipo(c.imei) : null;
     if (equipo) {
+      equipo.protocolo = 'GT06';
       equipo.conectado = true;
       equipo.conectadoDesde = equipo.conectadoDesde ?? c.desde.toISOString();
       equipo.ultimoPaquete = new Date().toISOString();
@@ -222,7 +254,46 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     }
     if (c.imei) await this.registrarEquipo(c.imei, mensaje.tipo === 'login');
     if (mensaje.tipo === 'login') this.despacharComandos(socket, c);
-    if (mensaje.tipo === 'posicion' && c.imei) await this.guardarPosicion(c.imei, mensaje);
+    if (mensaje.tipo === 'posicion' && c.imei) await this.guardarPosicion(c.imei, mensaje.posicion);
+  }
+
+  /**
+   * JT808: cada mensaje se contesta (0x8100 al registro, 0x8001 al resto) o
+   * el terminal no pasa del registro. El teléfono del terminal identifica al
+   * equipo; su modelo e id vienen en el registro.
+   */
+  private async procesarJt808(socket: net.Socket, c: Conexion, trama: TramaJt808) {
+    const mensaje = interpretarJt808(trama);
+    const respuesta = respuestaParaJt808(mensaje, c.serieServidor++ & 0xffff);
+    socket.write(respuesta);
+    c.imei = trama.telefono;
+    const equipo = this.equipo(c.imei);
+    equipo.protocolo = 'JT808';
+    equipo.conectado = true;
+    equipo.conectadoDesde = equipo.conectadoDesde ?? c.desde.toISOString();
+    equipo.ultimoPaquete = new Date().toISOString();
+    equipo.paquetes += 1;
+    if (mensaje.tipo === 'registro') equipo.modelo = `${mensaje.registro.modelo} ${mensaje.registro.terminalId}`.trim();
+    const posicion = mensaje.tipo === 'posicion' ? mensaje.posicion : mensaje.tipo === 'posiciones' ? mensaje.posiciones[mensaje.posiciones.length - 1] ?? null : null;
+    this.registrar({
+      en: new Date().toISOString(),
+      imei: c.imei,
+      origen: c.origen,
+      protocolo: trama.msgId,
+      tipo: mensaje.tipo,
+      serie: trama.serie,
+      crcOk: trama.sumaOk,
+      hex: trama.cruda.subarray(0, 96).toString('hex'),
+      respuesta: respuesta.toString('hex'),
+      posicion,
+      nota: `JT808 0x${trama.msgId.toString(16).padStart(4, '0')}${mensaje.tipo === 'registro' ? ` ${mensaje.registro.modelo} ${mensaje.registro.terminalId}` : ''}${mensaje.tipo === 'posiciones' ? ` ${mensaje.posiciones.length} posiciones` : ''}`,
+    });
+    await this.registrarEquipo(c.imei, mensaje.tipo === 'registro' || mensaje.tipo === 'autenticacion');
+    if (mensaje.tipo === 'posicion') await this.guardarPosicion(c.imei, mensaje.posicion);
+    if (mensaje.tipo === 'posiciones') {
+      // Lo acumulado llega de la más vieja a la más nueva.
+      for (const p of [...mensaje.posiciones].sort((a, b) => a.fecha.getTime() - b.fecha.getTime())) await this.guardarPosicion(c.imei, p);
+    }
   }
 
   private escribirComando(socket: net.Socket, c: Conexion, texto: string) {
@@ -272,7 +343,7 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
   private equipo(imei: string): EstadoEquipo {
     let e = this.equipos.get(imei);
     if (!e) {
-      e = { imei, conectado: false, conectadoDesde: null, ultimoPaquete: null, ultimaPosicion: null, paquetes: 0, posicionesGuardadas: 0, vehiclePlate: null, eventId: null, label: null, conductorId: null, conductorNombre: null, tripId: null, ultimoError: null };
+      e = { imei, protocolo: null, modelo: null, conectado: false, conectadoDesde: null, ultimoPaquete: null, ultimaPosicion: null, paquetes: 0, posicionesGuardadas: 0, vehiclePlate: null, eventId: null, label: null, conductorId: null, conductorNombre: null, tripId: null, ultimoError: null };
       this.equipos.set(imei, e);
     }
     return e;
@@ -367,9 +438,8 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
     return a;
   }
 
-  private async guardarPosicion(imei: string, m: Extract<MensajeGt06, { tipo: 'posicion' }>) {
+  private async guardarPosicion(imei: string, p: PosicionGt06 | null) {
     const equipo = this.equipo(imei);
-    const p = m.posicion;
     if (!p || !p.valido) return; // sin fijo satelital: la lat/lng es la última conocida
     // Al recuperar señal el equipo reenvía lo acumulado mezclado con lo
     // actual: la "última" posición es la más nueva, no la última en llegar.

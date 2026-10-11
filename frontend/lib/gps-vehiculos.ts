@@ -7,7 +7,10 @@
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 
 export type EquipoGps = {
+  /** IMEI (GT06) o teléfono/ID del terminal (JT808). */
   imei: string;
+  protocolo?: "GT06" | "JT808" | null;
+  modelo?: string | null;
   conectado: boolean;
   conectadoDesde: string | null;
   ultimoPaquete: string | null;
@@ -54,9 +57,9 @@ export function estadoDeEquipo(e: EquipoGps, ahoraMs: number): EstadoEquipo {
   };
 }
 
-/** Patente si tiene vehículo; si no, los últimos 6 del IMEI para reconocerlo. */
+/** Patente si tiene vehículo; si no, el modelo o "GPS" con los últimos 6 del identificador. */
 export function nombreEquipo(e: EquipoGps): string {
-  return e.vehiclePlate?.trim() || e.label?.trim() || `GPS ·${e.imei.slice(-6)}`;
+  return e.vehiclePlate?.trim() || e.label?.trim() || `${e.modelo?.trim().split(" ")[0] || "GPS"} ·${e.imei.slice(-6)}`;
 }
 
 export function hace(segundos: number | null): string {
