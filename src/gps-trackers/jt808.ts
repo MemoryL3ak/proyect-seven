@@ -193,7 +193,13 @@ export function leerExtras(b: Buffer): { satelites: number; extras: ExtrasVehicu
       case 0x81: extras.rpm = n; break;
       case 0x82: if (n > 0) extras.voltaje = n / 10; break;
       case 0x83: extras.velocidadObd = n; break;
-      case 0x84: extras.temperaturaMotor = n; break;
+      // Temperaturas: el equipo pasa el byte OBD tal cual, sin restarle los 40
+      // de la norma (PID 05/0F: °C = A − 40). Con los 40 restados la curva del
+      // auto de Ariel fue 40 → 80 °C en 11 minutos de ciudad y el aire de
+      // admisión 17–18 °C (mañana de octubre en Santiago); sin restarlos
+      // habría sido 80 → 120 °C, un recalentamiento, y aire a 57 °C.
+      case 0x84: extras.temperaturaMotor = n - 40; break;
+      case 0x86: extras.temperaturaAdmision = n - 40; break;
       case 0x8b: if (texto(v)) extras.vin = texto(v); break;
       case 0x8c: extras.kmObd = n / 10; break;
       case 0x8e: extras.combustiblePct = n; break;

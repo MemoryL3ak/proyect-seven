@@ -119,12 +119,14 @@ describe('JT808', () => {
       cargaMotor: 30,
       rpm: 879,
       velocidadObd: 22,
-      temperaturaMotor: 108,
+      // 0x6c = 108 y 0x3a = 58 son los bytes OBD sin los 40 de la norma.
+      temperaturaMotor: 68,
+      temperaturaAdmision: 18,
       kmObd: 24613,
       combustiblePct: 28,
       vin: 'ZFA334000JP673562',
       iccid: '8956032251741729749',
-      crudos: { '85': '1b92', '86': '3a', '88': '41', '89': '1a', '8d': '00b6' },
+      crudos: { '85': '1b92', '88': '41', '89': '1a', '8d': '00b6' },
     });
     // 0x0202 (al dar el contacto) es una posición más.
     const e = interpretarJt808(separarTramasJt808(construirTrama(MSG.POSICION_EVENTO, Buffer.from('019210285072', 'hex'), 0x20, cuerpo)).tramas[0], new Date('2026-10-11T13:03:27Z'));

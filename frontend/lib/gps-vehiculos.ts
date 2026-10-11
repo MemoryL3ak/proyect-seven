@@ -18,6 +18,7 @@ export type ExtrasVehiculo = {
   rpm?: number;
   velocidadObd?: number;
   temperaturaMotor?: number;
+  temperaturaAdmision?: number;
   cargaMotor?: number;
   kmObd?: number;
   combustiblePct?: number;

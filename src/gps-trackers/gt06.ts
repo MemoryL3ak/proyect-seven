@@ -41,8 +41,10 @@ export type ExtrasVehiculo = {
   rpm?: number;
   /** Velocidad que informa el computador del auto, km/h (0x83, o 0x03 estándar en décimas). */
   velocidadObd?: number;
-  /** Temperatura del refrigerante, °C (0x84). */
+  /** Temperatura del refrigerante, °C (0x84, byte OBD − 40). */
   temperaturaMotor?: number;
+  /** Temperatura del aire de admisión, °C (0x86, byte OBD − 40). */
+  temperaturaAdmision?: number;
   /** Carga del motor, % (0x80). */
   cargaMotor?: number;
   /** Kilometraje del tablero del auto, km (0x8C, en décimas). */
