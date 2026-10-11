@@ -1628,6 +1628,25 @@ input[type="number"]::-webkit-outer-spin-button {
   overflow: hidden !important;
 }
 
+/* Ficha del GPS de vehículo (11-10-2026): la cabecera oscura llega al borde
+   de la burbuja, sin el relleno blanco de Google, y la X de cerrar va en
+   blanco para que se vea sobre el fondo oscuro. La clase la pone
+   DriverPresenceMap al abrir la burbuja. */
+.mapa-conductores .gm-style .gm-style-iw-c.ficha-gps {
+  padding: 0 !important;
+  border-radius: 14px !important;
+  overflow: hidden;
+}
+.mapa-conductores .gm-style .gm-style-iw-c.ficha-gps .gm-style-iw-d {
+  overflow: hidden !important;
+}
+.mapa-conductores .gm-style .gm-style-iw-c.ficha-gps button.gm-ui-hover-effect {
+  opacity: 0.9;
+}
+.mapa-conductores .gm-style .gm-style-iw-c.ficha-gps button.gm-ui-hover-effect > span {
+  background-color: #fff !important;
+}
+
 /* Barra inferior de la app staff (MobileTabBar): sólo en el teléfono. El
    display iba en línea en el componente y pisaba al md:hidden, así que la
    barra aparecía también en la web de escritorio (24-09-2026). */

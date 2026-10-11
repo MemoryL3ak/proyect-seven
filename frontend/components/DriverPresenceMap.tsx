@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { STATE, SURFACE, ACCENT } from "@/lib/design";
+import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { etiquetaPlataforma } from "@/lib/plataforma-conductor";
 import { rotuloMarcador } from "@/lib/presencia";
+import type { FichaVehiculo, Situacion } from "@/lib/gps-vehiculos";
 
 export type PresenceMarker = {
   id: string;
@@ -29,16 +30,70 @@ export type PresenceMarker = {
   // monitor (conductores, VIP…) enriquezca el popup sin tocar este componente.
   detailRows?: { label: string; value: string }[];
   /**
-   * Ficha por secciones (GPS de vehículo, 11-10-2026). Cuando viene, reemplaza
-   * al cuerpo del conductor: sin "viajes activos", "plataforma" ni tipos de
-   * cliente, que no tienen sentido para un equipo instalado en el auto.
+   * Ficha del vehículo (GPS instalado en el auto, 11-10-2026). Cuando viene,
+   * la burbuja es otra: cabecera oscura con patente y situación, indicadores
+   * grandes y detalles en dos columnas, sin "viajes activos", "plataforma" ni
+   * tipos de cliente, que no tienen sentido para un equipo.
    */
-  secciones?: { titulo: string; filas: { label: string; value: string }[] }[];
+  fichaVehiculo?: FichaVehiculo;
   /** Titular del estado bajo el nombre ("En movimiento", "Detenido, motor encendido"…). */
   estadoTexto?: string;
   /** Texto del pin cuando las iniciales del nombre no sirven (patente, "GPS"). */
   iniciales?: string;
 };
+
+// Pastilla de situación sobre la cabecera oscura de la ficha del vehículo.
+const TONO_SITUACION: Record<Situacion["tono"], { bg: string; fg: string; punto: string }> = {
+  movimiento: { bg: "rgba(16,185,129,0.22)", fg: STATE.successBorder, punto: STATE.success },
+  motor: { bg: "rgba(245,158,11,0.22)", fg: STATE.warningBorder, punto: STATE.warning },
+  detenido: { bg: "rgba(255,255,255,0.12)", fg: SURFACE.border, punto: SURFACE.borderStrong },
+  sinConexion: { bg: "rgba(239,68,68,0.2)", fg: STATE.dangerBorder, punto: STATE.danger },
+};
+
+export function fichaVehiculoHtml(f: FichaVehiculo): string {
+  const tono = TONO_SITUACION[f.situacion.tono];
+  const indicadores = f.indicadores
+    .map(
+      (i) => `
+      <div style="flex:1;min-width:0;background:${SURFACE.bg};border:1px solid ${SURFACE.borderMuted};border-radius:10px;padding:9px 6px 7px;text-align:center;">
+        <div style="font-size:19px;font-weight:900;color:${SURFACE.text};line-height:1;letter-spacing:-0.01em;white-space:nowrap;">${i.valor}${i.unidad ? `<span style="font-size:10px;font-weight:700;color:${SURFACE.textMuted};margin-left:2px;">${i.unidad}</span>` : ""}</div>
+        <div style="font-size:9px;font-weight:800;color:${SURFACE.textFaint};margin-top:5px;text-transform:uppercase;letter-spacing:0.08em;">${i.label}</div>
+      </div>`,
+    )
+    .join("");
+  const detalles = f.detalles
+    .map(
+      (d) => `
+      <div style="min-width:0;">
+        <div style="font-size:9.5px;font-weight:700;color:${SURFACE.textFaint};text-transform:uppercase;letter-spacing:0.06em;">${d.label}</div>
+        <div style="font-size:12px;font-weight:700;color:${SURFACE.text};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${d.value}">${d.value}</div>
+      </div>`,
+    )
+    .join("");
+  return `
+    <div style="font-family:system-ui,sans-serif;width:300px;color:${SURFACE.text};">
+      <div style="background:linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight} 55%,${BRAND.charcoal});padding:14px 44px 12px 14px;color:#fff;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;font-size:${f.insignia.length > 3 ? 12 : 13}px;font-weight:900;letter-spacing:0.04em;color:${BRAND.tealLight};">${f.insignia}</div>
+          <div style="min-width:0;flex:1;">
+            <div style="font-size:16px;font-weight:800;line-height:1.15;word-break:break-word;">${f.nombre}</div>
+            <div style="font-size:11px;color:rgba(255,255,255,0.72);margin-top:3px;">${f.subtitulo}</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:11px;">
+          <span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;background:${tono.bg};color:${tono.fg};font-size:9.5px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;">
+            <span style="width:6px;height:6px;border-radius:50%;background:${tono.punto};"></span>${f.situacion.texto}
+          </span>
+          <span style="font-size:10.5px;color:rgba(255,255,255,0.65);white-space:nowrap;">${f.actualizado}</span>
+        </div>
+      </div>
+      ${f.indicadores.length ? `<div style="display:flex;gap:8px;padding:12px 14px 2px;">${indicadores}</div>` : ""}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;padding:12px 14px;">${detalles}</div>
+      <div style="border-top:1px solid ${SURFACE.borderMuted};padding:8px 14px 10px;">
+        ${f.pie.map((l) => `<div style="font-size:10.5px;color:${SURFACE.textMuted};line-height:1.5;">${l}</div>`).join("")}
+      </div>
+    </div>`;
+}
 
 // Colores de chip por tipo de cliente — mismos tonos que la tabla de monitoreo.
 const CLIENT_TYPE_CHIP: Record<string, { label: string; bg: string; color: string; border: string }> = {
@@ -264,7 +319,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
           <span style="font-size:11px;color:#64748b;white-space:nowrap;">${label}</span>
           <span style="font-size:11.5px;font-weight:700;color:#0f172a;text-align:right;">${value}</span>
         </div>`;
-      const html = `
+      const html = m.fichaVehiculo ? fichaVehiculoHtml(m.fichaVehiculo) : `
         <div style="font-family:system-ui,sans-serif;min-width:230px;max-width:270px;padding:2px 2px 4px;">
           <!-- padding-right: la X de cerrar de Google va sobre la esquina y tapaba
                el final del nombre; word-break: un nombre largo baja de línea en
@@ -278,13 +333,6 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
               </div>
             </div>
           </div>
-          ${m.secciones
-            ? m.secciones.map((s, i) => `
-          <div style="padding:${i === 0 ? "6px" : "8px"} 0 2px;${i === 0 ? "" : "margin-top:4px;border-top:1px solid #eef2f7;"}">
-            <div style="font-size:9.5px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:2px;">${s.titulo}</div>
-            ${s.filas.map((r) => statRow(r.label, r.value)).join("")}
-          </div>`).join("")
-            : `
           <div style="padding:6px 0 2px;">
             ${statRow("Última conexión", m.lastSeen)}
             ${statRow("Señal GPS", m.gpsTime)}
@@ -295,7 +343,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
           <div style="margin-top:6px;padding-top:8px;border-top:1px solid #eef2f7;">
             <div style="font-size:9.5px;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#94a3b8;margin-bottom:5px;">Tipos de cliente</div>
             ${clientTypeChipsHtml(m.clientTypes)}
-          </div>`}
+          </div>
         </div>
       `;
 
@@ -321,6 +369,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
           markerAccentRef.current[m.id] = accent;
         }
         marker.__html = html;
+        marker.__ficha = Boolean(m.fichaVehiculo);
       } else {
         const marker = new google.maps.Marker({
           position: pos,
@@ -334,9 +383,16 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
           zIndex,
         });
         marker.__html = html;
+        marker.__ficha = Boolean(m.fichaVehiculo);
         marker.addListener("click", () => {
           infoWindowRef.current.setContent(marker.__html);
           infoWindowRef.current.open(mapRef.current, marker);
+          // La ficha del vehículo va al borde de la burbuja (cabecera oscura,
+          // X en blanco): la clase la pone globals.css (.ficha-gps).
+          const esFicha = Boolean(marker.__ficha);
+          google.maps.event.addListenerOnce(infoWindowRef.current, "domready", () => {
+            containerRef.current?.querySelectorAll(".gm-style-iw-c").forEach((el) => el.classList.toggle("ficha-gps", esFicha));
+          });
         });
         gmMarkersRef.current[m.id] = marker;
         markerAccentRef.current[m.id] = accent;

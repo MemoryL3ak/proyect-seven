@@ -175,47 +175,74 @@ export function situacionEquipo(e: EquipoGps, ahoraMs: number): Situacion {
   return { texto: "Detenido", tono: "detenido" };
 }
 
-export type SeccionFicha = { titulo: string; filas: { label: string; value: string }[] };
-
 const horaCorta = (iso: string) => new Date(iso).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
+export type Indicador = { valor: string; unidad: string | null; label: string };
+
 /**
- * La ficha del equipo en el mapa, por secciones: el vehículo (patente, marca,
- * conductor, viaje), lo que pasa ahora (velocidad, motor, combustible…) y el
- * equipo (modelo, identificador, señal, última posición y conexión).
+ * La ficha del vehículo que se abre al pinchar un GPS en el mapa (rehecha el
+ * 11-10-2026, Ariel: "diseño horrible"): cabecera oscura con la patente, el
+ * nombre, marca y modelo, la situación y hace cuánto habló; hasta tres
+ * indicadores grandes (velocidad, motor, combustible…); detalles en dos
+ * columnas; y al pie el identificador del equipo, señal y última posición.
  */
-export function fichaEquipo(e: EquipoGps, ahoraMs: number): SeccionFicha[] {
+export type FichaVehiculo = {
+  nombre: string;
+  subtitulo: string;
+  /** Texto del recuadro de la cabecera: la patente (4 primeros) o "GPS". */
+  insignia: string;
+  situacion: Situacion;
+  /** Hace cuánto llegó el último paquete. */
+  actualizado: string;
+  indicadores: Indicador[];
+  detalles: { label: string; value: string }[];
+  pie: string[];
+};
+
+export function fichaVehiculo(e: EquipoGps, ahoraMs: number): FichaVehiculo {
   const estado = estadoDeEquipo(e, ahoraMs);
   const p = e.ultimaPosicion;
   const x = p?.extras;
   const marca = marcaDeVin(x?.vin);
+  const modelo = e.modelo?.trim().split(" ")[0] || (e.protocolo === "JT808" ? "SEG-9888G" : "Rastreador GT06");
   const contacto = e.contacto ?? p?.contacto ?? null;
-  const vehiculo = [
-    { label: "Patente", value: e.vehiclePlate ?? "sin asignar" },
-    ...(marca ? [{ label: "Marca", value: marca }] : []),
-    ...(x?.vin ? [{ label: "VIN", value: x.vin }] : []),
-    { label: "Conductor", value: e.conductorNombre ?? "—" },
-    { label: "Viaje", value: e.tripId ? "En viaje" : "Sin viaje en curso" },
-  ];
-  const ahora = [
-    ...(p ? [{ label: "Velocidad GPS", value: `${Math.round(p.velocidad)} km/h` }] : []),
-    ...datosVehiculo(p),
+
+  const indicadores: Indicador[] = [];
+  if (p) indicadores.push({ valor: String(Math.round(p.velocidad)), unidad: "km/h", label: "Velocidad" });
+  if (x?.rpm != null) indicadores.push({ valor: String(x.rpm), unidad: "rpm", label: "Motor" });
+  if (x?.combustiblePct != null) indicadores.push({ valor: String(Math.round(x.combustiblePct)), unidad: "%", label: "Combustible" });
+  else if (x?.voltaje != null) indicadores.push({ valor: x.voltaje.toFixed(1).replace(".", ","), unidad: "V", label: "Batería" });
+  if (indicadores.length < 3 && p && p.satelites > 0) indicadores.push({ valor: String(p.satelites), unidad: "sat.", label: "GPS" });
+  if (indicadores.length < 3 && e.senalPct != null) indicadores.push({ valor: String(e.senalPct), unidad: "%", label: "Señal" });
+
+  const detalles = [
+    { label: "Conductor", value: e.conductorNombre ?? "sin conductor" },
+    { label: "Viaje", value: e.tripId ? "En viaje" : "Sin viaje" },
     ...(contacto != null ? [{ label: "Contacto", value: contacto ? "puesto" : "apagado" }] : []),
-  ];
-  const equipo = [
-    { label: "Equipo", value: e.modelo?.trim().split(" ")[0] || (e.protocolo === "JT808" ? "SEG-9888G" : "Rastreador GT06") },
-    { label: e.protocolo === "JT808" ? "ID" : "IMEI", value: e.imei },
-    ...(e.senalPct != null ? [{ label: "Señal celular", value: `${e.senalPct} %` }] : []),
-    ...(p && p.satelites > 0 ? [{ label: "Satélites", value: String(p.satelites) }] : []),
-    { label: "Última posición", value: p ? `${horaCorta(p.fecha)} · ${hace(estado.edadGpsS)}` : "nunca" },
-    { label: "Última conexión", value: hace(estado.edadPaqueteS) },
+    ...(x?.velocidadObd != null ? [{ label: "Velocidad del auto", value: `${Math.round(x.velocidadObd)} km/h` }] : []),
+    ...(x?.temperaturaMotor != null ? [{ label: "Temp. motor", value: `${Math.round(x.temperaturaMotor)} °C` }] : []),
+    ...(x?.voltaje != null ? [{ label: "Batería", value: `${x.voltaje.toFixed(1).replace(".", ",")} V` }] : []),
+    ...(x?.kmObd != null ? [{ label: "Odómetro", value: `${miles(x.kmObd)} km` }] : []),
     ...(e.energiaExterna != null ? [{ label: "Energía", value: e.energiaExterna ? "del vehículo" : "batería interna" }] : []),
+    ...(x?.vin ? [{ label: "VIN", value: x.vin }] : []),
   ];
-  return [
-    { titulo: "Vehículo", filas: vehiculo },
-    { titulo: "Ahora", filas: ahora },
-    { titulo: "Equipo", filas: equipo },
-  ].filter((s) => s.filas.length > 0);
+
+  const equipo = [
+    `${e.protocolo === "JT808" ? "ID" : "IMEI"} ${e.imei}`,
+    ...(e.senalPct != null ? [`señal ${e.senalPct} %`] : []),
+    ...(p && p.satelites > 0 && indicadores.every((i) => i.label !== "GPS") ? [`${p.satelites} sat.`] : []),
+  ].join(" · ");
+
+  return {
+    nombre: nombreEquipo(e),
+    subtitulo: [marca, modelo].filter(Boolean).join(" · "),
+    insignia: e.vehiclePlate ? e.vehiclePlate.slice(0, 4) : "GPS",
+    situacion: situacionEquipo(e, ahoraMs),
+    actualizado: hace(estado.edadPaqueteS),
+    indicadores: indicadores.slice(0, 3),
+    detalles,
+    pie: [equipo, p ? `Última posición ${horaCorta(p.fecha)} · ${hace(estado.edadGpsS)}` : "Sin posición todavía"],
+  };
 }
 
 /** Marcador del mapa; null si el equipo nunca mandó una posición. */
@@ -249,6 +276,6 @@ export function marcadorDeEquipo(e: EquipoGps, ahoraMs: number): PresenceMarker 
     platform: "gps-vehiculo",
     clientTypes: [],
     detailRows,
-    secciones: fichaEquipo(e, ahoraMs),
+    fichaVehiculo: fichaVehiculo(e, ahoraMs),
   };
 }

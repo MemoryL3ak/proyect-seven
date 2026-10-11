@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { datosVehiculo, estadoDeEquipo, fichaEquipo, marcaDeVin, marcadorDeEquipo, nombreEquipo, situacionEquipo, type EquipoGps } from "./gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, fichaVehiculo, marcaDeVin, marcadorDeEquipo, nombreEquipo, situacionEquipo, type EquipoGps } from "./gps-vehiculos";
 
 const T = Date.parse("2026-10-09T05:00:00.000Z");
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -74,33 +74,38 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     expect(situacionEquipo({ ...base, ultimoPaquete: iso(T - 9 * 3600_000) }, T)).toEqual({ texto: "Sin conexión", tono: "sinConexion" });
   });
 
-  it("la ficha del mapa va por secciones: vehículo, ahora y equipo, sin 'tipos de cliente' ni 'plataforma'", () => {
+  it("la ficha del vehículo: cabecera con patente, marca y situación; indicadores grandes; detalles; pie con el equipo", () => {
     const extras = { voltaje: 14.7, rpm: 879, velocidadObd: 22, temperaturaMotor: 68, kmObd: 24613, combustiblePct: 28, vin: "ZFA334000JP673562", crudos: {} };
     const seg: EquipoGps = { ...base, imei: "019210285072", protocolo: "JT808", modelo: "SEG-9888G 0285072", vehiclePlate: "KBGB58", conductorNombre: "juan villegas", tripId: "trip-1", contacto: true, energiaExterna: true, senalPct: 77, ultimaPosicion: { ...base.ultimaPosicion!, satelites: 11, velocidad: 33.3, extras } };
-    const ficha = fichaEquipo(seg, T);
-    expect(ficha.map((s) => s.titulo)).toEqual(["Vehículo", "Ahora", "Equipo"]);
-    expect(ficha[0].filas).toEqual([
-      { label: "Patente", value: "KBGB58" }, { label: "Marca", value: "Fiat" }, { label: "VIN", value: "ZFA334000JP673562" },
-      { label: "Conductor", value: "juan villegas" }, { label: "Viaje", value: "En viaje" },
+    const f = fichaVehiculo(seg, T);
+    expect(f).toMatchObject({ nombre: "KBGB58", subtitulo: "Fiat · SEG-9888G", insignia: "KBGB", actualizado: "hace 20s" });
+    expect(f.situacion).toEqual({ texto: "En movimiento", tono: "movimiento" });
+    expect(f.indicadores).toEqual([
+      { valor: "33", unidad: "km/h", label: "Velocidad" },
+      { valor: "879", unidad: "rpm", label: "Motor" },
+      { valor: "28", unidad: "%", label: "Combustible" },
     ]);
-    expect(ficha[1].filas.map((r) => `${r.label}: ${r.value}`)).toEqual([
-      "Velocidad GPS: 33 km/h", "Velocidad (auto): 22 km/h", "Motor: 879 rpm", "Temp. motor: 68 °C", "Batería: 14,7 V", "Odómetro: 24.613 km", "Combustible: 28 %", "Contacto: puesto",
+    expect(f.detalles.map((d) => `${d.label}: ${d.value}`)).toEqual([
+      "Conductor: juan villegas", "Viaje: En viaje", "Contacto: puesto", "Velocidad del auto: 22 km/h", "Temp. motor: 68 °C", "Batería: 14,7 V", "Odómetro: 24.613 km", "Energía: del vehículo", "VIN: ZFA334000JP673562",
     ]);
-    expect(ficha[2].filas.map((r) => r.label)).toEqual(["Equipo", "ID", "Señal celular", "Satélites", "Última posición", "Última conexión", "Energía"]);
-    expect(ficha[2].filas[0].value).toBe("SEG-9888G");
-    expect(ficha[2].filas[2].value).toBe("77 %");
-    expect(ficha[2].filas[6].value).toBe("del vehículo");
+    expect(f.pie[0]).toBe("ID 019210285072 · señal 77 % · 11 sat.");
+    expect(f.pie[1]).toMatch(/^Última posición .* · hace 28s$/);
     // El marcador lleva la ficha, el titular y la patente en el pin.
     const m = marcadorDeEquipo(seg, T);
-    expect(m?.secciones).toEqual(ficha);
+    expect(m?.fichaVehiculo).toEqual(f);
     expect(m?.estadoTexto).toBe("En movimiento");
     expect(m?.iniciales).toBe("KBGB");
-    // Un G500LS sin patente ni datos del auto: ficha corta, pin "GPS".
-    const g = marcadorDeEquipo({ ...base, vehiclePlate: null, conductorNombre: null, tripId: null }, T);
-    expect(g?.iniciales).toBe("GPS");
-    expect(g?.secciones?.[0].filas.map((r) => r.value)).toEqual(["sin asignar", "—", "Sin viaje en curso"]);
-    expect(g?.secciones?.[2].filas.map((r) => r.label)).toEqual(["Equipo", "IMEI", "Satélites", "Última posición", "Última conexión"]);
-    expect(g?.secciones?.[2].filas[0].value).toBe("Rastreador GT06");
+    // Un G500LS sin patente ni datos del auto: velocidad y satélites como indicadores, pin "GPS".
+    const g = fichaVehiculo({ ...base, vehiclePlate: null, conductorNombre: null, tripId: null }, T);
+    expect(g).toMatchObject({ nombre: "GPS ·669224", subtitulo: "Rastreador GT06", insignia: "GPS" });
+    expect(g.indicadores).toEqual([{ valor: "42", unidad: "km/h", label: "Velocidad" }, { valor: "9", unidad: "sat.", label: "GPS" }]);
+    expect(g.detalles).toEqual([{ label: "Conductor", value: "sin conductor" }, { label: "Viaje", value: "Sin viaje" }]);
+    expect(g.pie[0]).toBe("IMEI 862667088669224");
+    // Sin posición nunca: sin indicadores y el pie lo dice.
+    const sinPos = fichaVehiculo({ ...base, ultimaPosicion: null, ultimoPaquete: iso(T - 9 * 3600_000) }, T);
+    expect(sinPos.indicadores).toEqual([]);
+    expect(sinPos.pie[1]).toBe("Sin posición todavía");
+    expect(sinPos.situacion.tono).toBe("sinConexion");
   });
 
   it("la marca sale de los tres primeros caracteres del VIN", () => {
