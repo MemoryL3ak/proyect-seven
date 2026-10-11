@@ -1643,6 +1643,16 @@ input[type="number"]::-webkit-outer-spin-button {
 .mapa-conductores .gm-style .gm-style-iw-c.ficha-gps button.gm-ui-hover-effect {
   opacity: 0.9;
 }
+/* Google pone una franja blanca arriba (.gm-style-iw-chr) sólo para alojar
+   la X: en la ficha del vehículo esa franja va flotando sobre la cabecera
+   oscura, así el contenido empieza en el borde de arriba. */
+.mapa-conductores .gm-style .gm-style-iw-c.ficha-gps .gm-style-iw-chr {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: auto;
+  z-index: 1;
+}
 .mapa-conductores .gm-style .gm-style-iw-c.ficha-gps button.gm-ui-hover-effect > span {
   background-color: #fff !important;
 }

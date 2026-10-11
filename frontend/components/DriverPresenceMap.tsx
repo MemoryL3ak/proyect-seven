@@ -55,7 +55,7 @@ export function fichaVehiculoHtml(f: FichaVehiculo): string {
   const indicadores = f.indicadores
     .map(
       (i) => `
-      <div style="flex:1;min-width:0;background:${SURFACE.bg};border:1px solid ${SURFACE.borderMuted};border-radius:10px;padding:9px 6px 7px;text-align:center;">
+      <div style="flex:1 1 0;min-width:0;max-width:140px;background:${SURFACE.bg};border:1px solid ${SURFACE.borderMuted};border-radius:10px;padding:9px 6px 7px;text-align:center;">
         <div style="font-size:19px;font-weight:900;color:${SURFACE.text};line-height:1;letter-spacing:-0.01em;white-space:nowrap;">${i.valor}${i.unidad ? `<span style="font-size:10px;font-weight:700;color:${SURFACE.textMuted};margin-left:2px;">${i.unidad}</span>` : ""}</div>
         <div style="font-size:9px;font-weight:800;color:${SURFACE.textFaint};margin-top:5px;text-transform:uppercase;letter-spacing:0.08em;">${i.label}</div>
       </div>`,
@@ -87,7 +87,7 @@ export function fichaVehiculoHtml(f: FichaVehiculo): string {
           <span style="font-size:10.5px;color:rgba(255,255,255,0.65);white-space:nowrap;">${f.actualizado}</span>
         </div>
       </div>
-      ${f.indicadores.length ? `<div style="display:flex;gap:8px;padding:12px 14px 2px;">${indicadores}</div>` : ""}
+      ${f.indicadores.length ? `<div style="display:flex;justify-content:center;gap:8px;padding:12px 14px 2px;">${indicadores}</div>` : ""}
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:9px 12px;padding:12px 14px;">${detalles}</div>
       <div style="border-top:1px solid ${SURFACE.borderMuted};padding:8px 14px 10px;">
         ${f.pie.map((l) => `<div style="font-size:10.5px;color:${SURFACE.textMuted};line-height:1.5;">${l}</div>`).join("")}
