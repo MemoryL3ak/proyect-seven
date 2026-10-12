@@ -20,9 +20,17 @@ export function cambioDeDestino(anterior: { lat: number; lng: number } | undefin
   return Math.abs(anterior.lat - nuevo.lat) > 1e-7 || Math.abs(anterior.lng - nuevo.lng) > 1e-7;
 }
 
+/**
+ * Un 25 % más que el intervalo medido: los datos no llegan a ritmo exacto y,
+ * con la duración justa, el pin alcanzaba el destino y quedaba quieto hasta
+ * 2 s (medido en producción el 12-10-2026). Si el dato siguiente llega
+ * antes, el pin simplemente cambia de rumbo desde donde va.
+ */
+export const HOLGURA_TWEEN = 1.25;
+
 export function duracionDeTween(ahoraMs: number, ultimoCambioMs: number | undefined, minimo = TWEEN_MINIMO_MS, maximo = TWEEN_MAXIMO_MS): number {
   if (ultimoCambioMs == null) return minimo;
   const intervalo = ahoraMs - ultimoCambioMs;
   if (!Number.isFinite(intervalo) || intervalo <= 0) return minimo;
-  return Math.min(maximo, Math.max(minimo, intervalo));
+  return Math.min(maximo, Math.max(minimo, intervalo * HOLGURA_TWEEN));
 }

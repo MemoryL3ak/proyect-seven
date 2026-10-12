@@ -15,9 +15,12 @@ describe("cuándo volver a animar un pin", () => {
 describe("duración del desplazamiento del pin", () => {
   it("el primer movimiento es corto; después dura lo que tardó en llegar el dato", () => {
     expect(duracionDeTween(10_000, undefined)).toBe(600);
-    // Posiciones cada 2 s (GPS de vehículo): el pin tarda 2 s en llegar, sin quedarse quieto.
-    expect(duracionDeTween(12_000, 10_000)).toBe(2000);
-    // Cada 8 s (sondeo completo): 8 s de viaje parejo.
+    // Posiciones cada 2 s (GPS de vehículo): el pin tarda 2,5 s en llegar (25 % de
+    // holgura), así nunca se queda quieto esperando el dato siguiente.
+    expect(duracionDeTween(12_000, 10_000)).toBe(2500);
+    // Cada 5 s (SEG y G500LS): 6,25 s de viaje parejo.
+    expect(duracionDeTween(15_000, 10_000)).toBe(6250);
+    // Cada 8 s (sondeo completo): tope de 8 s.
     expect(duracionDeTween(18_000, 10_000)).toBe(8000);
   });
 
