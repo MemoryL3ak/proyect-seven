@@ -227,7 +227,7 @@ export type Indicador = { valor: string; unidad: string | null; label: string };
 export type FichaVehiculo = {
   nombre: string;
   subtitulo: string;
-  /** Texto del recuadro de la cabecera: la patente (4 primeros) o "GPS". */
+  /** Texto del recuadro de la cabecera: la patente o "GPS". */
   insignia: string;
   situacion: Situacion;
   /** Hace cuánto llegó el último paquete. */
@@ -274,7 +274,7 @@ export function fichaVehiculo(e: EquipoGps, ahoraMs: number): FichaVehiculo {
   return {
     nombre: nombreEquipo(e),
     subtitulo: [marca, modelo].filter(Boolean).join(" · "),
-    insignia: e.vehiclePlate ? e.vehiclePlate.slice(0, 4) : "GPS",
+    insignia: e.vehiclePlate ?? "GPS",
     situacion: situacionEquipo(e, ahoraMs),
     actualizado: hace(estado.edadPaqueteS),
     indicadores: indicadores.slice(0, 3),
@@ -304,8 +304,8 @@ export function marcadorDeEquipo(e: EquipoGps, ahoraMs: number): PresenceMarker 
     lat: p.lat,
     lng: p.lng,
     name: nombreEquipo(e),
-    // En el pin: la patente, o "GPS" mientras no la tenga.
-    iniciales: e.vehiclePlate ? e.vehiclePlate.slice(0, 4) : "GPS",
+    // En el pin: la patente completa (Ariel, 12-10-2026), o "GPS" mientras no la tenga.
+    iniciales: e.vehiclePlate ?? "GPS",
     online: estado.gpsVivo,
     conectado: estado.conectado,
     onTrip: Boolean(e.tripId) && estado.gpsVivo,

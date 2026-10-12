@@ -80,7 +80,7 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     const extras = { voltaje: 14.7, rpm: 879, velocidadObd: 22, temperaturaMotor: 68, kmObd: 24613, combustiblePct: 28, vin: "ZFA334000JP673562", crudos: {} };
     const seg: EquipoGps = { ...base, imei: "019210285072", protocolo: "JT808", modelo: "SEG-9888G 0285072", vehiclePlate: "KBGB58", conductorNombre: "juan villegas", tripId: "trip-1", contacto: true, energiaExterna: true, senalPct: 77, ultimaPosicion: { ...base.ultimaPosicion!, satelites: 11, velocidad: 33.3, extras } };
     const f = fichaVehiculo(seg, T);
-    expect(f).toMatchObject({ nombre: "KBGB58", subtitulo: "Fiat · SEG-9888G", insignia: "KBGB", actualizado: "hace 20s" });
+    expect(f).toMatchObject({ nombre: "KBGB58", subtitulo: "Fiat · SEG-9888G", insignia: "KBGB58", actualizado: "hace 20s" });
     expect(f.situacion).toEqual({ texto: "En movimiento", tono: "movimiento" });
     expect(f.indicadores).toEqual([
       { valor: "33", unidad: "km/h", label: "Velocidad" },
@@ -96,7 +96,8 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     const m = marcadorDeEquipo(seg, T);
     expect(m?.fichaVehiculo).toEqual(f);
     expect(m?.estadoTexto).toBe("En movimiento");
-    expect(m?.iniciales).toBe("KBGB");
+    // El círculo del mapa lleva la patente completa (12-10-2026).
+    expect(m?.iniciales).toBe("KBGB58");
     // Un G500LS sin patente ni datos del auto: velocidad y satélites como indicadores, pin "GPS".
     const g = fichaVehiculo({ ...base, vehiclePlate: null, conductorNombre: null, tripId: null }, T);
     expect(g).toMatchObject({ nombre: "GPS ·669224", subtitulo: "Rastreador GT06", insignia: "GPS" });

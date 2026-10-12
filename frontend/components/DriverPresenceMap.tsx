@@ -75,7 +75,7 @@ export function fichaVehiculoHtml(f: FichaVehiculo): string {
     <div style="font-family:system-ui,sans-serif;width:300px;color:${SURFACE.text};">
       <div style="background:linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight} 55%,${BRAND.charcoal});padding:14px 44px 12px 14px;color:#fff;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;font-size:${f.insignia.length > 3 ? 12 : 13}px;font-weight:900;letter-spacing:0.04em;color:${BRAND.tealLight};">${f.insignia}</div>
+          <div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;font-size:${f.insignia.length > 4 ? 10.5 : f.insignia.length > 3 ? 12 : 13}px;font-weight:900;letter-spacing:${f.insignia.length > 4 ? 0 : 0.04}em;color:${BRAND.tealLight};white-space:nowrap;">${f.insignia}</div>
           <div style="min-width:0;flex:1;">
             <div style="font-size:16px;font-weight:800;line-height:1.15;word-break:break-word;">${f.nombre}</div>
             <div style="font-size:11px;color:rgba(255,255,255,0.72);margin-top:3px;">${f.subtitulo}</div>
@@ -189,7 +189,22 @@ function getInitials(name: string): string {
   );
 }
 
-function createPinIcon(initials: string, accent: string): string {
+/**
+ * Tamaño de letra del texto del pin según su largo: iniciales (2) grandes;
+ * una patente completa (6, Ariel 12-10-2026) más chica y comprimida al ancho
+ * del círculo (textLength) para que no se salga.
+ */
+export function letraDelPin(texto: string): { fontSize: number; letterSpacing: number; textLength: number | null; y: number } {
+  const n = texto.length;
+  if (n <= 2) return { fontSize: 15, letterSpacing: 0.5, textLength: null, y: 32 };
+  if (n === 3) return { fontSize: 14, letterSpacing: 0.3, textLength: null, y: 31 };
+  if (n === 4) return { fontSize: 12, letterSpacing: 0, textLength: null, y: 30 };
+  return { fontSize: 10.5, letterSpacing: 0, textLength: 35, y: 30 };
+}
+
+export function createPinIcon(initials: string, accent: string): string {
+  const letra = letraDelPin(initials);
+  const ajuste = letra.textLength ? ` textLength="${letra.textLength}" lengthAdjust="spacingAndGlyphs"` : "";
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="56" height="68" viewBox="0 0 56 68">
     <defs>
       <filter id="ds" x="-30%" y="-20%" width="160%" height="150%">
@@ -199,7 +214,7 @@ function createPinIcon(initials: string, accent: string): string {
     <path d="M28 66 L19 48 L37 48 Z" fill="${accent}" opacity="0.9"/>
     <circle cx="28" cy="26" r="23" fill="${accent}" filter="url(%23ds)"/>
     <circle cx="28" cy="26" r="20" fill="#062240"/>
-    <text x="28" y="32" text-anchor="middle" font-family="system-ui,sans-serif" font-size="15" font-weight="900" fill="#fff" letter-spacing="0.5">${initials}</text>
+    <text x="28" y="${letra.y}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="${letra.fontSize}" font-weight="900" fill="#fff" letter-spacing="${letra.letterSpacing}"${ajuste}>${initials}</text>
   </svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
