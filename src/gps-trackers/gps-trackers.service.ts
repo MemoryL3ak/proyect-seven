@@ -515,6 +515,24 @@ export class GpsTrackersService implements OnApplicationBootstrap, OnApplication
    * y sobrevive a los reinicios) y atribuye cada patente a su conductor.
    * `eventId` sólo acota la atribución; todos los equipos se muestran.
    */
+  /**
+   * Sólo las últimas posiciones, desde memoria y sin tocar la base: el
+   * Monitoreo las pide cada 2 s para que los pines se muevan parejo
+   * (12-10-2026, Ariel: "sería ideal que se viera el movimiento más
+   * constante, no con saltos"). El resto de la ficha sigue viniendo de
+   * `listar` cada 8 s.
+   */
+  posiciones(): Array<{ imei: string; conectado: boolean; ultimoPaquete: string | null; posicion: PosicionGt06 & { recibida: string } }> {
+    return Array.from(this.equipos.values())
+      .filter((e): e is EstadoEquipo & { ultimaPosicion: PosicionGt06 & { recibida: string } } => e.ultimaPosicion !== null)
+      .map((e) => ({
+        imei: e.imei,
+        conectado: e.conectado,
+        ultimoPaquete: e.ultimoPaquete,
+        posicion: { fecha: e.ultimaPosicion.fecha, satelites: e.ultimaPosicion.satelites, lat: e.ultimaPosicion.lat, lng: e.ultimaPosicion.lng, velocidad: e.ultimaPosicion.velocidad, rumbo: e.ultimaPosicion.rumbo, valido: e.ultimaPosicion.valido, recibida: e.ultimaPosicion.recibida },
+      }));
+  }
+
   async listar(eventId?: string): Promise<{ puerto: number; tabla: boolean | null; equipos: EstadoEquipo[] }> {
     void eventId;
     if (this.tablaDisponible !== false) {

@@ -27,7 +27,7 @@ import {
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 import StyledSelect from "@/components/StyledSelect";
-import { datosVehiculo, estadoDeEquipo, hace, marcadorDeEquipo, nombreEquipo, type EquipoGps } from "@/lib/gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, fusionarPosiciones, hace, marcadorDeEquipo, nombreEquipo, type EquipoGps, type PosicionRapida } from "@/lib/gps-vehiculos";
 
 const DriverPresenceMap = dynamic(() => import("@/components/DriverPresenceMap"), {
   ssr: false,
@@ -251,6 +251,22 @@ export default function DriverMonitoringPage() {
     const interval = setInterval(load, 8000);
     return () => clearInterval(interval);
   }, [load, isToday]);
+
+  // Posiciones de los equipos GPS cada 2 s (sólo memoria del servidor, sin
+  // base): con el sondeo de 8 s los pines daban saltos (12-10-2026).
+  useEffect(() => {
+    if (!isToday || fuente === "app") return;
+    let activo = true;
+    const timer = setInterval(async () => {
+      try {
+        const data = await apiFetch<PosicionRapida[]>("/gps-trackers/posiciones");
+        if (activo && Array.isArray(data)) setEquipos((prev) => fusionarPosiciones(prev, data));
+      } catch {
+        // el próximo tic reintenta
+      }
+    }, 2000);
+    return () => { activo = false; clearInterval(timer); };
+  }, [isToday, fuente]);
 
   // Patentes conocidas del evento (viajes y fichas), para asignarle una a cada equipo GPS.
   useEffect(() => {
@@ -572,7 +588,7 @@ export default function DriverMonitoringPage() {
                   animation: "pulse 1.8s infinite",
                 }}
               />
-              {t("En vivo · se actualiza cada 8 s")}
+              {t("En vivo · posiciones cada 2 s")}
             </span>
           ) : (
             <span

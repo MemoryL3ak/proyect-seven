@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { etiquetaPlataforma } from "@/lib/plataforma-conductor";
 import { rotuloMarcador } from "@/lib/presencia";
+import { duracionDeTween } from "@/lib/mapa-animacion";
 import type { FichaVehiculo, Situacion } from "@/lib/gps-vehiculos";
 
 export type PresenceMarker = {
@@ -225,10 +226,10 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
   const infoWindowRef = useRef<any>(null);
   const didFitRef = useRef(false);
 
-  // Smoothly animates a marker to `to`, cancelling any in-flight tween for the
-  // same marker. 1200 ms sits just under the typical gap between GPS fixes so
-  // the marker arrives shortly before the next one lands.
-  const ANIM_DURATION_MS = 1200;
+  // Cuándo llegó el último cambio de posición de cada marcador: la animación
+  // dura lo que tardó en llegar, así el pin se mueve parejo entre un dato y
+  // el siguiente en vez de saltar y quedarse quieto (12-10-2026).
+  const ultimoCambioRef = useRef<Record<string, number>>({});
   const animateMarker = (
     markerId: string,
     marker: any,
@@ -238,11 +239,13 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
     const prev = markerAnimRef.current[markerId];
     if (prev) cancelAnimationFrame(prev.rafId);
     const startedAt = performance.now();
+    const duracion = duracionDeTween(startedAt, ultimoCambioRef.current[markerId]);
+    ultimoCambioRef.current[markerId] = startedAt;
     const step = (now: number) => {
       const elapsed = now - startedAt;
-      const t = Math.min(1, elapsed / ANIM_DURATION_MS);
-      // ease-out cubic: starts fast, settles gently.
-      const eased = 1 - Math.pow(1 - t, 3);
+      const t = Math.min(1, elapsed / duracion);
+      // Lineal: a velocidad constante de un dato al siguiente.
+      const eased = t;
       const lat = from.lat + (to.lat - from.lat) * eased;
       const lng = from.lng + (to.lng - from.lng) * eased;
       marker.setPosition({ lat, lng });

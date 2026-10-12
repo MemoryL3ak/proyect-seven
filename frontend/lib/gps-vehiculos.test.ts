@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { datosVehiculo, estadoDeEquipo, fichaVehiculo, marcaDeVin, marcadorDeEquipo, nombreEquipo, situacionEquipo, type EquipoGps } from "./gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarPosiciones, marcaDeVin, marcadorDeEquipo, nombreEquipo, situacionEquipo, type EquipoGps } from "./gps-vehiculos";
 
 const T = Date.parse("2026-10-09T05:00:00.000Z");
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -106,6 +106,24 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     expect(sinPos.indicadores).toEqual([]);
     expect(sinPos.pie[1]).toBe("Sin posición todavía");
     expect(sinPos.situacion.tono).toBe("sinConexion");
+  });
+
+  it("el sondeo rápido (cada 2 s) mueve la posición y conserva los datos OBD; no retrocede a una más vieja", () => {
+    const extras = { rpm: 906, voltaje: 14, crudos: {} };
+    const seg: EquipoGps = { ...base, imei: "019210285072", ultimaPosicion: { ...base.ultimaPosicion!, extras, contacto: true } };
+    const otro: EquipoGps = { ...base, imei: "866557086859487" };
+    const rapida = { imei: "019210285072", conectado: true, ultimoPaquete: iso(T), posicion: { fecha: iso(T - 2_000), satelites: 12, lat: -33.46, lng: -70.53, velocidad: 50, rumbo: 90, valido: true, recibida: iso(T - 1_000) } };
+    const r = fusionarPosiciones([seg, otro], [rapida]);
+    expect(r[0].ultimaPosicion).toMatchObject({ lat: -33.46, lng: -70.53, velocidad: 50, recibida: iso(T - 1_000), extras, contacto: true });
+    expect(r[0].ultimoPaquete).toBe(iso(T));
+    expect(r[1]).toBe(otro);
+    // Una posición más vieja que la que ya se tiene no pisa nada (misma referencia).
+    const vieja = { ...rapida, posicion: { ...rapida.posicion, recibida: iso(T - 60_000), lat: -1 } };
+    expect(fusionarPosiciones([seg], [vieja])).toEqual([seg]);
+    expect(fusionarPosiciones([seg], [])).toEqual([seg]);
+    // Un equipo que nunca tuvo posición la recibe entera.
+    const sinPos = { ...seg, ultimaPosicion: null };
+    expect(fusionarPosiciones([sinPos], [rapida])[0].ultimaPosicion?.lat).toBe(-33.46);
   });
 
   it("la marca sale de los tres primeros caracteres del VIN", () => {

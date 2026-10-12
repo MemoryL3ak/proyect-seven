@@ -13,6 +13,12 @@ export class GpsTrackersController {
     return this.service.listar(eventId?.trim() || undefined);
   }
 
+  /** Últimas posiciones desde memoria (sin base): el mapa las pide cada 2 s. */
+  @Get('posiciones')
+  posiciones() {
+    return this.service.posiciones();
+  }
+
   /** Patentes conocidas del evento, para el selector de asignación. */
   @Get('patentes')
   patentes(@Query('eventId') eventId?: string) {

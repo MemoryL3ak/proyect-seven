@@ -132,6 +132,29 @@ export function datosVehiculo(p: PosicionEquipo | null | undefined): { label: st
   return filas;
 }
 
+export type PosicionRapida = { imei: string; conectado: boolean; ultimoPaquete: string | null; posicion: Omit<PosicionEquipo, "extras" | "contacto"> };
+
+/**
+ * Mete las posiciones del sondeo rápido (GET /gps-trackers/posiciones, cada
+ * 2 s) en la lista de equipos que trae el sondeo completo (cada 8 s): sólo
+ * cambia la posición, y sólo si es más nueva que la que ya se tiene; los
+ * datos OBD y el contacto de la posición anterior se conservan.
+ */
+export function fusionarPosiciones(equipos: EquipoGps[], rapidas: PosicionRapida[]): EquipoGps[] {
+  if (rapidas.length === 0) return equipos;
+  const por = new Map(rapidas.map((r) => [r.imei, r]));
+  let cambio = false;
+  const nuevos = equipos.map((e) => {
+    const r = por.get(e.imei);
+    if (!r) return e;
+    const actual = e.ultimaPosicion;
+    if (actual && new Date(r.posicion.recibida).getTime() <= new Date(actual.recibida).getTime()) return e;
+    cambio = true;
+    return { ...e, ultimoPaquete: r.ultimoPaquete ?? e.ultimoPaquete, ultimaPosicion: { ...(actual ?? {}), ...r.posicion } as PosicionEquipo };
+  });
+  return cambio ? nuevos : equipos;
+}
+
 /** Marca a partir de los tres primeros caracteres del VIN (código de fabricante). */
 const MARCAS_VIN: Record<string, string> = {
   ZFA: "Fiat", "9BD": "Fiat", "8AP": "Fiat",

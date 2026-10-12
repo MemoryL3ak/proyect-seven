@@ -127,6 +127,12 @@ describe('GpsTrackersService', () => {
     expect(equipo.conductorNombre).toBe('juan villegas');
     expect(equipo.tripId).toBe('trip-1');
     expect(service.ultimosPaquetes('123456789012345').map((p) => p.tipo).filter((t) => t !== 'bytes')).toEqual(['posicion', 'login']);
+    // El sondeo rápido del mapa (cada 2 s) sale de memoria, sin base.
+    const [rapida] = service.posiciones();
+    expect(rapida).toMatchObject({ imei: '123456789012345', conectado: true });
+    expect(rapida.posicion).toMatchObject({ velocidad: 42, rumbo: 143, valido: true });
+    expect(rapida.posicion.lat).toBeCloseTo(-33.4543, 5);
+    expect(rapida.posicion.fecha.toISOString()).toBe('2026-10-09T15:04:05.000Z');
   });
 
   it('al quitar la patente desaparecen el conductor, el viaje y el evento atribuidos', async () => {
