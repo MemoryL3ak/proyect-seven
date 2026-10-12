@@ -9,6 +9,17 @@
 export const TWEEN_MINIMO_MS = 600;
 export const TWEEN_MAXIMO_MS = 8000;
 
+/**
+ * Si la posición que mandó el equipo es otra que la última pedida al pin. Se
+ * compara contra el destino anterior y no contra dónde va el pin a medio
+ * camino: el mapa se redibuja cada segundo y, comparando con la posición
+ * animada, reiniciaba el tween a cada tic (el pin aceleraba y luego esperaba).
+ */
+export function cambioDeDestino(anterior: { lat: number; lng: number } | undefined, nuevo: { lat: number; lng: number }): boolean {
+  if (!anterior) return true;
+  return Math.abs(anterior.lat - nuevo.lat) > 1e-7 || Math.abs(anterior.lng - nuevo.lng) > 1e-7;
+}
+
 export function duracionDeTween(ahoraMs: number, ultimoCambioMs: number | undefined, minimo = TWEEN_MINIMO_MS, maximo = TWEEN_MAXIMO_MS): number {
   if (ultimoCambioMs == null) return minimo;
   const intervalo = ahoraMs - ultimoCambioMs;

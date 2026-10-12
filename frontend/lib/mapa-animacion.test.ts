@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { duracionDeTween } from "./mapa-animacion";
+import { cambioDeDestino, duracionDeTween } from "./mapa-animacion";
+
+describe("cuándo volver a animar un pin", () => {
+  it("sólo cuando el equipo mandó otra posición; a medio camino, con el mismo destino, no se reinicia", () => {
+    const destino = { lat: -33.45, lng: -70.65 };
+    expect(cambioDeDestino(undefined, destino)).toBe(true);
+    expect(cambioDeDestino(destino, { lat: -33.45, lng: -70.65 })).toBe(false);
+    expect(cambioDeDestino(destino, { lat: -33.4501, lng: -70.65 })).toBe(true);
+    // Diferencias de redondeo no cuentan.
+    expect(cambioDeDestino(destino, { lat: -33.45 + 1e-9, lng: -70.65 })).toBe(false);
+  });
+});
 
 describe("duración del desplazamiento del pin", () => {
   it("el primer movimiento es corto; después dura lo que tardó en llegar el dato", () => {

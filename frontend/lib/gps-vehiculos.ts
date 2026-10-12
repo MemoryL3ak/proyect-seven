@@ -155,6 +155,21 @@ export function fusionarPosiciones(equipos: EquipoGps[], rapidas: PosicionRapida
   return cambio ? nuevos : equipos;
 }
 
+/**
+ * La lista completa (cada 8 s) reemplaza a la anterior, pero sin retroceder
+ * la posición: si el sondeo rápido ya trajo una más nueva para ese equipo,
+ * se conserva (la respuesta lenta puede llegar después de la rápida).
+ */
+export function fusionarListas(prev: EquipoGps[], nuevos: EquipoGps[]): EquipoGps[] {
+  const por = new Map(prev.map((e) => [e.imei, e]));
+  return nuevos.map((n) => {
+    const p = por.get(n.imei);
+    if (!p?.ultimaPosicion) return n;
+    if (n.ultimaPosicion && new Date(n.ultimaPosicion.recibida).getTime() >= new Date(p.ultimaPosicion.recibida).getTime()) return n;
+    return { ...n, ultimaPosicion: p.ultimaPosicion, ultimoPaquete: [n.ultimoPaquete, p.ultimoPaquete].filter(Boolean).sort().pop() ?? n.ultimoPaquete };
+  });
+}
+
 /** Marca a partir de los tres primeros caracteres del VIN (código de fabricante). */
 const MARCAS_VIN: Record<string, string> = {
   ZFA: "Fiat", "9BD": "Fiat", "8AP": "Fiat",

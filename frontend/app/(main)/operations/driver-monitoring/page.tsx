@@ -28,7 +28,7 @@ import {
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 import StyledSelect from "@/components/StyledSelect";
-import { datosVehiculo, estadoDeEquipo, fusionarPosiciones, hace, idMarcadorEquipo, marcadorDeEquipo, nombreEquipo, type EquipoGps, type PosicionRapida } from "@/lib/gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, fusionarListas, fusionarPosiciones, hace, idMarcadorEquipo, marcadorDeEquipo, nombreEquipo, type EquipoGps, type PosicionRapida } from "@/lib/gps-vehiculos";
 
 const DriverPresenceMap = dynamic(() => import("@/components/DriverPresenceMap"), {
   ssr: false,
@@ -242,7 +242,7 @@ export default function DriverMonitoringPage() {
       setError(null);
       // Equipos GPS de vehículo: vienen aparte de la presencia de la app.
       apiFetch<{ equipos: EquipoGps[] }>(`/gps-trackers${eventoId ? `?eventId=${encodeURIComponent(eventoId)}` : ""}`)
-        .then((r) => setEquipos(r?.equipos ?? []))
+        .then((r) => setEquipos((prev) => fusionarListas(prev, r?.equipos ?? [])))
         .catch(() => {});
     } catch (err) {
       setError(err instanceof Error ? err.message : t("No se pudo cargar el monitoreo."));

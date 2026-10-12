@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarPosiciones, idMarcadorEquipo, marcaDeVin, marcadorDeEquipo, nombreEquipo, situacionEquipo, type EquipoGps } from "./gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarListas, fusionarPosiciones, idMarcadorEquipo, marcaDeVin, marcadorDeEquipo, nombreEquipo, situacionEquipo, type EquipoGps } from "./gps-vehiculos";
 
 const T = Date.parse("2026-10-09T05:00:00.000Z");
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -126,6 +126,21 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     // Un equipo que nunca tuvo posición la recibe entera.
     const sinPos = { ...seg, ultimaPosicion: null };
     expect(fusionarPosiciones([sinPos], [rapida])[0].ultimaPosicion?.lat).toBe(-33.46);
+  });
+
+  it("la lista completa (cada 8 s) no retrocede una posición que el sondeo rápido ya adelantó", () => {
+    const rapido: EquipoGps = { ...base, ultimaPosicion: { ...base.ultimaPosicion!, lat: -33.46, recibida: iso(T - 1_000) }, ultimoPaquete: iso(T - 1_000) };
+    const lento: EquipoGps = { ...base, label: "nuevo", ultimaPosicion: { ...base.ultimaPosicion!, recibida: iso(T - 9_000) }, ultimoPaquete: iso(T - 9_000) };
+    const r = fusionarListas([rapido], [lento]);
+    expect(r[0].label).toBe("nuevo");
+    expect(r[0].ultimaPosicion?.lat).toBe(-33.46);
+    expect(r[0].ultimoPaquete).toBe(iso(T - 1_000));
+    // Si la lista completa trae una más nueva, manda ella.
+    const masNuevo = { ...lento, ultimaPosicion: { ...lento.ultimaPosicion!, lat: -33.47, recibida: iso(T) } };
+    expect(fusionarListas([rapido], [masNuevo])[0].ultimaPosicion?.lat).toBe(-33.47);
+    // Equipos nuevos o que se fueron: manda la lista completa.
+    expect(fusionarListas([rapido], []).length).toBe(0);
+    expect(fusionarListas([], [lento])[0]).toBe(lento);
   });
 
   it("la marca sale de los tres primeros caracteres del VIN", () => {

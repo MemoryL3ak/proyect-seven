@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { etiquetaPlataforma } from "@/lib/plataforma-conductor";
 import { rotuloMarcador } from "@/lib/presencia";
-import { duracionDeTween } from "@/lib/mapa-animacion";
+import { cambioDeDestino, duracionDeTween } from "@/lib/mapa-animacion";
 import type { FichaVehiculo, Situacion } from "@/lib/gps-vehiculos";
 
 export type PresenceMarker = {
@@ -232,6 +232,8 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
   // dura lo que tardó en llegar, así el pin se mueve parejo entre un dato y
   // el siguiente en vez de saltar y quedarse quieto (12-10-2026).
   const ultimoCambioRef = useRef<Record<string, number>>({});
+  // Último destino pedido para cada pin (la posición que mandó el equipo).
+  const markerTargetRef = useRef<Record<string, { lat: number; lng: number }>>({});
   const animateMarker = (
     markerId: string,
     marker: any,
@@ -320,6 +322,8 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
         gmMarkersRef.current[id].setMap(null);
         delete gmMarkersRef.current[id];
         delete markerAccentRef.current[id];
+        delete markerTargetRef.current[id];
+        delete ultimoCambioRef.current[id];
       }
     });
 
@@ -365,15 +369,16 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
 
       if (gmMarkersRef.current[m.id]) {
         const marker = gmMarkersRef.current[m.id];
-        const currentPos = marker.getPosition?.();
-        const from = currentPos ? { lat: currentPos.lat(), lng: currentPos.lng() } : pos;
-        // Only animate when the fix actually moved — avoids a spurious tween
-        // on every refresh when a driver is parked.
-        const moved = Math.abs(from.lat - pos.lat) > 1e-7 || Math.abs(from.lng - pos.lng) > 1e-7;
-        if (moved) {
+        // Sólo se anima cuando cambia el DESTINO (la posición que mandó el
+        // equipo), no cuando el pin está a medio camino: este efecto corre
+        // cada segundo (nowTick) y, al comparar contra la posición animada,
+        // reiniciaba el tween cada segundo: el pin aceleraba y después
+        // esperaba (12-10-2026, Ariel: "se ven con saltos").
+        if (cambioDeDestino(markerTargetRef.current[m.id], pos)) {
+          const currentPos = marker.getPosition?.();
+          const from = currentPos ? { lat: currentPos.lat(), lng: currentPos.lng() } : pos;
+          markerTargetRef.current[m.id] = pos;
           animateMarker(m.id, marker, from, pos);
-        } else {
-          marker.setPosition(pos);
         }
         if (markerAccentRef.current[m.id] !== accent) {
           marker.setIcon({
@@ -403,6 +408,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
         marker.addListener("click", () => abrirFicha(marker));
         gmMarkersRef.current[m.id] = marker;
         markerAccentRef.current[m.id] = accent;
+        markerTargetRef.current[m.id] = pos;
       }
     });
 
