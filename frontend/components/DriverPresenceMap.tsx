@@ -148,6 +148,8 @@ type Props = {
    * el jefe tenía que adivinar cuál era el que venía a mirar.
    */
   focoId?: string | null;
+  /** Cambia cada vez que se vuelve a pedir el mismo foco (12-10-2026: pinchar un equipo en la tabla). */
+  focoVez?: number;
 };
 
 const API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY ?? "";
@@ -202,7 +204,7 @@ function createPinIcon(initials: string, accent: string): string {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-export default function DriverPresenceMap({ markers, height = 420, focoId = null }: Props) {
+export default function DriverPresenceMap({ markers, height = 420, focoId = null, focoVez = 0 }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   // Último chofer al que se centró, para no repetir el movimiento en cada tic.
@@ -299,6 +301,17 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
 
     const currentIds = new Set(markers.map((m) => m.id));
 
+    const abrirFicha = (marker: any) => {
+      infoWindowRef.current.setContent(marker.__html);
+      infoWindowRef.current.open(mapRef.current, marker);
+      // La ficha del vehículo va al borde de la burbuja (cabecera oscura,
+      // X en blanco): la clase la pone globals.css (.ficha-gps).
+      const esFicha = Boolean(marker.__ficha);
+      google.maps.event.addListenerOnce(infoWindowRef.current, "domready", () => {
+        containerRef.current?.querySelectorAll(".gm-style-iw-c").forEach((el) => el.classList.toggle("ficha-gps", esFicha));
+      });
+    };
+
     Object.keys(gmMarkersRef.current).forEach((id) => {
       if (!currentIds.has(id)) {
         const inflight = markerAnimRef.current[id];
@@ -387,16 +400,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
         });
         marker.__html = html;
         marker.__ficha = Boolean(m.fichaVehiculo);
-        marker.addListener("click", () => {
-          infoWindowRef.current.setContent(marker.__html);
-          infoWindowRef.current.open(mapRef.current, marker);
-          // La ficha del vehículo va al borde de la burbuja (cabecera oscura,
-          // X en blanco): la clase la pone globals.css (.ficha-gps).
-          const esFicha = Boolean(marker.__ficha);
-          google.maps.event.addListenerOnce(infoWindowRef.current, "domready", () => {
-            containerRef.current?.querySelectorAll(".gm-style-iw-c").forEach((el) => el.classList.toggle("ficha-gps", esFicha));
-          });
-        });
+        marker.addListener("click", () => abrirFicha(marker));
         gmMarkersRef.current[m.id] = marker;
         markerAccentRef.current[m.id] = accent;
       }
@@ -406,10 +410,14 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
     // automático: es lo que la persona vino a ver.
     if (focoId) {
       const m = markers.find((x) => x.id === focoId);
-      if (m && focoAplicadoRef.current !== focoId) {
+      const clave = `${focoId}#${focoVez}`;
+      if (m && focoAplicadoRef.current !== clave) {
         mapRef.current.panTo({ lat: m.lat, lng: m.lng });
         mapRef.current.setZoom(15);
-        focoAplicadoRef.current = focoId;
+        // Un equipo elegido en la tabla llega con su ficha abierta.
+        const marker = gmMarkersRef.current[m.id];
+        if (marker && m.fichaVehiculo) abrirFicha(marker);
+        focoAplicadoRef.current = clave;
         didFitRef.current = true;
         return;
       }
@@ -428,7 +436,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
       }
       didFitRef.current = true;
     }
-  }, [markers, focoId, mapaListo]);
+  }, [markers, focoId, focoVez, mapaListo]);
 
   return (
     // La clase permite que la ficha del conductor (InfoWindow) crezca entera

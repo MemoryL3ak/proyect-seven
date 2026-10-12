@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarPosiciones, marcaDeVin, marcadorDeEquipo, nombreEquipo, situacionEquipo, type EquipoGps } from "./gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarPosiciones, idMarcadorEquipo, marcaDeVin, marcadorDeEquipo, nombreEquipo, situacionEquipo, type EquipoGps } from "./gps-vehiculos";
 
 const T = Date.parse("2026-10-09T05:00:00.000Z");
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -42,6 +42,8 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
   it("el marcador va en viaje sólo con viaje en curso y GPS vivo, y lleva IMEI, vehículo y conductor", () => {
     const m = marcadorDeEquipo(base, T);
     expect(m).toMatchObject({ id: "gps:862667088669224", name: "KBGB58", online: true, conectado: true, onTrip: true, platform: "gps-vehiculo", lat: -33.4543, lng: -70.5186 });
+    // La tabla manda el mismo id al mapa para centrarlo ("ver en el mapa", 12-10-2026).
+    expect(idMarcadorEquipo("862667088669224")).toBe(m?.id);
     expect(m?.detailRows?.map((r) => r.value)).toEqual(["862667088669224", "KBGB58", "juan villegas", "42 km/h"]);
     expect(marcadorDeEquipo({ ...base, tripId: null }, T)?.onTrip).toBe(false);
     expect(marcadorDeEquipo({ ...base, ultimaPosicion: null }, T)).toBeNull();

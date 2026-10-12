@@ -268,6 +268,9 @@ export function fichaVehiculo(e: EquipoGps, ahoraMs: number): FichaVehiculo {
   };
 }
 
+/** Id del marcador de un equipo en el mapa (la tabla lo usa para "ver en el mapa"). */
+export const idMarcadorEquipo = (imei: string) => `gps:${imei}`;
+
 /** Marcador del mapa; null si el equipo nunca mandó una posición. */
 export function marcadorDeEquipo(e: EquipoGps, ahoraMs: number): PresenceMarker | null {
   const p = e.ultimaPosicion;
@@ -282,7 +285,7 @@ export function marcadorDeEquipo(e: EquipoGps, ahoraMs: number): PresenceMarker 
     ...(p.extras?.vin ? [{ label: "VIN", value: p.extras.vin }] : []),
   ];
   return {
-    id: `gps:${e.imei}`,
+    id: idMarcadorEquipo(e.imei),
     lat: p.lat,
     lng: p.lng,
     name: nombreEquipo(e),

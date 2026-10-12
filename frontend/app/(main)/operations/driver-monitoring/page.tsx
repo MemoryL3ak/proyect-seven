@@ -23,11 +23,12 @@ import {
   SearchIcon,
   ChevronLeftIcon,
   CarIcon,
+  MapPinnedIcon,
 } from "@/components/ui/Icons";
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 import StyledSelect from "@/components/StyledSelect";
-import { datosVehiculo, estadoDeEquipo, fusionarPosiciones, hace, marcadorDeEquipo, nombreEquipo, type EquipoGps, type PosicionRapida } from "@/lib/gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, fusionarPosiciones, hace, idMarcadorEquipo, marcadorDeEquipo, nombreEquipo, type EquipoGps, type PosicionRapida } from "@/lib/gps-vehiculos";
 
 const DriverPresenceMap = dynamic(() => import("@/components/DriverPresenceMap"), {
   ssr: false,
@@ -201,6 +202,13 @@ export default function DriverMonitoringPage() {
   const [fuente, setFuente] = useState<Fuente>("");
   const [equipos, setEquipos] = useState<EquipoGps[]>([]);
   const [patentes, setPatentes] = useState<string[]>([]);
+  // Equipo elegido en la tabla: el mapa lo centra y abre su ficha (12-10-2026).
+  // `vez` permite volver a pinchar el mismo y que el mapa vuelva a él.
+  const [focoEquipo, setFocoEquipo] = useState<{ imei: string; vez: number } | null>(null);
+  const verEnMapa = useCallback((imei: string) => {
+    setFocoEquipo((prev) => ({ imei, vez: (prev?.vez ?? 0) + 1 }));
+    if (typeof document !== "undefined") document.querySelector(".mapa-conductores")?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, []);
 
   const isToday = selectedDate === today;
 
@@ -729,14 +737,14 @@ export default function DriverMonitoringPage() {
             </div>
           ) : (
             <div style={{ padding: isMobile ? 8 : 16 }}>
-              <DriverPresenceMap markers={marcadoresMapa} height={isMobile ? 340 : 420} />
+              <DriverPresenceMap markers={marcadoresMapa} height={isMobile ? 340 : 420} focoId={focoEquipo ? idMarcadorEquipo(focoEquipo.imei) : null} focoVez={focoEquipo?.vez ?? 0} />
             </div>
           )}
         </section>
       )}
 
       {fuente !== "app" && (fuente === "gps" || equipos.length > 0) && (
-        <SeccionEquiposGps equipos={equipos} patentes={patentes} ahora={nowTick} onAsignar={asignarEquipo} />
+        <SeccionEquiposGps equipos={equipos} patentes={patentes} ahora={nowTick} onAsignar={asignarEquipo} onVerEnMapa={verEnMapa} focoImei={focoEquipo?.imei ?? null} />
       )}
 
       {fuente !== "gps" && (loading && !snapshot ? (
@@ -1134,11 +1142,16 @@ function SeccionEquiposGps({
   patentes,
   ahora,
   onAsignar,
+  onVerEnMapa,
+  focoImei,
 }: {
   equipos: EquipoGps[];
   patentes: string[];
   ahora: number;
   onAsignar: (imei: string, plate: string | null) => Promise<void>;
+  /** Pinchar el nombre del equipo lo centra en el mapa y abre su ficha. */
+  onVerEnMapa: (imei: string) => void;
+  focoImei: string | null;
 }) {
   const { t } = useI18n();
   const [guardando, setGuardando] = useState<string | null>(null);
@@ -1204,9 +1217,21 @@ function SeccionEquiposGps({
                 const estado = estadoDeEquipo(e, ahora);
                 const p = e.ultimaPosicion;
                 return (
-                  <tr key={e.imei} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
+                  <tr key={e.imei} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}`, background: focoImei === e.imei ? "rgba(33,208,179,0.06)" : "transparent" }}>
                     <td className="p-3">
-                      <div style={{ fontWeight: 700, color: SURFACE.text }}>{nombreEquipo(e)}</div>
+                      {p ? (
+                        <button
+                          type="button"
+                          onClick={() => onVerEnMapa(e.imei)}
+                          title={t("Ver en el mapa")}
+                          style={{ background: "none", border: 0, padding: 0, cursor: "pointer", fontWeight: 700, color: focoImei === e.imei ? BRAND.tealInk : SURFACE.text, textAlign: "left", display: "inline-flex", alignItems: "center", gap: 6 }}
+                        >
+                          {nombreEquipo(e)}
+                          <MapPinnedIcon size={13} color={BRAND.teal} strokeWidth={2.5} />
+                        </button>
+                      ) : (
+                        <div style={{ fontWeight: 700, color: SURFACE.text }}>{nombreEquipo(e)}</div>
+                      )}
                       <div style={{ fontSize: 11, color: SURFACE.textFaint }}>
                         {e.protocolo === "JT808" ? "ID" : "IMEI"} {e.imei}{e.protocolo ? ` · ${e.protocolo}` : ""}
                       </div>
