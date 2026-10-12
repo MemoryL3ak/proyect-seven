@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import { BRAND, SURFACE } from "@/lib/design";
 import { ChevronDownIcon, CheckIcon } from "@/components/ui/Icons";
-import { altoEstimadoDeLista, direccionDeLista, type DireccionLista } from "@/lib/desplegable";
+import { altoEstimadoDeLista, direccionDeLista, filtrarOpciones, type DireccionLista } from "@/lib/desplegable";
 
 type Option = { value: string; label: string; disabled?: boolean };
 
@@ -15,6 +15,15 @@ type Props = {
   wrapperStyle?: React.CSSProperties;
   wrapperClassName?: string;
   style?: React.CSSProperties;
+  /**
+   * Con una caja de búsqueda arriba de la lista (12-10-2026: la lista de
+   * patentes del Monitoreo no dejaba buscar). Al abrir, el foco va a la caja;
+   * Enter elige la primera coincidencia.
+   */
+  buscable?: boolean;
+  placeholderBusqueda?: string;
+  /** Valores que se muestran aunque no calcen con lo buscado ("Otra patente…"). */
+  siempreVisibles?: string[];
 };
 
 function parseOptions(children: React.ReactNode): Option[] {
@@ -37,26 +46,38 @@ export default function StyledSelect({
   wrapperStyle,
   wrapperClassName,
   style,
+  buscable = false,
+  placeholderBusqueda = "Buscar…",
+  siempreVisibles = [],
 }: Props) {
   const [open, setOpen] = useState(false);
   const [focused, setFocused] = useState(false);
   // Hacia dónde se abre la lista: hacia arriba cuando abajo no cabe (barra
   // flotante al pie de Viajes, 09-10-2026).
   const [direccion, setDireccion] = useState<DireccionLista>("abajo");
+  const [busqueda, setBusqueda] = useState("");
   const ref = useRef<HTMLDivElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const options = parseOptions(children);
   const selected = options.find((o) => o.value === value);
+  const visibles = buscable ? filtrarOpciones(options, busqueda, siempreVisibles) : options;
 
   const alternar = () => {
     if (disabled) return;
     if (!open && ref.current && typeof window !== "undefined") {
       const r = ref.current.getBoundingClientRect();
-      setDireccion(direccionDeLista(window.innerHeight - r.bottom, r.top, altoEstimadoDeLista(options.length)));
+      setDireccion(direccionDeLista(window.innerHeight - r.bottom, r.top, altoEstimadoDeLista(options.length + (buscable ? 1 : 0))));
     }
+    setBusqueda("");
     setOpen((v) => !v);
   };
+
+  // Al abrir una lista buscable, se escribe de inmediato.
+  useEffect(() => {
+    if (open && buscable) inputRef.current?.focus();
+  }, [open, buscable]);
 
   // Close on outside click
   useEffect(() => {
@@ -169,7 +190,45 @@ export default function StyledSelect({
             overflowY: "auto",
           }}
         >
-          {options.map((opt, i) => {
+          {buscable && (
+            <div style={{ position: "sticky", top: 0, zIndex: 1, padding: "6px 8px", background: SURFACE.card, borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
+              <input
+                ref={inputRef}
+                type="text"
+                value={busqueda}
+                placeholder={placeholderBusqueda}
+                aria-label={placeholderBusqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                onMouseDown={(e) => e.stopPropagation()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    const primera = visibles.find((o) => !o.disabled && !siempreVisibles.includes(o.value)) ?? visibles.find((o) => !o.disabled);
+                    if (primera) pick(primera.value);
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    setOpen(false);
+                  }
+                }}
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  padding: "6px 10px",
+                  fontSize: "13px",
+                  lineHeight: "1.5",
+                  borderRadius: "8px",
+                  border: `1px solid ${SURFACE.border}`,
+                  background: SURFACE.bg,
+                  color: SURFACE.text,
+                  outline: "none",
+                }}
+              />
+            </div>
+          )}
+          {buscable && visibles.length === 0 && (
+            <div style={{ padding: "8px 12px", fontSize: "12.5px", color: SURFACE.textFaint }}>Sin resultados</div>
+          )}
+          {visibles.map((opt, i) => {
             const isSelected = opt.value === value;
             return (
               <div
@@ -184,7 +243,7 @@ export default function StyledSelect({
                   color: isSelected ? BRAND.teal : opt.disabled ? SURFACE.borderStrong : SURFACE.text,
                   fontWeight: isSelected ? 700 : 400,
                   background: isSelected ? "rgba(33,208,179,0.06)" : "transparent",
-                  borderBottom: i < options.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none",
+                  borderBottom: i < visibles.length - 1 ? `1px solid ${SURFACE.borderMuted}` : "none",
                   transition: "background 100ms ease",
                   display: "flex",
                   alignItems: "center",

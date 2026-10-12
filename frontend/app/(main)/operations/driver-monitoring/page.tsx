@@ -1217,6 +1217,9 @@ function SeccionEquiposGps({
                         <StyledSelect
                           value={e.vehiclePlate ?? ""}
                           disabled={guardando === e.imei}
+                          buscable
+                          placeholderBusqueda={t("Buscar patente…")}
+                          siempreVisibles={[OTRA_PATENTE]}
                           onChange={(ev) => {
                             const v = ev.target.value;
                             if (v === OTRA_PATENTE) { setOtraDe(e.imei); setOtraTexto(""); return; }

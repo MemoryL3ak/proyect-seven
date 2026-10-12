@@ -16,3 +16,18 @@ export function direccionDeLista(espacioAbajo: number, espacioArriba: number, al
   if (espacioAbajo >= altoLista) return "abajo";
   return espacioArriba > espacioAbajo ? "arriba" : "abajo";
 }
+
+/**
+ * Búsqueda dentro de un desplegable (StyledSelect buscable, 12-10-2026: la
+ * lista de patentes del Monitoreo no dejaba buscar). Sin acentos, sin
+ * mayúsculas y sin espacios, guiones ni puntos, para que "vk kd-92" encuentre
+ * VKKD92. Las opciones `siempreVisibles` (como "Otra patente…") quedan aunque
+ * no calcen.
+ */
+const normalizar = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[\s\-_.]/g, "");
+
+export function filtrarOpciones<T extends { value: string; label: string }>(opciones: T[], texto: string, siempreVisibles: string[] = []): T[] {
+  const q = normalizar(texto);
+  if (!q) return opciones;
+  return opciones.filter((o) => siempreVisibles.includes(o.value) || normalizar(o.label).includes(q) || normalizar(o.value).includes(q));
+}
