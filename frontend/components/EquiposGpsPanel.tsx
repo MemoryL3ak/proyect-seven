@@ -187,29 +187,32 @@ function TarjetaEquipo({
             <span style={{ display: "block", fontSize: 11.5, color: SURFACE.textMuted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.subtitulo}</span>
           </span>
         </button>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flexShrink: 0 }}>
-          <span
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "4px 10px",
-              borderRadius: 999,
-              background: tono.bg,
-              color: tono.fg,
-              border: `1px solid ${tono.borde}`,
-              fontSize: 10.5,
-              fontWeight: 800,
-              letterSpacing: "0.04em",
-              textTransform: "uppercase",
-              whiteSpace: "nowrap",
-            }}
-          >
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: tono.punto }} />
-            {t(PASTILLA[f.situacion.tono])}
-          </span>
-          <span style={{ fontSize: 11, color: SURFACE.textFaint }}>{f.actualizado}</span>
-        </div>
+      </div>
+      {/* Situación en su propia línea: al lado del nombre lo cortaba ("JJJC…") con el ancho real del panel. */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "0 14px 10px" }}>
+        <span
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "4px 10px",
+            borderRadius: 999,
+            background: tono.bg,
+            color: tono.fg,
+            border: `1px solid ${tono.borde}`,
+            fontSize: 10.5,
+            fontWeight: 800,
+            letterSpacing: "0.04em",
+            textTransform: "uppercase",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <span style={{ width: 7, height: 7, borderRadius: "50%", background: tono.punto }} />
+          {t(PASTILLA[f.situacion.tono])}
+        </span>
+        <span style={{ fontSize: 11, color: SURFACE.textFaint, whiteSpace: "nowrap" }}>
+          {t("Último dato")} {f.actualizado}
+        </span>
       </div>
 
       {/* Indicadores grandes; sin conexión son los últimos conocidos y van atenuados. */}
