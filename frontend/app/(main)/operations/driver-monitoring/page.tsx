@@ -490,16 +490,14 @@ export default function DriverMonitoringPage() {
   };
 
   const asignarEquipo = async (imei: string, plate: string | null) => {
-    try {
-      await apiFetch(`/gps-trackers/${imei}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ plate }),
-      });
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("No se pudo asignar el equipo"));
-    }
+    // Si falla, la tabla lo muestra en la fila (12-10-2026: el error quedaba
+    // arriba de la página, fuera de la vista, y parecía que "no cambiaba").
+    await apiFetch(`/gps-trackers/${imei}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ plate }),
+    });
+    await load();
   };
 
   const exportCsv = () => {
@@ -1159,9 +1157,13 @@ function SeccionEquiposGps({
   // auto de prueba, por ejemplo). Se escribe a mano y se guarda.
   const [otraDe, setOtraDe] = useState<string | null>(null);
   const [otraTexto, setOtraTexto] = useState("");
+  const [errorDe, setErrorDe] = useState<{ imei: string; texto: string } | null>(null);
   const guardar = (imei: string, plate: string | null) => {
     setGuardando(imei);
-    onAsignar(imei, plate).finally(() => { setGuardando(null); setOtraDe(null); setOtraTexto(""); });
+    setErrorDe(null);
+    onAsignar(imei, plate)
+      .catch((err) => setErrorDe({ imei, texto: err instanceof Error ? err.message : t("No se pudo asignar la patente") }))
+      .finally(() => { setGuardando(null); setOtraDe(null); setOtraTexto(""); });
   };
   const pill = (texto: string, activo: boolean) => (
     <span
@@ -1273,6 +1275,9 @@ function SeccionEquiposGps({
                           ))}
                           <option value={OTRA_PATENTE}>{t("Otra patente…")}</option>
                         </StyledSelect>
+                      )}
+                      {errorDe?.imei === e.imei && (
+                        <div style={{ fontSize: 11, color: STATE.dangerText, marginTop: 4 }}>{errorDe.texto}</div>
                       )}
                     </td>
                     <td className="p-3" style={{ whiteSpace: "nowrap", color: e.conductorNombre ? SURFACE.text : SURFACE.textFaint }}>

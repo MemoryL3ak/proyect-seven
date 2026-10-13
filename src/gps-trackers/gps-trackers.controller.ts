@@ -1,6 +1,7 @@
 import { BadRequestException, Body, Controller, Delete, Get, Param, Post, Put, Query } from '@nestjs/common';
 import { StaffOnly } from '../auth/staff-only.decorator';
 import { GpsTrackersService } from './gps-trackers.service';
+import { esIdDeEquipo } from './id-equipo';
 
 /** Equipos GPS de vehículo: estado, paquetes recibidos y asignación a una patente. Sólo panel. */
 @StaffOnly()
@@ -36,7 +37,7 @@ export class GpsTrackersController {
   @Post(':imei/comando')
   comando(@Param('imei') imei: string, @Body() body: { texto?: string }) {
     const limpio = String(imei ?? '').trim();
-    if (!/^\d{14,16}$/.test(limpio)) throw new BadRequestException('IMEI inválido');
+    if (!esIdDeEquipo(limpio)) throw new BadRequestException('Identificador del equipo inválido');
     const texto = String(body?.texto ?? '').trim();
     if (!/^[\x20-\x7e]{2,100}#$/.test(texto)) throw new BadRequestException('El comando va en ASCII y termina en #');
     return this.service.enviarComando(limpio, texto);
@@ -45,7 +46,7 @@ export class GpsTrackersController {
   @Put(':imei')
   async asignar(@Param('imei') imei: string, @Body() body: { plate?: string | null; label?: string | null }) {
     const limpio = String(imei ?? '').trim();
-    if (!/^\d{14,16}$/.test(limpio)) throw new BadRequestException('IMEI inválido');
+    if (!esIdDeEquipo(limpio)) throw new BadRequestException('Identificador del equipo inválido');
     const plate = body?.plate ? String(body.plate) : null;
     try {
       return await this.service.asignar(limpio, plate, body?.label);
@@ -57,7 +58,7 @@ export class GpsTrackersController {
   @Delete(':imei')
   async eliminar(@Param('imei') imei: string) {
     const limpio = String(imei ?? '').trim();
-    if (!/^\d{14,16}$/.test(limpio)) throw new BadRequestException('IMEI inválido');
+    if (!esIdDeEquipo(limpio)) throw new BadRequestException('Identificador del equipo inválido');
     try {
       return await this.service.eliminar(limpio);
     } catch (err) {
