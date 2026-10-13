@@ -29,6 +29,7 @@ import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 import StyledSelect from "@/components/StyledSelect";
 import { fusionarListas, fusionarPosiciones, idMarcadorEquipo, marcadorDeEquipo, unirMarcadores, type EquipoGps, type PosicionRapida } from "@/lib/gps-vehiculos";
 import EquiposGpsPanel from "@/components/EquiposGpsPanel";
+import { columnasConductores, etiquetasVisibles } from "@/lib/tabla-conductores";
 
 const DriverPresenceMap = dynamic(() => import("@/components/DriverPresenceMap"), {
   ssr: false,
@@ -394,6 +395,13 @@ export default function DriverMonitoringPage() {
       return true;
     });
   }, [drivers, clientTypeFilter, disciplineFilter, regionFilter, occupancyFilter, searchQuery]);
+
+  // Columnas que sólo se muestran si algún conductor las tiene: en Rugby no
+  // hay regiones ni disciplinas y quedaban dos columnas de "—" que empujaban
+  // GPS fuera de la pantalla (13-10-2026).
+  const columnas = columnasConductores(visibleDrivers, "Región", isToday);
+  const conRegion = columnas.includes("Región");
+  const conDisciplinas = columnas.includes("Disciplinas");
 
   // Edad del último punto GPS de un conductor, con la MISMA fuente que usa el
   // marcador del mapa: primero la capa en vivo (Realtime + poll), si no la del
@@ -903,18 +911,7 @@ export default function DriverMonitoringPage() {
             <table className="w-full" style={{ fontSize: 12.5, borderCollapse: "separate", borderSpacing: 0 }}>
               <thead>
                 <tr>
-                  {[
-                    "Conductor",
-                    nombresDel.una,
-                    "Estado",
-                    "Ocupación",
-                    isToday ? "Viajes hoy" : "Viajes del día",
-                    "Tipo cliente",
-                    "Disciplinas",
-                    "Última conexión",
-                    "Sesión",
-                    "GPS",
-                  ].map((h) => (
+                  {columnasConductores(visibleDrivers, nombresDel.una, isToday).map((h) => (
                     <th
                       key={h}
                       className="p-3 text-left"
@@ -1001,13 +998,16 @@ export default function DriverMonitoringPage() {
                           </div>
                         </div>
                       </td>
-                      <td className="p-3" style={{ whiteSpace: "nowrap", fontSize: 12.5 }}>
-                        {d.delegationName || "—"}
-                      </td>
+                      {conRegion && (
+                        <td className="p-3" style={{ whiteSpace: "nowrap", fontSize: 12.5 }}>
+                          {d.delegationName || <span style={{ color: SURFACE.borderStrong, fontSize: 11 }}>—</span>}
+                        </td>
+                      )}
 
-                      {/* Estado conexión */}
+                      {/* Estado conexión + última conexión debajo (antes era otra columna) */}
                       <td className="p-3" style={{ whiteSpace: "nowrap" }}>
                         {pillEstado(d.online)}
+                        <div style={{ fontSize: 10.5, color: SURFACE.textFaint, marginTop: 4, paddingLeft: 2 }}>{ago(d.secondsSinceSeen)}</div>
                       </td>
 
                       {/* Ocupación */}
@@ -1025,8 +1025,9 @@ export default function DriverMonitoringPage() {
                         {(d.allowedClientTypes || []).length === 0 ? (
                           <span style={{ color: SURFACE.borderStrong, fontSize: 11 }}>—</span>
                         ) : (
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, maxWidth: 200 }}>
-                            {d.allowedClientTypes.map((ct) => {
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4, maxWidth: 220 }}>
+                            {/* Hasta 3 tipos y "+N" con el resto al pasar el mouse: con 8 tipos la fila quedaba de 6 líneas. */}
+                            {etiquetasVisibles(d.allowedClientTypes).visibles.map((ct) => {
                               const meta = clientTypeChip(ct);
                               return (
                                 <span
@@ -1047,11 +1048,29 @@ export default function DriverMonitoringPage() {
                                 </span>
                               );
                             })}
+                            {etiquetasVisibles(d.allowedClientTypes).resto.length > 0 && (
+                              <span
+                                title={etiquetasVisibles(d.allowedClientTypes).resto.map((ct) => t(clientTypeChip(ct).label)).join(", ")}
+                                style={{
+                                  fontSize: 9.5,
+                                  padding: "2px 7px",
+                                  borderRadius: 6,
+                                  fontWeight: 700,
+                                  background: SURFACE.borderMuted,
+                                  color: SURFACE.textSecondary,
+                                  border: `1px solid ${SURFACE.borderStrong}`,
+                                  cursor: "help",
+                                }}
+                              >
+                                +{etiquetasVisibles(d.allowedClientTypes).resto.length}
+                              </span>
+                            )}
                           </div>
                         )}
                       </td>
 
-                      {/* Disciplinas */}
+                      {/* Disciplinas (sólo si algún conductor tiene) */}
+                      {conDisciplinas && (
                       <td className="p-3">
                         {(d.disciplines || []).length === 0 ? (
                           <span style={{ color: SURFACE.borderStrong, fontSize: 11 }}>—</span>
@@ -1092,11 +1111,7 @@ export default function DriverMonitoringPage() {
                           </div>
                         )}
                       </td>
-
-                      {/* Última conexión */}
-                      <td className="p-3" style={{ color: SURFACE.textSecondary, whiteSpace: "nowrap", fontSize: 11.5 }}>
-                        {ago(d.secondsSinceSeen)}
-                      </td>
+                      )}
 
                       {/* Sesión */}
                       <td className="p-3" style={{ color: SURFACE.textSecondary, whiteSpace: "nowrap", fontSize: 11.5 }}>
@@ -1215,16 +1230,14 @@ function FiltersBar(p: FiltersBarProps) {
         {/* Tipo cliente */}
         <label className="text-sm block">
           <span className="block mb-1">{t("Tipo cliente")}</span>
-          <select
-            className="input"
+          {/* Desplegables del panel, no los del navegador (13-10-2026: "estos filtros no están con el estilo"). */}
+          <StyledSelect
             value={p.clientTypeFilter}
             onChange={(e) => p.setClientTypeFilter(e.target.value)}
             disabled={p.clientTypeOptions.length === 0}
-            style={{
-              borderColor: p.clientTypeFilter ? "var(--brand)" : undefined,
-              fontWeight: p.clientTypeFilter ? 600 : 400,
-              opacity: p.clientTypeOptions.length === 0 ? 0.6 : 1,
-            }}
+            buscable={p.clientTypeOptions.length > 8}
+            placeholderBusqueda={t("Buscar tipo…")}
+            style={{ fontWeight: p.clientTypeFilter ? 600 : 400 }}
           >
             <option value="">
               {p.clientTypeOptions.length === 0
@@ -1236,28 +1249,25 @@ function FiltersBar(p: FiltersBarProps) {
                 {t(CLIENT_TYPE_META[c.toUpperCase()]?.label ?? c)}
               </option>
             ))}
-          </select>
+          </StyledSelect>
         </label>
 
         {/* Región (flota fija por delegación) */}
         <label className="text-sm block">
           <span className="block mb-1">{t(nombresDel.una)}</span>
-          <select
-            className="input"
+          <StyledSelect
             value={p.regionFilter}
             onChange={(e) => p.setRegionFilter(e.target.value)}
             disabled={p.regionOptions.length === 0}
-            style={{
-              borderColor: p.regionFilter ? "var(--brand)" : undefined,
-              fontWeight: p.regionFilter ? 600 : 400,
-              opacity: p.regionOptions.length === 0 ? 0.6 : 1,
-            }}
+            buscable={p.regionOptions.length > 8}
+            placeholderBusqueda={t("Buscar…")}
+            style={{ fontWeight: p.regionFilter ? 600 : 400 }}
           >
             <option value="">{p.regionOptions.length === 0 ? t("Sin regiones asignadas") : t(nombresDel.todas)}</option>
             {p.regionOptions.map((r) => (
               <option key={r} value={r}>{r}</option>
             ))}
-          </select>
+          </StyledSelect>
         </label>
 
         {/* Disciplina */}
@@ -1282,16 +1292,13 @@ function FiltersBar(p: FiltersBarProps) {
               </span>
             )}
           </span>
-          <select
-            className="input"
+          <StyledSelect
             value={p.disciplineFilter}
             onChange={(e) => p.setDisciplineFilter(e.target.value)}
             disabled={p.disciplineOptions.length === 0}
-            style={{
-              borderColor: p.disciplineFilter ? "var(--brand)" : undefined,
-              fontWeight: p.disciplineFilter ? 600 : 400,
-              opacity: p.disciplineOptions.length === 0 ? 0.6 : 1,
-            }}
+            buscable={p.disciplineOptions.length > 8}
+            placeholderBusqueda={t("Buscar disciplina…")}
+            style={{ fontWeight: p.disciplineFilter ? 600 : 400 }}
           >
             <option value="">
               {p.disciplineOptions.length === 0
@@ -1303,7 +1310,7 @@ function FiltersBar(p: FiltersBarProps) {
                 {dx}
               </option>
             ))}
-          </select>
+          </StyledSelect>
         </label>
       </div>
 
