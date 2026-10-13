@@ -1668,14 +1668,3 @@ input[type="number"]::-webkit-outer-spin-button {
     display: none !important;
   }
 }
-
-/* Tabla "GPS de vehículos" (Monitoreo, 13-10-2026): fila resaltada al pasar. */
-.tabla-gps tbody tr {
-  transition: background-color 120ms ease;
-}
-.tabla-gps tbody tr:hover {
-  background-color: #f8fafc;
-}
-.tabla-gps tbody tr:last-child td {
-  border-bottom: 0 !important;
-}
