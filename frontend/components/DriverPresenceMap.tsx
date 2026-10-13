@@ -86,7 +86,13 @@ export function fichaVehiculoHtml(f: FichaVehiculo): string {
     <div style="font-family:system-ui,sans-serif;width:300px;color:${SURFACE.text};">
       <div style="background:linear-gradient(135deg,${BRAND.navy},${BRAND.navyLight} 55%,${BRAND.charcoal});padding:14px 44px 12px 14px;color:#fff;">
         <div style="display:flex;align-items:center;gap:12px;">
-          <div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;font-size:${f.insignia.length > 4 ? 10.5 : f.insignia.length > 3 ? 12 : 13}px;font-weight:900;letter-spacing:${f.insignia.length > 4 ? 0 : 0.04}em;color:${BRAND.tealLight};white-space:nowrap;">${f.insignia}</div>
+          <!-- El auto, no la patente: la patente ya es el título y en 46 px quedaba comprimida (13-10-2026). -->
+          <div style="width:46px;height:46px;border-radius:12px;flex-shrink:0;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.22);display:flex;align-items:center;justify-content:center;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="${BRAND.tealLight}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+              <circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/>
+            </svg>
+          </div>
           <div style="min-width:0;flex:1;">
             <div style="font-size:16px;font-weight:800;line-height:1.15;word-break:break-word;">${f.nombre}</div>
             <div style="font-size:11px;color:rgba(255,255,255,0.72);margin-top:3px;">${f.subtitulo}</div>

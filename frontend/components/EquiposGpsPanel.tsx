@@ -18,6 +18,7 @@ import {
   estadoDeEquipo,
   hace,
   lineaEstadoVehiculo,
+  modeloEquipo,
   nombreEquipo,
   opcionesPatente,
   ordenarEquipos,
@@ -145,7 +146,9 @@ function FilaEquipo({
       .finally(() => setGuardando(false));
   };
   const linea = lineaEstadoVehiculo(e);
-  const modelo = e.modelo?.trim().split(" ")[0] || (e.protocolo === "JT808" ? "SEG-9888G" : "Rastreador GT06");
+  const modelo = modeloEquipo(e);
+  // Conectado pero sin posición reciente: no es "Detenido", es falta de señal GPS.
+  const textoEstado = situacion.texto === "Conectado, sin señal GPS" ? "Sin señal GPS" : pastilla.texto;
   const fondo = enFoco ? "rgba(33,208,179,0.10)" : par ? SURFACE.card : SURFACE.bg;
   const vacio = <span style={{ color: SURFACE.borderStrong, fontSize: 11 }}>—</span>;
   return (
@@ -191,7 +194,7 @@ function FilaEquipo({
       <td className="p-3" style={{ whiteSpace: "nowrap" }}>
         <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 10.5, padding: "4px 10px", borderRadius: 99, fontWeight: 700, letterSpacing: "0.02em", background: pastilla.bg, color: pastilla.fg, border: `1px solid ${pastilla.borde}` }}>
           <span style={{ width: 6, height: 6, borderRadius: "50%", background: pastilla.punto, animation: pastilla.pulso ? "pulse 1.8s infinite" : "none" }} />
-          {t(pastilla.texto)}
+          {t(textoEstado)}
         </span>
       </td>
 

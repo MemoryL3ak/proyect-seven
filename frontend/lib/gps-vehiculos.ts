@@ -100,6 +100,19 @@ export function estadoDeEquipo(e: EquipoGps, ahoraMs: number): EstadoEquipo {
   };
 }
 
+/**
+ * Modelo del equipo para mostrar. El SEG-9888G (JT808) se reconoce también
+ * por su identificador de 12 dígitos: tras un reinicio del servidor, hasta
+ * que el equipo vuelve a registrarse, no se sabe su protocolo y salía como
+ * "Rastreador GT06" (13-10-2026).
+ */
+export function modeloEquipo(e: Pick<EquipoGps, "modelo" | "protocolo" | "imei">): string {
+  const declarado = e.modelo?.trim().split(" ")[0];
+  if (declarado) return declarado;
+  if (e.protocolo === "JT808" || e.imei.length === 12) return "SEG-9888G";
+  return e.protocolo === "GT06" || e.imei.length === 15 ? "Rastreador GT06" : "Rastreador GPS";
+}
+
 /** Patente si tiene vehículo; si no, el modelo o "GPS" con los últimos 6 del identificador. */
 export function nombreEquipo(e: EquipoGps): string {
   return e.vehiclePlate?.trim() || e.label?.trim() || `${e.modelo?.trim().split(" ")[0] || "GPS"} ·${e.imei.slice(-6)}`;
@@ -334,7 +347,7 @@ export function fichaVehiculo(e: EquipoGps, ahoraMs: number): FichaVehiculo {
   const p = e.ultimaPosicion;
   const x = p?.extras;
   const marca = marcaDeVin(x?.vin);
-  const modelo = e.modelo?.trim().split(" ")[0] || (e.protocolo === "JT808" ? "SEG-9888G" : "Rastreador GT06");
+  const modelo = modeloEquipo(e);
   const contacto = e.contacto ?? p?.contacto ?? null;
 
   const indicadores: Indicador[] = [];

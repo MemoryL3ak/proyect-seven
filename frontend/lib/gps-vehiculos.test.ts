@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarListas, fusionarPosiciones, idMarcadorEquipo, lineaEstadoVehiculo, marcaDeVin, marcadorDeEquipo, nombreEquipo, opcionesPatente, ordenarEquipos, resumenEquipos, situacionEquipo, unirMarcadores, type EquipoGps } from "./gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarListas, fusionarPosiciones, idMarcadorEquipo, lineaEstadoVehiculo, marcaDeVin, marcadorDeEquipo, modeloEquipo, nombreEquipo, opcionesPatente, ordenarEquipos, resumenEquipos, situacionEquipo, unirMarcadores, type EquipoGps } from "./gps-vehiculos";
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 
 const T = Date.parse("2026-10-09T05:00:00.000Z");
@@ -196,6 +196,14 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     // La actual no se ofrece como nueva, y menos de 4 caracteres no es patente.
     expect(opcionesPatente(conocidas, "ABCD12", "abcd12").nueva).toBeNull();
     expect(opcionesPatente(conocidas, null, "ab1").nueva).toBeNull();
+  });
+
+  it("el modelo: el declarado; si no, el SEG se reconoce por su id de 12 dígitos aunque aún no se sepa el protocolo", () => {
+    expect(modeloEquipo({ imei: "019210285072", protocolo: "JT808", modelo: "SEG-9888G 0285072" })).toBe("SEG-9888G");
+    // Tras un reinicio del servidor (13-10-2026) salía "Rastreador GT06".
+    expect(modeloEquipo({ imei: "019210285072", protocolo: null, modelo: null })).toBe("SEG-9888G");
+    expect(modeloEquipo({ imei: "866557086849561", protocolo: null, modelo: null })).toBe("Rastreador GT06");
+    expect(modeloEquipo({ imei: "12345678901", protocolo: null, modelo: null })).toBe("Rastreador GPS");
   });
 
   it("la marca sale de los tres primeros caracteres del VIN", () => {
