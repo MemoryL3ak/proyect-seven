@@ -108,9 +108,15 @@ describe('GT06', () => {
     const m = interpretar(enAuto);
     if (m.tipo !== 'latido') throw new Error(m.tipo);
     expect(m.estado).toEqual({ contacto: true, energiaExterna: true, gpsActivo: true, bateria: 6, senal: 4 });
-    // 00 = desenchufado, con batería interna (G500LS …669224 por USB, 10-10-2026).
-    const [enBateria] = separarTramas(respuesta(0x13, 1, Buffer.from([0x00, 0x03, 0x02, 0x00, 0x01]))).tramas;
-    const b = interpretar(enBateria);
+    // 42 = GPS + contacto, sin "cargando": la batería interna está llena y el
+    // equipo sigue en el OBD (…447720, 13-10-2026). No se sabe si lo alimenta el auto.
+    const [llena] = separarTramas(Buffer.from('78780a1342060402020df6ef270d0a', 'hex')).tramas;
+    const l = interpretar(llena);
+    if (l.tipo !== 'latido') throw new Error(l.tipo);
+    expect(l.estado).toEqual({ contacto: true, energiaExterna: null, gpsActivo: true, bateria: 6, senal: 4 });
+    // Alarma de corte de energía (bits 5-3 = 010): se desenchufó, va con batería interna.
+    const [corte] = separarTramas(respuesta(0x13, 1, Buffer.from([0x10, 0x03, 0x02, 0x00, 0x01]))).tramas;
+    const b = interpretar(corte);
     if (b.tipo !== 'latido') throw new Error(b.tipo);
     expect(b.estado).toEqual({ contacto: false, energiaExterna: false, gpsActivo: false, bateria: 3, senal: 2 });
     const desconocida = separarTramas(respuesta(0x94, 7)).tramas[0];

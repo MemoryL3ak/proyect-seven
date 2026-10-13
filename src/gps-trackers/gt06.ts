@@ -85,7 +85,8 @@ export type PosicionGt06 = {
  */
 export type EstadoLatido = {
   contacto: boolean;
-  energiaExterna: boolean;
+  /** true: cargando del auto; false: alarma de corte de energía; null: no se sabe (batería llena). */
+  energiaExterna: boolean | null;
   gpsActivo: boolean;
   /** 0 sin energía … 6 llena. */
   bateria: number;
@@ -96,9 +97,15 @@ export type EstadoLatido = {
 export function decodificarLatido(contenido: Buffer): EstadoLatido | null {
   if (contenido.length < 3) return null;
   const info = contenido[0];
+  // Bit 2 es "cargando": con la batería interna llena se apaga aunque el
+  // equipo siga enchufado al OBD (…447720 y …501815 el 13-10-2026 decían
+  // "con batería interna" instalados en el auto). Sólo la alarma de corte de
+  // energía (bits 5-3 = 010) dice que se desenchufó; si no, no se sabe.
+  const cargando = (info & 0x04) !== 0;
+  const corteEnergia = ((info >> 3) & 0x07) === 0b010;
   return {
     contacto: (info & 0x02) !== 0,
-    energiaExterna: (info & 0x04) !== 0,
+    energiaExterna: cargando ? true : corteEnergia ? false : null,
     gpsActivo: (info & 0x40) !== 0,
     bateria: Math.min(6, contenido[1]),
     senal: Math.min(4, contenido[2]),
