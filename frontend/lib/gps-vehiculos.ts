@@ -5,6 +5,7 @@
  * conductor; el filtro "Fuente" del monitoreo permite ver sólo estos equipos.
  */
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
+import { STATE, SURFACE } from "@/lib/design";
 
 /**
  * Datos del vehículo que agregan los equipos OBD que hablan JT808 (SEG-9888G,
@@ -280,6 +281,14 @@ export function marcaDeVin(vin: string | null | undefined): string | null {
 
 export type Situacion = { texto: string; tono: "movimiento" | "motor" | "detenido" | "sinConexion" };
 
+/** Color de cada situación en el pin del mapa (los mismos tonos de la tabla). */
+export const COLOR_SITUACION: Record<Situacion["tono"], string> = {
+  movimiento: STATE.success,
+  motor: STATE.warning,
+  detenido: STATE.info,
+  sinConexion: SURFACE.textFaint,
+};
+
 /**
  * Qué está haciendo el vehículo, en una frase: en movimiento, detenido con el
  * motor encendido (contacto o rpm), detenido, o sin conexión. Es el titular
@@ -387,8 +396,11 @@ export function marcadorDeEquipo(e: EquipoGps, ahoraMs: number): PresenceMarker 
     lat: p.lat,
     lng: p.lng,
     name: nombreEquipo(e),
-    // En el pin: la patente completa (Ariel, 12-10-2026), o "GPS" mientras no la tenga.
+    // Con patente, el pin es una placa con la patente (13-10-2026); sin ella, el círculo con "GPS".
     iniciales: e.vehiclePlate ?? "GPS",
+    pinPatente: e.vehiclePlate ?? null,
+    // El color del pin es el de su situación, el mismo de la tabla.
+    color: COLOR_SITUACION[situacionEquipo(e, ahoraMs).tono],
     online: estado.gpsVivo,
     conectado: estado.conectado,
     onTrip: Boolean(e.tripId) && estado.gpsVivo,

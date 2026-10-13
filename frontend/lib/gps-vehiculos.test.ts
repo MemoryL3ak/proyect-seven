@@ -97,8 +97,15 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     const m = marcadorDeEquipo(seg, T);
     expect(m?.fichaVehiculo).toEqual(f);
     expect(m?.estadoTexto).toBe("En movimiento");
-    // El círculo del mapa lleva la patente completa (12-10-2026).
+    // Con patente, el pin es una placa con la patente completa y el color de su situación (13-10-2026).
     expect(m?.iniciales).toBe("KBGB58");
+    expect(m?.pinPatente).toBe("KBGB58");
+    expect(m?.color).toBe("#10b981");
+    // Sin patente: círculo "GPS"; sin conexión, gris.
+    const sinPlaca = marcadorDeEquipo({ ...seg, vehiclePlate: null, ultimoPaquete: iso(T - 3600_000) }, T);
+    expect(sinPlaca?.pinPatente).toBeNull();
+    expect(sinPlaca?.iniciales).toBe("GPS");
+    expect(sinPlaca?.color).toBe("#94a3b8");
     // Un G500LS sin patente ni datos del auto: velocidad y satélites como indicadores, pin "GPS".
     const g = fichaVehiculo({ ...base, vehiclePlate: null, conductorNombre: null, tripId: null }, T);
     expect(g).toMatchObject({ nombre: "GPS ·669224", subtitulo: "Rastreador GT06", insignia: "GPS" });

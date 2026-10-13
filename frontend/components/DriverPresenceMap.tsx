@@ -41,6 +41,15 @@ export type PresenceMarker = {
   estadoTexto?: string;
   /** Texto del pin cuando las iniciales del nombre no sirven (patente, "GPS"). */
   iniciales?: string;
+  /**
+   * Patente del vehículo: el pin es una placa (pastilla blanca con la patente
+   * y el auto en el color de su situación) en vez del círculo con iniciales
+   * (13-10-2026, Ariel: "no me gusta cómo se ven las patentes" comprimidas
+   * dentro del círculo).
+   */
+  pinPatente?: string | null;
+  /** Color del pin y del borde; sin él, verde en viaje, azul con señal, gris sin señal. */
+  color?: string;
 };
 
 // Pastilla de situación sobre la cabecera oscura de la ficha del vehículo.
@@ -132,6 +141,7 @@ function clientTypeChipsHtml(types: string[]): string {
 // stale/last-known = grey. Kept in one place so the pin icon, the info window
 // and the zIndex all agree.
 function markerAccent(m: PresenceMarker): string {
+  if (m.color) return m.color;
   if (m.onTrip) return STATE.success;
   if (m.online) return STATE.infoText;
   return SURFACE.textFaint;
@@ -217,6 +227,39 @@ export function createPinIcon(initials: string, accent: string): string {
     <circle cx="28" cy="26" r="23" fill="${accent}" filter="url(%23ds)"/>
     <circle cx="28" cy="26" r="20" fill="#062240"/>
     <text x="28" y="${letra.y}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="${letra.fontSize}" font-weight="900" fill="#fff" letter-spacing="${letra.letterSpacing}"${ajuste}>${initials}</text>
+  </svg>`;
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
+/** Medidas del pin con forma de placa; el ancla es la punta. */
+export const PIN_PLACA = { ancho: 100, alto: 42, anclaX: 50, anclaY: 40 };
+
+/**
+ * Pin de un vehículo con patente: pastilla blanca con la patente legible (sin
+ * comprimir), a la izquierda el auto sobre el color de su situación, y una
+ * punta hacia la posición.
+ */
+export function createPlacaPinIcon(placa: string, accent: string): string {
+  // Hasta 6 caracteres caben a tamaño normal; una patente más larga se ajusta al ancho.
+  const ajuste = placa.length > 6 ? ` textLength="58" lengthAdjust="spacingAndGlyphs"` : "";
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${PIN_PLACA.ancho}" height="${PIN_PLACA.alto}" viewBox="0 0 100 42">
+    <defs>
+      <filter id="ds" x="-20%" y="-30%" width="140%" height="170%">
+        <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.35"/>
+      </filter>
+    </defs>
+    <g filter="url(%23ds)">
+      <path d="M44 30 L50 40 L56 30 Z" fill="${accent}"/>
+      <rect x="3" y="3" width="94" height="28" rx="7" fill="#ffffff" stroke="${accent}" stroke-width="2"/>
+      <path d="M10 3 H31 V31 H10 A7 7 0 0 1 3 24 V10 A7 7 0 0 1 10 3 Z" fill="${accent}"/>
+    </g>
+    <g transform="translate(8 7.6) scale(0.75)" fill="none" stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/>
+      <circle cx="7" cy="17" r="2"/>
+      <path d="M9 17h6"/>
+      <circle cx="17" cy="17" r="2"/>
+    </g>
+    <text x="64" y="22" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.5" font-weight="800" fill="#0f172a" letter-spacing="1.2"${ajuste}>${placa}</text>
   </svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
@@ -350,6 +393,11 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
       const statusLabel = m.estadoTexto ?? markerStatusLabel(m);
       const zIndex = m.onTrip ? 30 : m.online ? 20 : 10;
       const pos = { lat: m.lat, lng: m.lng };
+      // Vehículo con patente: pin con forma de placa; el resto, el círculo con iniciales.
+      const icono = m.pinPatente
+        ? { url: createPlacaPinIcon(m.pinPatente, accent), scaledSize: new google.maps.Size(PIN_PLACA.ancho, PIN_PLACA.alto), anchor: new google.maps.Point(PIN_PLACA.anclaX, PIN_PLACA.anclaY) }
+        : { url: createPinIcon(initials, accent), scaledSize: new google.maps.Size(56, 68), anchor: new google.maps.Point(28, 66) };
+      const claveIcono = `${accent}|${initials}|${m.pinPatente ?? ""}`;
 
       const statRow = (label: string, value: string) => `
         <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;padding:5px 0;">
@@ -397,14 +445,11 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
           markerTargetRef.current[m.id] = pos;
           animateMarker(m.id, marker, from, pos);
         }
-        if (markerAccentRef.current[m.id] !== accent) {
-          marker.setIcon({
-            url: createPinIcon(initials, accent),
-            scaledSize: new google.maps.Size(56, 68),
-            anchor: new google.maps.Point(28, 66),
-          });
+        // Se redibuja el ícono cuando cambia el color, el texto o la patente.
+        if (markerAccentRef.current[m.id] !== claveIcono) {
+          marker.setIcon(icono);
           marker.setZIndex(zIndex);
-          markerAccentRef.current[m.id] = accent;
+          markerAccentRef.current[m.id] = claveIcono;
         }
         marker.__html = html;
         marker.__ficha = Boolean(m.fichaVehiculo);
@@ -412,11 +457,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
         const marker = new google.maps.Marker({
           position: pos,
           map: mapRef.current,
-          icon: {
-            url: createPinIcon(initials, accent),
-            scaledSize: new google.maps.Size(56, 68),
-            anchor: new google.maps.Point(28, 66),
-          },
+          icon: icono,
           title: m.name,
           zIndex,
         });
@@ -424,7 +465,7 @@ export default function DriverPresenceMap({ markers, height = 420, focoId = null
         marker.__ficha = Boolean(m.fichaVehiculo);
         marker.addListener("click", () => abrirFicha(marker));
         gmMarkersRef.current[m.id] = marker;
-        markerAccentRef.current[m.id] = accent;
+        markerAccentRef.current[m.id] = claveIcono;
         markerTargetRef.current[m.id] = pos;
       }
     });
