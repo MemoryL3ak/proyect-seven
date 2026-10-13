@@ -23,5 +23,7 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|branding).*)"],
+  // Íconos fuera del login: Safari pide /apple-touch-icon.png por su cuenta y
+  // recibía una redirección al login en vez de la imagen (13-10-2026).
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon-|apple-touch-icon|branding).*)"],
 };

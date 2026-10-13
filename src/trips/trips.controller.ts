@@ -5,6 +5,7 @@ import { UpdateTripDto } from './dto/update-trip.dto';
 import { BulkFromScheduleDto } from './dto/bulk-from-schedule.dto';
 import { BulkDeleteTripsDto } from './dto/bulk-delete-trips.dto';
 import { aplicarCambioMasivo, validarCambioMasivo } from './cambio-estado-masivo';
+import { eventoDelListado } from './evento-del-listado';
 import { AutoAssignDriversDto } from './dto/auto-assign-drivers.dto';
 import { TripsService } from './trips.service';
 import { TripsScheduleService } from './trips-schedule.service';
@@ -66,6 +67,8 @@ export class TripsController {
   async findAll(
     @Req() req: ApiRequest,
     @Query('requesterAthleteId') requesterAthleteId?: string,
+    // El panel pide sólo los viajes del evento activo (13-10-2026).
+    @Query('eventId') eventIdConsulta?: string,
   ) {
     const scope = await this.scope.forRequest(req);
     // Jefe de Misión: sólo los viajes de su delegación.
@@ -77,11 +80,11 @@ export class TripsController {
     const soloSuyos = scope?.kind === 'participant' ? scope.userId : requesterAthleteId;
     // Comité y Jefe de Misión: sólo los viajes del evento de su ficha (el
     // comité recibía los de todos los eventos).
-    const eventId =
+    const eventoDelPortal =
       scope?.kind === 'committee' || scope?.kind === 'mission_head'
         ? await this.scope.eventoDelPortal(scope)
         : null;
-    return this.tripsService.findAll(soloSuyos, delegationId, eventId);
+    return this.tripsService.findAll(soloSuyos, delegationId, eventoDelListado(eventoDelPortal, eventIdConsulta));
   }
 
   /* ─── Panel financiero ─── */

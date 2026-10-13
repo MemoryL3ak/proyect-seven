@@ -16,6 +16,7 @@ import TripMap from "@/components/TripMap";
 import { historialDeJornada, jornadasDelHistorial, SIN_FECHA as HISTORIAL_SIN_FECHA } from "@/lib/historial-viajes";
 import { claveDiaEvento, etiquetaDiaEvento, horaEvento } from "@/lib/hora-evento";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
+import { referenciasVencidas, rutaViajes } from "@/lib/carga-viajes";
 import { conductorEnEvento } from "@/lib/conductores-del-evento";
 import { apiFetch } from "@/lib/api";
 import { usuarioVeCobros } from "@/lib/ve-cobros";
@@ -539,7 +540,9 @@ export default function TripsPage() {
   // de esta pantalla y la recarga de cada 8 s (que corre con el valor del
   // primer render, "") lo devolvía al evento más nuevo: con dos eventos, el
   // que se eligiera saltaba al otro.
-  const { eventoId: selectedEventId } = useEventoActivo();
+  // `listo`: el evento activo ya se conoce; antes de eso no se cargan viajes
+  // (se bajarían los de todos los eventos, 13-10-2026).
+  const { eventoId: selectedEventId, listo: eventoListo } = useEventoActivo();
   // "Región" en los Juegos Escolares, "País" en Rugby (29-09-2026).
   const nombresDel = useNombresDelegacion();
   const [selectedClientType, setSelectedClientType] = useState("");
@@ -693,13 +696,52 @@ export default function TripsPage() {
   const knownRequestedIdsRef = useRef<Set<string>>(new Set());
   const pollTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // El evento activo, para que la consulta de viajes (que vive en el sondeo
+  // de 8 s) siempre use el vigente.
+  const eventoRef = useRef<string | null>(selectedEventId || null);
+  eventoRef.current = selectedEventId || null;
+  const referenciasCargadasRef = useRef(0);
+  // Evento cuyos viajes están cargados (para recargar sólo cuando cambia).
+  const eventoCargadoRef = useRef<string | null>(null);
+
+  /**
+   * Viajes del evento activo. 13-10-2026: la página bajaba los 1.946 viajes
+   * de todos los eventos (4,1 MB) y además los 9 recursos de referencia cada
+   * 8 segundos; en un MacBook con Safari la plataforma "cargaba pésimo".
+   * Ahora el sondeo pide sólo esto, filtrado en el servidor.
+   */
+  const loadTrips = async () => {
+    const tripData = await apiFetch<Trip[]>(rutaViajes(eventoRef.current));
+    const nextTrips = tripData || [];
+    const nextRequestedIds = new Set(
+      nextTrips.filter((trip) => trip.status === "REQUESTED").map((trip) => trip.id)
+    );
+    if (knownRequestedIdsRef.current.size > 0) {
+      const newIds = Array.from(nextRequestedIds).filter((id) => !knownRequestedIdsRef.current.has(id));
+      setFreshRequestIds(newIds);
+    }
+    knownRequestedIdsRef.current = nextRequestedIds;
+    setTrips(nextTrips);
+    setLastUpdated(new Date());
+  };
+
   const loadData = async (silent = false) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
-      const [tripData, eventData, athleteData, delegationData, driverData, vehicleData, venueData, hotelData, foodData, disciplinaData] =
+      await Promise.all([loadTrips(), loadReferencias()]);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("No se pudo cargar"));
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  /** Eventos, atletas, conductores, sedes, hoteles…: cambian poco; no van en el sondeo de 8 s. */
+  const loadReferencias = async () => {
+    {
+      const [eventData, athleteData, delegationData, driverData, vehicleData, venueData, hotelData, foodData, disciplinaData] =
         await Promise.all([
-          apiFetch<Trip[]>("/trips"),
           apiFetch<EventItem[]>("/events"),
           apiFetch<AthleteItem[]>("/athletes"),
           apiFetch<DelegationItem[]>("/delegations"),
@@ -711,18 +753,6 @@ export default function TripsPage() {
           apiFetch<(DisciplineLike & { parentId?: string | null })[]>("/disciplines").catch(() => []),
         ]);
 
-      const nextTrips = tripData || [];
-      const nextRequestedIds = new Set(
-        nextTrips.filter((trip) => trip.status === "REQUESTED").map((trip) => trip.id)
-      );
-
-      if (knownRequestedIdsRef.current.size > 0) {
-        const newIds = Array.from(nextRequestedIds).filter((id) => !knownRequestedIdsRef.current.has(id));
-        setFreshRequestIds(newIds);
-      }
-      knownRequestedIdsRef.current = nextRequestedIds;
-
-      setTrips(nextTrips);
       setEvents(
         (eventData || []).reduce<Record<string, EventItem>>((acc, item) => {
           acc[item.id] = item;
@@ -771,11 +801,7 @@ export default function TripsPage() {
         }, {})
       );
 
-      setLastUpdated(new Date());
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("No se pudo cargar"));
-    } finally {
-      if (!silent) setLoading(false);
+      referenciasCargadasRef.current = Date.now();
     }
   };
 
@@ -821,11 +847,18 @@ export default function TripsPage() {
   };
 
   useEffect(() => {
+    if (!eventoListo) return;
     let mounted = true;
+    eventoCargadoRef.current = eventoRef.current;
 
+    // Cada 8 s sólo los viajes; las referencias, cada 5 minutos.
     const poll = async () => {
       if (!mounted) return;
-      await loadData(true);
+      try {
+        await (referenciasVencidas(referenciasCargadasRef.current, Date.now()) ? Promise.all([loadTrips(), loadReferencias()]) : loadTrips());
+      } catch {
+        // el próximo tic reintenta
+      }
       if (!mounted) return;
       pollTimerRef.current = setTimeout(poll, 8000);
     };
@@ -837,7 +870,21 @@ export default function TripsPage() {
       mounted = false;
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current);
     };
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventoListo]);
+
+  // Al cambiar el evento activo, se traen sus viajes de inmediato.
+  useEffect(() => {
+    if (!eventoListo) return;
+    const actual = selectedEventId || null;
+    if (eventoCargadoRef.current === actual) return;
+    eventoCargadoRef.current = actual;
+    setLoading(true);
+    loadTrips()
+      .catch((err) => setError(err instanceof Error ? err.message : t("No se pudo cargar")))
+      .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedEventId, eventoListo]);
 
   useEffect(() => {
     if (freshRequestIds.length === 0) return;
