@@ -47,8 +47,10 @@ export type PresenceMarker = {
 const TONO_SITUACION: Record<Situacion["tono"], { bg: string; fg: string; punto: string }> = {
   movimiento: { bg: "rgba(16,185,129,0.22)", fg: STATE.successBorder, punto: STATE.success },
   motor: { bg: "rgba(245,158,11,0.22)", fg: STATE.warningBorder, punto: STATE.warning },
-  detenido: { bg: "rgba(255,255,255,0.12)", fg: SURFACE.border, punto: SURFACE.borderStrong },
-  sinConexion: { bg: "rgba(239,68,68,0.2)", fg: STATE.dangerBorder, punto: STATE.danger },
+  // Mismos tonos que las tarjetas (EquiposGpsPanel): detenido en azul, sin
+  // conexión en gris (un auto apagado de noche no es una alarma).
+  detenido: { bg: "rgba(59,130,246,0.24)", fg: STATE.infoBorder, punto: STATE.info },
+  sinConexion: { bg: "rgba(255,255,255,0.12)", fg: SURFACE.border, punto: SURFACE.borderStrong },
 };
 
 export function fichaVehiculoHtml(f: FichaVehiculo): string {

@@ -170,6 +170,70 @@ export function fusionarListas(prev: EquipoGps[], nuevos: EquipoGps[]): EquipoGp
   });
 }
 
+/**
+ * Un solo pin por auto (13-10-2026, Ariel: "se ven los 2 GPS, del celular y
+ * del dispositivo físico, entonces se duplica"). Cuando un equipo está
+ * atribuido a un conductor (por la patente del viaje o de su ficha):
+ * - si el equipo tiene señal, manda el equipo y se oculta el pin del celular;
+ * - si el equipo está mudo y el celular sí reporta, manda el celular;
+ * - si ninguno reporta, queda el equipo (su última posición).
+ */
+export function unirMarcadores(conductores: PresenceMarker[], equipos: EquipoGps[], ahoraMs: number): PresenceMarker[] {
+  const porConductor = new Map(conductores.map((m) => [m.id, m]));
+  const ocultos = new Set<string>();
+  const deEquipos: PresenceMarker[] = [];
+  for (const e of equipos) {
+    const m = marcadorDeEquipo(e, ahoraMs);
+    if (!m) continue;
+    const celular = e.conductorId ? porConductor.get(e.conductorId) : undefined;
+    if (celular) {
+      if (!estadoDeEquipo(e, ahoraMs).gpsVivo && celular.online) continue;
+      ocultos.add(celular.id);
+    }
+    deEquipos.push(m);
+  }
+  return [...conductores.filter((m) => !ocultos.has(m.id)), ...deEquipos];
+}
+
+/** Cuántos equipos hay en cada situación, para el encabezado de la sección. */
+export function resumenEquipos(equipos: EquipoGps[], ahoraMs: number): Record<Situacion["tono"], number> & { sinPatente: number } {
+  const r = { movimiento: 0, motor: 0, detenido: 0, sinConexion: 0, sinPatente: 0 };
+  for (const e of equipos) {
+    r[situacionEquipo(e, ahoraMs).tono] += 1;
+    if (!e.vehiclePlate) r.sinPatente += 1;
+  }
+  return r;
+}
+
+/**
+ * Orden de las tarjetas: primero los conectados, después por nombre. No se
+ * ordena por velocidad ni por situación fina para que las tarjetas no salten
+ * de lugar cada 2 s.
+ */
+export function ordenarEquipos(equipos: EquipoGps[], ahoraMs: number): EquipoGps[] {
+  return [...equipos].sort((a, b) => {
+    const ca = estadoDeEquipo(a, ahoraMs).conectado ? 0 : 1;
+    const cb = estadoDeEquipo(b, ahoraMs).conectado ? 0 : 1;
+    return ca - cb || nombreEquipo(a).localeCompare(nombreEquipo(b), "es");
+  });
+}
+
+/** Patente como la guarda el servidor: mayúsculas, sólo letras y números. */
+export const normalizarPatente = (s: string | null | undefined) => (s ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+
+/**
+ * Lo que muestra el selector de patente mientras se escribe: las patentes
+ * conocidas que calzan (sin la actual) y, si lo escrito no existe todavía,
+ * la opción de usarlo como patente nueva (desde 4 caracteres).
+ */
+export function opcionesPatente(conocidas: string[], actual: string | null, texto: string): { lista: string[]; nueva: string | null } {
+  const q = normalizarPatente(texto);
+  const unicas = Array.from(new Set(conocidas.map(normalizarPatente).filter(Boolean)));
+  const lista = unicas.filter((p) => p !== actual && (!q || p.includes(q)));
+  const nueva = q.length >= 4 && q.length <= 8 && !unicas.includes(q) && q !== actual ? q : null;
+  return { lista, nueva };
+}
+
 /** Marca a partir de los tres primeros caracteres del VIN (código de fabricante). */
 const MARCAS_VIN: Record<string, string> = {
   ZFA: "Fiat", "9BD": "Fiat", "8AP": "Fiat",

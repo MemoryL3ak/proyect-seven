@@ -23,12 +23,12 @@ import {
   SearchIcon,
   ChevronLeftIcon,
   CarIcon,
-  MapPinnedIcon,
 } from "@/components/ui/Icons";
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 import { useNombresDelegacion } from "@/lib/use-nombres-delegacion";
 import StyledSelect from "@/components/StyledSelect";
-import { datosVehiculo, estadoDeEquipo, fusionarListas, fusionarPosiciones, hace, idMarcadorEquipo, marcadorDeEquipo, nombreEquipo, type EquipoGps, type PosicionRapida } from "@/lib/gps-vehiculos";
+import { fusionarListas, fusionarPosiciones, idMarcadorEquipo, marcadorDeEquipo, unirMarcadores, type EquipoGps, type PosicionRapida } from "@/lib/gps-vehiculos";
+import EquiposGpsPanel from "@/components/EquiposGpsPanel";
 
 const DriverPresenceMap = dynamic(() => import("@/components/DriverPresenceMap"), {
   ssr: false,
@@ -470,7 +470,12 @@ export default function DriverMonitoringPage() {
     [equipos, nowTick],
   );
   // Qué va al mapa según la fuente elegida.
-  const marcadoresMapa = fuente === "gps" ? marcadoresEquipos : fuente === "app" ? markers : [...markers, ...marcadoresEquipos];
+  // Con las dos fuentes, un solo pin por auto: si el equipo del vehículo
+  // reporta, se oculta el pin del celular de su conductor (13-10-2026).
+  const marcadoresMapa = useMemo(
+    () => (fuente === "gps" ? marcadoresEquipos : fuente === "app" ? markers : unirMarcadores(markers, equipos, nowTick)),
+    [fuente, marcadoresEquipos, markers, equipos, nowTick],
+  );
 
   const onTripCount = useMemo(
     () => drivers.filter((d) => d.activeTrips > 0).length,
@@ -742,7 +747,7 @@ export default function DriverMonitoringPage() {
       )}
 
       {fuente !== "app" && (fuente === "gps" || equipos.length > 0) && (
-        <SeccionEquiposGps equipos={equipos} patentes={patentes} ahora={nowTick} onAsignar={asignarEquipo} onVerEnMapa={verEnMapa} focoImei={focoEquipo?.imei ?? null} />
+        <EquiposGpsPanel equipos={equipos} patentes={patentes} ahora={nowTick} onAsignar={asignarEquipo} onVerEnMapa={verEnMapa} focoImei={focoEquipo?.imei ?? null} />
       )}
 
       {fuente !== "gps" && (loading && !snapshot ? (
@@ -1126,199 +1131,6 @@ export default function DriverMonitoringPage() {
         </div>
       ))}
     </div>
-  );
-}
-
-// ────────────────────────────────────────────────────────────────────────────
-// SeccionEquiposGps — rastreadores GPS de vehículo (09-10-2026)
-// ────────────────────────────────────────────────────────────────────────────
-
-const OTRA_PATENTE = "__otra__";
-
-function SeccionEquiposGps({
-  equipos,
-  patentes,
-  ahora,
-  onAsignar,
-  onVerEnMapa,
-  focoImei,
-}: {
-  equipos: EquipoGps[];
-  patentes: string[];
-  ahora: number;
-  onAsignar: (imei: string, plate: string | null) => Promise<void>;
-  /** Pinchar el nombre del equipo lo centra en el mapa y abre su ficha. */
-  onVerEnMapa: (imei: string) => void;
-  focoImei: string | null;
-}) {
-  const { t } = useI18n();
-  const [guardando, setGuardando] = useState<string | null>(null);
-  // "Otra patente…": una que no está en los viajes ni en las fichas (el
-  // auto de prueba, por ejemplo). Se escribe a mano y se guarda.
-  const [otraDe, setOtraDe] = useState<string | null>(null);
-  const [otraTexto, setOtraTexto] = useState("");
-  const [errorDe, setErrorDe] = useState<{ imei: string; texto: string } | null>(null);
-  const guardar = (imei: string, plate: string | null) => {
-    setGuardando(imei);
-    setErrorDe(null);
-    onAsignar(imei, plate)
-      .catch((err) => setErrorDe({ imei, texto: err instanceof Error ? err.message : t("No se pudo asignar la patente") }))
-      .finally(() => { setGuardando(null); setOtraDe(null); setOtraTexto(""); });
-  };
-  const pill = (texto: string, activo: boolean) => (
-    <span
-      className="inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full"
-      style={{
-        background: activo ? STATE.successSoft : SURFACE.borderMuted,
-        color: activo ? STATE.successText : SURFACE.textMuted,
-        border: `1px solid ${activo ? STATE.successBorder : SURFACE.border}`,
-        whiteSpace: "nowrap",
-      }}
-    >
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: activo ? STATE.success : SURFACE.textFaint }} />
-      {texto}
-    </span>
-  );
-  const th = (texto: string) => (
-    <th className="text-left p-3 text-xs font-semibold uppercase tracking-wider" style={{ color: SURFACE.textMuted, whiteSpace: "nowrap" }}>{texto}</th>
-  );
-  return (
-    <section
-      className="rounded-2xl overflow-hidden"
-      style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, boxShadow: "0 1px 4px rgba(15,23,42,0.04)" }}
-    >
-      <div className="flex flex-wrap items-center justify-between gap-2 p-4" style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
-        <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: SURFACE.textSecondary }}>
-          {t("GPS de vehículos")}
-        </h2>
-        <span style={{ fontSize: 11.5, color: SURFACE.textFaint, fontWeight: 500 }}>
-          {equipos.length} {equipos.length === 1 ? t("equipo") : t("equipos")}
-        </span>
-      </div>
-      {equipos.length === 0 ? (
-        <p className="p-6 text-sm" style={{ color: SURFACE.textMuted, margin: 0 }}>
-          {t("Ningún equipo GPS se ha conectado todavía. Al apuntarlo al servidor (SMS SERVER) aparece acá con su IMEI, y se le asigna un vehículo.")}
-        </p>
-      ) : (
-        <div style={{ overflowX: "auto" }}>
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
-                {th(t("Equipo"))}
-                {th(t("Vehículo"))}
-                {th(t("Conductor"))}
-                {th(t("Conexión"))}
-                {th(t("GPS"))}
-                {th(t("Última posición"))}
-                {th(t("Velocidad"))}
-                {th(t("Vehículo (OBD)"))}
-              </tr>
-            </thead>
-            <tbody>
-              {equipos.map((e) => {
-                const estado = estadoDeEquipo(e, ahora);
-                const p = e.ultimaPosicion;
-                return (
-                  <tr key={e.imei} style={{ borderBottom: `1px solid ${SURFACE.borderMuted}`, background: focoImei === e.imei ? "rgba(33,208,179,0.06)" : "transparent" }}>
-                    <td className="p-3">
-                      {p ? (
-                        <button
-                          type="button"
-                          onClick={() => onVerEnMapa(e.imei)}
-                          title={t("Ver en el mapa")}
-                          style={{ background: "none", border: 0, padding: 0, cursor: "pointer", fontWeight: 700, color: focoImei === e.imei ? BRAND.tealInk : SURFACE.text, textAlign: "left", display: "inline-flex", alignItems: "center", gap: 6 }}
-                        >
-                          {nombreEquipo(e)}
-                          <MapPinnedIcon size={13} color={BRAND.teal} strokeWidth={2.5} />
-                        </button>
-                      ) : (
-                        <div style={{ fontWeight: 700, color: SURFACE.text }}>{nombreEquipo(e)}</div>
-                      )}
-                      <div style={{ fontSize: 11, color: SURFACE.textFaint }}>
-                        {e.protocolo === "JT808" ? "ID" : "IMEI"} {e.imei}{e.protocolo ? ` · ${e.protocolo}` : ""}
-                      </div>
-                      {e.ultimoError && <div style={{ fontSize: 11, color: STATE.dangerText }}>{e.ultimoError}</div>}
-                    </td>
-                    <td className="p-3" style={{ minWidth: 200 }}>
-                      {otraDe === e.imei ? (
-                        <div style={{ display: "flex", gap: 6 }}>
-                          <input
-                            type="text"
-                            className="input"
-                            placeholder={t("Patente")}
-                            value={otraTexto}
-                            autoFocus
-                            onChange={(ev) => setOtraTexto(ev.target.value.toUpperCase())}
-                            onKeyDown={(ev) => { if (ev.key === "Enter" && otraTexto.trim()) guardar(e.imei, otraTexto); if (ev.key === "Escape") setOtraDe(null); }}
-                            style={{ width: 120 }}
-                          />
-                          <button type="button" className="btn btn-primary" disabled={!otraTexto.trim() || guardando === e.imei} onClick={() => guardar(e.imei, otraTexto)}>
-                            {t("Guardar")}
-                          </button>
-                        </div>
-                      ) : (
-                        <StyledSelect
-                          value={e.vehiclePlate ?? ""}
-                          disabled={guardando === e.imei}
-                          buscable
-                          placeholderBusqueda={t("Buscar patente…")}
-                          siempreVisibles={[OTRA_PATENTE]}
-                          onChange={(ev) => {
-                            const v = ev.target.value;
-                            if (v === OTRA_PATENTE) { setOtraDe(e.imei); setOtraTexto(""); return; }
-                            guardar(e.imei, v || null);
-                          }}
-                        >
-                          <option value="">{t("Sin patente")}</option>
-                          {(e.vehiclePlate && !patentes.includes(e.vehiclePlate) ? [e.vehiclePlate, ...patentes] : patentes).map((p) => (
-                            <option key={p} value={p}>{p}</option>
-                          ))}
-                          <option value={OTRA_PATENTE}>{t("Otra patente…")}</option>
-                        </StyledSelect>
-                      )}
-                      {errorDe?.imei === e.imei && (
-                        <div style={{ fontSize: 11, color: STATE.dangerText, marginTop: 4 }}>{errorDe.texto}</div>
-                      )}
-                    </td>
-                    <td className="p-3" style={{ whiteSpace: "nowrap", color: e.conductorNombre ? SURFACE.text : SURFACE.textFaint }}>
-                      {e.conductorNombre ?? "—"}
-                      {e.tripId && <div style={{ fontSize: 11, color: STATE.successText, fontWeight: 700 }}>{t("En viaje")}</div>}
-                    </td>
-                    <td className="p-3" style={{ whiteSpace: "nowrap" }}>
-                      {pill(estado.conectado ? t("Conectado") : t("Sin conexión"), estado.conectado)}
-                      <div style={{ fontSize: 11, color: SURFACE.textFaint, marginTop: 3 }}>
-                        {hace(estado.edadPaqueteS)}
-                        {estado.conectado && e.contacto != null && ` · ${e.contacto ? t("contacto puesto") : t("contacto apagado")}`}
-                      </div>
-                    </td>
-                    <td className="p-3" style={{ whiteSpace: "nowrap" }}>
-                      {pill(estado.gpsVivo ? t("Con señal") : t("Sin señal"), estado.gpsVivo)}
-                      <div style={{ fontSize: 11, color: SURFACE.textFaint, marginTop: 3 }}>{hace(estado.edadGpsS)}</div>
-                    </td>
-                    <td className="p-3" style={{ whiteSpace: "nowrap", fontSize: 12, color: SURFACE.textSecondary }}>
-                      {p ? `${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}` : "—"}
-                      {p && (
-                        <div style={{ fontSize: 11, color: SURFACE.textFaint }}>
-                          {new Date(p.fecha).toLocaleString("es-CL", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })} · {p.satelites > 0 ? `${p.satelites} sat.` : t("guardada")}
-                        </div>
-                      )}
-                    </td>
-                    <td className="p-3" style={{ whiteSpace: "nowrap", color: SURFACE.textSecondary }}>
-                      {p ? `${Math.round(p.velocidad)} km/h` : "—"}
-                    </td>
-                    {/* Lo que el auto informa por OBD (SEG-9888G, 11-10-2026); los G500LS no lo traen. */}
-                    <td className="p-3" style={{ fontSize: 12, color: SURFACE.textSecondary, minWidth: 170, maxWidth: 260 }}>
-                      {datosVehiculo(p).length ? datosVehiculo(p).map((r) => r.value).join(" · ") : "—"}
-                      {p?.extras?.vin && <div style={{ fontSize: 11, color: SURFACE.textFaint }}>VIN {p.extras.vin}</div>}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-    </section>
   );
 }
 

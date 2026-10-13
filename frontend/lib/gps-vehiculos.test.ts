@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarListas, fusionarPosiciones, idMarcadorEquipo, marcaDeVin, marcadorDeEquipo, nombreEquipo, situacionEquipo, type EquipoGps } from "./gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarListas, fusionarPosiciones, idMarcadorEquipo, marcaDeVin, marcadorDeEquipo, nombreEquipo, opcionesPatente, ordenarEquipos, resumenEquipos, situacionEquipo, unirMarcadores, type EquipoGps } from "./gps-vehiculos";
+import type { PresenceMarker } from "@/components/DriverPresenceMap";
 
 const T = Date.parse("2026-10-09T05:00:00.000Z");
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -142,6 +143,44 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     // Equipos nuevos o que se fueron: manda la lista completa.
     expect(fusionarListas([rapido], []).length).toBe(0);
     expect(fusionarListas([], [lento])[0]).toBe(lento);
+  });
+
+  describe("un solo pin por auto (13-10-2026: se veían el celular y el equipo del mismo auto)", () => {
+    const celular = (id: string, online: boolean): PresenceMarker => ({ id, lat: -33.5, lng: -70.6, name: id, online, onTrip: false, tripLabel: null, lastSeen: "", gpsTime: "", activeTrips: 0, platform: "app-android", clientTypes: [] });
+    // base: KBGB58, conductor drv-1, GPS vivo.
+    it("con el equipo reportando, se oculta el pin del celular de ese conductor", () => {
+      const r = unirMarcadores([celular("drv-1", true), celular("drv-2", true)], [base], T);
+      expect(r.map((m) => m.id)).toEqual(["drv-2", "gps:862667088669224"]);
+    });
+    it("con el equipo mudo y el celular reportando, queda sólo el celular", () => {
+      const mudo = { ...base, ultimaPosicion: { ...base.ultimaPosicion!, recibida: iso(T - 10 * 60_000) } };
+      expect(unirMarcadores([celular("drv-1", true)], [mudo], T).map((m) => m.id)).toEqual(["drv-1"]);
+    });
+    it("si ninguno reporta, queda el equipo con su última posición", () => {
+      const mudo = { ...base, ultimaPosicion: { ...base.ultimaPosicion!, recibida: iso(T - 10 * 60_000) } };
+      expect(unirMarcadores([celular("drv-1", false)], [mudo], T).map((m) => m.id)).toEqual(["gps:862667088669224"]);
+    });
+    it("un equipo sin conductor no oculta a nadie, y uno sin posición no aporta pin", () => {
+      expect(unirMarcadores([celular("drv-1", true)], [{ ...base, conductorId: null }], T).map((m) => m.id)).toEqual(["drv-1", "gps:862667088669224"]);
+      expect(unirMarcadores([celular("drv-1", true)], [{ ...base, ultimaPosicion: null }], T).map((m) => m.id)).toEqual(["drv-1"]);
+    });
+  });
+
+  it("resumen y orden de las tarjetas: conectados primero, por nombre", () => {
+    const quieto = { ...base, imei: "2", vehiclePlate: "AAAA11", ultimaPosicion: { ...base.ultimaPosicion!, velocidad: 0 } };
+    const apagado = { ...base, imei: "3", vehiclePlate: null, ultimoPaquete: iso(T - 3600_000) };
+    expect(resumenEquipos([base, quieto, apagado], T)).toEqual({ movimiento: 1, motor: 0, detenido: 1, sinConexion: 1, sinPatente: 1 });
+    expect(ordenarEquipos([apagado, base, quieto], T).map((e) => e.imei)).toEqual(["2", "862667088669224", "3"]);
+  });
+
+  it("el selector de patente filtra mientras se escribe y ofrece una patente nueva si no existe", () => {
+    const conocidas = ["GXVS17", "GXVT80", "JJJC74", "jj jc-74", "KFLX38"];
+    expect(opcionesPatente(conocidas, null, "")).toEqual({ lista: ["GXVS17", "GXVT80", "JJJC74", "KFLX38"], nueva: null });
+    expect(opcionesPatente(conocidas, "GXVS17", "gxv")).toEqual({ lista: ["GXVT80"], nueva: null });
+    expect(opcionesPatente(conocidas, null, "ab-cd 12")).toEqual({ lista: [], nueva: "ABCD12" });
+    // La actual no se ofrece como nueva, y menos de 4 caracteres no es patente.
+    expect(opcionesPatente(conocidas, "ABCD12", "abcd12").nueva).toBeNull();
+    expect(opcionesPatente(conocidas, null, "ab1").nueva).toBeNull();
   });
 
   it("la marca sale de los tres primeros caracteres del VIN", () => {
