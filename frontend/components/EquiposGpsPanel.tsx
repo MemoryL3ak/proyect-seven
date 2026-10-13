@@ -1,34 +1,39 @@
 "use client";
 
 /**
- * "GPS de vehículos" en Monitoreo de conductores (rehecha el 13-10-2026,
- * Ariel: "esa tabla en general está muy fea, muy básica" y "el listbox se ve
- * pésimo"). Una tarjeta por equipo con el mismo lenguaje que la ficha del
- * mapa: patente en recuadro, situación con color, indicadores grandes,
- * conductor, y un selector de patente propio (buscador, patente nueva,
- * quitar) que no se recorta dentro de la tabla.
+ * "GPS de vehículos" en Monitoreo de conductores. 13-10-2026: Ariel pidió
+ * primero algo más cuidado que la tabla básica ("muy fea, el listbox se ve
+ * pésimo"); probamos tarjetas y las rechazó por poco prácticas ("debe ser
+ * tabla"). Queda una tabla compacta: una fila por equipo con la situación en
+ * color, velocidad, conductor, lo que informa el auto, la patente con un
+ * selector propio (su lista se dibuja sobre la página y no la recorta el
+ * scroll de la tabla) y el botón para verlo en el mapa.
  */
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
 import { useI18n } from "@/lib/i18n";
-import { direccionDeLista, type DireccionLista } from "@/lib/desplegable";
+import { direccionDeLista } from "@/lib/desplegable";
 import {
   estadoDeEquipo,
-  fichaVehiculo,
+  hace,
+  lineaEstadoVehiculo,
+  nombreEquipo,
   opcionesPatente,
   ordenarEquipos,
   resumenEquipos,
+  situacionEquipo,
   type EquipoGps,
   type Situacion,
 } from "@/lib/gps-vehiculos";
-import { CarIcon, ChevronDownIcon, MapPinnedIcon, PlusIcon, SearchIcon, UserIcon, XIcon } from "@/components/ui/Icons";
+import { CarIcon, ChevronDownIcon, MapPinnedIcon, PlusIcon, SearchIcon, XIcon } from "@/components/ui/Icons";
 
 /** Colores por situación sobre fondo claro (la ficha del mapa usa los mismos tonos sobre oscuro). */
-export const TONO_TARJETA: Record<Situacion["tono"], { punto: string; bg: string; fg: string; borde: string; barra: string }> = {
-  movimiento: { punto: STATE.success, bg: STATE.successSoft, fg: STATE.successText, borde: STATE.successBorder, barra: STATE.success },
-  motor: { punto: STATE.warning, bg: STATE.warningSoft, fg: STATE.warningText, borde: STATE.warningBorder, barra: STATE.warning },
-  detenido: { punto: STATE.info, bg: STATE.infoSoft, fg: STATE.infoText, borde: STATE.infoBorder, barra: STATE.info },
-  sinConexion: { punto: SURFACE.textFaint, bg: SURFACE.borderMuted, fg: SURFACE.textMuted, borde: SURFACE.border, barra: SURFACE.borderStrong },
+export const TONO_FILA: Record<Situacion["tono"], { punto: string; bg: string; fg: string; borde: string }> = {
+  movimiento: { punto: STATE.success, bg: STATE.successSoft, fg: STATE.successText, borde: STATE.successBorder },
+  motor: { punto: STATE.warning, bg: STATE.warningSoft, fg: STATE.warningText, borde: STATE.warningBorder },
+  detenido: { punto: STATE.info, bg: STATE.infoSoft, fg: STATE.infoText, borde: STATE.infoBorder },
+  sinConexion: { punto: SURFACE.textFaint, bg: SURFACE.borderMuted, fg: SURFACE.textMuted, borde: SURFACE.border },
 };
 
 /** Resumen del encabezado, en singular y plural. */
@@ -39,7 +44,6 @@ const ETIQUETA_RESUMEN: Record<Situacion["tono"], [string, string]> = {
   sinConexion: ["sin conexión", "sin conexión"],
 };
 
-/** Pastilla corta de la tarjeta: la larga ("Detenido, motor encendido") cortaba el modelo. */
 const PASTILLA: Record<Situacion["tono"], string> = {
   movimiento: "En movimiento",
   motor: "Motor encendido",
@@ -60,9 +64,28 @@ export default function EquiposGpsPanel({ equipos, patentes, ahora, onAsignar, o
   const { t } = useI18n();
   const resumen = resumenEquipos(equipos, ahora);
   const orden = ordenarEquipos(equipos, ahora);
+  const th = (texto: string, extra?: React.CSSProperties) => (
+    <th
+      style={{
+        textAlign: "left",
+        padding: "10px 14px",
+        fontSize: 10.5,
+        fontWeight: 800,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        color: SURFACE.textMuted,
+        background: SURFACE.bg,
+        borderBottom: `1px solid ${SURFACE.border}`,
+        whiteSpace: "nowrap",
+        ...extra,
+      }}
+    >
+      {texto}
+    </th>
+  );
   return (
-    <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.04)" }}>
-      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 10, padding: "16px 18px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}` }}>
+    <section style={{ background: SURFACE.card, border: `1px solid ${SURFACE.border}`, borderRadius: 16, boxShadow: "0 1px 4px rgba(15,23,42,0.04)", overflow: "hidden" }}>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", justifyContent: "space-between", gap: 10, padding: "16px 18px 14px" }}>
         <div style={{ minWidth: 0 }}>
           <h2 className="text-sm font-semibold uppercase tracking-wider" style={{ color: SURFACE.textSecondary, margin: 0 }}>
             {t("GPS de vehículos")}
@@ -73,7 +96,7 @@ export default function EquiposGpsPanel({ equipos, patentes, ahora, onAsignar, o
                 .filter((k) => resumen[k] > 0)
                 .map((k) => (
                   <span key={k} style={{ display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}>
-                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: TONO_TARJETA[k].punto }} />
+                    <span style={{ width: 8, height: 8, borderRadius: "50%", background: TONO_FILA[k].punto }} />
                     <strong style={{ color: SURFACE.text }}>{resumen[k]}</strong> {t(ETIQUETA_RESUMEN[k][resumen[k] === 1 ? 0 : 1])}
                   </span>
                 ))}
@@ -90,29 +113,36 @@ export default function EquiposGpsPanel({ equipos, patentes, ahora, onAsignar, o
         </span>
       </div>
       {equipos.length === 0 ? (
-        <p className="p-6 text-sm" style={{ color: SURFACE.textMuted, margin: 0 }}>
+        <p className="p-6 text-sm" style={{ color: SURFACE.textMuted, margin: 0, borderTop: `1px solid ${SURFACE.borderMuted}` }}>
           {t("Ningún equipo GPS se ha conectado todavía. Al apuntarlo al servidor (SMS SERVER) aparece acá con su IMEI, y se le asigna un vehículo.")}
         </p>
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 14, padding: 16 }}>
-          {orden.map((e) => (
-            <TarjetaEquipo
-              key={e.imei}
-              equipo={e}
-              patentes={patentes}
-              ahora={ahora}
-              enFoco={focoImei === e.imei}
-              onAsignar={onAsignar}
-              onVerEnMapa={onVerEnMapa}
-            />
-          ))}
+        <div style={{ overflowX: "auto" }}>
+          <table className="tabla-gps" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0, fontSize: 13 }}>
+            <thead>
+              <tr>
+                {th(t("Vehículo"), { paddingLeft: 18 })}
+                {th(t("Situación"))}
+                {th(t("Velocidad"))}
+                {th(t("Conductor"))}
+                {th(t("Estado del vehículo"))}
+                {th(t("Patente"))}
+                {th("", { width: 56 })}
+              </tr>
+            </thead>
+            <tbody>
+              {orden.map((e) => (
+                <FilaEquipo key={e.imei} equipo={e} patentes={patentes} ahora={ahora} enFoco={focoImei === e.imei} onAsignar={onAsignar} onVerEnMapa={onVerEnMapa} />
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
     </section>
   );
 }
 
-function TarjetaEquipo({
+function FilaEquipo({
   equipo: e,
   patentes,
   ahora,
@@ -128,9 +158,11 @@ function TarjetaEquipo({
   onVerEnMapa: (imei: string) => void;
 }) {
   const { t } = useI18n();
-  const f = fichaVehiculo(e, ahora);
-  const tono = TONO_TARJETA[f.situacion.tono];
-  const tienePosicion = Boolean(e.ultimaPosicion);
+  const situacion = situacionEquipo(e, ahora);
+  const tono = TONO_FILA[situacion.tono];
+  const estado = estadoDeEquipo(e, ahora);
+  const p = e.ultimaPosicion;
+  const apagado = situacion.tono === "sinConexion";
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const elegir = (plate: string | null) => {
@@ -140,165 +172,98 @@ function TarjetaEquipo({
       .catch((err) => setError(err instanceof Error ? err.message : t("No se pudo asignar la patente")))
       .finally(() => setGuardando(false));
   };
-  // Lo que el auto informa además de la velocidad (contacto, temperatura, batería…), en una línea.
-  const extras = f.detalles.filter((d) => !["Conductor", "Viaje", "VIN", "Energía"].includes(d.label));
-  const estado = estadoDeEquipo(e, ahora);
+  const linea = lineaEstadoVehiculo(e);
+  const modelo = e.modelo?.trim().split(" ")[0] || (e.protocolo === "JT808" ? "SEG-9888G" : "Rastreador GT06");
+  const td: React.CSSProperties = { padding: "11px 14px", borderBottom: `1px solid ${SURFACE.borderMuted}`, verticalAlign: "middle" };
   return (
-    <article
-      style={{
-        position: "relative",
-        display: "flex",
-        flexDirection: "column",
-        background: SURFACE.card,
-        border: `1px solid ${enFoco ? BRAND.teal : SURFACE.border}`,
-        borderTop: `3px solid ${tono.barra}`,
-        borderRadius: 14,
-        boxShadow: enFoco ? "0 0 0 3px rgba(33,208,179,0.16), 0 6px 18px rgba(15,23,42,0.08)" : "0 1px 3px rgba(15,23,42,0.05)",
-        transition: "border-color 150ms ease, box-shadow 150ms ease",
-      }}
-    >
-      {/* Encabezado: patente, nombre y situación. Pinchar lo muestra en el mapa. */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "14px 14px 10px" }}>
+    <tr style={{ background: enFoco ? "rgba(33,208,179,0.07)" : undefined }}>
+      {/* Vehículo: el borde izquierdo lleva el color de la situación. */}
+      <td style={{ ...td, paddingLeft: 18, boxShadow: `inset 3px 0 0 ${tono.punto}` }}>
         <button
           type="button"
-          onClick={() => tienePosicion && onVerEnMapa(e.imei)}
-          disabled={!tienePosicion}
-          title={tienePosicion ? t("Ver en el mapa") : undefined}
-          style={{ display: "flex", alignItems: "center", gap: 12, minWidth: 0, flex: 1, background: "none", border: 0, padding: 0, textAlign: "left", cursor: tienePosicion ? "pointer" : "default" }}
+          onClick={() => p && onVerEnMapa(e.imei)}
+          disabled={!p}
+          title={p ? t("Ver en el mapa") : undefined}
+          style={{ display: "flex", alignItems: "center", gap: 11, background: "none", border: 0, padding: 0, textAlign: "left", cursor: p ? "pointer" : "default" }}
         >
-          <span
-            style={{
-              width: 48,
-              height: 48,
-              borderRadius: 12,
-              flexShrink: 0,
-              background: `linear-gradient(135deg, ${BRAND.navy}, ${BRAND.navyLight})`,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              boxShadow: "0 2px 6px rgba(4,26,46,0.25)",
-            }}
-          >
-            {/* La patente ya es el título: acá va el auto, con el color de su situación. */}
-            <CarIcon size={22} color={f.situacion.tono === "sinConexion" ? SURFACE.textFaint : tono.punto === STATE.info ? "#93c5fd" : tono.punto} strokeWidth={2.2} />
+          <span style={{ width: 34, height: 34, borderRadius: 9, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: `linear-gradient(135deg, ${BRAND.navy}, ${BRAND.navyLight})` }}>
+            <CarIcon size={17} color={apagado ? SURFACE.textFaint : situacion.tono === "detenido" ? "#93c5fd" : tono.punto} strokeWidth={2.2} />
           </span>
           <span style={{ minWidth: 0 }}>
-            <span style={{ display: "block", fontSize: 16, fontWeight: 800, color: SURFACE.text, lineHeight: 1.2, letterSpacing: e.vehiclePlate ? "0.04em" : 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.nombre}</span>
-            <span style={{ display: "block", fontSize: 11.5, color: SURFACE.textMuted, marginTop: 3, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.subtitulo}</span>
+            <span style={{ display: "block", fontSize: 14, fontWeight: 800, color: SURFACE.text, letterSpacing: e.vehiclePlate ? "0.05em" : 0, whiteSpace: "nowrap" }}>{nombreEquipo(e)}</span>
+            <span style={{ display: "block", fontSize: 11, color: SURFACE.textFaint, whiteSpace: "nowrap" }}>{modelo}</span>
           </span>
         </button>
-      </div>
-      {/* Situación en su propia línea: al lado del nombre lo cortaba ("JJJC…") con el ancho real del panel. */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "0 14px 10px" }}>
-        <span
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "4px 10px",
-            borderRadius: 999,
-            background: tono.bg,
-            color: tono.fg,
-            border: `1px solid ${tono.borde}`,
-            fontSize: 10.5,
-            fontWeight: 800,
-            letterSpacing: "0.04em",
-            textTransform: "uppercase",
-            whiteSpace: "nowrap",
-          }}
-        >
-          <span style={{ width: 7, height: 7, borderRadius: "50%", background: tono.punto }} />
-          {t(PASTILLA[f.situacion.tono])}
+      </td>
+      <td style={{ ...td, whiteSpace: "nowrap" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "3px 9px", borderRadius: 999, background: tono.bg, color: tono.fg, border: `1px solid ${tono.borde}`, fontSize: 10.5, fontWeight: 800, letterSpacing: "0.03em", textTransform: "uppercase" }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: tono.punto }} />
+          {t(PASTILLA[situacion.tono])}
         </span>
-        <span style={{ fontSize: 11, color: SURFACE.textFaint, whiteSpace: "nowrap" }}>
-          {t("Último dato")} {f.actualizado}
-        </span>
-      </div>
-
-      {/* Indicadores grandes; sin conexión son los últimos conocidos y van atenuados. */}
-      <div style={{ display: "flex", gap: 8, padding: "0 14px", opacity: f.situacion.tono === "sinConexion" ? 0.55 : 1 }}>
-        {f.indicadores.length > 0 ? (
-          f.indicadores.map((i) => (
-            <div key={i.label} style={{ flex: "1 1 0", minWidth: 0, background: SURFACE.bg, border: `1px solid ${SURFACE.borderMuted}`, borderRadius: 10, padding: "9px 6px 7px", textAlign: "center" }}>
-              <div style={{ fontSize: 20, fontWeight: 900, color: SURFACE.text, lineHeight: 1, whiteSpace: "nowrap" }}>
-                {i.valor}
-                {i.unidad && <span style={{ fontSize: 10.5, fontWeight: 700, color: SURFACE.textMuted, marginLeft: 2 }}>{i.unidad}</span>}
-              </div>
-              <div style={{ fontSize: 9.5, fontWeight: 800, color: SURFACE.textFaint, marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t(i.label)}</div>
-            </div>
-          ))
+        <div style={{ fontSize: 11, color: SURFACE.textFaint, marginTop: 4 }}>{hace(estado.edadPaqueteS)}</div>
+      </td>
+      <td style={{ ...td, whiteSpace: "nowrap", opacity: apagado ? 0.5 : 1 }}>
+        {p ? (
+          <>
+            <span style={{ fontSize: 16, fontWeight: 800, color: SURFACE.text }}>{Math.round(p.velocidad)}</span>
+            <span style={{ fontSize: 11, color: SURFACE.textMuted, marginLeft: 3 }}>km/h</span>
+            {p.satelites > 0 && <div style={{ fontSize: 11, color: SURFACE.textFaint, marginTop: 2 }}>{p.satelites} sat.</div>}
+          </>
         ) : (
-          <div style={{ flex: 1, background: SURFACE.bg, border: `1px dashed ${SURFACE.border}`, borderRadius: 10, padding: "12px 10px", fontSize: 12, color: SURFACE.textMuted, textAlign: "center" }}>
-            {t("Todavía no manda posición: necesita el auto encendido y cielo abierto.")}
-          </div>
+          <span style={{ fontSize: 12, color: SURFACE.textFaint }}>{t("sin posición")}</span>
         )}
-      </div>
-      {extras.length > 0 && (
-        <div style={{ padding: "8px 14px 0", fontSize: 11.5, color: SURFACE.textSecondary, lineHeight: 1.5 }}>
-          {extras.map((d) => `${t(d.label)} ${d.value}`).join(" · ")}
-        </div>
-      )}
-
-      {/* Conductor */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "12px 14px 0", padding: "9px 10px", borderRadius: 10, background: e.conductorNombre ? "rgba(33,208,179,0.06)" : SURFACE.bg }}>
-        <span style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: e.conductorNombre ? BRAND.teal : SURFACE.border }}>
-          <UserIcon size={14} color={e.conductorNombre ? "#fff" : SURFACE.textMuted} strokeWidth={2.4} />
-        </span>
-        <div style={{ minWidth: 0, flex: 1 }}>
-          <div style={{ fontSize: 9.5, fontWeight: 800, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.08em" }}>{t("Conductor")}</div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: e.conductorNombre ? SURFACE.text : SURFACE.textMuted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-            {e.conductorNombre ?? (e.vehiclePlate ? t("Sin viaje hoy con esta patente") : t("Asigna una patente para ver al conductor"))}
+      </td>
+      <td style={{ ...td, minWidth: 160 }}>
+        {e.conductorNombre ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ fontWeight: 600, color: SURFACE.text }}>{e.conductorNombre}</span>
+            {e.tripId && (
+              <span style={{ fontSize: 10, fontWeight: 800, color: STATE.successText, background: STATE.successSoft, border: `1px solid ${STATE.successBorder}`, borderRadius: 999, padding: "2px 8px", whiteSpace: "nowrap" }}>{t("En viaje")}</span>
+            )}
           </div>
-        </div>
-        {e.tripId && (
-          <span style={{ fontSize: 10.5, fontWeight: 800, color: STATE.successText, background: STATE.successSoft, border: `1px solid ${STATE.successBorder}`, borderRadius: 999, padding: "3px 9px", whiteSpace: "nowrap" }}>
-            {t("En viaje")}
-          </span>
+        ) : (
+          <span style={{ fontSize: 12, color: SURFACE.textFaint }}>{e.vehiclePlate ? t("Sin viaje hoy") : "—"}</span>
         )}
-      </div>
-
-      {/* Patente y mapa */}
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 10, margin: "12px 14px 0", paddingTop: 12, borderTop: `1px solid ${SURFACE.borderMuted}` }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 9.5, fontWeight: 800, color: SURFACE.textFaint, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>{t("Patente")}</div>
-          <SelectorPatente actual={e.vehiclePlate} conocidas={patentes} guardando={guardando} onElegir={elegir} />
-        </div>
+      </td>
+      {/* Sin conexión es el último dato conocido: va atenuado. */}
+      <td style={{ ...td, fontSize: 12, color: SURFACE.textSecondary, minWidth: 180, maxWidth: 300, lineHeight: 1.45, opacity: apagado ? 0.5 : 1 }}>
+        {linea || <span style={{ color: SURFACE.textFaint }}>—</span>}
+      </td>
+      <td style={{ ...td, whiteSpace: "nowrap" }}>
+        <SelectorPatente actual={e.vehiclePlate} conocidas={patentes} guardando={guardando} onElegir={elegir} />
+        {(error || e.ultimoError) && <div style={{ fontSize: 11, color: STATE.dangerText, marginTop: 4, whiteSpace: "normal", maxWidth: 220 }}>{error ?? e.ultimoError}</div>}
+      </td>
+      <td style={{ ...td, textAlign: "right", paddingRight: 16 }}>
         <button
           type="button"
           onClick={() => onVerEnMapa(e.imei)}
-          disabled={!tienePosicion}
+          disabled={!p}
+          title={t("Ver en el mapa")}
+          aria-label={t("Ver en el mapa")}
           style={{
+            width: 34,
+            height: 34,
             display: "inline-flex",
             alignItems: "center",
-            gap: 6,
-            padding: "8px 12px",
+            justifyContent: "center",
             borderRadius: 9,
-            border: `1px solid ${tienePosicion ? "rgba(33,208,179,0.45)" : SURFACE.border}`,
-            background: tienePosicion ? "rgba(33,208,179,0.08)" : SURFACE.bg,
-            color: tienePosicion ? BRAND.tealInk : SURFACE.textFaint,
-            fontSize: 12.5,
-            fontWeight: 700,
-            cursor: tienePosicion ? "pointer" : "not-allowed",
-            whiteSpace: "nowrap",
+            border: `1px solid ${p ? "rgba(33,208,179,0.45)" : SURFACE.border}`,
+            background: enFoco ? BRAND.teal : p ? "rgba(33,208,179,0.08)" : SURFACE.bg,
+            cursor: p ? "pointer" : "not-allowed",
           }}
         >
-          <MapPinnedIcon size={14} color={tienePosicion ? BRAND.tealDark : SURFACE.textFaint} strokeWidth={2.4} />
-          {t("Ver en mapa")}
+          <MapPinnedIcon size={16} color={enFoco ? "#fff" : p ? BRAND.tealDark : SURFACE.textFaint} strokeWidth={2.4} />
         </button>
-      </div>
-      {(error || e.ultimoError) && <div style={{ margin: "8px 14px 0", fontSize: 11.5, color: STATE.dangerText }}>{error ?? e.ultimoError}</div>}
-
-      <div style={{ marginTop: "auto", padding: "10px 14px 12px", fontSize: 10.5, color: SURFACE.textFaint, lineHeight: 1.5 }}>
-        {f.pie[0]}
-        {estado.conectado && e.energiaExterna === false && <span style={{ color: STATE.warningText }}> · {t("con batería interna")}</span>}
-      </div>
-    </article>
+      </td>
+    </tr>
   );
 }
 
 /**
  * Selector de patente con aspecto de placa: buscador, patentes conocidas del
- * evento, "usar como patente nueva" si lo escrito no existe, y quitar.
+ * evento, "usar como patente nueva" si lo escrito no existe, y quitar. La
+ * lista se dibuja sobre la página (portal, posición fija): dentro de la tabla
+ * con scroll horizontal se recortaba.
  */
 export function SelectorPatente({
   actual,
@@ -315,26 +280,50 @@ export function SelectorPatente({
   const [abierto, setAbierto] = useState(false);
   const [texto, setTexto] = useState("");
   const [activo, setActivo] = useState(0);
-  const [direccion, setDireccion] = useState<DireccionLista>("abajo");
+  const [pos, setPos] = useState<{ left: number; top?: number; bottom?: number } | null>(null);
   const ref = useRef<HTMLDivElement>(null);
+  const popRef = useRef<HTMLDivElement>(null);
   const { lista, nueva } = opcionesPatente(conocidas, actual, texto);
   const items: { valor: string; nueva: boolean }[] = [...(nueva ? [{ valor: nueva, nueva: true }] : []), ...lista.map((p) => ({ valor: p, nueva: false }))];
+  const ANCHO = 260;
+
+  const ubicar = () => {
+    if (!ref.current || typeof window === "undefined") return;
+    const r = ref.current.getBoundingClientRect();
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - ANCHO - 8));
+    const dir = direccionDeLista(window.innerHeight - r.bottom, r.top, 330);
+    setPos(dir === "abajo" ? { left, top: r.bottom + 6 } : { left, bottom: window.innerHeight - r.top + 6 });
+  };
+
+  useLayoutEffect(() => {
+    if (abierto) ubicar();
+  }, [abierto]);
 
   useEffect(() => {
     if (!abierto) return;
     const fuera = (ev: MouseEvent) => {
-      if (ref.current && !ref.current.contains(ev.target as Node)) setAbierto(false);
+      const n = ev.target as Node;
+      if (ref.current?.contains(n) || popRef.current?.contains(n)) return;
+      setAbierto(false);
     };
+    // Si la página o la tabla se desplazan, la lista se cierra (su propio scroll no cuenta).
+    const desplazamiento = (ev: Event) => {
+      if (popRef.current && ev.target instanceof Node && popRef.current.contains(ev.target)) return;
+      setAbierto(false);
+    };
+    const cerrar = () => setAbierto(false);
     document.addEventListener("mousedown", fuera);
-    return () => document.removeEventListener("mousedown", fuera);
+    window.addEventListener("scroll", desplazamiento, true);
+    window.addEventListener("resize", cerrar);
+    return () => {
+      document.removeEventListener("mousedown", fuera);
+      window.removeEventListener("scroll", desplazamiento, true);
+      window.removeEventListener("resize", cerrar);
+    };
   }, [abierto]);
 
   const abrir = () => {
     if (guardando) return;
-    if (!abierto && ref.current && typeof window !== "undefined") {
-      const r = ref.current.getBoundingClientRect();
-      setDireccion(direccionDeLista(window.innerHeight - r.bottom, r.top, 330));
-    }
     setTexto("");
     setActivo(0);
     setAbierto((v) => !v);
@@ -344,65 +333,17 @@ export function SelectorPatente({
     if (p !== actual) onElegir(p);
   };
 
-  return (
-    <div ref={ref} style={{ position: "relative" }}>
-      {actual ? (
-        <button
-          type="button"
-          onClick={abrir}
-          aria-haspopup="listbox"
-          aria-expanded={abierto}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            padding: "5px 8px 5px 10px",
-            borderRadius: 8,
-            border: `1.5px solid ${abierto ? BRAND.teal : SURFACE.textStrong}`,
-            background: "#fff",
-            boxShadow: abierto ? "0 0 0 3px rgba(33,208,179,0.14)" : "inset 0 -2px 0 rgba(15,23,42,0.06)",
-            cursor: guardando ? "wait" : "pointer",
-            opacity: guardando ? 0.6 : 1,
-          }}
-        >
-          <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 14, fontWeight: 800, letterSpacing: "0.14em", color: SURFACE.text }}>{actual}</span>
-          <ChevronDownIcon size={14} color={SURFACE.textMuted} strokeWidth={2.5} style={{ transform: abierto ? "rotate(180deg)" : "none", transition: "transform 150ms ease" }} />
-        </button>
-      ) : (
-        <button
-          type="button"
-          onClick={abrir}
-          aria-haspopup="listbox"
-          aria-expanded={abierto}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 6,
-            padding: "7px 12px",
-            borderRadius: 8,
-            border: `1.5px dashed ${BRAND.teal}`,
-            background: "rgba(33,208,179,0.06)",
-            color: BRAND.tealInk,
-            fontSize: 12.5,
-            fontWeight: 700,
-            cursor: guardando ? "wait" : "pointer",
-            opacity: guardando ? 0.6 : 1,
-          }}
-        >
-          <PlusIcon size={14} color={BRAND.tealDark} strokeWidth={2.6} />
-          {guardando ? t("Guardando…") : t("Asignar patente")}
-        </button>
-      )}
-
-      {abierto && (
+  const lista_ = abierto && pos && typeof document !== "undefined"
+    ? createPortal(
         <div
+          ref={popRef}
           role="listbox"
           style={{
-            position: "absolute",
-            left: 0,
-            ...(direccion === "arriba" ? { bottom: "calc(100% + 6px)" } : { top: "calc(100% + 6px)" }),
-            width: 260,
-            zIndex: 60,
+            position: "fixed",
+            left: pos.left,
+            ...(pos.top != null ? { top: pos.top } : { bottom: pos.bottom }),
+            width: ANCHO,
+            zIndex: 10000,
             background: SURFACE.card,
             border: `1px solid ${SURFACE.border}`,
             borderRadius: 12,
@@ -440,33 +381,10 @@ export function SelectorPatente({
                 aria-selected={i === activo}
                 onMouseEnter={() => setActivo(i)}
                 onClick={() => elegir(it.valor)}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  width: "100%",
-                  padding: "7px 8px",
-                  borderRadius: 8,
-                  border: 0,
-                  background: i === activo ? "rgba(33,208,179,0.10)" : "transparent",
-                  cursor: "pointer",
-                  textAlign: "left",
-                }}
+                style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", padding: "7px 8px", borderRadius: 8, border: 0, background: i === activo ? "rgba(33,208,179,0.10)" : "transparent", cursor: "pointer", textAlign: "left" }}
               >
                 {it.nueva && <PlusIcon size={13} color={BRAND.tealDark} strokeWidth={2.6} />}
-                <span
-                  style={{
-                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-                    fontSize: 12.5,
-                    fontWeight: 800,
-                    letterSpacing: "0.12em",
-                    color: SURFACE.text,
-                    background: "#fff",
-                    border: `1px solid ${SURFACE.borderStrong}`,
-                    borderRadius: 5,
-                    padding: "2px 7px",
-                  }}
-                >
+                <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12.5, fontWeight: 800, letterSpacing: "0.12em", color: SURFACE.text, background: "#fff", border: `1px solid ${SURFACE.borderStrong}`, borderRadius: 5, padding: "2px 7px" }}>
                   {it.valor}
                 </span>
                 {it.nueva && <span style={{ fontSize: 11.5, color: BRAND.tealInk, fontWeight: 700 }}>{t("patente nueva")}</span>}
@@ -483,8 +401,62 @@ export function SelectorPatente({
               {t("Quitar patente")} {actual}
             </button>
           )}
-        </div>
+        </div>,
+        document.body,
+      )
+    : null;
+
+  return (
+    <div ref={ref} style={{ display: "inline-block" }}>
+      {actual ? (
+        <button
+          type="button"
+          onClick={abrir}
+          aria-haspopup="listbox"
+          aria-expanded={abierto}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "4px 8px 4px 10px",
+            borderRadius: 7,
+            border: `1.5px solid ${abierto ? BRAND.teal : SURFACE.textStrong}`,
+            background: "#fff",
+            boxShadow: abierto ? "0 0 0 3px rgba(33,208,179,0.14)" : "inset 0 -2px 0 rgba(15,23,42,0.06)",
+            cursor: guardando ? "wait" : "pointer",
+            opacity: guardando ? 0.6 : 1,
+          }}
+        >
+          <span style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 13, fontWeight: 800, letterSpacing: "0.14em", color: SURFACE.text }}>{actual}</span>
+          <ChevronDownIcon size={13} color={SURFACE.textMuted} strokeWidth={2.5} style={{ transform: abierto ? "rotate(180deg)" : "none", transition: "transform 150ms ease" }} />
+        </button>
+      ) : (
+        <button
+          type="button"
+          onClick={abrir}
+          aria-haspopup="listbox"
+          aria-expanded={abierto}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+            padding: "5px 11px",
+            borderRadius: 7,
+            border: `1.5px dashed ${BRAND.teal}`,
+            background: "rgba(33,208,179,0.06)",
+            color: BRAND.tealInk,
+            fontSize: 12.5,
+            fontWeight: 700,
+            cursor: guardando ? "wait" : "pointer",
+            opacity: guardando ? 0.6 : 1,
+            whiteSpace: "nowrap",
+          }}
+        >
+          <PlusIcon size={13} color={BRAND.tealDark} strokeWidth={2.6} />
+          {guardando ? t("Guardando…") : t("Asignar patente")}
+        </button>
       )}
+      {lista_}
     </div>
   );
 }

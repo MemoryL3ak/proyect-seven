@@ -195,6 +195,25 @@ export function unirMarcadores(conductores: PresenceMarker[], equipos: EquipoGps
   return [...conductores.filter((m) => !ocultos.has(m.id)), ...deEquipos];
 }
 
+/**
+ * Lo que informa el vehículo en una línea corta para la tabla: contacto y,
+ * en los equipos OBD, motor, temperatura, batería, odómetro y combustible.
+ */
+export function lineaEstadoVehiculo(e: EquipoGps): string {
+  const p = e.ultimaPosicion;
+  const x = p?.extras;
+  const contacto = e.contacto ?? p?.contacto ?? null;
+  const partes: string[] = [];
+  if (contacto != null) partes.push(contacto ? "Contacto puesto" : "Contacto apagado");
+  if (x?.rpm != null) partes.push(x.rpm > 0 ? `${x.rpm} rpm` : "motor apagado");
+  if (x?.temperaturaMotor != null) partes.push(`${Math.round(x.temperaturaMotor)} °C`);
+  if (x?.voltaje != null) partes.push(`${x.voltaje.toFixed(1).replace(".", ",")} V`);
+  if (x?.kmObd != null) partes.push(`${miles(x.kmObd)} km`);
+  if (x?.combustiblePct != null) partes.push(`${Math.round(x.combustiblePct)} % comb.`);
+  if (e.energiaExterna === false) partes.push("con batería interna");
+  return partes.join(" · ");
+}
+
 /** Cuántos equipos hay en cada situación, para el encabezado de la sección. */
 export function resumenEquipos(equipos: EquipoGps[], ahoraMs: number): Record<Situacion["tono"], number> & { sinPatente: number } {
   const r = { movimiento: 0, motor: 0, detenido: 0, sinConexion: 0, sinPatente: 0 };

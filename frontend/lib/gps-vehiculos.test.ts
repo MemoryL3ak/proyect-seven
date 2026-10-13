@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarListas, fusionarPosiciones, idMarcadorEquipo, marcaDeVin, marcadorDeEquipo, nombreEquipo, opcionesPatente, ordenarEquipos, resumenEquipos, situacionEquipo, unirMarcadores, type EquipoGps } from "./gps-vehiculos";
+import { datosVehiculo, estadoDeEquipo, fichaVehiculo, fusionarListas, fusionarPosiciones, idMarcadorEquipo, lineaEstadoVehiculo, marcaDeVin, marcadorDeEquipo, nombreEquipo, opcionesPatente, ordenarEquipos, resumenEquipos, situacionEquipo, unirMarcadores, type EquipoGps } from "./gps-vehiculos";
 import type { PresenceMarker } from "@/components/DriverPresenceMap";
 
 const T = Date.parse("2026-10-09T05:00:00.000Z");
@@ -166,7 +166,15 @@ describe("equipos GPS de vehículo en el monitoreo", () => {
     });
   });
 
-  it("resumen y orden de las tarjetas: conectados primero, por nombre", () => {
+  it("la columna 'Estado del vehículo' de la tabla resume contacto y datos OBD en una línea", () => {
+    const extras = { rpm: 879, temperaturaMotor: 68, voltaje: 27.9, kmObd: 24615, combustiblePct: 28, crudos: {} };
+    expect(lineaEstadoVehiculo({ ...base, contacto: true, ultimaPosicion: { ...base.ultimaPosicion!, extras } })).toBe("Contacto puesto · 879 rpm · 68 °C · 27,9 V · 24.615 km · 28 % comb.");
+    expect(lineaEstadoVehiculo({ ...base, contacto: false })).toBe("Contacto apagado");
+    expect(lineaEstadoVehiculo({ ...base, contacto: null, energiaExterna: false })).toBe("con batería interna");
+    expect(lineaEstadoVehiculo({ ...base, contacto: null })).toBe("");
+  });
+
+  it("resumen y orden de las filas: conectados primero, por nombre", () => {
     const quieto = { ...base, imei: "2", vehiclePlate: "AAAA11", ultimaPosicion: { ...base.ultimaPosicion!, velocidad: 0 } };
     const apagado = { ...base, imei: "3", vehiclePlate: null, ultimoPaquete: iso(T - 3600_000) };
     expect(resumenEquipos([base, quieto, apagado], T)).toEqual({ movimiento: 1, motor: 0, detenido: 1, sinConexion: 1, sinPatente: 1 });
