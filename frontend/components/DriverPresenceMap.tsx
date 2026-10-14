@@ -230,7 +230,7 @@ export function createPinIcon(initials: string, accent: string): string {
       </filter>
     </defs>
     <path d="M28 66 L19 48 L37 48 Z" fill="${accent}" opacity="0.9"/>
-    <circle cx="28" cy="26" r="23" fill="${accent}" filter="url(%23ds)"/>
+    <circle cx="28" cy="26" r="23" fill="${accent}" filter="url(#ds)"/>
     <circle cx="28" cy="26" r="20" fill="#062240"/>
     <text x="28" y="${letra.y}" text-anchor="middle" font-family="system-ui,sans-serif" font-size="${letra.fontSize}" font-weight="900" fill="#fff" letter-spacing="${letra.letterSpacing}"${ajuste}>${initials}</text>
   </svg>`;
@@ -254,7 +254,7 @@ export function createPlacaPinIcon(placa: string, accent: string): string {
         <feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-color="#0f172a" flood-opacity="0.35"/>
       </filter>
     </defs>
-    <g filter="url(%23ds)">
+    <g filter="url(#ds)">
       <path d="M44 30 L50 40 L56 30 Z" fill="${accent}"/>
       <rect x="3" y="3" width="94" height="28" rx="7" fill="#ffffff" stroke="${accent}" stroke-width="2"/>
       <path d="M10 3 H31 V31 H10 A7 7 0 0 1 3 24 V10 A7 7 0 0 1 10 3 Z" fill="${accent}"/>
@@ -265,7 +265,7 @@ export function createPlacaPinIcon(placa: string, accent: string): string {
       <path d="M9 17h6"/>
       <circle cx="17" cy="17" r="2"/>
     </g>
-    <text x="64" y="22" text-anchor="middle" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13.5" font-weight="800" fill="#0f172a" letter-spacing="1.2"${ajuste}>${placa}</text>
+    <text x="64" y="22" text-anchor="middle" font-family="system-ui,-apple-system,Segoe UI,Helvetica,Arial,sans-serif" font-size="13.5" font-weight="800" fill="#0f172a" letter-spacing="1"${ajuste}>${placa}</text>
   </svg>`;
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }

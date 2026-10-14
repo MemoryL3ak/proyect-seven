@@ -66,7 +66,7 @@ function getInitials(name: string): string {
   );
 }
 
-function createDriverCarIcon(initials: string, accent: string): string {
+export function createDriverCarIcon(initials: string, accent: string): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="64" height="72" viewBox="0 0 64 72">
     <defs>
       <filter id="ds" x="-20%" y="-10%" width="140%" height="130%">
@@ -74,7 +74,7 @@ function createDriverCarIcon(initials: string, accent: string): string {
       </filter>
     </defs>
     <path d="M32 68 L24 52 L40 52 Z" fill="${accent}" opacity="0.9"/>
-    <circle cx="32" cy="28" r="26" fill="${accent}" filter="url(%23ds)"/>
+    <circle cx="32" cy="28" r="26" fill="${accent}" filter="url(#ds)"/>
     <circle cx="32" cy="28" r="23" fill="#062240"/>
     <g transform="translate(14,16)">
       <rect x="4" y="10" width="28" height="11" rx="3" fill="${accent}" opacity="0.9"/>
@@ -89,14 +89,14 @@ function createDriverCarIcon(initials: string, accent: string): string {
   return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
 }
 
-function createDestinationFlagIcon(accent: string): string {
+export function createDestinationFlagIcon(accent: string): string {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="44" height="56" viewBox="0 0 44 56">
     <defs>
       <filter id="ds2" x="-20%" y="-10%" width="140%" height="130%">
         <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.3"/>
       </filter>
     </defs>
-    <circle cx="22" cy="20" r="18" fill="${accent}" filter="url(%23ds2)"/>
+    <circle cx="22" cy="20" r="18" fill="${accent}" filter="url(#ds2)"/>
     <circle cx="22" cy="20" r="15" fill="#fff"/>
     <path d="M22 52 L17 38 L27 38 Z" fill="${accent}"/>
     <path d="M14 11 L14 30 M14 11 L28 11 L25 17 L28 23 L14 23" fill="${accent}" stroke="${accent}" stroke-width="2" stroke-linejoin="round"/>
