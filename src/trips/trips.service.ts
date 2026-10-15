@@ -18,6 +18,7 @@ import { ProviderRate } from '../providers/entities/provider-rate.entity';
 import { PushNotificationsService } from '../push-notifications/push-notifications.service';
 import { diaEvento } from './dia-evento';
 import { motivoInicioAnticipado } from './inicio-anticipado';
+import { clavesDelConductor } from './viajes-del-conductor';
 import { marcasAlCambiarEstado, retrocedeASinIniciar } from './estado-viaje';
 import { consultarPorLotes, enLotes } from '../supabase/en-lotes';
 
@@ -791,6 +792,33 @@ export class TripsService {
    * para cualquier jefe. La Flota sigue siendo sólo de su región: ese recorte
    * lo hace la pantalla.
    */
+  /**
+   * Tramos asignados a un conductor del portal, sin anidar (el portal los
+   * aplana igual). Antes recibía los de todos los eventos (4,1 MB) y en
+   * Android la app quedaba "no responde" (15-10-2026).
+   */
+  async findForPortalDriver(driverId: string) {
+    const flota = (await this.tripRepository.query(
+      `select id::text as id, user_id::text as user_id
+         from transport.drivers
+        where id::text = $1 or user_id::text = $1`,
+      [driverId],
+    )) as Array<{ id: string | null; user_id: string | null }>;
+    const claves = clavesDelConductor(driverId, flota);
+    if (claves.length === 0) return [];
+    try {
+      const trips = await this.tripRepository
+        .createQueryBuilder('t')
+        .where('t.driverId IN (:...claves)', { claves })
+        .orderBy('t.createdAt', 'DESC')
+        .getMany();
+      const withAthletes = await this.completarDisciplina(await this.attachAthletes(trips));
+      return withAthletes.map((t) => ({ ...t, childTrips: [] as Trip[] }));
+    } catch (error) {
+      throw new InternalServerErrorException(error instanceof Error ? error.message : 'Error fetching trips');
+    }
+  }
+
   async findAll(
     requesterAthleteId?: string,
     delegationId?: string | null,

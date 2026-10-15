@@ -70,6 +70,12 @@ export class TripsController {
     // El panel pide sólo los viajes del evento activo (13-10-2026).
     @Query('eventId') eventIdConsulta?: string,
   ) {
+    // Conductor del portal: sólo sus tramos. Antes recibía los de todos los
+    // eventos (4,1 MB) y en Android la app quedaba "no responde" (15-10-2026).
+    const caller = req.apiCaller;
+    if (caller?.type === 'portal' && caller.kind === 'driver') {
+      return this.tripsService.findForPortalDriver(caller.userId);
+    }
     const scope = await this.scope.forRequest(req);
     // Jefe de Misión: sólo los viajes de su delegación.
     const delegationId = scope?.kind === 'mission_head' ? scope.delegationId : null;
