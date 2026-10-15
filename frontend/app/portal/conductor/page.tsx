@@ -75,6 +75,7 @@ import { buildCredentialHtml } from "@/lib/credential-template";
 import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from "@/lib/credential-pdf";
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
+import { MENSAJE_SIN_CONEXION, motivoErrorIngreso } from "@/lib/error-ingreso";
 import { dlog } from "@/lib/native-debug";
 import { debeRearmarRastreo, ESPERAS_ESTADO_SHELL_MS, gpsWebNecesario, mismoEstadoShell, senalDeCorte, shellSinFijos, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
 import { esSesionDesplazada, plataformaConductor, versionShell } from "@/lib/plataforma-conductor";
@@ -671,9 +672,15 @@ export default function DriverPortalPage() {
         let login: Awaited<ReturnType<typeof portalLogin>>;
         try {
           login = await portalLogin(id);
-        } catch {
+        } catch (err) {
           setDriverProfile(null);
-          setIdError(t("El ID ingresado no corresponde a un conductor registrado."));
+          // Sólo un rechazo del servidor es un código malo; sin señal o con la
+          // app trabada se dice eso (15-10-2026).
+          setIdError(
+            motivoErrorIngreso(err) === "codigo"
+              ? t("El ID ingresado no corresponde a un conductor registrado.")
+              : t(MENSAJE_SIN_CONEXION),
+          );
           setTrips([]);
           return;
         }
