@@ -60,10 +60,13 @@ export type EstadoRastreoShell =
 
 /**
  * Cuánto puede pasar sin que el shell intente mandar un fijo antes de darlo
- * por mudo. Rastreando manda uno cada 3 s (con red o sin ella: el intento
- * fallido también cuenta), así que 45 s es quince veces la cadencia.
+ * por mudo (con red o sin ella: el intento fallido también cuenta).
+ * 15-10-2026: 90 s. La app Android 1.0.4 baja la cadencia de 3 s a 10 s (la
+ * cola sin tope del task manager trababa el teléfono: ANR y OutOfMemoryError
+ * en Play Console). 45 s eran quince veces la cadencia de 3 s, pero sólo 4,5
+ * la de 10 s; 90 s son 9. Mientras convivan 1.0.3 y 1.0.4 sirve para ambas.
  */
-export const UMBRAL_SIN_FIJOS_MS = 45_000;
+export const UMBRAL_SIN_FIJOS_MS = 90_000;
 
 /**
  * El shell dice que rastrea (`running: true`) pero no entrega posiciones.

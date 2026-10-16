@@ -46,18 +46,23 @@ describe("gpsWebNecesario", () => {
 describe("shellSinFijos", () => {
   // Armando Soza, 07-10-2026: Galaxy S25 con la app abierta, "rastreo en
   // segundo plano", dos fijos al abrir y nada más durante 5 minutos.
-  it("running sin un intento de envío en 45 s es rastreo mudo", () => {
+  it("running sin un intento de envío en UMBRAL_SIN_FIJOS_MS es rastreo mudo", () => {
     const andando = { running: true, backgroundOk: true, lastPush: { lastAttemptAt: T - 3_000 } };
     expect(shellSinFijos(andando, T, null)).toBe(false);
     const mudo = { running: true, backgroundOk: true, lastPush: { lastAttemptAt: T - UMBRAL_SIN_FIJOS_MS - 1 } };
     expect(shellSinFijos(mudo, T, null)).toBe(true);
   });
 
+  it("la app 1.0.4 manda cada 10 s: perder dos o tres fijos no la da por muda (15-10-2026)", () => {
+    const tresFijosPerdidos = { running: true, backgroundOk: true, lastPush: { lastAttemptAt: T - 40_000 } };
+    expect(shellSinFijos(tresFijosPerdidos, T, null)).toBe(false);
+  });
+
   it("sin ningún intento registrado (app recién abierta) cuenta desde que se vio running", () => {
     const sinIntentos = { running: true, backgroundOk: true, lastPush: { lastAttemptAt: null } };
     expect(shellSinFijos(sinIntentos, T, null)).toBe(false);
     expect(shellSinFijos(sinIntentos, T, T - 10_000)).toBe(false);
-    expect(shellSinFijos(sinIntentos, T, T - 60_000)).toBe(true);
+    expect(shellSinFijos(sinIntentos, T, T - UMBRAL_SIN_FIJOS_MS - 1)).toBe(true);
   });
 
   it("un rastreo detenido o un shell sin respuesta no es 'mudo': ya tienen su propio estado", () => {
