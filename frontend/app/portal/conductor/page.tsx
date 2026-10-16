@@ -76,6 +76,7 @@ import { downloadCredentialPdf, saveCredentialPdf, type CredentialPdfData } from
 import { clearPersistedTabs, persistTab, restoreOnReload, startTabHeartbeat } from "@/lib/portal-tab";
 import { claimPortalSession, ensurePortalIdentity, getStoredPortalSessionId, portalLogin, releasePortalSession, SESSION_ACTIVE_ELSEWHERE_MSG } from "@/lib/portal-session";
 import { MENSAJE_SIN_CONEXION, motivoErrorIngreso } from "@/lib/error-ingreso";
+import { pantallaSinPerfil } from "@/lib/pantalla-sin-perfil";
 import { dlog } from "@/lib/native-debug";
 import { debeRearmarRastreo, ESPERAS_ESTADO_SHELL_MS, gpsWebNecesario, mismoEstadoShell, senalDeCorte, shellSinFijos, SONDEO_CALIFICACIONES_MS, viajesPorCalificar } from "@/lib/conductor-sondeos";
 import { esSesionDesplazada, plataformaConductor, versionShell } from "@/lib/plataforma-conductor";
@@ -927,6 +928,46 @@ export default function DriverPortalPage() {
     if (driverProfile) await releasePortalSession("driver", driverProfile.id);
     mobileAwareLogout();
   };
+
+  // Sin perfil dentro de la app nunca se muestra el login web (15-10-2026,
+  // ver lib/pantalla-sin-perfil). Con la sesión guardada se reintenta al
+  // volver la señal, al volver a la app y cada 30 s; sin sesión, a /m/login.
+  const sinPerfil = sessionChecked && !driverProfile
+    ? pantallaSinPerfil(isNativeAvailable(), getMobileSession()?.kind === "driver")
+    : null;
+  const reintentandoRef = useRef(false);
+  const reintentarCarga = async () => {
+    const session = getMobileSession();
+    if (reintentandoRef.current || session?.kind !== "driver" || !session.driverId) return;
+    reintentandoRef.current = true;
+    try { await loadTrips(session.driverId); } finally { reintentandoRef.current = false; }
+  };
+  const salirAlLoginDeLaApp = async () => {
+    const session = getMobileSession();
+    try { sessionStorage.removeItem("portal_conductor_id"); } catch {}
+    clearPersistedTabs();
+    if (session?.kind === "driver" && session.driverId) await releasePortalSession("driver", session.driverId);
+    mobileAwareLogout();
+  };
+  useEffect(() => {
+    if (sinPerfil === "login-app") {
+      dlog("sin perfil ni sesión en la app → /m/login");
+      window.location.replace("/m/login");
+      return;
+    }
+    if (sinPerfil !== "reintentar") return;
+    dlog("sin perfil con sesión guardada → reintentar");
+    const alVolver = () => { if (document.visibilityState === "visible") void reintentarCarga(); };
+    window.addEventListener("online", alVolver);
+    document.addEventListener("visibilitychange", alVolver);
+    const intervalo = window.setInterval(alVolver, 30000);
+    return () => {
+      window.removeEventListener("online", alVolver);
+      document.removeEventListener("visibilitychange", alVolver);
+      window.clearInterval(intervalo);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sinPerfil]);
   const [credentialHtml, setCredentialHtml] = useState<string | null>(null);
   const [credentialPdf, setCredentialPdf] = useState<CredentialPdfData | null>(null);
   const [credentialPdfView, setCredentialPdfView] = useState<string | null>(null);
@@ -2002,7 +2043,37 @@ export default function DriverPortalPage() {
       {!sessionChecked && !driverProfile && (
         <PortalSkeleton tabs={5} cards={2} />
       )}
-      {sessionChecked && !driverProfile && (
+      {/* Camino a /m/login: fondo del portal mientras navega, sin asomar el login web. */}
+      {sinPerfil === "login-app" && (
+        <div style={{ minHeight: "100vh", background: "#020c18" }} />
+      )}
+      {sinPerfil === "reintentar" && (
+        <div style={{ minHeight: "100vh", background: "#020c18", display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 20px" }}>
+          <div style={{ width: "100%", maxWidth: "360px", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center", gap: "14px" }}>
+            <img src="/branding/LOGO-SEVEN-1.png" alt="Seven Arena" style={{ height: "56px", width: "auto", objectFit: "contain", marginBottom: "10px" }} />
+            <h2 style={{ fontSize: "20px", fontWeight: 700, color: "rgba(255,255,255,0.95)", margin: 0 }}>{t("No pudimos cargar tus viajes")}</h2>
+            <p style={{ fontSize: "14px", color: "rgba(255,255,255,0.55)", lineHeight: 1.6, margin: 0 }}>
+              {t("Tu sesión sigue activa. Revisa tu señal: volvemos a intentarlo solos apenas haya conexión.")}
+            </p>
+            <button
+              type="button"
+              onClick={() => void reintentarCarga()}
+              disabled={loading}
+              style={{ width: "100%", marginTop: "8px", padding: "14px", borderRadius: 14, border: "none", background: BRAND.teal, color: "#020c18", fontSize: 15, fontWeight: 700, cursor: "pointer", opacity: loading ? 0.6 : 1 }}
+            >
+              {loading ? t("Cargando...") : t("Reintentar")}
+            </button>
+            <button
+              type="button"
+              onClick={() => void salirAlLoginDeLaApp()}
+              style={{ background: "none", border: "none", color: "rgba(255,255,255,0.45)", fontSize: 13, padding: "8px", cursor: "pointer" }}
+            >
+              {t("Cerrar sesión")}
+            </button>
+          </div>
+        </div>
+      )}
+      {sinPerfil === "login-web" && (
         <div className="flex flex-col lg:flex-row" style={{ minHeight: "100vh", background: "#020c18", position: "relative", overflow: "hidden" }}>
           <style>{`
             @keyframes pc-f1{0%,100%{transform:translateY(0px) scale(1)}50%{transform:translateY(-30px) translateX(10px) scale(1.05)}}
