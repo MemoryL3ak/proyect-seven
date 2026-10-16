@@ -2690,7 +2690,7 @@ export default function DriverPortalPage() {
                                     onClick={(e) => openNavExternally(e, target.waze)}
                                     style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,textDecoration:"none",fontSize:12,fontWeight:700,color:"#33ccff" }}
                                   >
-                                    <img src="https://www.waze.com/favicon.ico" alt="Waze" width="20" height="20" style={{ borderRadius:4 }} />
+                                    <img src="/branding/navegacion/waze.png" alt="Waze" width="20" height="20" style={{ borderRadius:4 }} />
                                     Waze
                                   </a>
                                   <a
@@ -2700,7 +2700,7 @@ export default function DriverPortalPage() {
                                     onClick={(e) => openNavExternally(e, target.gmaps)}
                                     style={{ flex:1,display:"flex",alignItems:"center",justifyContent:"center",gap:6,padding:"10px 0",borderRadius:10,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,textDecoration:"none",fontSize:12,fontWeight:700,color:"#4285F4" }}
                                   >
-                                    <img src="https://maps.google.com/favicon.ico" alt="Google Maps" width="20" height="20" style={{ borderRadius:4 }} />
+                                    <img src="/branding/navegacion/google-maps.png" alt="Google Maps" width="20" height="20" style={{ borderRadius:4 }} />
                                     Google Maps
                                   </a>
                                 </div>
@@ -3717,7 +3717,7 @@ export default function DriverPortalPage() {
                 onClick={(e) => { openNavExternally(e, target.waze); setNavPrompt(null); }}
                 style={{ display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:14,borderRadius:14,border:"none",background:"linear-gradient(135deg,#33ccff,#0f9ed8)",color:SURFACE.card,fontSize:14,fontWeight:800,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
               >
-                <img src="https://www.waze.com/favicon.ico" alt="" width="20" height="20" style={{ borderRadius:4 }} />
+                <img src="/branding/navegacion/waze.png" alt="" width="20" height="20" style={{ borderRadius:4 }} />
                 Abrir en Waze
               </a>
               <a
@@ -3727,7 +3727,7 @@ export default function DriverPortalPage() {
                 onClick={(e) => { openNavExternally(e, target.gmaps); setNavPrompt(null); }}
                 style={{ marginTop:8,display:"flex",alignItems:"center",justifyContent:"center",gap:8,width:"100%",padding:13,borderRadius:14,border:`1px solid ${SURFACE.border}`,background:SURFACE.card,color:"#4285F4",fontSize:13,fontWeight:700,cursor:"pointer",textDecoration:"none",boxSizing:"border-box" }}
               >
-                <img src="https://maps.google.com/favicon.ico" alt="" width="18" height="18" style={{ borderRadius:4 }} />
+                <img src="/branding/navegacion/google-maps.png" alt="" width="18" height="18" style={{ borderRadius:4 }} />
                 Abrir en Google Maps
               </a>
               <button
