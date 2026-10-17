@@ -61,3 +61,19 @@ describe("planilla de AND: datos del traslado", () => {
     expect(fechaHoraPlanilla("")).toBe("");
   });
 });
+
+describe("planilla de AND con traslados por grupo (16-10-2026)", () => {
+  it("cada ficha del grupo encuentra el mismo viaje por su clave", () => {
+    const grupo: ViajeAnd = {
+      id: "grupo",
+      driverId: "carlos",
+      metadata: { andKey: "and:sergio:LLEGADA", andKeys: ["and:sergio:LLEGADA", "and:ginzo:LLEGADA"] },
+    };
+    const mapa = trasladosPorClave([grupo]);
+    expect(mapa.get("and:sergio:LLEGADA")?.id).toBe("grupo");
+    expect(mapa.get("and:ginzo:LLEGADA")?.id).toBe("grupo");
+    expect(datosDelTramo("ginzo", "LLEGADA", null, mapa, conductores, new Map()).conductor).toBe(
+      "Carlos Marcelo Hernández Sepulveda",
+    );
+  });
+});

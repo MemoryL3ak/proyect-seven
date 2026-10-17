@@ -194,7 +194,9 @@ export class FlightsService {
              from transport.trips t
              left join core.provider_participants pp on pp.id = t.driver_id
              left join transport.drivers dr on dr.id = t.driver_id
-            where t.metadata->>'andKey' = 'and:' || a.id || ':LLEGADA' and t.status <> 'CANCELLED'
+            where (t.metadata->>'andKey' = 'and:' || a.id || ':LLEGADA'
+                   or t.metadata->'andKeys' ? ('and:' || a.id || ':LLEGADA'))
+              and t.status <> 'CANCELLED'
             order by t.created_at desc limit 1
          ) tl on true
          left join lateral (
@@ -205,7 +207,9 @@ export class FlightsService {
              from transport.trips t
              left join core.provider_participants pp on pp.id = t.driver_id
              left join transport.drivers dr on dr.id = t.driver_id
-            where t.metadata->>'andKey' = 'and:' || a.id || ':SALIDA' and t.status <> 'CANCELLED'
+            where (t.metadata->>'andKey' = 'and:' || a.id || ':SALIDA'
+                   or t.metadata->'andKeys' ? ('and:' || a.id || ':SALIDA'))
+              and t.status <> 'CANCELLED'
             order by t.created_at desc limit 1
          ) ts on true
         where a.event_id = $1

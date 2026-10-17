@@ -28,12 +28,26 @@ export type VehiculoAnd = { id: string; plate?: string | null; type?: string | n
 
 export type DatosTramo = { conductor: string; telefono: string; patente: string; flota: string };
 
+/**
+ * Claves de ficha de un viaje de AND: desde el 16-10-2026 un viaje lleva a
+ * todo un grupo (`andKeys`); los de antes traen una sola (`andKey`).
+ */
+export function clavesAndDelViaje(metadata?: Record<string, unknown> | null): string[] {
+  const lista = Array.isArray(metadata?.andKeys)
+    ? metadata.andKeys.filter((k): k is string => typeof k === "string" && k.length > 0)
+    : [];
+  if (lista.length > 0) return lista;
+  const unica = typeof metadata?.andKey === "string" ? metadata.andKey : "";
+  return unica ? [unica] : [];
+}
+
 /** Traslados de AND por su clave ("and:<ficha>:LLEGADA"), con los regresos desplegados. */
 export function trasladosPorClave(viajes: ViajeAnd[]): Map<string, ViajeAnd> {
   const mapa = new Map<string, ViajeAnd>();
   for (const v of aplanarTramos(viajes)) {
-    const clave = typeof v.metadata?.andKey === "string" ? v.metadata.andKey : "";
-    if (clave && !mapa.has(clave)) mapa.set(clave, v);
+    for (const clave of clavesAndDelViaje(v.metadata)) {
+      if (!mapa.has(clave)) mapa.set(clave, v);
+    }
   }
   return mapa;
 }

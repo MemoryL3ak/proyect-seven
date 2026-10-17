@@ -140,3 +140,21 @@ describe('pasajeros de cada vuelo del Monitoreo de Llegadas', () => {
     expect(pasajerosDelVuelo(mexico15, otroEvento)).toEqual([]);
   });
 });
+
+describe('traslados de un vuelo con grupos (16-10-2026)', () => {
+  it('el traslado del grupo se reconoce por cualquiera de sus pasajeros', () => {
+    const grupo = {
+      id: 'grupo',
+      tripType: 'TRANSFER_IN',
+      status: 'SCHEDULED',
+      requesterAthleteId: 'ana',
+      athleteIds: ['ana', 'beto', 'carla'],
+      metadata: { flightNumber: 'LA715' },
+    };
+    const otro = { ...grupo, id: 'otro', requesterAthleteId: 'dani', athleteIds: ['dani'], metadata: { flightNumber: 'AV97' } };
+    const vuelo = { flightNumber: 'XX1', arrivalTime: '2026-10-15T14:30:00.000Z' };
+    expect(trasladosDelVuelo(vuelo, ['beto'], [grupo, otro]).map((v) => v.id)).toEqual(['grupo']);
+    expect(trasladosDelVuelo(vuelo, ['carla', 'dani'], [grupo, otro]).map((v) => v.id)).toEqual(['grupo', 'otro']);
+    expect(trasladosDelVuelo(vuelo, ['nadie'], [grupo, otro])).toEqual([]);
+  });
+});

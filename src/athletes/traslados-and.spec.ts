@@ -2,8 +2,15 @@ import {
   AEROPUERTO,
   arregloTransferInOut,
   cambiosDeTraslado,
+  claveGrupoAnd,
   claveTrasladoAnd,
+  clavesDelViaje,
+  fichaDeClave,
+  fichasDelViaje,
+  grupoDelViaje,
+  mismasFichas,
   normalizarVuelo,
+  sentidoDeClave,
   tramosAnd,
 } from './traslados-and';
 
@@ -329,5 +336,65 @@ describe('flota y patente de la plantilla', () => {
         { ...deseado, flota: null, patente: null },
       ),
     ).toEqual({});
+  });
+});
+
+describe('un traslado por grupo (16-10-2026)', () => {
+  const grupo = {
+    sentido: 'LLEGADA' as const,
+    vuelo: 'la 715',
+    horaVuelo: '2026-10-15T14:30:00.000Z',
+    delegationId: 'mex',
+    hotelId: 'almasur',
+    conductorId: 'eduardo',
+  };
+
+  it('la clave del grupo junta sentido, vuelo normalizado, hora, delegación, hotel y conductor', () => {
+    expect(claveGrupoAnd(grupo)).toBe('and:grupo:LLEGADA:LA715:2026-10-15T14:30:00.000Z:mex:almasur:eduardo');
+    expect(claveGrupoAnd({ ...grupo, delegationId: null, conductorId: null })).toBe(
+      'and:grupo:LLEGADA:LA715:2026-10-15T14:30:00.000Z:-:almasur:-',
+    );
+  });
+
+  it('lee las fichas de un viaje: andKeys y, en los de antes, su andKey', () => {
+    expect(clavesDelViaje({ andKeys: ['and:a:LLEGADA', 'and:b:LLEGADA', 'and:a:LLEGADA'] })).toEqual([
+      'and:a:LLEGADA',
+      'and:b:LLEGADA',
+    ]);
+    expect(clavesDelViaje({ andKey: 'and:a:LLEGADA' })).toEqual(['and:a:LLEGADA']);
+    expect(clavesDelViaje({ andKeys: [], andKey: 'and:a:SALIDA' })).toEqual(['and:a:SALIDA']);
+    expect(clavesDelViaje(null)).toEqual([]);
+    expect(fichasDelViaje({ andKeys: ['and:a:LLEGADA', 'and:b:LLEGADA', 'otra'] })).toEqual(['a', 'b']);
+    expect(fichaDeClave('and:a:LLEGADA')).toBe('a');
+    expect(fichaDeClave('and:grupo:LLEGADA:LA715')).toBeNull();
+    expect(sentidoDeClave('and:a:SALIDA')).toBe('SALIDA');
+  });
+
+  it('las mismas fichas, sin importar el orden; dos listas vacías no son "las mismas"', () => {
+    expect(mismasFichas(['a', 'b'], ['b', 'a'])).toBe(true);
+    expect(mismasFichas(['a', 'b'], ['a'])).toBe(false);
+    expect(mismasFichas([], [])).toBe(false);
+  });
+
+  it('el grupo de un viaje guardado: el escrito o, en los de antes, el que sale de sus datos', () => {
+    expect(grupoDelViaje({ metadata: { andGrupo: 'and:grupo:x' } })).toBe('and:grupo:x');
+    expect(
+      grupoDelViaje({
+        metadata: { andKey: 'and:a:LLEGADA', flightNumber: 'LA715', flightTime: '2026-10-15T14:30:00.000Z', andDriverId: 'eduardo' },
+        delegation_id: 'mex',
+        destination_hotel_id: 'almasur',
+        origin_hotel_id: null,
+      }),
+    ).toBe(claveGrupoAnd(grupo));
+    // La salida se agrupa por el hotel de origen.
+    expect(
+      grupoDelViaje({
+        metadata: { andKey: 'and:a:SALIDA', flightNumber: 'LA716', flightTime: '2026-10-20T20:00:00.000Z' },
+        delegation_id: 'mex',
+        destination_hotel_id: null,
+        origin_hotel_id: 'almasur',
+      }),
+    ).toBe('and:grupo:SALIDA:LA716:2026-10-20T20:00:00.000Z:mex:almasur:-');
+    expect(grupoDelViaje({ metadata: { andKey: 'and:a:LLEGADA' } })).toBeNull();
   });
 });

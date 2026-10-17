@@ -27,7 +27,10 @@ describe('AthletesService.crearTraslados', () => {
     const { svc, sincronizar, query } = build(viajes);
     await expect(svc.crearTraslados('ginzo')).resolves.toEqual(viajes);
     expect(sincronizar).toHaveBeenCalledWith('ginzo');
-    expect(query.mock.calls[0]).toEqual([expect.any(String), ['and:ginzo:%']]);
+    expect(query.mock.calls[0]).toEqual([
+      expect.stringContaining('andKeys'),
+      ['and:ginzo:LLEGADA', 'and:ginzo:SALIDA'],
+    ]);
   });
 
   it('sin vuelo con hora no hay traslado: lo dice en vez de quedar callado', async () => {

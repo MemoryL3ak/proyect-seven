@@ -10,6 +10,7 @@ import { conductorEnEvento } from "@/lib/conductores-del-evento";
 import { opcionesDeConductores } from "@/lib/opciones-conductores";
 import { estadoAlMarcar, trasladoRealizado } from "@/lib/marcar-traslado";
 import { aplanarTramos, esSalida } from "@/lib/tramos-traslado";
+import { pasajerosDe, trasladoPorPasajero } from "@/lib/traslado-por-pasajero";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import { filterPasajerosDeVuelos } from "@/lib/athletes";
 import EmptyState from "@/components/ui/EmptyState";
@@ -63,6 +64,8 @@ type Trip = {
   childTrips?: Trip[] | null;
   clientType?: string | null;
   requesterAthleteId?: string | null;
+  /** Pasajeros: un traslado de AND lleva a todo el grupo (16-10-2026). */
+  athleteIds?: string[] | null;
   origin?: string | null;
   destination?: string | null;
   status?: string | null;
@@ -222,14 +225,12 @@ export default function DepartureMonitoringPage() {
       );
     });
     // El Transfer Out va en la fila de su persona; antes salía también como
-    // una fila aparte y la misma salida se veía dos veces.
-    const trasladoDe = new Map<string, Trip>();
-    transferOutTrips.forEach((t) => {
-      if (t.requesterAthleteId && !trasladoDe.has(t.requesterAthleteId)) trasladoDe.set(t.requesterAthleteId, t);
-    });
+    // una fila aparte y la misma salida se veía dos veces. Un traslado de
+    // AND lleva a todo el grupo: va en la fila de cada uno (16-10-2026).
+    const trasladoDe = trasladoPorPasajero(transferOutTrips);
     const conFila = new Set(deParticipantes.map((a) => a.id));
     const deViajes: Athlete[] = transferOutTrips
-      .filter((t) => !t.requesterAthleteId || !conFila.has(t.requesterAthleteId))
+      .filter((t) => !pasajerosDe(t).some((id) => conFila.has(id)))
       .map((t) => {
       const requester = athletes.find((a) => a.id === t.requesterAthleteId);
       const flight = t.flightNumber || ((t.metadata || {}) as Record<string, unknown>).flightNumber;

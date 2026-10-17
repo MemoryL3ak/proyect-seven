@@ -14,6 +14,7 @@ import { ConfigService } from '@nestjs/config';
 import { DataSource, In, Repository } from 'typeorm';
 import { StaffScopeService } from '../auth/staff-scope.service';
 import { TrasladosAndService } from './traslados-and.service';
+import { claveTrasladoAnd } from './traslados-and';
 import { normalizarNombrePersona } from '../shared/nombre-propio';
 import { horaChileAIso } from './hora-sin-zona';
 import { MobileAuthService } from '../mobile-auth/mobile-auth.service';
@@ -654,9 +655,11 @@ export class AthletesService {
     >(
       `select id, metadata->>'andKey' as clave, status
          from transport.trips
-        where metadata->>'andKey' like $1
+        where metadata->>'andKey' in ($1, $2)
+           or metadata->'andKeys' ? $1
+           or metadata->'andKeys' ? $2
         order by scheduled_at`,
-      [`and:${id}:%`],
+      [claveTrasladoAnd(id, 'LLEGADA'), claveTrasladoAnd(id, 'SALIDA')],
     );
     if (viajes.length === 0) {
       throw new BadRequestException(

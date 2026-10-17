@@ -313,3 +313,119 @@ export function cambiosDeTraslado(
     cambios.andPatente = deseado.patente;
   return cambios;
 }
+
+/* ────────────────────────────────────────────────────────────────────────
+ * Un traslado por grupo, no por persona (16-10-2026, pedido de Ariel).
+ *
+ * Los 22 jugadores de México llegaron en tres vuelos y Viajes mostraba 22
+ * traslados de 1 pax, todos iguales, y el conductor tuvo que iniciar y
+ * cerrar 22 veces el mismo viaje. Las fichas que comparten delegación,
+ * vuelo, hotel y conductor viajan juntas: son UN viaje con todos como
+ * pasajeros (transport.trip_athletes) y `passenger_count` igual al grupo.
+ *
+ * En la metadata del viaje:
+ *   - andKeys:  claves "and:<ficha>:<sentido>" de todas sus fichas.
+ *   - andKey:   la primera de ellas (lo que leía todo hasta hoy sigue
+ *               funcionando: Monitor de Vuelos, planilla de AND, sentido).
+ *   - andGrupo: la clave del grupo, para que la siguiente ficha igual se sume
+ *               a este viaje en vez de crear otro.
+ * ──────────────────────────────────────────────────────────────────────── */
+
+export type GrupoAnd = {
+  sentido: SentidoAnd;
+  /** Vuelo normalizado ("LA715"). */
+  vuelo: string;
+  /** Hora del vuelo, ISO. */
+  horaVuelo: string;
+  delegationId: string | null;
+  /** Hotel de destino (llegada) o de origen (salida). */
+  hotelId: string | null;
+  /** Conductor puesto en la ficha: distinto conductor, distinto vehículo. */
+  conductorId: string | null;
+};
+
+/** Clave del grupo que viaja junto: mismo sentido, vuelo, hora, delegación, hotel y conductor. */
+export const claveGrupoAnd = (g: GrupoAnd) =>
+  [
+    'and:grupo',
+    g.sentido,
+    normalizarVuelo(g.vuelo),
+    g.horaVuelo,
+    g.delegationId ?? '-',
+    g.hotelId ?? '-',
+    g.conductorId ?? '-',
+  ].join(':');
+
+/** "and:<ficha>:LLEGADA" → "<ficha>"; null si no es una clave de ficha. */
+export const fichaDeClave = (clave: string): string | null => {
+  const m = /^and:([^:]+):(LLEGADA|SALIDA)$/.exec(clave);
+  return m ? m[1] : null;
+};
+
+/** "and:<ficha>:LLEGADA" → "LLEGADA". */
+export const sentidoDeClave = (clave: string): SentidoAnd | null => {
+  const m = /^and:[^:]+:(LLEGADA|SALIDA)$/.exec(clave);
+  return m ? (m[1] as SentidoAnd) : null;
+};
+
+/**
+ * Claves de ficha de un viaje de AND: `andKeys` y, en los viajes de antes
+ * (uno por persona), su único `andKey`.
+ */
+export function clavesDelViaje(metadata: unknown): string[] {
+  const meta = registro(metadata);
+  const lista = Array.isArray(meta.andKeys)
+    ? meta.andKeys.filter((k): k is string => typeof k === 'string' && k.length > 0)
+    : [];
+  if (lista.length > 0) return Array.from(new Set(lista));
+  const unica = texto(meta.andKey);
+  return unica ? [unica] : [];
+}
+
+/** Fichas (ids) que viajan en un viaje de AND, en el orden en que se sumaron. */
+export const fichasDelViaje = (metadata: unknown): string[] =>
+  clavesDelViaje(metadata)
+    .map(fichaDeClave)
+    .filter((id): id is string => Boolean(id));
+
+/** Las mismas fichas, sin importar el orden. */
+export function mismasFichas(a: string[], b: string[]): boolean {
+  const sa = new Set(a);
+  const sb = new Set(b);
+  if (sa.size !== sb.size || sa.size === 0) return false;
+  for (const x of sa) if (!sb.has(x)) return false;
+  return true;
+}
+
+/** Lo que hace falta de un viaje guardado para saber a qué grupo pertenece. */
+export type ViajeAgrupable = {
+  metadata?: unknown;
+  delegation_id?: string | null;
+  destination_hotel_id?: string | null;
+  origin_hotel_id?: string | null;
+};
+
+/**
+ * Grupo de un viaje de AND ya guardado: el que trae en `andGrupo` o, en los
+ * viajes de antes de los grupos, el que se deduce de sus propios datos. Así
+ * una ficha que ya tenía su traslado no lo abandona al volver a guardarse.
+ */
+export function grupoDelViaje(viaje: ViajeAgrupable): string | null {
+  const meta = registro(viaje.metadata);
+  const guardado = texto(meta.andGrupo);
+  if (guardado) return guardado;
+  const [clave] = clavesDelViaje(meta);
+  const sentido = clave ? sentidoDeClave(clave) : null;
+  const vuelo = texto(meta.flightNumber);
+  const horaVuelo = iso(meta.flightTime);
+  if (!sentido || !vuelo || !horaVuelo) return null;
+  return claveGrupoAnd({
+    sentido,
+    vuelo,
+    horaVuelo,
+    delegationId: viaje.delegation_id ?? null,
+    hotelId:
+      (sentido === 'LLEGADA' ? viaje.destination_hotel_id : viaje.origin_hotel_id) ?? null,
+    conductorId: texto(meta.andDriverId),
+  });
+}

@@ -15,6 +15,8 @@ export type TrasladoMarcable = {
   status?: string | null;
   driverId?: string | null;
   requesterAthleteId?: string | null;
+  /** Pasajeros del viaje: un traslado de AND lleva a todo el grupo (16-10-2026). */
+  athleteIds?: string[] | null;
   scheduledAt?: string | null;
   flightNumber?: string | null;
   metadata?: Record<string, unknown> | null;
@@ -141,6 +143,7 @@ export function trasladosDelVuelo<T extends TrasladoMarcable>(
     if (!esLlegada(v)) return false;
     if (estadoDe(v) === 'CANCELLED') return false;
     if (v.requesterAthleteId && ids.has(v.requesterAthleteId)) return true;
+    if ((v.athleteIds ?? []).some((id) => ids.has(id))) return true;
     const meta = v.metadata ?? {};
     const suyo = normalizarVuelo(
       v.flightNumber ||

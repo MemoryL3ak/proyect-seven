@@ -829,10 +829,19 @@ export class TripsService {
         .createQueryBuilder('t')
         .orderBy('t.createdAt', 'DESC');
       if (eventId) qb.andWhere('t.eventId = :eventId', { eventId });
+      // Sus viajes: los que pidió y en los que va de pasajero. Un traslado
+      // de AND lleva a todo el grupo en trip_athletes y sólo uno de ellos
+      // figura como solicitante; sin esto, al resto el portal no les
+      // mostraba su traslado (16-10-2026).
       if (requesterAthleteId) {
-        qb.andWhere('t.requesterAthleteId = :requesterAthleteId', {
-          requesterAthleteId,
-        });
+        qb.andWhere(
+          `(t.requesterAthleteId = :requesterAthleteId
+            or exists (
+              select 1 from transport.trip_athletes ta
+               where ta.trip_id = t.id
+                 and ta.athlete_id = :requesterAthleteId))`,
+          { requesterAthleteId },
+        );
       }
       if (delegationId) {
         qb.andWhere(
