@@ -12,7 +12,7 @@ import { conductorEnEvento } from "@/lib/conductores-del-evento";
 import { opcionesDeConductores } from "@/lib/opciones-conductores";
 import { aplanarTramos, esLlegada } from "@/lib/tramos-traslado";
 import { estadoVuelo, type EstadoVuelo } from "@/lib/estado-vuelo";
-import { estadoAlMarcar, resumenTraslados, trasladoRealizado, trasladosDelVuelo } from "@/lib/marcar-traslado";
+import { estadoAlMarcar, pasajerosDelVuelo, resumenTraslados, trasladoRealizado, trasladosDelVuelo } from "@/lib/marcar-traslado";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   RefreshIcon,
@@ -63,6 +63,8 @@ type AthleteItem = {
   delegationId?: string | null;
   disciplineId?: string | null;
   flightNumber?: string | null;
+  arrivalFlightId?: string | null;
+  arrivalTime?: string | null;
   metadata?: Record<string, unknown> | null;
 };
 
@@ -389,25 +391,12 @@ export default function FlightsPage() {
     [flights, selectedEventId, searchQuery, filterDate]
   );
 
-  const flightPassengers = useMemo(() => {
-    return filteredFlights.map(f => {
-      const normalizedFN = f.flightNumber.replace(/\s+/g, "").toUpperCase();
-      const passengers = athletes.filter(a => {
-        // Ahora entran también las fichas sin validar: sólo las del evento
-        // del vuelo, que un mismo número de vuelo existe en otro evento.
-        if (a.eventId && f.eventId && a.eventId !== f.eventId) return false;
-        // Match by athlete's direct flightNumber field
-        const directFN = (a.flightNumber ?? "").replace(/\s+/g, "").toUpperCase();
-        if (directFN && directFN === normalizedFN) return true;
-        // Fallback: match by metadata vuelo_llegada / vuelo_salida
-        const m = a.metadata;
-        if (!m) return false;
-        const metaFN = String(m.vuelo_llegada ?? m.vuelo_salida ?? "").replace(/\s+/g, "").toUpperCase();
-        return metaFN === normalizedFN;
-      });
-      return { flight: f, passengers };
-    });
-  }, [filteredFlights, athletes]);
+  // Pasajeros de cada vuelo de ese día, no de todos los vuelos con el mismo
+  // número (lib/marcar-traslado). Entran también las fichas sin validar.
+  const flightPassengers = useMemo(
+    () => filteredFlights.map(f => ({ flight: f, passengers: pasajerosDelVuelo(f, athletes) })),
+    [filteredFlights, athletes],
+  );
 
   // Apply delegation filter
   const displayFlights = useMemo(() => {
