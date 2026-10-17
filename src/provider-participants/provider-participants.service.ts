@@ -20,6 +20,8 @@ import { CreateProviderParticipantDto } from './dto/create-provider-participant.
 import { devolverPersonaAlEvento, quitarPersonaDelEvento } from './eventos-persona';
 import { UpdateProviderParticipantDto } from './dto/update-provider-participant.dto';
 import { ProviderParticipant } from './entities/provider-participant.entity';
+import { zipSync } from 'fflate';
+import { archivosDeDocumentos, nombreDelZip } from './documentos-zip';
 
 type ParticipantRow = {
   id: string;
@@ -424,6 +426,50 @@ export class ProviderParticipantsService {
     if (!data) throw new NotFoundException(`Participant ${id} not found`);
 
     return this.toEntity(data as ParticipantRow);
+  }
+
+  /**
+   * Todos los documentos de la persona en un .zip (17-10-2026, pedido de
+   * Ariel). Se bajan del storage con la clave de servicio (los buckets son
+   * privados) y se comprimen en memoria: son unos pocos PDF y fotos por
+   * persona. Devuelve el nombre del archivo y el contenido.
+   */
+  async descargarDocumentos(id: string): Promise<{ nombre: string; zip: Buffer }> {
+    const participant = await this.findOne(id);
+    const archivos = archivosDeDocumentos(participant.metadata ?? null);
+    if (archivos.length === 0) {
+      throw new NotFoundException('Esta persona no ha subido documentos.');
+    }
+    const admin = this.getAdminClient();
+    if (!admin) {
+      throw new InternalServerErrorException(
+        'SUPABASE_SERVICE_ROLE_KEY is required to download documents',
+      );
+    }
+    const entradas: Record<string, Uint8Array> = {};
+    const fallidos: string[] = [];
+    for (const archivo of archivos) {
+      const { data, error } = await admin.storage.from(archivo.bucket).download(archivo.path);
+      if (error || !data) {
+        fallidos.push(archivo.etiqueta);
+        continue;
+      }
+      entradas[archivo.nombre] = new Uint8Array(await data.arrayBuffer());
+    }
+    if (Object.keys(entradas).length === 0) {
+      throw new NotFoundException(
+        `No se pudieron leer los documentos del storage: ${fallidos.join(', ')}.`,
+      );
+    }
+    // Un archivo que falta en el storage no impide bajar el resto: queda dicho adentro.
+    if (fallidos.length > 0) {
+      entradas['FALTANTES.txt'] = new TextEncoder().encode(
+        `No se pudieron leer del storage:\n- ${fallidos.join('\n- ')}\n`,
+      );
+    }
+    // PDF y fotos ya vienen comprimidos: nivel 0 evita trabajo inútil.
+    const zip = zipSync(entradas, { level: 0 });
+    return { nombre: nombreDelZip(participant.fullName), zip: Buffer.from(zip) };
   }
 
   async uploadDocument(id: string, key: string, dataUrl: string) {

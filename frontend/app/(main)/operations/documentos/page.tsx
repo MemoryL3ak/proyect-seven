@@ -6,6 +6,8 @@ import DocumentacionPersonas from "@/components/DocumentacionPersonas";
 import StyledSelect from "@/components/StyledSelect";
 import { apiFetch } from "@/lib/api";
 import { STATE, SURFACE, BRAND, ACCENT } from "@/lib/design";
+import { nombreDeArchivo, urlDeDescarga } from "@/lib/descarga-documentos";
+import { DownloadIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/lib/i18n";
 import { esDelEvento } from "@/lib/evento-activo";
 import { useEventoActivo } from "@/lib/evento-activo-provider";
@@ -414,6 +416,12 @@ export default function EventDocumentsPage() {
                               {t("Ver")}
                             </button>
                           )}
+                          {/* Descarga directa: el storage entrega el archivo como adjunto (17-10-2026). */}
+                          <a href={urlDeDescarga(doc.fileUrl, nombreDeArchivo(doc.title, doc.fileUrl, doc.fileName))}
+                            download={nombreDeArchivo(doc.title, doc.fileUrl, doc.fileName)}
+                            style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "5px 12px", borderRadius: 8, border: `1px solid ${pal.cardBorder}`, background: SURFACE.card, fontSize: 11, fontWeight: 600, color: BRAND.tealInk, textDecoration: "none" }}>
+                            <DownloadIcon size={11} /> {t("Descargar")}
+                          </a>
                           <button onClick={() => startEdit(doc)}
                             style={{ padding: "5px 12px", borderRadius: 8, border: `1px solid ${pal.cardBorder}`, background: SURFACE.card, fontSize: 11, color: SURFACE.textSecondary, cursor: "pointer" }}>
                             {t("Editar")}

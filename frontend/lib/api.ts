@@ -356,6 +356,36 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   return JSON.parse(text) as T;
 }
 
+/**
+ * Un archivo del backend (un .zip, un PDF) con la sesión del panel. Un enlace
+ * <a href> no lleva la cabecera Authorization, así que se pide por fetch y se
+ * entrega el contenido con el nombre que dice el servidor (17-10-2026).
+ */
+export async function apiDownload(path: string): Promise<{ blob: Blob; fileName: string | null }> {
+  let { response } = await fetchWithBaseFallback(path, { headers: withAuthHeaders() });
+  if (response.status === 401 && getTokens()?.accessToken) {
+    const refreshed = await tryRefreshSession();
+    if (refreshed) {
+      ({ response } = await fetchWithBaseFallback(path, { headers: withAuthHeaders() }));
+    } else {
+      handleDeadSession();
+    }
+  }
+  if (!response.ok) {
+    let mensaje = `No se pudo descargar (${response.status})`;
+    try {
+      const json = JSON.parse(await response.text());
+      if (json?.message) mensaje = Array.isArray(json.message) ? json.message.join(", ") : String(json.message);
+    } catch { /* sin detalle */ }
+    const error = new Error(mensaje);
+    (error as Error & { status?: number }).status = response.status;
+    throw error;
+  }
+  const disposition = response.headers.get("content-disposition") || "";
+  const m = /filename\*?=(?:UTF-8'')?"?([^";]+)"?/i.exec(disposition);
+  return { blob: await response.blob(), fileName: m ? decodeURIComponent(m[1]) : null };
+}
+
 export async function login(email: string, password: string) {
   const { response, base } = await fetchWithBaseFallback("/auth/login", {
     method: "POST",

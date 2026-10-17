@@ -3,8 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import StyledSelect from "@/components/StyledSelect";
-import { apiFetch } from "@/lib/api";
+import { apiDownload, apiFetch } from "@/lib/api";
 import { BRAND, STATE, SURFACE } from "@/lib/design";
+import { archivosDePersona, guardarBlob, urlDeDescarga } from "@/lib/descarga-documentos";
 import {
   cumpleFiltroDocumentacion,
   cumpleFiltroTipo,
@@ -72,6 +73,28 @@ export default function DocumentacionPersonas() {
   const [tipo, setTipo] = useState<FiltroTipoPersona>("");
   // Arranca en "pendientes": la pregunta que trae al módulo es quién falta.
   const [documentos, setDocumentos] = useState<FiltroDocumentacion>("PENDIENTE");
+  // Persona cuyo .zip se está bajando, y el último error de descarga.
+  const [bajando, setBajando] = useState<string | null>(null);
+  const [errorDescarga, setErrorDescarga] = useState<string | null>(null);
+
+  /**
+   * Todos los documentos de la persona en un .zip (17-10-2026, pedido de
+   * Ariel). Lo arma el backend; el navegador lo guarda con el nombre que
+   * manda el servidor.
+   */
+  const descargarTodo = async (p: Persona) => {
+    if (bajando) return;
+    setBajando(p.id);
+    setErrorDescarga(null);
+    try {
+      const { blob, fileName } = await apiDownload(`/provider-participants/${p.id}/documentos.zip`);
+      guardarBlob(blob, fileName || `documentos_${p.fullName.replace(/\s+/g, "-")}.zip`);
+    } catch (e) {
+      setErrorDescarga(`${p.fullName}: ${e instanceof Error ? e.message : t("No se pudo descargar.")}`);
+    } finally {
+      setBajando(null);
+    }
+  };
 
   useEffect(() => {
     let vivo = true;
@@ -255,6 +278,11 @@ export default function DocumentacionPersonas() {
 
       {cargando && <p style={{ padding: 20, fontSize: 13, color: SURFACE.textMuted }}>{t("Cargando...")}</p>}
       {error && <p style={{ padding: 20, fontSize: 13, color: STATE.danger }}>{error}</p>}
+      {errorDescarga && (
+        <p role="alert" style={{ margin: "12px 20px 0", padding: "8px 12px", borderRadius: 10, fontSize: 12.5, fontWeight: 600, background: STATE.dangerSoft, color: STATE.dangerText, border: `1px solid ${STATE.dangerBorder}` }}>
+          {errorDescarga}
+        </p>
+      )}
       {!cargando && !error && filas.length === 0 && (
         <p style={{ padding: 20, fontSize: 13, color: SURFACE.textMuted }}>
           {resumen.total === 0 ? t("No hay personas de proveedores de transporte registradas.") : t("Nadie coincide con el filtro.")}
@@ -263,10 +291,10 @@ export default function DocumentacionPersonas() {
 
       {!cargando && filas.length > 0 && (
         <div style={{ overflowX: "auto", maxWidth: "100%", WebkitOverflowScrolling: "touch" }}>
-          <table style={{ width: "100%", minWidth: 720, borderCollapse: "collapse", fontSize: 13 }}>
+          <table style={{ width: "100%", minWidth: 960, borderCollapse: "collapse", fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: `2px solid ${SURFACE.border}`, background: SURFACE.bg }}>
-                {[t("Persona"), t("Proveedor"), t("Tipo"), t("Documentos"), t("Faltan"), t("Última subida")].map((h) => (
+                {[t("Persona"), t("Proveedor"), t("Tipo"), t("Documentos"), t("Faltan"), t("Última subida"), t("Descargar")].map((h) => (
                   <th key={h} style={{ padding: "12px 14px", textAlign: "left", fontSize: 9, fontWeight: 700, letterSpacing: "0.18em", textTransform: "uppercase", color: SURFACE.textFaint }}>{h}</th>
                 ))}
               </tr>
@@ -297,6 +325,46 @@ export default function DocumentacionPersonas() {
                           : doc.faltantes.map((d) => t(d.label)).join(", ")}
                     </td>
                     <td style={{ padding: "10px 14px", color: SURFACE.textMuted, fontVariantNumeric: "tabular-nums", whiteSpace: "nowrap" }}>{fechaCorta(doc.ultimaSubida)}</td>
+                    <td style={{ padding: "10px 14px", minWidth: 220, maxWidth: 360 }}>
+                      {(() => {
+                        // Un botón por documento y otro con todos en un .zip.
+                        const archivos = archivosDePersona(p, prov?.type);
+                        if (archivos.length === 0) return <span style={{ color: SURFACE.textFaint }}>—</span>;
+                        const estaBajando = bajando === p.id;
+                        return (
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, alignItems: "center" }}>
+                            <button
+                              type="button"
+                              onClick={() => void descargarTodo(p)}
+                              disabled={Boolean(bajando)}
+                              title={t("Descarga todos sus documentos en un .zip")}
+                              style={{
+                                display: "inline-flex", alignItems: "center", gap: 5, padding: "4px 10px", borderRadius: 8, border: "none",
+                                background: `linear-gradient(135deg,${BRAND.teal},#14AE98)`, color: SURFACE.card,
+                                fontSize: 11, fontWeight: 700, cursor: bajando ? "wait" : "pointer", opacity: bajando && !estaBajando ? 0.6 : 1, whiteSpace: "nowrap",
+                              }}
+                            >
+                              <DownloadIcon size={12} /> {estaBajando ? t("Armando .zip…") : `${t("Todo")} (${archivos.length})`}
+                            </button>
+                            {archivos.map((a) => (
+                              <a
+                                key={a.key}
+                                href={urlDeDescarga(a.url, a.nombre)}
+                                download={a.nombre}
+                                title={`${t("Descargar")} ${t(a.label)}`}
+                                style={{
+                                  display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 9px", borderRadius: 99,
+                                  border: `1px solid ${SURFACE.border}`, background: SURFACE.bg, color: SURFACE.textSecondary,
+                                  fontSize: 11, fontWeight: 600, textDecoration: "none", whiteSpace: "nowrap",
+                                }}
+                              >
+                                <DownloadIcon size={11} /> {t(a.label)}
+                              </a>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </td>
                   </tr>
                 );
               })}
