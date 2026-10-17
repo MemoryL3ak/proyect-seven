@@ -1239,6 +1239,9 @@ export const resources: Record<string, ResourceConfig> = {
           { label: "Programado", value: "SCHEDULED" },
           { label: "En ruta", value: "EN_ROUTE" },
           { label: "Recogido", value: "PICKED_UP" },
+          // Dos códigos para "Completado": DROPPED_OFF lo deja la app del
+          // conductor al finalizar; COMPLETED es el que elige el panel. El
+          // formulario muestra uno solo (el del viaje, o COMPLETED).
           { label: "Completado", value: "DROPPED_OFF" },
           { label: "Completado", value: "COMPLETED" },
           { label: "Cancelado", value: "CANCELLED" }

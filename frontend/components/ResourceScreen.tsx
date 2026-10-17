@@ -36,6 +36,7 @@ import {
 import { horaRegresoDeViaje } from "@/lib/viajeRegreso";
 import { opcionesDeConductores, sinConductoresRepetidos } from "@/lib/opciones-conductores";
 import { conductorEnEvento } from "@/lib/conductores-del-evento";
+import { sinEtiquetasRepetidas } from "@/lib/opciones-sin-repetir";
 import {
   cumpleFiltroAnd,
   agruparPorDia,
@@ -2869,7 +2870,12 @@ export default function ResourceScreen({
    * editar, el suyo) o al activo si no. Lo ya elegido se conserva aunque sea
    * de otro evento, para no vaciarlo al abrir una ficha.
    */
-  const opcionesParaFormulario = (field: FieldDef): Option[] => {
+  const opcionesParaFormulario = (field: FieldDef): Option[] =>
+    // Dos códigos con la misma etiqueta (Completado = DROPPED_OFF o
+    // COMPLETED) se ofrecen una sola vez (lib/opciones-sin-repetir).
+    sinEtiquetasRepetidas(opcionesDelEvento(field), form[field.key]);
+
+  const opcionesDelEvento = (field: FieldDef): Option[] => {
     const opciones = getOptionsForField(field);
     const fuente = field.optionsSource;
     const evento = (typeof form.eventId === "string" && form.eventId) || eventoId;
