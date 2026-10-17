@@ -14,6 +14,8 @@ import { aplanarTramos, esLlegada } from "@/lib/tramos-traslado";
 import { estadoVuelo, type EstadoVuelo } from "@/lib/estado-vuelo";
 import { estadoAlMarcar, pasajerosDelVuelo, resumenTraslados, trasladoRealizado, trasladosDelVuelo } from "@/lib/marcar-traslado";
 import { nombresDePasajeros, pasajerosDe } from "@/lib/traslado-por-pasajero";
+import { masRecientePrimero, recortarPasajeros } from "@/lib/lista-llegadas";
+import PasajerosDialog, { type PasajeroListado } from "@/components/PasajerosDialog";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   RefreshIcon,
@@ -260,6 +262,8 @@ export default function FlightsPage() {
   // Traslados que esperan confirmación para marcarse realizados o pendientes.
   // `quien`: pasajeros y vuelo, para el formulario de registro manual.
   const [porMarcar, setPorMarcar] = useState<{ viajes: TripItem[]; realizar: boolean; que: string; quien: string } | null>(null);
+  // Ventana con todos los pasajeros de un traslado de grupo (la fila muestra cinco).
+  const [verPasajeros, setVerPasajeros] = useState<{ subtitulo: string; pasajeros: PasajeroListado[] } | null>(null);
   // Conductores con sus eventos, para elegir quién hizo el traslado.
   const [listaConductores, setListaConductores] = useState<ConductorItem[]>([]);
   const [creandoTraslado, setCreandoTraslado] = useState<string | null>(null);
@@ -476,11 +480,8 @@ export default function FlightsPage() {
         if (!cumpleFiltroTraslado([t], filterTraslado) || !cumpleFiltroConductor([t], filterConductor)) return false;
         return true;
       })
-      .sort((a, b) => {
-        const ta = a.scheduledAt ? new Date(a.scheduledAt).getTime() : Number.MAX_SAFE_INTEGER;
-        const tb = b.scheduledAt ? new Date(b.scheduledAt).getTime() : Number.MAX_SAFE_INTEGER;
-        return ta - tb;
-      }),
+      // Del traslado más reciente al más antiguo (17-10-2026, pedido de Ariel).
+      .sort(masRecientePrimero),
     [transferInTrips, selectedEventId, searchQuery, filterDate, filterDelegation, filterTraslado, filterConductor, athleteById]
   );
 
@@ -1083,11 +1084,35 @@ export default function FlightsPage() {
                         {del?.countryCode && (
                           <span style={{ marginLeft: "6px", fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: ACCENT.indigo, border: "1px solid rgba(99,102,241,0.15)" }}>{del.countryCode}</span>
                         )}
-                        {esGrupo && (
-                          <div title={pasajeros.join(", ")} style={{ marginTop: "3px", fontSize: "11px", lineHeight: 1.35, color: pal.textMuted }}>
-                            {pasajeros.join(", ")}
-                          </div>
-                        )}
+                        {esGrupo && (() => {
+                          // Hasta cinco nombres en la fila; el resto, en una ventana.
+                          const { visibles, restantes } = recortarPasajeros(pasajeros);
+                          return (
+                            <div style={{ marginTop: "3px", fontSize: "11px", lineHeight: 1.4, color: pal.textMuted }}>
+                              {visibles.join(", ")}
+                              {restantes > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => setVerPasajeros({
+                                    subtitulo: [flight ? `${t("Vuelo")} ${flight}` : null, `${t("Aeropuerto")} → ${trip.destination?.split(",")[0] || "—"}`].filter(Boolean).join(" · "),
+                                    pasajeros: pasajerosDe(trip).map((id) => {
+                                      const ficha = athleteById[id];
+                                      const d = ficha?.delegationId ? delegationById[ficha.delegationId] : null;
+                                      return { nombre: ficha?.fullName || pasajeros[pasajerosDe(trip).indexOf(id)] || id, delegacion: d?.countryCode ?? null };
+                                    }),
+                                  })}
+                                  style={{
+                                    marginLeft: "6px", padding: "1px 8px", borderRadius: "999px", cursor: "pointer",
+                                    border: `1px solid ${SURFACE.border}`, background: SURFACE.bg,
+                                    color: BRAND.teal, fontSize: "10.5px", fontWeight: 700, whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  +{restantes} {t("más")}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })()}
                       </td>
                       <td style={{ padding: "10px 14px", color: pal.textMuted, fontWeight: 500 }}>{trip.clientType || "—"}</td>
                       <td style={{ padding: "10px 14px" }}>
@@ -1341,6 +1366,12 @@ export default function FlightsPage() {
         confirmLabel={porMarcar?.realizar ? t("Marcar realizado") : t("Marcar pendiente")}
         onConfirm={() => { if (porMarcar && !marcando) void marcarTraslados(porMarcar.viajes, porMarcar.realizar); }}
         onCancel={() => { if (!marcando) setPorMarcar(null); }}
+      />
+      <PasajerosDialog
+        open={Boolean(verPasajeros)}
+        subtitulo={verPasajeros?.subtitulo}
+        pasajeros={verPasajeros?.pasajeros ?? []}
+        onClose={() => setVerPasajeros(null)}
       />
       {errorMarcar && (
         <div role="alert" style={{ position: "fixed", bottom: 20, right: 20, zIndex: 60, padding: "10px 16px", borderRadius: 12, background: STATE.dangerSoft, color: STATE.dangerText, border: `1px solid ${STATE.dangerBorder}`, fontSize: 12, fontWeight: 600 }}>
