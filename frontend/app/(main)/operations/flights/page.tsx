@@ -13,6 +13,7 @@ import { opcionesDeConductores } from "@/lib/opciones-conductores";
 import { aplanarTramos, esLlegada } from "@/lib/tramos-traslado";
 import { estadoVuelo, type EstadoVuelo } from "@/lib/estado-vuelo";
 import { estadoAlMarcar, pasajerosDelVuelo, resumenTraslados, trasladoRealizado, trasladosDelVuelo } from "@/lib/marcar-traslado";
+import { nombresDePasajeros, pasajerosDe } from "@/lib/traslado-por-pasajero";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
   RefreshIcon,
@@ -79,6 +80,9 @@ type TripItem = {
   tripType?: string | null;
   clientType?: string | null;
   requesterAthleteId?: string | null;
+  /** Pasajeros: un traslado de AND lleva a todo el grupo (16-10-2026). */
+  athleteIds?: string[] | null;
+  athleteNames?: string[] | null;
   origin?: string | null;
   destination?: string | null;
   status?: string | null;
@@ -453,12 +457,21 @@ export default function FlightsPage() {
         const flight = t.flightNumber || String((t.metadata as Record<string, unknown> | null)?.flightNumber ?? "");
         if (searchQuery) {
           const q = searchQuery.toLowerCase();
-          const haystack = [requester?.fullName, t.destination, t.origin, flight, t.clientType].filter(Boolean).join(" ").toLowerCase();
+          const haystack = [
+            requester?.fullName,
+            ...nombresDePasajeros(t, (id) => athleteById[id]?.fullName),
+            t.destination,
+            t.origin,
+            flight,
+            t.clientType,
+          ].filter(Boolean).join(" ").toLowerCase();
           if (!haystack.includes(q)) return false;
         }
         if (filterDate && claveDiaEvento(t.scheduledAt) !== filterDate) return false;
         if (filterDelegation) {
-          if (!requester || requester.delegationId !== filterDelegation) return false;
+          // La delegación de cualquiera de los que viajan, no sólo del solicitante.
+          const delegaciones = pasajerosDe(t).map((id) => athleteById[id]?.delegationId);
+          if (!delegaciones.includes(filterDelegation)) return false;
         }
         if (!cumpleFiltroTraslado([t], filterTraslado) || !cumpleFiltroConductor([t], filterConductor)) return false;
         return true;
@@ -1046,7 +1059,15 @@ export default function FlightsPage() {
               <tbody>
                 {displayTransferIns.map(trip => {
                   const requester = trip.requesterAthleteId ? athleteById[trip.requesterAthleteId] : null;
-                  const del = requester?.delegationId ? delegationById[requester.delegationId] : null;
+                  // Un traslado de AND lleva a todo el grupo: la fila es del
+                  // grupo (cuántos van y quiénes), no sólo del solicitante.
+                  const pasajeros = nombresDePasajeros(trip, (id) => athleteById[id]?.fullName);
+                  const esGrupo = pasajeros.length > 1;
+                  const delegacionId = pasajerosDe(trip).map((id) => athleteById[id]?.delegationId).find(Boolean);
+                  const del = delegacionId ? delegationById[delegacionId] : null;
+                  const quienes = esGrupo
+                    ? `${pasajeros.length} ${t("pasajeros")}${del?.countryCode ? ` ${del.countryCode}` : ""}`
+                    : requester?.fullName || pasajeros[0] || t("este pasajero");
                   const flightRaw = trip.flightNumber || (trip.metadata as Record<string, unknown> | null)?.flightNumber;
                   const flight = typeof flightRaw === "string" && flightRaw ? flightRaw : null;
                   return (
@@ -1055,10 +1076,17 @@ export default function FlightsPage() {
                         <div><span style={{ fontWeight: 700, color: pal.textPrimary }}>{fmtTime(trip.scheduledAt)}</span></div>
                         <div style={{ fontSize: "10px", color: pal.textMuted }}>{fmtDate(trip.scheduledAt)}</div>
                       </td>
-                      <td style={{ padding: "10px 14px" }}>
-                        <span style={{ fontWeight: 600, color: pal.textPrimary }}>{requester?.fullName || "—"}</span>
+                      <td style={{ padding: "10px 14px", maxWidth: "320px" }}>
+                        <span style={{ fontWeight: 600, color: pal.textPrimary }}>
+                          {esGrupo ? `${pasajeros.length} ${t("pasajeros")}` : requester?.fullName || pasajeros[0] || "—"}
+                        </span>
                         {del?.countryCode && (
                           <span style={{ marginLeft: "6px", fontSize: "9px", fontWeight: 700, padding: "2px 6px", borderRadius: "4px", background: "rgba(99,102,241,0.08)", color: ACCENT.indigo, border: "1px solid rgba(99,102,241,0.15)" }}>{del.countryCode}</span>
+                        )}
+                        {esGrupo && (
+                          <div title={pasajeros.join(", ")} style={{ marginTop: "3px", fontSize: "11px", lineHeight: 1.35, color: pal.textMuted }}>
+                            {pasajeros.join(", ")}
+                          </div>
                         )}
                       </td>
                       <td style={{ padding: "10px 14px", color: pal.textMuted, fontWeight: 500 }}>{trip.clientType || "—"}</td>
@@ -1085,8 +1113,8 @@ export default function FlightsPage() {
                           onMarcar={() => setPorMarcar({
                             viajes: [trip],
                             realizar: !trasladoRealizado(trip),
-                            que: `${t("el traslado de")} ${requester?.fullName || t("este pasajero")}`,
-                            quien: `${requester?.fullName || t("Pasajero")}${flight ? ` · ${t("vuelo")} ${flight}` : ""}.`,
+                            que: `${t("el traslado de")} ${quienes}`,
+                            quien: `${esGrupo ? quienes : requester?.fullName || pasajeros[0] || t("Pasajero")}${flight ? ` · ${t("vuelo")} ${flight}` : ""}.`,
                           })}
                         />
                       </td>

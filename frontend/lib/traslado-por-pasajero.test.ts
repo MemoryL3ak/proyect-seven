@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pasajerosDe, trasladoPorPasajero } from "./traslado-por-pasajero";
+import { nombresDePasajeros, pasajerosDe, trasladoPorPasajero } from "./traslado-por-pasajero";
 
 /**
  * 16-10-2026: los 12 de México que llegaron en el LA715 van en UN traslado;
@@ -26,6 +26,13 @@ describe("traslado por pasajero", () => {
     expect(mapa.get("dani")?.id).toBe("solo");
     expect(mapa.get("eli")?.id).toBe("planilla");
     expect(mapa.has("nadie")).toBe(false);
+  });
+
+  it("los nombres salen de la nómina y, si falta alguien, de los que trae el viaje", () => {
+    const nomina: Record<string, string> = { ana: "Ana Pérez", beto: "Beto Soto" };
+    const viaje = { ...grupo, athleteNames: ["Ana P.", "Beto S.", "Carla Ruiz"] };
+    expect(nombresDePasajeros(viaje, (id) => nomina[id])).toEqual(["Ana Pérez", "Beto Soto", "Carla Ruiz"]);
+    expect(nombresDePasajeros(solo, () => null)).toEqual([]);
   });
 
   it("con dos viajes de la misma persona manda el primero de la lista", () => {

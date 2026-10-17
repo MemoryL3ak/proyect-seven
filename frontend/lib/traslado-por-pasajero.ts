@@ -17,6 +17,28 @@ export function pasajerosDe(viaje: ViajeConPasajeros): string[] {
   return Array.from(ids);
 }
 
+/**
+ * Nombres de quienes viajan, el solicitante primero. Salen del viaje
+ * (`athleteNames`, que el backend adjunta en el mismo orden que `athleteIds`)
+ * y, si falta alguno, de la nómina cargada en la pantalla.
+ */
+export function nombresDePasajeros(
+  viaje: ViajeConPasajeros & { athleteNames?: string[] | null },
+  nombreDe: (id: string) => string | null | undefined,
+): string[] {
+  const porId = new Map<string, string>();
+  (viaje.athleteIds ?? []).forEach((id, i) => {
+    const nombre = viaje.athleteNames?.[i];
+    if (id && nombre) porId.set(id, nombre);
+  });
+  const nombres: string[] = [];
+  for (const id of pasajerosDe(viaje)) {
+    const nombre = nombreDe(id) || porId.get(id);
+    if (nombre && !nombres.includes(nombre)) nombres.push(nombre);
+  }
+  return nombres;
+}
+
 /** Persona → su viaje (el primero de la lista, si tuviera más de uno). */
 export function trasladoPorPasajero<T extends ViajeConPasajeros>(viajes: T[]): Map<string, T> {
   const mapa = new Map<string, T>();
