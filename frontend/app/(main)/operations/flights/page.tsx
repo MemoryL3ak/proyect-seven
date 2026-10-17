@@ -14,7 +14,7 @@ import { aplanarTramos, esLlegada } from "@/lib/tramos-traslado";
 import { estadoVuelo, type EstadoVuelo } from "@/lib/estado-vuelo";
 import { estadoAlMarcar, pasajerosDelVuelo, resumenTraslados, trasladoRealizado, trasladosDelVuelo } from "@/lib/marcar-traslado";
 import { nombresDePasajeros, pasajerosDe } from "@/lib/traslado-por-pasajero";
-import { masRecientePrimero, recortarPasajeros } from "@/lib/lista-llegadas";
+import { masRecientePrimero, recortarPasajeros, vueloMasNuevoPrimero } from "@/lib/lista-llegadas";
 import PasajerosDialog, { type PasajeroListado } from "@/components/PasajerosDialog";
 import { BRAND, STATE, SURFACE, ACCENT } from "@/lib/design";
 import {
@@ -395,7 +395,9 @@ export default function FlightsPage() {
       }
       if (filterDate && claveDiaEvento(f.arrivalTime) !== filterDate) return false;
       return true;
-    }),
+    })
+    // Del vuelo más nuevo al más viejo (17-10-2026, pedido de Ariel).
+    .sort(vueloMasNuevoPrimero),
     [flights, selectedEventId, searchQuery, filterDate]
   );
 
